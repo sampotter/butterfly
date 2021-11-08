@@ -2,19 +2,28 @@
 
 #include <stdlib.h>
 
-typedef double point2[2];
+#include "error.h"
 
-typedef struct bfQuadtreeNode bfQuadtreeNode;
+typedef struct BfQuadtree BfQuadtree;
+typedef struct BfQuadtreeNode BfQuadtreeNode;
 
-struct bfQuadtreeNode {
-  quadtree_s const *root;
+struct BfQuadtreeNode {
+  BfQuadtree const *root;
   size_t offset[5]; // offset[0] == 0 and offset[4] == size are sentinel values
-  bfQuadtreeNode *child[4];
+  BfQuadtreeNode *child[4];
 };
 
-typedef struct {
-  point2 const *points;
+struct BfQuadtree {
+  size_t max_leaf_size;
+
   size_t num_points;
+  double const (* points)[2];
+
   size_t *perm;
-  bfQuadtreeNode *root;
-} bfQuadtree;
+
+  BfQuadtreeNode *root;
+};
+
+enum BfError
+bfInitQuadtreeFromPoints(BfQuadtree *tree, size_t max_leaf_size,
+                         size_t num_points, double const (*points)[2]);

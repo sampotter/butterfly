@@ -6,10 +6,10 @@ enum BfDecomp {
   BF_DECOMP_SVD
 };
 
-enum BfDim {
-  BF_DIM_1D,
-  BF_DIM_2D,
-  BF_DIM_3D
+enum BfDomain {
+  BF_DOMAIN_R1,
+  BF_DOMAIN_R2,
+  BF_DOMAIN_R3
 };
 
 enum BfAccel {
@@ -28,13 +28,13 @@ enum BfQuad {
   BF_QUAD_TRAPEZOIDAL
 };
 
-struct BfSpec {
+typedef struct {
   enum BfDecomp decomp;
-  enum BfDim dim;
+  enum BfDomain domain;
   enum BfAccel accel;
   enum BfMesh mesh;
   enum BfKernel kernel;
   enum BfQuad quad;
-};
+} BfSpec;
 
-BfError bfSpecValidate(BfSpec const *spec);
+enum BfError bfSpecValidate(BfSpec const *spec);

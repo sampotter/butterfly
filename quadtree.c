@@ -9,11 +9,16 @@
     y = x;                                      \
   } while (0)
 
-void quadtreeNode_recursiveBuildFromPoints(quadtreeNode_s *node,
-										   point2 const *points,
-										   size_t *perm, size_t perm_size) {
+static
+enum BfError
+recInitQuadtreeFromPoints(BfQuadtreeNode *node,
+                          double const (*points)[2],
+                          size_t perm_size, size_t *perm)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
   // compute mean of points indexed by perm
-  point2 mid = {0, 0};
+  double mid[2] = {0, 0};
   for (size_t i = 0, j; i < perm_size; ++i) {
     j = perm[i];
     mid[0] += points[j][0];
@@ -62,25 +67,36 @@ void quadtreeNode_recursiveBuildFromPoints(quadtreeNode_s *node,
     assert(points[j][0] > mid[0] && points[j][1] > mid[1]);
   }
 
-  for (size_t q = 0; q < 4; ++q) {
-    node->child[q] = malloc(sizeof(quadtreeNode_s));
-    quadtreeNode_recursiveBuildFromPoints(
-      node->child[q], points, &perm[node->offset[q]],
-      node->offset[q + 1] - node->offset[q]);
+  for (size_t q = 0, perm_size; q < 4; ++q) {
+    node->child[q] = malloc(sizeof(BfQuadtreeNode));
+    perm_size = node->offset[q + 1] - node->offset[q];
+    recInitQuadtreeFromPoints(node->child[q], points,
+                              perm_size, &perm[node->offset[q]]);
   }
+
+  return error;
 }
 
-void quadtree_initFromPoints2(quadtree_s *qt, point2 const *points, size_t num_points) {
-  qt->points = points;
-  qt->num_points = num_points;
+enum BfError
+bfInitQuadtreeFromPoints(BfQuadtree *tree, size_t max_leaf_size,
+                         size_t num_points, double const (*points)[2])
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  tree->max_leaf_size = max_leaf_size;
+
+  tree->num_points = num_points;
+  tree->points = points;
 
   // initialize permutation to identity
-  qt->perm = malloc(num_points*sizeof(size_t));
+  tree->perm = malloc(num_points*sizeof(size_t));
   for (size_t i = 0; i < num_points; ++i)
-    qt->perm[i] = i;
+    tree->perm[i] = i;
 
-  qt->root = malloc(sizeof(quadtreeNode_s));
+  tree->root = malloc(sizeof(BfQuadtreeNode));
 
-  quadtreeNode_recursiveBuildFromPoints(qt->root, qt->points, qt->perm,
-                                        qt->num_points);
+  error |= recInitQuadtreeFromPoints(tree->root, tree->points,
+                                     tree->num_points, tree->perm);
+
+  return error;
 }

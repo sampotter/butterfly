@@ -1,7 +1,7 @@
 #include "spec.h"
 
-FlyError flySpecValidate(FlySpec const *spec) {
-  if (spec->dim != FLY_DIM_2D) {
-    return FLY_ERROR_BAD_ARGUMENTS;
+enum BfError bfSpecValidate(BfSpec const *spec) {
+  if (spec->domain != BF_DOMAIN_R2) {
+    return BF_ERROR_INVALID_ARGUMENTS;
   }
 }
