@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SWAP(x, y) do {							\
+#define SWAP(x, y) do {                         \
     __typeof__(x) tmp = x;                      \
     x = y;                                      \
     y = tmp;                                    \
