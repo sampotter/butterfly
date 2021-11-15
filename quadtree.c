@@ -51,6 +51,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
   node->offset[1] = i;
 
+#ifdef BF_DEBUG
   // (verify that child[0]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
@@ -58,6 +59,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     assert(node->offset[0] <= k && k < node->offset[1] ?
            in_quadrant : !in_quadrant);
   }
+#endif
 
   // ... for child[1]...
   i = node->offset[1];
@@ -75,6 +77,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
   node->offset[2] = i;
 
+#ifdef BF_DEBUG
   // (verify that child[1]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
@@ -82,6 +85,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     assert(node->offset[1] <= k && k < node->offset[2] ?
            in_quadrant : !in_quadrant);
   }
+#endif
 
   // ... for child[2]...
   i = node->offset[2];
@@ -99,6 +103,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
   node->offset[3] = i;
 
+#ifdef BF_DEBUG
   // (verify that child[2]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
@@ -106,13 +111,17 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     assert(node->offset[2] <= k && k < node->offset[3] ?
            in_quadrant : !in_quadrant);
   }
+#endif
 
   // we don't have to do any sifting for the last child! nice.
   // ... but let's verify that things are as they should be.
 
+#ifdef BF_DEBUG
   assert(j == perm_size);
   assert(j == node->offset[4]);
+#endif
 
+#ifdef BF_DEBUG
   // (verify that child[2]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
@@ -120,12 +129,15 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     assert(node->offset[3] <= k && k < node->offset[4] ?
            in_quadrant : !in_quadrant);
   }
+#endif
 
+#ifdef BF_DEBUG
   // (verify that child[3]'s indices are correctly sifted)
   for (size_t i = node->offset[3], j; i < perm_size; ++i) {
     j = perm[i];
     assert(points[j][0] > mid[0] && points[j][1] > mid[1]);
   }
+#endif
 
   for (size_t q = 0, perm_size; q < 4; ++q) {
     perm_size = node->offset[q + 1] - node->offset[q];

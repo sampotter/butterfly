@@ -1,4 +1,4 @@
-CFLAGS := ${CFLAGS} -std=c99 -g
+CFLAGS := ${CFLAGS} -std=c99 -g -DBF_DEBUG
 
 all:
 	$(CC) $(CFLAGS) -c quadtree.c
