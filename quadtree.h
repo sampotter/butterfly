@@ -8,14 +8,12 @@ typedef struct BfQuadtree BfQuadtree;
 typedef struct BfQuadtreeNode BfQuadtreeNode;
 
 struct BfQuadtreeNode {
-  BfQuadtree const *root;
-  size_t offset[5]; // offset[0] == 0 and offset[4] == size are sentinel values
+  size_t offset[5]; // offset[0] == 0 and offset[4] == size are
+                    // sentinel values
   BfQuadtreeNode *child[4];
 };
 
 struct BfQuadtree {
-  size_t max_leaf_size;
-
   size_t num_points;
   double const (* points)[2];
 
@@ -25,5 +23,5 @@ struct BfQuadtree {
 };
 
 enum BfError
-bfInitQuadtreeFromPoints(BfQuadtree *tree, size_t max_leaf_size,
+bfInitQuadtreeFromPoints(BfQuadtree *tree,
                          size_t num_points, double const (*points)[2]);
