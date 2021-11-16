@@ -1,6 +1,7 @@
 #include "quadtree.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -155,6 +156,19 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   return error;
 }
 
+static
+size_t getQuadtreeNodeDepth(BfQuadtreeNode const *node,
+                            size_t current_depth) {
+  size_t next_depth = current_depth;
+  for (size_t i = 0; i < 4; ++i) {
+    size_t child_depth = node->child[i] == NULL ?
+      current_depth :
+      getQuadtreeNodeDepth(node->child[i], current_depth + 1);
+    next_depth = child_depth > next_depth ? child_depth : next_depth;
+  }
+  return next_depth;
+}
+
 enum BfError
 bfInitQuadtreeFromPoints(BfQuadtree *tree,
                          size_t num_points, double const (*points)[2])
@@ -173,6 +187,48 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree,
 
   error |= recInitQuadtreeFromPoints(tree->root, tree->points,
                                      tree->num_points, tree->perm);
+
+  tree->depth = getQuadtreeNodeDepth(tree->root, 0);
+
+  return error;
+}
+
+static
+size_t getQuadtreeNodesAtDepth(size_t depth) {
+  return (size_t)pow(4.0, (double)depth);
+}
+
+enum BfError
+bfGetQuadtreeIndexRange(BfQuadtree const *tree,
+                        size_t depth, size_t node_index,
+                        size_t *num_indices, size_t **indices)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  size_t nodes_at_depth = pow(4.0, depth);
+  if (node_index >= nodes_at_depth)
+    return error | BF_ERROR_INVALID_ARGUMENTS;
+
+  BfQuadtreeNode *node = tree->root;
+  *num_indices = tree->num_points;
+  *indices = tree->perm;
+
+  size_t i, r = node_index;
+
+  do {
+    nodes_at_depth /= 4;
+    i = r/nodes_at_depth;
+    r = r % nodes_at_depth;
+
+    *num_indices = node->offset[i + 1] - node->offset[i];
+    *indices += node->offset[i];
+
+    node = node->child[i];
+    if (!node) {
+      assert(*num_indices == 0);
+      return error | BF_ERROR_INVALID_ARGUMENTS | BF_ERROR_RUNTIME_ERROR;
+    }
+  } while (--depth > 0);
 
   return error;
 }

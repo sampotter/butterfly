@@ -2,7 +2,9 @@
 
 #include "quadtree.h"
 
-#define MAX_LEAF_SIZE 1
+// This is a quick and simple example where we load a set of
+// two-dimensional points from a binary file, build a quadtree on
+// them, and test some basic quadtree ops.
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -33,6 +35,8 @@ int main(int argc, char const *argv[]) {
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, num_points, points);
+
+  printf("quadtree depth: %lu\n", tree.depth);
 
   // Clean up
   free(points);

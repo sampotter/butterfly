@@ -20,8 +20,15 @@ struct BfQuadtree {
   size_t *perm;
 
   BfQuadtreeNode *root;
+
+  size_t depth;
 };
 
 enum BfError
 bfInitQuadtreeFromPoints(BfQuadtree *tree,
                          size_t num_points, double const (*points)[2]);
+
+enum BfError
+bfGetQuadtreeIndexRange(BfQuadtree const *tree,
+                        size_t level, size_t i,
+                        size_t *num_indices, size_t **indices);
