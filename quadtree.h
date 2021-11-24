@@ -10,11 +10,12 @@ typedef struct BfQuadtree BfQuadtree;
 typedef struct BfQuadtreeNode BfQuadtreeNode;
 
 enum BfQuadtreeNodeFlags {
-  BF_QUADTREE_NODE_FLAG_ROOT = 0,
+  BF_QUADTREE_NODE_FLAG_NONE = 0,
   BF_QUADTREE_NODE_FLAG_CHILD_0 = 1 << 0,
   BF_QUADTREE_NODE_FLAG_CHILD_1 = 1 << 1,
   BF_QUADTREE_NODE_FLAG_CHILD_2 = 1 << 2,
-  BF_QUADTREE_NODE_FLAG_CHILD_3 = 1 << 3
+  BF_QUADTREE_NODE_FLAG_CHILD_3 = 1 << 3,
+  BF_QUADTREE_NODE_FLAG_ROOT = 1 << 4
 };
 
 struct BfQuadtreeNode {
@@ -68,5 +69,13 @@ enum BfError
 bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
                          size_t *num_indices, size_t **indices);
 
+BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
+
+bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
+
+BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
+
 enum BfError
-bfGetQuadtreeNodeBoundingBox(BfQuadtreeNode const *node, BfBbox2 *bbox);
+bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
+                        enum BfError (*func)(BfQuadtreeNode const *, void *),
+                        void *arg);

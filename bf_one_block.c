@@ -5,8 +5,11 @@
 #include "mat.h"
 #include "quadtree.h"
 
-static void bf_one_block(BfQuadtree const *tree) {
+static void bf_one_block(BfQuadtree const *tree, double k) {
   enum BfError error;
+
+  /* Get source and target nodes from quadtree and check that their
+   * indices are OK */
 
   size_t src_depth = 3, src_node_index = 20, src_num_inds, *src_inds;
   size_t tgt_depth = 3, tgt_node_index = 16*3 + 4*3 + 2, tgt_num_inds, *tgt_inds;
@@ -23,9 +26,15 @@ static void bf_one_block(BfQuadtree const *tree) {
          src_node->bbox.min[0], src_node->bbox.max[0],
          src_node->bbox.min[1], src_node->bbox.max[1]);
   printf("- indices:");
-  for (size_t i = 0; i < src_num_inds - 1; ++i)
-    printf(" %lu,", src_inds[i]);
-  printf(" %lu\n", src_inds[src_num_inds - 1]);
+  if (src_num_inds > 10) {
+    for (size_t i = 0; i < 10; ++i)
+      printf(" %lu,", src_inds[i]);
+    printf(" ...\n");
+  } else {
+    for (size_t i = 0; i < src_num_inds - 1; ++i)
+      printf(" %lu,", src_inds[i]);
+    printf(" %lu\n", src_inds[src_num_inds - 1]);
+  }
 
   for (size_t i = 0; i < src_num_inds; ++i)
     assert(bfBbox2ContainsPoint(&src_node->bbox, tree->points[src_inds[i]]));
@@ -42,9 +51,15 @@ static void bf_one_block(BfQuadtree const *tree) {
          tgt_node->bbox.min[0], tgt_node->bbox.max[0],
          tgt_node->bbox.min[1], tgt_node->bbox.max[1]);
   printf("- indices:");
-  for (size_t i = 0; i < tgt_num_inds - 1; ++i)
-    printf(" %lu,", tgt_inds[i]);
-  printf(" %lu\n", tgt_inds[tgt_num_inds - 1]);
+  if (tgt_num_inds > 10) {
+    for (size_t i = 0; i < 10; ++i)
+      printf(" %lu,", tgt_inds[i]);
+    printf(" ...\n");
+  } else {
+    for (size_t i = 0; i < tgt_num_inds - 1; ++i)
+      printf(" %lu,", tgt_inds[i]);
+    printf(" %lu\n", tgt_inds[tgt_num_inds - 1]);
+  }
 
   for (size_t i = 0; i < tgt_num_inds; ++i)
     assert(bfBbox2ContainsPoint(&tgt_node->bbox, tree->points[tgt_inds[i]]));
@@ -61,9 +76,43 @@ static void bf_one_block(BfQuadtree const *tree) {
     row = (BfComplex *)mat.data + i*mat.shape[1];
     for (size_t j = 0; j < mat.shape[1]; ++j) {
       row[j] = bfHelm2GetKernelValue(
-        tree->points[tgt_inds[i]], tree->points[src_inds[j]]);
+        tree->points[tgt_inds[i]], tree->points[src_inds[j]], k);
     }
   }
+
+  BfSize num_bytes;
+  bfMatNumBytes(&mat, &num_bytes);
+
+  printf("computed groundtruth subblock of kernel matrix:\n");
+  printf("- rows: %lu\n", mat.shape[0]);
+  printf("- columns: %lu\n", mat.shape[1]);
+  printf("- size: %1.2f MB\n", ((double)num_bytes)/(1024*1024));
+
+  /* Traverse leaves below source node at finest level */
+
+  // TODO: what do we do when the leaves aren't all at the same
+  // height?
+
+  BfCircle2 tgt_circ = bfGetQuadtreeNodeBoundingCircle(tgt_node);
+
+  enum BfError print(BfQuadtreeNode const *node, void *arg) {
+    (void)arg;
+
+    BfCircle2 src_leaf_circ = bfGetQuadtreeNodeBoundingCircle(node);
+
+    BfReal rank_estimate = bfHelm2RankEstForTwoCircles(
+      tgt_circ, src_leaf_circ, k, 1, 1e-15);
+
+    printf("[%p] depth: %lu, rank: %lu\n",
+           node, bfQuadtreeNodeDepth(node), rank_estimate);
+
+    return BF_ERROR_NO_ERROR;
+  }
+
+  printf("src nodes:\n");
+  bfMapQuadtreeNodeLeaves(src_node, print, NULL);
+
+  /* Clean up */
 
   bfFreeMat(&mat);
 }
@@ -98,7 +147,9 @@ int main(int argc, char const *argv[]) {
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, num_points, points);
 
-  bf_one_block(&tree);
+  BfReal k = 3000;
+
+  bf_one_block(&tree, k);
 
   // Clean up
   free(points);

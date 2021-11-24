@@ -328,3 +328,53 @@ bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
 
   return error;
 }
+
+BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node)
+{
+  BfReal const *min = node->bbox.min, *max = node->bbox.max;
+
+  BfCircle2 circ;
+  circ.r = hypot(max[0] - min[0], max[1] - min[1])/2;
+  circ.center[0] = (min[0] + max[0])/2;
+  circ.center[1] = (min[1] + max[1])/2;
+
+  return circ;
+}
+
+bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node) {
+  return node->child[0] == NULL
+      && node->child[1] == NULL
+      && node->child[2] == NULL
+      && node->child[3] == NULL;
+}
+
+BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node) {
+  if (node->flags & BF_QUADTREE_NODE_FLAG_ROOT)
+    return 0;
+  else
+    return 1 + bfQuadtreeNodeDepth(node->parent);
+}
+
+enum BfError
+bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
+                        enum BfError (*func)(BfQuadtreeNode const *, void *),
+                        void *arg)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  if (bfQuadtreeNodeIsLeaf(node)) {
+    error |= func(node, arg);
+    return error;
+  }
+
+  for (BfSize i = 0; i < 4; ++i) {
+    if (node->child[i] == NULL)
+      continue;
+
+    error = bfMapQuadtreeNodeLeaves(node->child[i], func, arg);
+    if (error)
+      return error;
+  }
+
+  return error;
+}

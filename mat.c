@@ -1,7 +1,6 @@
 #include "mat.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 BfSize bfMatSize(BfMat const *mat)
 {
@@ -9,6 +8,20 @@ BfSize bfMatSize(BfMat const *mat)
   for (BfSize i = 0; i < mat->ndim; ++i)
     size *= mat->shape[i];
   return size;
+}
+
+enum BfError bfMatNumBytes(BfMat const *mat, BfSize *num_bytes)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  BfSize dtype_size;
+  error |= bfSizeOfDtype(mat->dtype, &dtype_size);
+  if (error)
+    return error;
+
+  *num_bytes = dtype_size*bfMatSize(mat);
+
+  return error;
 }
 
 enum BfError bfFreeMat(BfMat *mat)
@@ -22,15 +35,17 @@ bfMakeEmptyMat(BfMat *mat,
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  mat->dtype = dtype;
-  mat->ndim = ndim;
-
-  memcpy(mat->shape, shape, sizeof(BfSize)*ndim);
-
   BfSize dtype_size;
   error |= bfSizeOfDtype(dtype, &dtype_size);
   if (error)
     return error;
+
+  mat->dtype = dtype;
+  mat->ndim = ndim;
+
+  mat->shape = malloc(sizeof(BfSize)*ndim);
+  for (BfSize i = 0; i < ndim; ++i)
+    mat->shape[i] = shape[i];
 
   mat->data = malloc(dtype_size*bfMatSize(mat));
 }

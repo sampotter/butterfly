@@ -1,4 +1,5 @@
 CFLAGS := ${CFLAGS} -g -O0 -std=gnu99 -DBF_DEBUG -DBF_DOUBLE -lm
+CFLAGS := ${CFLAGS} -lopenblas
 
 all:
 	$(CC) $(CFLAGS) -c dtype.c
