@@ -1,9 +1,13 @@
-CFLAGS := ${CFLAGS} -std=c99 -g -DBF_DEBUG -lm
+CFLAGS := ${CFLAGS} -g -O0 -std=gnu99 -DBF_DEBUG -DBF_DOUBLE -lm
 
 all:
+	$(CC) $(CFLAGS) -c dtype.c
+	$(CC) $(CFLAGS) -c geom.c
+	$(CC) $(CFLAGS) -c helm2.c
+	$(CC) $(CFLAGS) -c mat.c
 	$(CC) $(CFLAGS) -c quadtree.c
 	$(CC) $(CFLAGS) -c spec.c
 	$(CC) $(CFLAGS) butterfly.c -o butterfly quadtree.o spec.o
 
-	$(CC) $(CFLAGS) bf_one_block.c -o bf_one_block quadtree.o
-	$(CC) $(CFLAGS) build_quadtree.c -o build_quadtree quadtree.o
+	$(CC) $(CFLAGS) bf_one_block.c -o bf_one_block dtype.o geom.o helm2.o mat.o quadtree.o spec.o
+	$(CC) $(CFLAGS) build_quadtree.c -o build_quadtree dtype.o geom.o helm2.o mat.o quadtree.o spec.o
