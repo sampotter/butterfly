@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "def.h"
 #include "error.h"
 
 typedef struct BfQuadtree BfQuadtree;
@@ -15,7 +16,7 @@ struct BfQuadtreeNode {
 
 struct BfQuadtree {
   size_t num_points;
-  double const (* points)[2];
+  BfPoint2 const *points;
 
   size_t *perm;
 
@@ -26,7 +27,7 @@ struct BfQuadtree {
 
 enum BfError
 bfInitQuadtreeFromPoints(BfQuadtree *tree,
-                         size_t num_points, double const (*points)[2]);
+                         size_t num_points, BfPoint2 const *points);
 
 enum BfError
 bfGetQuadtreeIndexRange(BfQuadtree const *tree,

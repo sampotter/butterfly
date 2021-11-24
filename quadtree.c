@@ -14,14 +14,13 @@
 
 static
 enum BfError
-recInitQuadtreeFromPoints(BfQuadtreeNode *node,
-                          double const (*points)[2],
+recInitQuadtreeFromPoints(BfQuadtreeNode *node, BfPoint2 const *points,
                           size_t perm_size, size_t *perm)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
   // compute mean of points indexed by perm
-  double mid[2] = {0, 0};
+  BfReal mid[2] = {0, 0};
   for (size_t i = 0, j; i < perm_size; ++i) {
     j = perm[i];
     mid[0] += points[j][0];
@@ -171,7 +170,7 @@ size_t getQuadtreeNodeDepth(BfQuadtreeNode const *node,
 
 enum BfError
 bfInitQuadtreeFromPoints(BfQuadtree *tree,
-                         size_t num_points, double const (*points)[2])
+                         size_t num_points, BfPoint2 const *points)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
@@ -195,12 +194,11 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree,
 
 static
 size_t getQuadtreeNodesAtDepth(size_t depth) {
-  return (size_t)pow(4.0, (double)depth);
+  return (size_t)pow(4.0, (BfReal)depth);
 }
 
 enum BfError
-bfGetQuadtreeIndexRange(BfQuadtree const *tree,
-                        size_t depth, size_t node_index,
+bfGetQuadtreeIndexRange(BfQuadtree const *tree, size_t depth, size_t node_index,
                         size_t *num_indices, size_t **indices)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
