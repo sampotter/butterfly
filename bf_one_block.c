@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "helm2.h"
@@ -6,8 +7,6 @@
 #include "quadtree.h"
 
 static void bf_one_block(BfQuadtree const *tree, double k) {
-  enum BfError error;
-
   /* Get source and target nodes from quadtree and check that their
    * indices are OK */
 
@@ -69,7 +68,7 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
 
   BfMat mat;
   BfSize shape[] = {tgt_num_inds, src_num_inds};
-  bfMakeEmptyMat(&mat, BF_DTYPE_COMPLEX, 2, shape);
+  bfInitEmptyMat(&mat, BF_DTYPE_COMPLEX, 2, shape);
 
   BfComplex *row;
   for (size_t i = 0; i < mat.shape[0]; ++i) {
@@ -103,8 +102,34 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
     BfReal rank_estimate = bfHelm2RankEstForTwoCircles(
       tgt_circ, src_leaf_circ, k, 1, 1e-15);
 
-    printf("[%p] depth: %lu, rank: %lu\n",
-           node, bfQuadtreeNodeDepth(node), rank_estimate);
+    BfSize p = (BfSize)ceil(rank_estimate);
+    printf("[%p] depth: %lu, rank: %lu\n", node, bfQuadtreeNodeDepth(node), p);
+
+    BfSize pts_shape[] = {p, 2}, K_shape[] = {p, p};
+
+    BfMat src_pts;
+    bfInitEmptyMat(&src_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfSamplePointsOnCircle2(&src_leaf_circ, &src_pts);
+
+    BfMat tgt_pts;
+    bfInitEmptyMat(&tgt_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfSamplePointsOnCircle2(&tgt_circ, &tgt_pts);
+
+    BfMat K;
+    bfInitEmptyMat(&K, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, K_shape);
+
+    bfHelm2KernelMatrixFromPoints(&K, &src_pts, &tgt_pts, k);
+
+    BfMat U, S, Vt;
+    bfInitEmptySvdMats(&K, &U, &S, &Vt);
+    bfComputeMatSvd(&K, &U, &S, &Vt);
+
+    bfFreeMat(&src_pts);
+    bfFreeMat(&tgt_pts);
+    bfFreeMat(&K);
+    bfFreeMat(&U);
+    bfFreeMat(&S);
+    bfFreeMat(&Vt);
 
     return BF_ERROR_NO_ERROR;
   }

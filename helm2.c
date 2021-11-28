@@ -20,3 +20,23 @@ bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
 
   return BF_TWO_PI*k*circ1.r*circ2.r/(R - circ1.r - circ2.r) - C*log10(eps);
 }
+
+enum BfError
+bfHelm2KernelMatrixFromPoints(BfMat *K, BfMat const *X, BfMat const *Y, BfReal k)
+{
+  BfSize m = K->shape[0], n = K->shape[1];
+
+  BfReal *x, *y;
+  BfComplex *row;
+
+  for (BfSize i = 0; i < m; ++i) {
+    x = ((BfReal *)X->data) + 2*i;
+    row = ((BfComplex *)K->data) + n*i;
+    for (BfSize j = 0; j < n; ++j) {
+      y = ((BfReal *)Y->data) + 2*j;
+      row[j] = bfHelm2GetKernelValue(x, y, k);
+    }
+  }
+
+  return BF_ERROR_NO_ERROR;
+}
