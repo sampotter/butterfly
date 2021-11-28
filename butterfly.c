@@ -10,7 +10,7 @@ static char doc[] = ""; // TODO: add some docs here when it makes sense
 static char args_doc[] = "EXAMPLE";
 
 static struct argp_option options[] = {
-  {"verbose", 'v', 0, 0, "Produce verbose output"},
+  {"verbose", 'v', 0, 0, "Produce verbose output", 0},
   {0}
 };
 
@@ -46,7 +46,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   return EXIT_SUCCESS;
 }
 
-static struct argp argp = {options, parse_opt, args_doc, doc};
+static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 
 int main(int argc, char *argv[]) {
   struct arguments arguments = {
