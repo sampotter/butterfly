@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdio.h>
 #include <string.h>
 
 #define SWAP(x, y) do {                         \
@@ -353,6 +352,42 @@ BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node) {
     return 0;
   else
     return 1 + bfQuadtreeNodeDepth(node->parent);
+}
+
+BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node) {
+  return node->offset[4];
+}
+
+BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node) {
+  while (node->flags & child_mask)
+    node = node->parent;
+  return node->parent;
+}
+
+/* Fill `X` with the points contained in `node`. They will be added in
+ * "quadtree order", so that they are permuted to match the points
+ * contained by `node`'s children. E.g., points `X[offset[0]]`, ...,
+ * `X[offset[1] - 1]` will correspond to the points returned by
+ * `bfGetQuadtreeFromNode(node->child[0])`, and in the same order. */
+enum BfError
+bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfMat *X)
+{
+  size_t num_points;
+  size_t *node_indices;
+  bfGetQuadtreeNodeIndices(node, &num_points, &node_indices);
+
+  if (X->shape[0] != num_points)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  BfQuadtree const *tree = bfGetQuadtreeFromNode(node);
+
+  for (BfSize i = 0; i < num_points; ++i) {
+    enum BfError error = bfSetMatRow(X, i, tree->points[node_indices[i]]);
+    if (error)
+      return error;
+  }
+
+  return BF_ERROR_NO_ERROR;
 }
 
 enum BfError

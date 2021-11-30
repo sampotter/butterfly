@@ -9,9 +9,12 @@ all:
 	$(CC) $(CFLAGS) -c quadtree.c
 	$(CC) $(CFLAGS) -c rand.c
 	$(CC) $(CFLAGS) -c spec.c
-	$(CC) $(CFLAGS) butterfly.c -o butterfly quadtree.o spec.o
 	$(CC) $(CFLAGS) -c splitmix64.c
 	$(CC) $(CFLAGS) -c xoshiro256plus.c
 
-	$(CC) $(CFLAGS) bf_one_block.c -o bf_one_block dtype.o geom.o helm2.o mat.o quadtree.o spec.o
-	$(CC) $(CFLAGS) build_quadtree.c -o build_quadtree dtype.o geom.o helm2.o mat.o quadtree.o spec.o
+	$(CC) $(CFLAGS) butterfly.c -o butterfly dtype.o geom.o helm2.o mat.o \
+		quadtree.o rand.o spec.o splitmix64.o xoshiro256plus.o
+	$(CC) $(CFLAGS) bf_one_block.c -o bf_one_block dtype.o geom.o helm2.o \
+		mat.o quadtree.o rand.o spec.o splitmix64.o xoshiro256plus.o
+	$(CC) $(CFLAGS) build_quadtree.c -o build_quadtree dtype.o geom.o \
+		helm2.o mat.o rand.o quadtree.o spec.o splitmix64.o xoshiro256plus.o

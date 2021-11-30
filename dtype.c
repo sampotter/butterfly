@@ -12,3 +12,7 @@ enum BfError bfSizeOfDtype(enum BfDtypes dtype, BfSize *nbytes) {
     return BF_ERROR_INVALID_ARGUMENTS;
   };
 }
+
+bool bfDtypeIsValid(enum BfDtypes dtype) {
+  return dtype & (BF_DTYPE_REAL | BF_DTYPE_COMPLEX);
+}

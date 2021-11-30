@@ -5,6 +5,7 @@
 #include "def.h"
 #include "error.h"
 #include "geom.h"
+#include "mat.h"
 
 typedef struct BfQuadtree BfQuadtree;
 typedef struct BfQuadtreeNode BfQuadtreeNode;
@@ -26,8 +27,17 @@ struct BfQuadtreeNode {
    * the parent node, which will be a `BfQuadtreeNode`. */
   void *parent;
 
-  size_t offset[5]; // offset[0] == 0 and offset[4] == size are
-                    // sentinel values
+  /* Index offsets for this node. These are relative to this node's
+   * parent. To find the absolute indices, we follow the parent
+   * pointer back to the root. The first and last entries hold
+   * sentinel values: offset[0] == 0 and offset[4] == size (the number
+   * of points contained in this node).
+   */
+  size_t offset[5];
+
+  /* Pointers to this node's children. If child[i] == NULL, then no
+   * points are contained in the corresponding quadtree box, and
+   * offset[i + 1] - offset[i] == 0 should hold. */
   BfQuadtreeNode *child[4];
 
   /* The bounding box for this quadtree node. All of the points
@@ -74,6 +84,13 @@ BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
 
 BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
+
+BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
+
+BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
+
+enum BfError
+bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfMat *X);
 
 enum BfError
 bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,

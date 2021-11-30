@@ -2,11 +2,19 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "error.h"
 #include "helm2.h"
 #include "mat.h"
+#include "rand.h"
 #include "quadtree.h"
 
 static void bf_one_block(BfQuadtree const *tree, double k) {
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  /* Seed the random number generators */
+
+  bfSeed(1234);
+
   /* Get source and target nodes from quadtree and check that their
    * indices are OK */
 
@@ -17,24 +25,6 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfGetQuadtreeNode(tree, src_depth, src_node_index, &src_node);
   bfGetQuadtreeNodeIndices(src_node, &src_num_inds, &src_inds);
 
-  printf("source node:\n");
-  printf("- depth: %lu\n", src_depth);
-  printf("- node index: %lu\n", src_node_index);
-  printf("- no. of indices: %lu\n", src_num_inds);
-  printf("- bbox: [%g, %g] x [%g, %g]\n",
-         src_node->bbox.min[0], src_node->bbox.max[0],
-         src_node->bbox.min[1], src_node->bbox.max[1]);
-  printf("- indices:");
-  if (src_num_inds > 10) {
-    for (size_t i = 0; i < 10; ++i)
-      printf(" %lu,", src_inds[i]);
-    printf(" ...\n");
-  } else {
-    for (size_t i = 0; i < src_num_inds - 1; ++i)
-      printf(" %lu,", src_inds[i]);
-    printf(" %lu\n", src_inds[src_num_inds - 1]);
-  }
-
   for (size_t i = 0; i < src_num_inds; ++i)
     assert(bfBbox2ContainsPoint(&src_node->bbox, tree->points[src_inds[i]]));
 
@@ -42,104 +32,167 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfGetQuadtreeNode(tree, tgt_depth, tgt_node_index, &tgt_node);
   bfGetQuadtreeNodeIndices(tgt_node, &tgt_num_inds, &tgt_inds);
 
-  printf("target node:\n");
-  printf("- depth: %lu\n", tgt_depth);
-  printf("- node index: %lu\n", tgt_node_index);
-  printf("- no. of indices: %lu\n", tgt_num_inds);
-  printf("- bbox: [%g, %g] x [%g, %g]\n",
-         tgt_node->bbox.min[0], tgt_node->bbox.max[0],
-         tgt_node->bbox.min[1], tgt_node->bbox.max[1]);
-  printf("- indices:");
-  if (tgt_num_inds > 10) {
-    for (size_t i = 0; i < 10; ++i)
-      printf(" %lu,", tgt_inds[i]);
-    printf(" ...\n");
-  } else {
-    for (size_t i = 0; i < tgt_num_inds - 1; ++i)
-      printf(" %lu,", tgt_inds[i]);
-    printf(" %lu\n", tgt_inds[tgt_num_inds - 1]);
-  }
-
   for (size_t i = 0; i < tgt_num_inds; ++i)
     assert(bfBbox2ContainsPoint(&tgt_node->bbox, tree->points[tgt_inds[i]]));
 
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
 
-  BfMat mat;
-  BfSize shape[] = {tgt_num_inds, src_num_inds};
-  bfInitEmptyMat(&mat, BF_DTYPE_COMPLEX, 2, shape);
+  BfSize m = bfQuadtreeNodeNumPoints(tgt_node);
+  BfSize n = bfQuadtreeNodeNumPoints(src_node);
 
-  BfComplex *row;
-  for (size_t i = 0; i < mat.shape[0]; ++i) {
-    row = (BfComplex *)mat.data + i*mat.shape[1];
-    for (size_t j = 0; j < mat.shape[1]; ++j) {
-      row[j] = bfHelm2GetKernelValue(
-        tree->points[tgt_inds[i]], tree->points[src_inds[j]], k);
-    }
-  }
+  BfMat tgt_pts;
+  bfInitEmptyMat(&tgt_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {m, 2});
+  bfGetQuadtreeNodePoints(tgt_node, &tgt_pts);
+
+  bfSaveMat(&tgt_pts, "tgt_pts.bin");
+  puts("wrote tgt_pts.bin");
+
+  BfMat src_pts;
+  bfInitEmptyMat(&src_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {n, 2});
+  bfGetQuadtreeNodePoints(src_node, &src_pts);
+
+  bfSaveMat(&src_pts, "src_pts.bin");
+  puts("wrote src_pts.bin");
+
+  BfMat Z_gt;
+  bfInitEmptyMat(&Z_gt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, n});
+  bfHelm2KernelMatrixFromPoints(&Z_gt, &src_pts, &tgt_pts, k);
 
   BfSize num_bytes;
-  bfMatNumBytes(&mat, &num_bytes);
+  bfMatNumBytes(&Z_gt, &num_bytes);
 
   printf("computed groundtruth subblock of kernel matrix:\n");
-  printf("- rows: %lu\n", mat.shape[0]);
-  printf("- columns: %lu\n", mat.shape[1]);
+  printf("- rows: %lu\n", Z_gt.shape[0]);
+  printf("- columns: %lu\n", Z_gt.shape[1]);
   printf("- size: %1.2f MB\n", ((double)num_bytes)/(1024*1024));
 
-  /* Traverse leaves below source node at finest level */
+  bfSaveMat(&Z_gt, "Z_gt.bin");
+  printf("wrote Z_gt.bin\n");
 
-  // TODO: what do we do when the leaves aren't all at the same
-  // height?
+  BfMat U_gt, S_gt, Vt_gt;
+  bfInitEmptySvdMats(&Z_gt, &U_gt, &S_gt, &Vt_gt);
+  bfComputeMatSvd(&Z_gt, &U_gt, &S_gt, &Vt_gt);
+  printf("computed SVD of groundtruth subblock\n");
 
+  bfSaveMat(&U_gt, "U_gt.bin");
+  bfSaveMat(&S_gt, "S_gt.bin");
+  bfSaveMat(&Vt_gt, "Vt_gt.bin");
+  printf("wrote U_gt.bin, S_gt.bin, and Vt_gt.bin\n");
+
+  /* Do a single stage of the bf fac and check the error */
+
+  BfCircle2 src_circ = bfGetQuadtreeNodeBoundingCircle(src_node);
   BfCircle2 tgt_circ = bfGetQuadtreeNodeBoundingCircle(tgt_node);
 
-  enum BfError print(BfQuadtreeNode const *node, void *arg) {
-    (void)arg;
+  BfReal p_hat;
+  error = bfHelm2RankEstForTwoCircles(src_circ, tgt_circ, k, 1, 1e-15, &p_hat);
+  assert(!error);
 
-    BfCircle2 src_leaf_circ = bfGetQuadtreeNodeBoundingCircle(node);
+  BfSize p = ceil(p_hat);
 
-    BfReal rank_estimate = bfHelm2RankEstForTwoCircles(
-      tgt_circ, src_leaf_circ, k, 1, 1e-15);
+  printf("rank estimate for single stage: p = %lu\n", p);
 
-    BfSize p = (BfSize)ceil(rank_estimate);
-    printf("[%p] depth: %lu, rank: %lu\n", node, bfQuadtreeNodeDepth(node), p);
+  BfMat src_circ_pts;
+  bfInitEmptyMat(&src_circ_pts,BF_DTYPE_REAL,BF_MAT_PROP_NONE,(BfSize[]){p,2});
+  bfSamplePointsOnCircle2(&src_circ, &src_circ_pts);
 
-    BfSize pts_shape[] = {p, 2}, K_shape[] = {p, p};
+  bfSaveMat(&src_circ_pts, "src_circ_pts.bin");
+  puts("wrote src_circ_pts.bin");
 
-    BfMat src_pts;
-    bfInitEmptyMat(&src_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
-    bfSamplePointsOnCircle2(&src_leaf_circ, &src_pts);
+  BfMat tgt_circ_pts;
+  bfInitEmptyMat(&tgt_circ_pts,BF_DTYPE_REAL,BF_MAT_PROP_NONE,(BfSize[]){p,2});
+  bfSamplePointsOnCircle2(&tgt_circ, &tgt_circ_pts);
 
-    BfMat tgt_pts;
-    bfInitEmptyMat(&tgt_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
-    bfSamplePointsOnCircle2(&tgt_circ, &tgt_pts);
+  bfSaveMat(&tgt_circ_pts, "tgt_circ_pts.bin");
+  puts("wrote tgt_circ_pts.bin");
 
-    BfMat K;
-    bfInitEmptyMat(&K, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, K_shape);
+  printf("computed Z1\n");
 
-    bfHelm2KernelMatrixFromPoints(&K, &src_pts, &tgt_pts, k);
+  BfMat Z1;
+  bfInitEmptyMat(&Z1, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, n});
+  error = bfHelm2KernelMatrixFromPoints(&Z1, &src_pts, &tgt_circ_pts, k);
+  assert(!error);
 
-    BfMat U, S, Vt;
-    bfInitEmptySvdMats(&K, &U, &S, &Vt);
-    bfComputeMatSvd(&K, &U, &S, &Vt);
+  printf("computed Z2\n");
 
-    bfFreeMat(&src_pts);
-    bfFreeMat(&tgt_pts);
-    bfFreeMat(&K);
-    bfFreeMat(&U);
-    bfFreeMat(&S);
-    bfFreeMat(&Vt);
+  BfMat Z2;
+  bfInitEmptyMat(&Z2, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, p});
+  error = bfHelm2KernelMatrixFromPoints(&Z2, &src_circ_pts, &tgt_circ_pts, k);
+  assert(!error);
 
-    return BF_ERROR_NO_ERROR;
-  }
+  printf("computed Z3\n");
 
-  printf("src nodes:\n");
-  bfMapQuadtreeNodeLeaves(src_node, print, NULL);
+  BfMat Z3;
+  bfInitEmptyMat(&Z3, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, p});
+  bfHelm2KernelMatrixFromPoints(&Z3, &src_circ_pts, &tgt_pts, k);
+
+  bfSaveMat(&Z1, "Z1.bin");
+  bfSaveMat(&Z2, "Z2.bin");
+  bfSaveMat(&Z3, "Z3.bin");
+
+  printf("wrote Z1.bin, Z2.bin, and Z3.bin\n");
+
+  // compute the SVD of Z2:
+
+  BfMat U2, S2, Vt2;
+  bfInitEmptySvdMats(&Z2, &U2, &S2, &Vt2);
+  bfComputeMatSvd(&Z2, &U2, &S2, &Vt2);
+
+  bfSaveMat(&U2, "U2.bin");
+  bfSaveMat(&S2, "S2.bin");
+  bfSaveMat(&Vt2, "Vt2.bin");
+
+  // check that b_gt = Z_gt*x and b = Z3*(Z2\(Z1*x) are close:
+
+  BfSize num_trials = 10;
+
+  BfMat x;
+  bfInitEmptyMat(&x,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){n,num_trials});
+  bfFillMatRandn(&x);
+
+  BfMat b_gt;
+  bfInitEmptyMat(&b_gt,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){m,num_trials});
+  bfMatMul(&Z_gt, &x, &b_gt);
+
+  bfSaveMat(&b_gt, "b_gt.bin");
+
+  puts("wrote b_gt.bin");
+
+  BfMat b1, b2, b;
+  bfInitEmptyMat(&b1,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){p,num_trials});
+  bfInitEmptyMat(&b2,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){p,num_trials});
+  bfInitEmptyMat(&b,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){m,num_trials});
+
+  error |= bfMatMul(&Z1, &x, &b1); // b1 = Z1*x
+  error |= bfMatSolve(&U2, &b1, &b2); // b2 = U2\b1
+  error |= bfMatSolve(&S2, &b2, &b1); // b1 = S2\b2
+  error |= bfMatSolve(&Vt2, &b1, &b2); // b2 = Vt2\b1
+  error |= bfMatMul(&Z3, &b2, &b); // b = Z3*b2
+  assert(!error);
+
+  bfSaveMat(&b, "b.bin");
+
+  puts("wrote b.bin");
 
   /* Clean up */
 
-  bfFreeMat(&mat);
+  bfFreeMat(&tgt_pts);
+  bfFreeMat(&src_pts);
+  bfFreeMat(&Z_gt);
+  bfFreeMat(&U_gt);
+  bfFreeMat(&S_gt);
+  bfFreeMat(&Vt_gt);
+  bfFreeMat(&src_circ_pts);
+  bfFreeMat(&tgt_circ_pts);
+  bfFreeMat(&Z1);
+  bfFreeMat(&Z2);
+  bfFreeMat(&Z3);
+  bfFreeMat(&U2);
+  bfFreeMat(&S2);
+  bfFreeMat(&Vt2);
+  bfFreeMat(&x);
+  bfFreeMat(&b_gt);
 }
 
 int main(int argc, char const *argv[]) {
