@@ -142,6 +142,7 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfSaveMat(&U2, "U2.bin");
   bfSaveMat(&S2, "S2.bin");
   bfSaveMat(&Vt2, "Vt2.bin");
+  puts("wrote U2.bin, S2.bin, and Vt2.bin");
 
   // check that b_gt = Z_gt*x and b = Z3*(Z2\(Z1*x) are close:
 
@@ -150,6 +151,9 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   BfMat x;
   bfInitEmptyMat(&x,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){n,num_trials});
   bfFillMatRandn(&x);
+
+  bfSaveMat(&x, "x.bin");
+  puts("wrote x.bin");
 
   BfMat b_gt;
   bfInitEmptyMat(&b_gt,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){m,num_trials});
