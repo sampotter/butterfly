@@ -2,7 +2,6 @@
 
 #include "def.h"
 #include "dtype.h"
-#include "vec.h"
 
 enum BfMatProps {
   BF_MAT_PROP_NONE = 0,
