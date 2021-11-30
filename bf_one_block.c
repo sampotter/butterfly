@@ -176,7 +176,6 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   assert(!error);
 
   bfSaveMat(&b, "b.bin");
-
   puts("wrote b.bin");
 
   /* Clean up */
@@ -196,6 +195,9 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfFreeMat(&S2);
   bfFreeMat(&Vt2);
   bfFreeMat(&x);
+  bfFreeMat(&b);
+  bfFreeMat(&b1);
+  bfFreeMat(&b2);
   bfFreeMat(&b_gt);
 }
 

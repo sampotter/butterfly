@@ -207,7 +207,7 @@ realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
       bfSetMatRow(C, i, row);
       bfGetMatRow(C, i, (void **)&row);
       a = *((BfReal const *)A->data + i);
-      cblas_zdscal(n, 1/a, row, sizeof(BfComplex));
+      cblas_zdscal(n, 1/a, row, 1);
     }
 
     return BF_ERROR_NO_ERROR;
@@ -223,7 +223,7 @@ complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
     return BF_ERROR_INVALID_ARGUMENTS;
 
   if (A->props & BF_MAT_PROP_UNITARY) {
-    BfSize m = A->shape[0], n = B->shape[1], k = A->shape[1];
+    BfSize m = A->shape[1], n = B->shape[1], k = A->shape[0];
 
     BfComplex alpha = 1, beta = 0;
 
