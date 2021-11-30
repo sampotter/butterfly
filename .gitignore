@@ -1,5 +1,10 @@
+*.bin
 *.o
+*.txt
 *~
 GPATH
 GRTAGS
 GTAGS
+vgcore.*
+*.pdf
+*.png
