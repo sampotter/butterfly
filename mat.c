@@ -312,6 +312,10 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   lapack_int m = A->shape[0];
   lapack_int n = A->shape[1];
 
+  /* zgesvd will overwrite A, so make a copy of it here for input */
+  BfComplex *A_data_copy = malloc(m*n*sizeof(BfComplex));
+  memcpy(A_data_copy, A->data, m*n*sizeof(BfComplex));
+
   /* output array which contains information about superdiagonal
    * elements which didn't converge
    *
@@ -320,7 +324,7 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 
   /* compute the SVD */
   lapack_int info = LAPACKE_zgesvd(
-    LAPACK_ROW_MAJOR, 'S', 'S', m, n, A->data, m, S->data, U->data, m,
+    LAPACK_ROW_MAJOR, 'S', 'S', m, n, A_data_copy, m, S->data, U->data, m,
     Vt->data, n, superb);
 
   /* check for invalid arguments */
@@ -340,6 +344,7 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   Vt->props |= BF_MAT_PROP_UNITARY;
 
 cleanup:
+  free(A_data_copy);
   free(superb);
 
   return error;
