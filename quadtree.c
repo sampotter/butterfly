@@ -386,6 +386,78 @@ static enum BfError clearDirtyBit(BfQuadtreeNode *node, void *arg) {
 
 static
 enum BfError
+fillWithLrLevelOrderNodePtrs(BfPtrArray *nodes, BfQuadtreeNode *current)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  /* insert root node into array */
+  current->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
+  error = bfPtrArrayAppend(nodes, current);
+  if (error)
+    return error;
+
+  /* insert all nodes beneath the initial node into nodes */
+  BfSize i = 0;
+  while (i < bfPtrArraySize(nodes)) {
+    bfPtrArrayGet(nodes, i, (BfPtr *)&current);
+    for (BfSize j = 0; j < 4; ++j) {
+      if (current->child[j] == NULL)
+        continue;
+      current->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
+      error = bfPtrArrayAppend(nodes, current->child[j]);
+      if (error)
+        return error;
+    }
+    ++i;
+  }
+
+  return error;
+}
+
+static
+enum BfError
+findLevelOrderOffsets(BfPtrArray *nodes, BfSize *num_levels, BfSize **offsets)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  BfQuadtreeNode *prev, *node;
+
+  /* start by computing the number of levels */
+
+  BfSize min_depth;
+  bfPtrArrayGetFirst(nodes, (BfPtr *)&prev);
+  min_depth = prev->depth;
+
+  BfSize max_depth;
+  bfPtrArrayGetLast(nodes, (BfPtr *)&node);
+  max_depth = node->depth;
+
+  assert(max_depth >= min_depth);
+  *num_levels = max_depth - min_depth + 1;
+
+  /* allocate space for offsets */
+  *offsets = malloc((*num_levels + 1)*sizeof(BfSize));
+  if (*offsets == NULL)
+    return BF_ERROR_MEMORY_ERROR;
+
+  /* set sentinel values */
+  (*offsets)[0] = 0;
+  (*offsets)[*num_levels] = bfPtrArraySize(nodes);
+
+  /* find each index in the level order where the depth increases */
+  BfSize i = 1;
+  for (BfSize j = 1; j < bfPtrArraySize(nodes); ++j) {
+    bfPtrArrayGet(nodes, j, (BfPtr *)&node);
+    if (node->depth != prev->depth)
+      (*offsets)[i++] = j;
+    prev = node;
+  }
+
+  return error;
+}
+
+static
+enum BfError
 mapQuadtreeNodesLrLevelOrder(BfQuadtreeNode *node,
                              BfQuadtreeNodeFunc func, void *arg)
 {
@@ -397,27 +469,9 @@ mapQuadtreeNodesLrLevelOrder(BfQuadtreeNode *node,
   if (error)
     goto cleanup;
 
-  /* insert root node into array */
-  node->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
-  error = bfPtrArrayAppend(&queue, node);
+  error = fillWithLrLevelOrderNodePtrs(&queue, node);
   if (error)
     goto cleanup;
-
-  BfSize i = 0;
-  BfQuadtreeNode *current;
-
-  while (i < bfPtrArraySize(&queue)) {
-    bfPtrArrayGet(&queue, i, (BfPtr *)&current);
-    for (BfSize j = 0; j < 4; ++j) {
-      if (current->child[j] == NULL)
-        continue;
-      current->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
-      error = bfPtrArrayAppend(&queue, current->child[j]);
-      if (error)
-        goto cleanup;
-    }
-    ++i;
-  }
 
   error = bfMapPtrArray(&queue, (BfPtrFunc)func, arg);
 
@@ -441,65 +495,21 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtreeNode *node,
   if (error)
     goto cleanup;
 
-  /* insert root node into array */
-  node->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
-  error = bfPtrArrayAppend(&queue, node);
+  /* fill the queue with the level order of the nodes */
+  fillWithLrLevelOrderNodePtrs(&queue, node);
+
+  /* get the offsets to each level */
+  BfSize num_levels, *offsets;
+  error = findLevelOrderOffsets(&queue, &num_levels, &offsets);
   if (error)
     goto cleanup;
-
-  BfQuadtreeNode *prev, *current;
-
-  /* construct a queue of nodes in level order */
-  BfSize i = 0;
-  while (i < bfPtrArraySize(&queue)) {
-    bfPtrArrayGet(&queue, i, (BfPtr *)&current);
-    for (BfSize j = 0; j < 4; ++j) {
-      if (current->child[j] == NULL)
-        continue;
-      current->flags |= BF_QUADTREE_NODE_FLAG_DIRTY;
-      error = bfPtrArrayAppend(&queue, current->child[j]);
-      if (error)
-        goto cleanup;
-    }
-    ++i;
-  }
-
-  BfSize min_depth, max_depth, num_levels;
-
-  bfPtrArrayGetFirst(&queue, (BfPtr *)&prev);
-  min_depth = prev->depth;
-
-  bfPtrArrayGetLast(&queue, (BfPtr *)&current);
-  max_depth = current->depth;
-
-  assert(max_depth >= min_depth);
-  num_levels = max_depth - min_depth + 1;
-
-  BfSize *level_inds = malloc((num_levels + 1)*sizeof(BfSize));
-  if (level_inds == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
-    goto cleanup;
-  }
-
-  /* set sentinel values */
-  level_inds[0] = 0;
-  level_inds[num_levels] = bfPtrArraySize(&queue);
-
-  /* find each index in the level order where the depth increases */
-  i = 1;
-  for (BfSize j = 1; j < bfPtrArraySize(&queue); ++j) {
-    bfPtrArrayGet(&queue, j, (BfPtr *)&current);
-    if (current->depth != prev->depth)
-      level_inds[i++] = j;
-    prev = current;
-  }
 
   /* now map each node in reverse level order, with each level
    * enumerated from left to right */
   for (BfSize j = num_levels; j > 0; --j) {
-    for (BfSize k = level_inds[j - 1]; k < level_inds[j]; ++k) {
-      bfPtrArrayGet(&queue, k, (BfPtr *)&current);
-      error = func(current, arg);
+    for (BfSize k = offsets[j - 1]; k < offsets[j]; ++k) {
+      bfPtrArrayGet(&queue, k, (BfPtr *)&node);
+      error = func(node, arg);
       if (error)
         goto cleanup;
     }
@@ -508,7 +518,7 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtreeNode *node,
 cleanup:
   bfMapPtrArray(&queue, (BfPtrFunc)clearDirtyBit, arg);
   bfFreePtrArray(&queue);
-  free(level_inds);
+  free(offsets);
 
   return error;
 }
@@ -548,4 +558,172 @@ bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
   }
 
   return error;
+}
+
+typedef struct LrLevelOrderInfo {
+  BfSize current_level, num_levels, *offsets;
+} LrLevelOrderInfo;
+
+static
+enum BfError
+initLrLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
+                                  BfQuadtreeNode *node)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  error = bfInitPtrArrayWithDefaultCapacity(&iter->nodes);
+  if (error)
+    return error;
+
+  error = fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
+  if (error)
+    return error;
+
+  LrLevelOrderInfo *info = malloc(sizeof(LrLevelOrderInfo));
+  iter->aux = info;
+
+  error = findLevelOrderOffsets(&iter->nodes,&info->num_levels,&info->offsets);
+  if (error)
+    return error;
+
+  info->current_level = 0;
+
+  error = bfPtrArrayGetRangeView(
+    &iter->nodes,
+    info->offsets[info->current_level],
+    info->offsets[info->current_level + 1],
+    &iter->level_nodes);
+
+  return error;
+}
+
+static
+enum BfError
+initLrReverseLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
+                                         BfQuadtreeNode *node)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  error = bfInitPtrArrayWithDefaultCapacity(&iter->nodes);
+  if (error)
+    return error;
+
+  error = fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
+  if (error)
+    return error;
+
+  LrLevelOrderInfo *info = malloc(sizeof(LrLevelOrderInfo));
+  iter->aux = info;
+
+  error = findLevelOrderOffsets(&iter->nodes,&info->num_levels,&info->offsets);
+  if (error)
+    return error;
+
+  info->current_level = info->num_levels;
+
+  error = bfPtrArrayGetRangeView(
+    &iter->nodes,
+    info->offsets[info->current_level - 1],
+    info->offsets[info->current_level],
+    &iter->level_nodes);
+
+  return error;
+}
+
+enum BfError
+bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
+                        enum BfTreeTraversals traversal, BfQuadtreeNode *node)
+{
+  iter->traversal = traversal;
+
+  switch (iter->traversal) {
+  case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
+    return initLrLevelOrderQuadtreeLevelIter(iter, node);
+  case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER:
+    return initLrReverseLevelOrderQuadtreeLevelIter(iter, node);
+  default:
+    return BF_ERROR_INVALID_ARGUMENTS;
+  }
+}
+
+enum BfError
+lrLevelOrderQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter)
+{
+  LrLevelOrderInfo *info = iter->aux;
+
+  ++info->current_level;
+
+  bfMakeEmptyPtrArrayView(&iter->level_nodes);
+
+  return info->current_level == info->num_levels ?
+    BF_ERROR_NO_ERROR :
+    bfPtrArrayGetRangeView(
+      &iter->nodes,
+      info->offsets[info->current_level],
+      info->offsets[info->current_level + 1],
+      &iter->level_nodes);
+}
+
+enum BfError
+lrReverseLevelOrderQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter)
+{
+  LrLevelOrderInfo *info = iter->aux;
+
+  bfMakeEmptyPtrArrayView(&iter->level_nodes);
+
+  enum BfError error = info->current_level == 0 ?
+    BF_ERROR_NO_ERROR :
+    bfPtrArrayGetRangeView(
+      &iter->nodes,
+      info->offsets[info->current_level - 1],
+      info->offsets[info->current_level],
+      &iter->level_nodes);
+
+  if (info->current_level > 0)
+    --info->current_level;
+
+  return error;
+}
+
+bool
+bfQuadtreeLevelIterIsDone(BfQuadtreeLevelIter const *iter)
+{
+  return bfPtrArrayIsEmpty(&iter->level_nodes);
+}
+
+enum BfError
+bfQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter)
+{
+  switch (iter->traversal) {
+  case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
+    return lrLevelOrderQuadtreeLevelIterNext(iter);
+  case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER:
+    return lrReverseLevelOrderQuadtreeLevelIterNext(iter);
+  default:
+    return BF_ERROR_INVALID_ARGUMENTS;
+  }
+}
+
+static
+enum BfError
+freeLrLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter) {
+  free((LrLevelOrderInfo *)iter->aux);
+
+  iter->aux = NULL;
+
+  return BF_ERROR_NO_ERROR;
+}
+
+enum BfError
+bfFreeQuadtreeLevelIter(BfQuadtreeLevelIter *iter)
+{
+  bfFreePtrArray(&iter->nodes);
+
+  switch (iter->traversal) {
+  case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
+  case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER:
+    return freeLrLevelOrderQuadtreeLevelIter(iter);
+  default:
+    return BF_ERROR_INVALID_ARGUMENTS;
+  }
 }

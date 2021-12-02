@@ -6,6 +6,8 @@
 enum BfError
 bfInitPtrArray(BfPtrArray *arr, BfSize capacity)
 {
+  arr->flags = BF_PTR_ARRAY_FLAG_NONE;
+
   arr->data = malloc(capacity*sizeof(BfPtr));
   if (arr->data == NULL)
     return BF_ERROR_MEMORY_ERROR;
@@ -22,6 +24,14 @@ bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr)
   return bfInitPtrArray(arr, BF_ARRAY_DEFAULT_CAPACITY);
 }
 
+void bfMakeEmptyPtrArrayView(BfPtrArray *arr)
+{
+  arr->flags = BF_PTR_ARRAY_FLAG_NONE;
+  arr->data = NULL;
+  arr->capacity = 0;
+  arr->num_elts = 0;
+}
+
 enum BfError
 bfFreePtrArray(BfPtrArray *arr)
 {
@@ -32,6 +42,10 @@ bfFreePtrArray(BfPtrArray *arr)
 
 BfSize bfPtrArraySize(BfPtrArray const *arr) {
   return arr->num_elts;
+}
+
+bool bfPtrArrayIsEmpty(BfPtrArray const *arr) {
+  return arr->num_elts == 0;
 }
 
 enum BfError extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
@@ -93,6 +107,24 @@ bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr)
     return BF_ERROR_INVALID_ARGUMENTS;
 
   *ptr = arr->data[arr->num_elts - 1];
+
+  return BF_ERROR_NO_ERROR;
+}
+
+enum BfError
+bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end,
+                       BfPtrArray *view)
+{
+  if (start > end)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  if (end > arr->num_elts)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  view->flags = BF_PTR_ARRAY_FLAG_VIEW;
+  view->data = arr->data + start;
+  view->capacity = end - start;
+  view->num_elts = end - start;
 
   return BF_ERROR_NO_ERROR;
 }

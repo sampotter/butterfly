@@ -6,6 +6,7 @@
 #include "error.h"
 #include "geom.h"
 #include "mat.h"
+#include "ptr_array.h"
 #include "tree.h"
 
 typedef struct BfQuadtree BfQuadtree;
@@ -109,3 +110,22 @@ bfMapQuadtreeNodes(BfQuadtreeNode *node, enum BfTreeTraversals traversal,
 enum BfError
 bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
                         BfQuadtreeNodeFunc func, void *arg);
+
+typedef struct BfQuadtreeLevelIter {
+  enum BfTreeTraversals traversal;
+  BfPtrArray nodes;
+  BfPtrArray level_nodes;
+  void *aux;
+} BfQuadtreeLevelIter;
+
+enum BfError
+bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
+                        enum BfTreeTraversals traversal, BfQuadtreeNode *node);
+
+bool bfQuadtreeLevelIterIsDone(BfQuadtreeLevelIter const *iter);
+
+enum BfError
+bfQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter);
+
+enum BfError
+bfFreeQuadtreeLevelIter(BfQuadtreeLevelIter *iter);
