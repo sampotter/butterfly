@@ -6,6 +6,7 @@
 #include "error.h"
 #include "geom.h"
 #include "mat.h"
+#include "tree.h"
 
 typedef struct BfQuadtree BfQuadtree;
 typedef struct BfQuadtreeNode BfQuadtreeNode;
@@ -16,7 +17,13 @@ enum BfQuadtreeNodeFlags {
   BF_QUADTREE_NODE_FLAG_CHILD_1 = 1 << 1,
   BF_QUADTREE_NODE_FLAG_CHILD_2 = 1 << 2,
   BF_QUADTREE_NODE_FLAG_CHILD_3 = 1 << 3,
-  BF_QUADTREE_NODE_FLAG_ROOT = 1 << 4
+  BF_QUADTREE_NODE_FLAG_ROOT = 1 << 4,
+
+  /* This is a dirty bit which can be used to signal, e.g., that a
+   * node has been explored in a tree traversal. The assumption is
+   * that this bit is private and will be unset upon entering and
+   * exiting any public API function. */
+  BF_QUADTREE_NODE_FLAG_DIRTY = 1 << 5,
 };
 
 struct BfQuadtreeNode {
@@ -54,7 +61,12 @@ struct BfQuadtreeNode {
    * `child[3]`, then `point[0] > split[0]` and `point[1]` >
    * `split[1]`. */
   BfPoint2 split;
+
+  /* The depth of this node. */
+  BfSize depth;
 };
+
+typedef enum BfError (*BfQuadtreeNodeFunc)(BfQuadtreeNode const *, void *);
 
 struct BfQuadtree {
   size_t num_points;
@@ -63,8 +75,6 @@ struct BfQuadtree {
   size_t *perm;
 
   BfQuadtreeNode *root;
-
-  size_t depth;
 };
 
 enum BfError
@@ -93,6 +103,9 @@ enum BfError
 bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfMat *X);
 
 enum BfError
+bfMapQuadtreeNodes(BfQuadtreeNode *node, enum BfTreeTraversals traversal,
+                   BfQuadtreeNodeFunc func, void *arg);
+
+enum BfError
 bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
-                        enum BfError (*func)(BfQuadtreeNode const *, void *),
-                        void *arg);
+                        BfQuadtreeNodeFunc func, void *arg);

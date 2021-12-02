@@ -178,6 +178,51 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfSaveMat(&b, "b.bin");
   puts("wrote b.bin");
 
+  /* Check that LR level order works correctly */
+
+  enum BfError printNode(BfQuadtreeNode const *node, void *arg) {
+    (void)arg;
+
+    BfSize depth = bfQuadtreeNodeDepth(node);
+
+    if (node->flags & BF_QUADTREE_NODE_FLAG_ROOT) {
+      printf("%lu root\n", depth);
+    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_0) {
+      printf("%lu 0\n", depth);
+    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_1) {
+      printf("%lu 1\n", depth);
+    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_2) {
+      printf("%lu 2\n", depth);
+    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_3) {
+      printf("%lu 3\n", depth);
+    }
+
+    return BF_ERROR_NO_ERROR;
+  }
+
+  bfMapQuadtreeNodes(src_node,BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER,printNode,NULL);
+
+  /* Figure out the common maximum depth */
+
+  BfSize src_max_depth = 0, tgt_max_depth = 0;
+
+  enum BfError findMaxDepth(BfQuadtreeNode const *node, void *arg) {
+    BfSize *max_depth = arg;
+
+    BfSize depth = bfQuadtreeNodeDepth(node);
+
+    if (depth > *max_depth)
+      *max_depth = depth;
+
+    return BF_ERROR_NO_ERROR;
+  }
+
+  bfMapQuadtreeNodes(src_node, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, findMaxDepth, &src_max_depth);
+  bfMapQuadtreeNodes(src_node, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, findMaxDepth, &tgt_max_depth);
+
+  printf("src_max_depth: %lu\n", src_max_depth);
+  printf("tgt_max_depth: %lu\n", tgt_max_depth);
+
   /* Clean up */
 
   bfFreeMat(&tgt_pts);

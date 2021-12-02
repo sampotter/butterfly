@@ -36,8 +36,6 @@ int main(int argc, char const *argv[]) {
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, num_points, points);
 
-  printf("quadtree depth: %lu\n", tree.depth);
-
   // Clean up
   free(points);
   fclose(fp);

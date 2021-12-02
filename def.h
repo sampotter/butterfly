@@ -17,3 +17,6 @@ typedef size_t BfSize;
 #else
 #  error "neither single nor double precision specified"
 #endif
+
+typedef void *BfPtr;
+typedef void const *BfConstPtr;

@@ -1,0 +1,6 @@
+#pragma once
+
+enum BfTreeTraversals {
+  BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+  BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER
+};
