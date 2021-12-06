@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "block_mat.h"
 #include "error.h"
 #include "helm2.h"
 #include "mat.h"
@@ -301,14 +300,16 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
            i, current_src_node, Z1_row_block_sizes[i], Z1_col_block_sizes[i]);
   }
 
+  void getBlock(BfMat const *bmat, BfSize i, BfSize j, BfMat **mat) {
+    bfGetMatEltPtr(bmat, i, j, (BfPtr *)mat);
+  }
+
   /* allocate block diagonal matrix which will hold the kernel
    * matrices mapping the charges at the original points contained in
    * each node to potentials at the target circle points */
-  BfBlockMat Z1_block_mat;
-  bfInitEmptyBlockMat(&Z1_block_mat,
-                      BF_DTYPE_COMPLEX, BF_BLOCK_MAT_PROP_DIAGONAL,
-                      Z1_num_blocks, Z1_row_block_sizes,
-                      Z1_num_blocks, Z1_col_block_sizes);
+  BfMat Z1_block_mat;
+  bfInitEmptyMat(&Z1_block_mat, BF_DTYPE_MAT, BF_MAT_PROP_DIAGONAL,
+                 (BfSize[]) {Z1_num_blocks, Z1_num_blocks});
 
   for (BfSize i = 0; i < Z1_num_blocks; ++i) {
     bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
@@ -324,7 +325,11 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
     bfGetQuadtreeNodePoints(current_src_node, &src_node_pts);
 
     /* set the current block to the kernel matrix */
-    BfMat *Z1_block = bfGetBlock(&Z1_block_mat, i, i);
+    BfMat *Z1_block;
+    getBlock(&Z1_block_mat, i, i, &Z1_block);
+    bfInitEmptyMat(Z1_block, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
+                   (BfSize[]) {Z1_row_block_sizes[i], Z1_col_block_sizes[i]});
+
     bfHelm2KernelMatrixFromPoints(Z1_block, &src_node_pts, &tgt_circ_pts, k);
 
     bfFreeMat(&tgt_circ_pts); // TODO: better resize instead of re-allocating
@@ -338,23 +343,28 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
    * stored in the BfBlockMat themselves, so no need to additionally
    * hold that pointer */
 
-  /* Z1 and Z2 have the same number of blocks */
+  /* TODO: we should just merge this next block matrix into the
+   * previous one to save on FLOPs */
+
   BfSize Z2_num_blocks = Z1_num_blocks;
-  BfMat *Z2_blocks = malloc(Z1_num_blocks*sizeof(BfMat));
+  BfMat Z2_block_mat;
+  bfInitEmptyMat(&Z2_block_mat, BF_DTYPE_MAT, BF_MAT_PROP_DIAGONAL,
+                 (BfSize[]) {Z2_num_blocks, Z2_num_blocks});
+
   BfMat kernel;
 
   for (BfSize i = 0; i < Z2_num_blocks; ++i) {
     bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
 
     p = Z1_row_block_sizes[i];
-    BfSize pts_shape[] = {p, 2};
+    BfSize shape[] = {p, 2};
 
     /* sample points on the target circle */
-    bfInitEmptyMat(&tgt_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfInitEmptyMat(&tgt_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, shape);
     bfSamplePointsOnCircle2(&current_tgt_circ, &tgt_circ_pts);
 
     /* sample points on the source circle */
-    bfInitEmptyMat(&src_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfInitEmptyMat(&src_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, shape);
     bfSamplePointsOnCircle2(&current_src_circ, &src_circ_pts);
 
     /* compute the kernel matrix for this set of interactions */
@@ -365,8 +375,12 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
     bfFreeMat(&tgt_circ_pts);
     bfFreeMat(&src_circ_pts);
 
+    BfMat *block;
+    getBlock(&Z2_block_mat, i, i, &block);
+    bfInitEmptyMat(block, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]){p,p});
+
     /* compute its pseudoinverse and store it in the current block */
-    bfComputePinv(&kernel, PINV_ATOL, PINV_RTOL, &Z2_blocks[i]);
+    bfComputePinv(&kernel, PINV_ATOL, PINV_RTOL, block);
 
     bfFreeMat(&kernel);
   }
@@ -487,9 +501,10 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   makeBfacLayer();
   makeBfacLayer();
 
+
+
   /* clean up */
 
-  free(Z2_blocks);
   free(Z1_row_block_sizes);
   free(Z1_col_block_sizes);
 

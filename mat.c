@@ -12,11 +12,15 @@
 
 BfSize bfMatSize(BfMat const *A)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return A->shape[0]*A->shape[1];
 }
 
 enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error = BF_ERROR_NO_ERROR;
 
   BfSize dtype_size;
@@ -36,14 +40,20 @@ enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
 }
 
 BfSize bfMatNumRows(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return bfMatIsTransposed(A) ? A->shape[1] : A->shape[0];
 }
 
 BfSize bfMatNumCols(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return bfMatIsTransposed(A) ? A->shape[0] : A->shape[1];
 }
 
 bool bfMatIsAligned(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfSize dtype_size = bfDtypeSize(A->dtype);
   bool ptr_aligned = (BfSize)A->data % dtype_size == 0;
   bool stride_0_aligned = A->stride[0] % dtype_size == 0;
@@ -52,6 +62,8 @@ bool bfMatIsAligned(BfMat const *A) {
 }
 
 BfSize bfMatRowStride(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return bfMatIsTransposed(A) ? A->stride[1] : A->stride[0];
 }
 
@@ -61,6 +73,8 @@ BfSize bfMatColStride(BfMat const *A) {
 
 enum BfError bfFreeMat(BfMat *A)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   free(A->data);
 
   return BF_ERROR_NO_ERROR;
@@ -70,6 +84,8 @@ enum BfError
 bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
                BfSize const shape[2])
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error = BF_ERROR_NO_ERROR;
 
   A->dtype = dtype;
@@ -93,6 +109,8 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
 enum BfError
 bfSaveMat(BfMat const *A, char const *path)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error = BF_ERROR_NO_ERROR;
 
   FILE *fp = fopen(path, "w");
@@ -119,6 +137,8 @@ cleanup:
 enum BfError
 bfFillMatRandn(BfMat *A)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   switch (A->dtype) {
   case BF_DTYPE_REAL:
     bfRandn(bfMatSize(A), A->data);
@@ -134,16 +154,40 @@ bfFillMatRandn(BfMat *A)
   }
 }
 
+static bool check_offset(BfMat const *A, BfSize i, BfSize j) {
+  return i < A->shape[0] && j < A->shape[1];
+}
+
 static BfSize offset(BfMat const *A, BfSize i, BfSize j) {
   return i*A->stride[0] + j*A->stride[1];
 }
 
-void bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr) {
+enum BfError
+bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
+  if (!check_offset(A, i, j))
+    return BF_ERROR_OUT_OF_RANGE;
+
   BfSize dtype_size = bfDtypeSize(A->dtype);
   memcpy(ptr, A->data + offset(A, i, j), dtype_size);
+
+  return BF_ERROR_NO_ERROR;
+}
+
+enum BfError
+bfGetMatEltPtr(BfMat const *A, BfSize i, BfSize j, BfPtr *ptr) {
+  if (!check_offset(A, i, j))
+    return BF_ERROR_OUT_OF_RANGE;
+
+  *ptr = A->data + offset(A, i, j);
+
+  return BF_ERROR_NO_ERROR;
 }
 
 BfVec bfGetMatRow(BfMat const *A, BfSize i) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return (BfVec) {
     .dtype = A->dtype,
     .props = BF_VEC_PROP_VIEW,
@@ -156,6 +200,8 @@ BfVec bfGetMatRow(BfMat const *A, BfSize i) {
 enum BfError
 bfGetRowPtr(BfMat const *A, BfSize i, BfPtr *ptr)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   if (i >= bfMatNumRows(A))
     return BF_ERROR_OUT_OF_RANGE;
 
@@ -167,6 +213,8 @@ bfGetRowPtr(BfMat const *A, BfSize i, BfPtr *ptr)
 enum BfError
 bfSetMatRow(BfMat *A, BfSize i, void const *data)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfSize m = A->shape[0], n = A->shape[1];
 
   if (i >= m)
@@ -187,6 +235,8 @@ bfSetMatRow(BfMat *A, BfSize i, void const *data)
 enum BfError
 bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfSize m = bfMatNumCols(A);
 
   if (m != bfMatNumCols(B))
@@ -215,6 +265,8 @@ bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j)
 }
 
 BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfMat A_rows = *A;
 
   A_rows.props |= BF_MAT_PROP_VIEW;
@@ -230,6 +282,8 @@ BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
 }
 
 BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfMat A_cols = *A;
 
   A_cols.props |= BF_MAT_PROP_VIEW;
@@ -247,6 +301,8 @@ BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
 
 BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
                            BfSize j0, BfSize j1) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfMat A_subblock = *A;
   A_subblock.props |= BF_MAT_PROP_VIEW;
   A_subblock.shape[0] = i1 - i0;
@@ -256,10 +312,14 @@ BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
 }
 
 bool bfMatIsTransposed(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   return A->props & (BF_MAT_PROP_TRANS | BF_MAT_PROP_CONJ_TRANS);
 }
 
 BfMat bfConjTrans(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfMat AH = *A;
 
   /* make AH a view of A */
@@ -272,6 +332,8 @@ BfMat bfConjTrans(BfMat const *A) {
 }
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   if (A->props & BF_MAT_PROP_CONJ_TRANS)
     return CblasConjTrans;
   else if (A->props & BF_MAT_PROP_TRANS)
@@ -281,6 +343,8 @@ static enum CBLAS_TRANSPOSE getCblasTranspose(BfMat const *A) {
 }
 
 static BfSize getLeadingDimension(BfMat const *A) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   BfSize dtype_size = bfDtypeSize(A->dtype);
   return bfMatIsTransposed(A) ?
     bfMatColStride(A)/dtype_size :
@@ -290,6 +354,8 @@ static BfSize getLeadingDimension(BfMat const *A) {
 static void
 complexComplexMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   assert(C->dtype == BF_DTYPE_COMPLEX);
   assert(!bfMatIsTransposed(C));
 
@@ -313,6 +379,8 @@ complexComplexMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 bfMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   assert(bfMatIsAligned(A));
   assert(bfMatIsAligned(B));
   assert(bfMatIsAligned(C));
@@ -340,6 +408,8 @@ bfMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   if (C->dtype != BF_DTYPE_COMPLEX)
     return BF_ERROR_INVALID_ARGUMENTS;
 
@@ -362,6 +432,8 @@ realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   if (C->dtype != BF_DTYPE_COMPLEX)
     return BF_ERROR_INVALID_ARGUMENTS;
 
@@ -384,6 +456,8 @@ complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   bool A_trans = bfMatIsTransposed(A);
   bool B_trans = bfMatIsTransposed(B);
   bool C_trans = bfMatIsTransposed(C);
@@ -421,6 +495,8 @@ bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 initEmptySvdMatsComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error = BF_ERROR_NO_ERROR;
 
   BfSize m = A->shape[0];
@@ -456,6 +532,8 @@ initEmptySvdMatsComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 enum BfError
 bfInitEmptySvdMats(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   switch (A->dtype) {
   case BF_DTYPE_COMPLEX:
     return initEmptySvdMatsComplex(A, U, S, Vt);
@@ -467,6 +545,8 @@ bfInitEmptySvdMats(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 enum BfError
 computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error = BF_ERROR_NO_ERROR;
 
   lapack_int m = A->shape[0];
@@ -513,6 +593,8 @@ cleanup:
 enum BfError
 bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   switch (A->dtype) {
   case BF_DTYPE_COMPLEX:
     return computeMatSvdComplex(A, U, S, Vt);
@@ -524,6 +606,8 @@ bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 enum BfError
 bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
 {
+  assert(A->dtype != BF_DTYPE_MAT);
+
   enum BfError error;
 
   /* compute SVD of A */

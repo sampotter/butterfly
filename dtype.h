@@ -5,7 +5,8 @@
 
 enum BfDtypes {
   BF_DTYPE_REAL,
-  BF_DTYPE_COMPLEX
+  BF_DTYPE_COMPLEX,
+  BF_DTYPE_MAT
 };
 
 BfSize bfDtypeSize(enum BfDtypes dtype);

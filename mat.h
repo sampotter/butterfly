@@ -5,13 +5,14 @@
 #include "vec.h"
 
 enum BfMatProps {
-  BF_MAT_PROP_NONE = 0,
-  BF_MAT_PROP_DIAGONAL = (1 << 0),
-  BF_MAT_PROP_TRANS = (1 << 1),
-  BF_MAT_PROP_CONJ_TRANS = (1 << 2),
-  BF_MAT_PROP_UNITARY = (1 << 3),
-  BF_MAT_PROP_VIEW = (1 << 4),
-  BF_MAT_PROP_SEMI_UNITARY = (1 << 5)
+  BF_MAT_PROP_NONE          = 0,
+  BF_MAT_PROP_VIEW          = (1 << 0),
+  BF_MAT_PROP_DIAGONAL      = (1 << 1),
+  BF_MAT_PROP_TRANS         = (1 << 2),
+  BF_MAT_PROP_CONJ_TRANS    = (1 << 3),
+  BF_MAT_PROP_UNITARY       = (1 << 4),
+  BF_MAT_PROP_SEMI_UNITARY  = (1 << 5),
+  BF_MAT_PROP_SPARSE_CSR    = (1 << 6)
 };
 
 typedef struct BfMat {
@@ -44,7 +45,11 @@ bfSaveMat(BfMat const *A, char const *path);
 enum BfError
 bfFillMatRandn(BfMat *A);
 
-void bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr);
+enum BfError
+bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr);
+
+enum BfError
+bfGetMatEltPtr(BfMat const *A, BfSize i, BfSize j, BfPtr *ptr);
 
 BfVec bfGetMatRow(BfMat const *A, BfSize i);
 
