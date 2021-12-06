@@ -4,7 +4,7 @@
 #include "error.h"
 #include "geom.h"
 
-BfComplex bfHelm2GetKernelValue(BfPoint2 const p, BfPoint2 const q, BfReal k);
+BfComplex bfHelm2GetKernelValue(BfVec const *x, BfVec const *y, BfReal k);
 
 enum BfError
 bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,

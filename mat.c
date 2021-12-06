@@ -1,5 +1,6 @@
 #include "mat.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +35,30 @@ enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
   return error;
 }
 
+BfSize bfMatNumRows(BfMat const *A) {
+  return bfMatIsTransposed(A) ? A->shape[1] : A->shape[0];
+}
+
+BfSize bfMatNumCols(BfMat const *A) {
+  return bfMatIsTransposed(A) ? A->shape[0] : A->shape[1];
+}
+
+bool bfMatIsAligned(BfMat const *A) {
+  BfSize dtype_size = bfDtypeSize(A->dtype);
+  bool ptr_aligned = (BfSize)A->data % dtype_size == 0;
+  bool stride_0_aligned = A->stride[0] % dtype_size == 0;
+  bool stride_1_aligned = A->stride[1] % dtype_size == 0;
+  return ptr_aligned && stride_0_aligned && stride_1_aligned;
+}
+
+BfSize bfMatRowStride(BfMat const *A) {
+  return bfMatIsTransposed(A) ? A->stride[1] : A->stride[0];
+}
+
+BfSize bfMatColStride(BfMat const *A) {
+  return bfMatIsTransposed(A) ? A->stride[0] : A->stride[1];
+}
+
 enum BfError bfFreeMat(BfMat *A)
 {
   free(A->data);
@@ -52,12 +77,15 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
   A->shape[0] = shape[0];
   A->shape[1] = shape[1];
 
-  BfSize nbytes;
-  error = bfMatNumBytes(A, &nbytes);
+  BfSize dtype_size;
+  error |= bfSizeOfDtype(A->dtype, &dtype_size);
   if (error)
     return error;
 
-  A->data = malloc(nbytes);
+  A->stride[0] = dtype_size*shape[1];
+  A->stride[1] = dtype_size;
+
+  A->data = malloc(dtype_size*shape[0]*shape[1]);
 
   return error;
 }
@@ -106,22 +134,32 @@ bfFillMatRandn(BfMat *A)
   }
 }
 
+static BfSize offset(BfMat const *A, BfSize i, BfSize j) {
+  return i*A->stride[0] + j*A->stride[1];
+}
+
+void bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr) {
+  BfSize dtype_size = bfDtypeSize(A->dtype);
+  memcpy(ptr, A->data + offset(A, i, j), dtype_size);
+}
+
+BfVec bfGetMatRow(BfMat const *A, BfSize i) {
+  return (BfVec) {
+    .dtype = A->dtype,
+    .props = BF_VEC_PROP_VIEW,
+    .size = bfMatNumCols(A),
+    .stride = bfMatColStride(A),
+    .data = A->data + i*bfMatRowStride(A)
+  };
+}
+
 enum BfError
-bfGetMatRow(BfMat const *A, BfSize i, void **data)
+bfGetRowPtr(BfMat const *A, BfSize i, BfPtr *ptr)
 {
-  BfSize m = A->shape[0], n = A->shape[1];
+  if (i >= bfMatNumRows(A))
+    return BF_ERROR_OUT_OF_RANGE;
 
-  if (i >= m)
-    return BF_ERROR_INVALID_ARGUMENTS;
-
-  BfSize nbytes;
-  enum BfError error = bfSizeOfDtype(A->dtype, &nbytes);
-  if (error)
-    return error;
-
-  BfSize row_nbytes = nbytes*n;
-
-  *data = A->data + row_nbytes*i;
+  *ptr = A->data + i*bfMatRowStride(A);
 
   return BF_ERROR_NO_ERROR;
 }
@@ -147,41 +185,152 @@ bfSetMatRow(BfMat *A, BfSize i, void const *data)
 }
 
 enum BfError
+bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j)
+{
+  BfSize m = bfMatNumCols(A);
+
+  if (m != bfMatNumCols(B))
+    return BF_ERROR_BAD_SHAPE;
+
+  if (i >= bfMatNumRows(A))
+    return BF_ERROR_OUT_OF_RANGE;
+
+  if (j >= bfMatNumRows(B))
+    return BF_ERROR_OUT_OF_RANGE;
+
+  BfByte *A_row_ptr, *B_row_ptr;
+  bfGetRowPtr(A, i, (BfPtr *)&A_row_ptr);
+  bfGetRowPtr(B, j, (BfPtr *)&B_row_ptr);
+
+  BfSize A_col_stride = bfMatColStride(A);
+  BfSize B_col_stride = bfMatColStride(B);
+
+  for (BfSize k = 0; k < m; ++k) {
+    B_row_ptr[k] = A_row_ptr[k];
+    A_row_ptr += A_col_stride;
+    B_row_ptr += B_col_stride;
+  }
+
+  return BF_ERROR_NO_ERROR;
+}
+
+BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
+  BfMat A_rows = *A;
+
+  A_rows.props |= BF_MAT_PROP_VIEW;
+  if (A_rows.props & BF_MAT_PROP_UNITARY) {
+    A_rows.props ^= BF_MAT_PROP_UNITARY;
+    A_rows.props ^= BF_MAT_PROP_SEMI_UNITARY;
+  }
+
+  A_rows.shape[0] = i1 - i0;
+  A_rows.data += i0*A->shape[1];
+
+  return A_rows;
+}
+
+BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
+  BfMat A_cols = *A;
+
+  A_cols.props |= BF_MAT_PROP_VIEW;
+
+  if (A_cols.props & BF_MAT_PROP_UNITARY) {
+    A_cols.props ^= BF_MAT_PROP_UNITARY;
+    A_cols.props ^= BF_MAT_PROP_SEMI_UNITARY;
+  }
+
+  A_cols.shape[1] = j1 - j0;
+  A_cols.data += j0;
+
+  return A_cols;
+}
+
+BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
+                           BfSize j0, BfSize j1) {
+  BfMat A_subblock = *A;
+  A_subblock.props |= BF_MAT_PROP_VIEW;
+  A_subblock.shape[0] = i1 - i0;
+  A_subblock.shape[1] = j1 - j0;
+  A_subblock.data += i0*A->shape[1] + j0;
+  return A_subblock;
+}
+
+bool bfMatIsTransposed(BfMat const *A) {
+  return A->props & (BF_MAT_PROP_TRANS | BF_MAT_PROP_CONJ_TRANS);
+}
+
+BfMat bfConjTrans(BfMat const *A) {
+  BfMat AH = *A;
+
+  /* make AH a view of A */
+  AH.props |= BF_MAT_PROP_VIEW;
+
+  /* make AH the Hermitian transpose of A */
+  AH.props ^= BF_MAT_PROP_CONJ_TRANS;
+
+  return AH;
+}
+
+static enum CBLAS_TRANSPOSE getCblasTranspose(BfMat const *A) {
+  if (A->props & BF_MAT_PROP_CONJ_TRANS)
+    return CblasConjTrans;
+  else if (A->props & BF_MAT_PROP_TRANS)
+    return CblasTrans;
+  else
+    return CblasNoTrans;
+}
+
+static BfSize getLeadingDimension(BfMat const *A) {
+  BfSize dtype_size = bfDtypeSize(A->dtype);
+  return bfMatIsTransposed(A) ?
+    bfMatColStride(A)/dtype_size :
+    bfMatRowStride(A)/dtype_size;
+}
+
+static void
 complexComplexMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  if (C->dtype != BF_DTYPE_COMPLEX)
-    return BF_ERROR_INVALID_ARGUMENTS;
-
-  if (A->props & BF_MAT_PROP_CONJ_TRANS)
-    return BF_ERROR_NOT_IMPLEMENTED;
-
-  if (B->props & BF_MAT_PROP_CONJ_TRANS)
-    return BF_ERROR_NOT_IMPLEMENTED;
-
-  BfSize m = A->shape[0], n = B->shape[1], k = A->shape[1];
+  assert(C->dtype == BF_DTYPE_COMPLEX);
+  assert(!bfMatIsTransposed(C));
 
   BfComplex alpha = 1, beta = 0;
 
-  cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
-              &alpha, A->data, k, B->data, n, &beta, C->data, n);
+  enum CBLAS_TRANSPOSE A_trans = getCblasTranspose(A);
+  enum CBLAS_TRANSPOSE B_trans = getCblasTranspose(B);
 
-  return BF_ERROR_NO_ERROR;
+  BfSize m = bfMatNumRows(A);
+  BfSize n = bfMatNumCols(B);
+  BfSize k = bfMatNumCols(A);
+
+  BfSize lda = getLeadingDimension(A);
+  BfSize ldb = getLeadingDimension(B);
+  BfSize ldc = getLeadingDimension(C);
+
+  cblas_zgemm(CblasRowMajor, A_trans, B_trans, m, n, k,
+              &alpha, A->data, lda, B->data, ldb, &beta, C->data, ldc);
 }
 
 enum BfError
 bfMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  if (A->shape[0] != C->shape[0])
+  assert(bfMatIsAligned(A));
+  assert(bfMatIsAligned(B));
+  assert(bfMatIsAligned(C));
+
+  if (bfMatIsTransposed(C))
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (A->shape[1] != B->shape[0])
+  if (bfMatNumRows(A) != bfMatNumRows(C))
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (B->shape[1] != C->shape[1])
+  if (bfMatNumCols(A) != bfMatNumRows(B))
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  if (bfMatNumCols(B) != bfMatNumCols(C))
     return BF_ERROR_INVALID_ARGUMENTS;
 
   if (A->dtype == BF_DTYPE_COMPLEX && B->dtype == BF_DTYPE_COMPLEX)
-    return complexComplexMatMul(A, B, C);
+    complexComplexMatMul(A, B, C);
   else
     return BF_ERROR_NOT_IMPLEMENTED;
 
@@ -194,26 +343,20 @@ realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
   if (C->dtype != BF_DTYPE_COMPLEX)
     return BF_ERROR_INVALID_ARGUMENTS;
 
+  BfReal scale;
   if (A->props & BF_MAT_PROP_DIAGONAL) {
-    BfSize m = A->shape[0], n = B->shape[1], k = A->shape[1];
-
-    if (m != k)
-      return BF_ERROR_NOT_IMPLEMENTED;
-
-    BfReal a;
-    BfComplex *row;
-    for (BfSize i = 0; i < m; ++i) {
-      bfGetMatRow(B, i, (void **)&row);
-      bfSetMatRow(C, i, row);
-      bfGetMatRow(C, i, (void **)&row);
-      a = *((BfReal const *)A->data + i);
-      cblas_zdscal(n, 1/a, row, 1);
+    BfSize n = A->shape[1];
+    BfVec row;
+    for (BfSize i = 0; i < n; ++i) {
+      bfCopyMatRow(B, i, C, i);
+      row = bfGetMatRow(C, i);
+      bfGetMatElt(A, i, i, &scale);
+      scale = 1/scale;
+      bfVecScale(&row, &scale);
     }
-
-    return BF_ERROR_NO_ERROR;
   }
 
-  return BF_ERROR_NOT_IMPLEMENTED;
+  return BF_ERROR_NO_ERROR;
 }
 
 enum BfError
@@ -241,13 +384,30 @@ complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 enum BfError
 bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  if (A->shape[0] != B->shape[0])
+  bool A_trans = bfMatIsTransposed(A);
+  bool B_trans = bfMatIsTransposed(B);
+  bool C_trans = bfMatIsTransposed(C);
+
+  /* check whether A and B have compatible shapes to form A\B */
+
+  if ((!A_trans && !B_trans && A->shape[0] != B->shape[0]) ||
+      ( A_trans && !B_trans && A->shape[1] != B->shape[0]) ||
+      (!A_trans &&  B_trans && A->shape[0] != B->shape[1]) ||
+      ( A_trans &&  B_trans && A->shape[1] != B->shape[1]))
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (A->shape[1] != C->shape[0])
+  /* check that A\B and C have the same shape */
+
+  if ((!A_trans && !C_trans && A->shape[1] != C->shape[0]) ||
+      ( A_trans && !C_trans && A->shape[0] != C->shape[0]) ||
+      (!A_trans &&  C_trans && A->shape[1] != C->shape[1]) ||
+      ( A_trans &&  C_trans && A->shape[0] != C->shape[1]))
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (B->shape[1] != C->shape[1])
+  if ((!B_trans && !C_trans && B->shape[1] != C->shape[1]) ||
+      ( B_trans && !C_trans && B->shape[0] != C->shape[1]) ||
+      (!B_trans &&  C_trans && B->shape[1] != C->shape[0]) ||
+      ( B_trans &&  C_trans && B->shape[0] != C->shape[0]))
     return BF_ERROR_INVALID_ARGUMENTS;
 
   if (A->dtype == BF_DTYPE_REAL && B->dtype == BF_DTYPE_COMPLEX)
@@ -359,4 +519,73 @@ bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   default:
     return BF_ERROR_NOT_IMPLEMENTED;
   }
+}
+
+enum BfError
+bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
+{
+  enum BfError error;
+
+  /* compute SVD of A */
+
+  BfMat U, S, VH;
+
+  error = bfInitEmptySvdMats(A, &U, &S, &VH);
+  if (error)
+    goto cleanup;
+
+  error = bfComputeMatSvd(A, &U, &S, &VH);
+  if (error)
+    goto cleanup;
+
+  /* compute tolerance and compute number of terms to
+   * retain in pseudoinverse */
+
+  BfSize m = A->shape[0], n = A->shape[1];
+  BfSize k_max = m < n ? m : n;
+
+  BfReal *sigma = S.data;
+
+  BfReal tol = rtol*sigma[0] + atol;
+
+  BfSize k;
+  for (k = 0; k < k_max; ++k)
+    if (sigma[k] < tol)
+      break;
+
+  /* get subblocks of truncated SVD */
+
+  BfMat UkH = bfGetMatColRange(&U, 0, k);
+  UkH = bfConjTrans(&UkH);
+
+  BfMat Sk = bfGetMatContSubblock(&S, 0, k, 0, k);
+
+  BfMat Vk = bfGetMatRowRange(&VH, 0, k);
+  Vk = bfConjTrans(&Vk);
+
+  /* compute pseudonverse from truncated SVD */
+
+  BfMat WkH;
+
+  error = bfInitEmptyMat(&WkH, UkH.dtype, BF_MAT_PROP_NONE, (BfSize[]) {k, n});
+  if (error)
+    goto cleanup;
+
+  error = bfMatSolve(&Sk, &UkH, &WkH);
+  if (error)
+    goto cleanup;
+
+  error = bfInitEmptyMat(pinv, A->dtype, A->props, (BfSize[]) {n, m});
+  if (error)
+    goto cleanup;
+
+  error = bfMatMul(&Vk, &WkH, pinv);
+
+cleanup:
+  bfFreeMat(&U);
+  bfFreeMat(&S);
+  bfFreeMat(&VH);
+  bfFreeMat(&WkH);
+
+  return error;
 }

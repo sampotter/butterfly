@@ -8,6 +8,8 @@ enum BfDtypes {
   BF_DTYPE_COMPLEX
 };
 
+BfSize bfDtypeSize(enum BfDtypes dtype);
+
 enum BfError bfSizeOfDtype(enum BfDtypes dtype, BfSize *size);
 
 bool bfDtypeIsValid(enum BfDtypes dtype);

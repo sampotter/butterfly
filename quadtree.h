@@ -96,6 +96,8 @@ bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
 
 BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
 
+BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node);
+
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
 
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
@@ -121,6 +123,9 @@ typedef struct BfQuadtreeLevelIter {
 enum BfError
 bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
                         enum BfTreeTraversals traversal, BfQuadtreeNode *node);
+
+enum BfError
+bfQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter, BfSize *depth);
 
 bool bfQuadtreeLevelIterIsDone(BfQuadtreeLevelIter const *iter);
 

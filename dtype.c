@@ -1,5 +1,13 @@
 #include "dtype.h"
 
+BfSize bfDtypeSize(enum BfDtypes dtype) {
+  static BfSize size[] = {
+    sizeof(BfReal),
+    sizeof(BfComplex)
+  };
+  return size[dtype];
+}
+
 enum BfError bfSizeOfDtype(enum BfDtypes dtype, BfSize *nbytes) {
   switch (dtype) {
   case BF_DTYPE_REAL:

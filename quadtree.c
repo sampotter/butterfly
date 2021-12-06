@@ -342,6 +342,23 @@ BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node) {
   return node->depth;
 }
 
+static
+enum BfError
+findMaxDepth(BfQuadtreeNode const *node, void *arg) {
+  BfSize *max_depth = arg;
+  if (node->depth > *max_depth)
+    *max_depth = node->depth;
+  return BF_ERROR_NO_ERROR;
+}
+
+BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node) {
+  BfSize max_depth = 0;
+  bfMapQuadtreeNodes(
+    (BfQuadtreeNode *)node, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    findMaxDepth, &max_depth);
+  return max_depth;
+}
+
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node) {
   return node->offset[4];
 }
@@ -641,6 +658,35 @@ bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
     return initLrLevelOrderQuadtreeLevelIter(iter, node);
   case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER:
     return initLrReverseLevelOrderQuadtreeLevelIter(iter, node);
+  default:
+    return BF_ERROR_INVALID_ARGUMENTS;
+  }
+}
+
+static
+enum BfError
+levelOrderQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter,
+                                        BfSize *depth)
+{
+  LrLevelOrderInfo *info = iter->aux;
+
+  BfSize i = info->offsets[info->current_level];
+
+  BfQuadtreeNode *node;
+  bfPtrArrayGet(&iter->nodes, i, (BfPtr *)&node);
+
+  *depth = node->depth;
+
+  return BF_ERROR_NO_ERROR;
+}
+
+enum BfError
+bfQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter, BfSize *depth)
+{
+  switch (iter->traversal) {
+  case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
+  case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER:
+    return levelOrderQuadtreeLevelIterCurrentDepth(iter, depth);
   default:
     return BF_ERROR_INVALID_ARGUMENTS;
   }

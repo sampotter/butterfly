@@ -2,11 +2,15 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "block_mat.h"
 #include "error.h"
 #include "helm2.h"
 #include "mat.h"
 #include "rand.h"
 #include "quadtree.h"
+
+static BfReal const PINV_ATOL = 1e-13;
+static BfReal const PINV_RTOL = 1e-13;
 
 static void bf_one_block(BfQuadtree const *tree, double k) {
   enum BfError error = BF_ERROR_NO_ERROR;
@@ -180,53 +184,47 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
 
   /* Check that LR level order works correctly */
 
-  enum BfError printNode(BfQuadtreeNode const *node, void *arg) {
-    (void)arg;
+//   enum BfError printNode(BfQuadtreeNode const *node, void *arg) {
+//     (void)arg;
 
-    BfSize depth = bfQuadtreeNodeDepth(node);
+//     BfSize depth = bfQuadtreeNodeDepth(node);
 
-    if (node->flags & BF_QUADTREE_NODE_FLAG_ROOT) {
-      printf("%lu root\n", depth);
-    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_0) {
-      printf("%lu 0\n", depth);
-    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_1) {
-      printf("%lu 1\n", depth);
-    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_2) {
-      printf("%lu 2\n", depth);
-    } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_3) {
-      printf("%lu 3\n", depth);
-    }
+//     if (node->flags & BF_QUADTREE_NODE_FLAG_ROOT) {
+//       printf("%lu root\n", depth);
+//     } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_0) {
+//       printf("%lu 0\n", depth);
+//     } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_1) {
+//       printf("%lu 1\n", depth);
+//     } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_2) {
+//       printf("%lu 2\n", depth);
+//     } else if (node->flags & BF_QUADTREE_NODE_FLAG_CHILD_3) {
+//       printf("%lu 3\n", depth);
+//     }
 
-    return BF_ERROR_NO_ERROR;
-  }
+//     return BF_ERROR_NO_ERROR;
+//   }
 
-  bfMapQuadtreeNodes(src_node,BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER,printNode,NULL);
+//   bfMapQuadtreeNodes(src_node,BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,printNode,NULL);
+
+  /* Try level-by-level traversal */
+
+//   BfQuadtreeLevelIter iter;
+//   bfInitQuadtreeLevelIter(&iter, BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER, src_node);
+//   while (!bfQuadtreeLevelIterIsDone(&iter)) {
+//     bfMapPtrArray(&iter.level_nodes, (BfPtrFunc)printNode, NULL);
+//     bfQuadtreeLevelIterNext(&iter);
+//   }
 
   /* Figure out the common maximum depth */
 
-  BfSize src_max_depth = 0, tgt_max_depth = 0;
-
-  enum BfError findMaxDepth(BfQuadtreeNode const *node, void *arg) {
-    BfSize *max_depth = arg;
-
-    BfSize depth = bfQuadtreeNodeDepth(node);
-
-    if (depth > *max_depth)
-      *max_depth = depth;
-
-    return BF_ERROR_NO_ERROR;
-  }
-
-  bfMapQuadtreeNodes(src_node, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, findMaxDepth, &src_max_depth);
-  bfMapQuadtreeNodes(src_node, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, findMaxDepth, &tgt_max_depth);
+  BfSize src_max_depth = bfGetMaxDepthBelowQuadtreeNode(src_node);
+  BfSize tgt_max_depth = bfGetMaxDepthBelowQuadtreeNode(tgt_node);
 
   printf("src_max_depth: %lu\n", src_max_depth);
   printf("tgt_max_depth: %lu\n", tgt_max_depth);
 
-  /* Clean up */
+  /* Do a bit of clean up before moving on */
 
-  bfFreeMat(&tgt_pts);
-  bfFreeMat(&src_pts);
   bfFreeMat(&Z_gt);
   bfFreeMat(&U_gt);
   bfFreeMat(&S_gt);
@@ -244,6 +242,265 @@ static void bf_one_block(BfQuadtree const *tree, double k) {
   bfFreeMat(&b1);
   bfFreeMat(&b2);
   bfFreeMat(&b_gt);
+
+  /* Let's try manually doing a couple levels */
+
+  BfQuadtreeLevelIter src_level_iter;
+  bfInitQuadtreeLevelIter(
+    &src_level_iter, BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER, src_node);
+
+  BfQuadtreeLevelIter tgt_level_iter;
+  bfInitQuadtreeLevelIter(
+    &tgt_level_iter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, tgt_node);
+
+  // skip a few levels on the source side
+  for (BfSize i = 0; i < 6; ++i)
+    bfQuadtreeLevelIterNext(&src_level_iter);
+
+  BfSize current_src_depth;
+  bfQuadtreeLevelIterCurrentDepth(&src_level_iter, &current_src_depth);
+  printf("starting source depth: %lu\n", current_src_depth);
+
+  BfSize current_tgt_depth;
+  bfQuadtreeLevelIterCurrentDepth(&tgt_level_iter, &current_tgt_depth);
+  printf("starting target depth: %lu\n", current_tgt_depth);
+
+  BfQuadtreeNode *current_src_node, *current_tgt_node;
+  BfCircle2 current_src_circ, current_tgt_circ;
+
+  BfMat src_node_pts;
+
+  BfSize Z1_num_blocks = bfPtrArraySize(&src_level_iter.level_nodes);
+
+  BfSize *Z1_row_block_sizes = malloc(Z1_num_blocks*sizeof(BfSize));
+  BfSize *Z1_col_block_sizes = malloc(Z1_num_blocks*sizeof(BfSize));
+
+  /* get the current target node and its bounding circle (there's only
+   * one target node on the first level/for the first stage) */
+  bfPtrArrayGetFirst(&tgt_level_iter.level_nodes, (BfPtr *)&current_tgt_node);
+  current_tgt_circ = bfGetQuadtreeNodeBoundingCircle(current_tgt_node);
+
+  printf("initial target node: %p (%lu points)\n",
+         current_tgt_node, bfQuadtreeNodeNumPoints(current_tgt_node));
+
+  /* iterate over each source block and use the a priori rank estimate
+   * to determine the number of equivalent sources to place on each
+   * pair of circles */
+  for (BfSize i = 0; i < Z1_num_blocks; ++i) {
+    bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
+
+    current_src_circ = bfGetQuadtreeNodeBoundingCircle(current_src_node);
+
+    bfHelm2RankEstForTwoCircles(
+      current_src_circ, current_tgt_circ, k, 1, 1e-15, &p_hat);
+
+    Z1_row_block_sizes[i] = (BfSize)ceil(p_hat);
+    Z1_col_block_sizes[i] = bfQuadtreeNodeNumPoints(current_src_node);
+
+    printf("* i = %lu: %p (block: %lu x %lu)\n",
+           i, current_src_node, Z1_row_block_sizes[i], Z1_col_block_sizes[i]);
+  }
+
+  /* allocate block diagonal matrix which will hold the kernel
+   * matrices mapping the charges at the original points contained in
+   * each node to potentials at the target circle points */
+  BfBlockMat Z1_block_mat;
+  bfInitEmptyBlockMat(&Z1_block_mat,
+                      BF_DTYPE_COMPLEX, BF_BLOCK_MAT_PROP_DIAGONAL,
+                      Z1_num_blocks, Z1_row_block_sizes,
+                      Z1_num_blocks, Z1_col_block_sizes);
+
+  for (BfSize i = 0; i < Z1_num_blocks; ++i) {
+    bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
+
+    /* sample points on the target circle */
+    bfInitEmptyMat(&tgt_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
+                   (BfSize[]) {Z1_row_block_sizes[i], 2});
+    bfSamplePointsOnCircle2(&current_tgt_circ, &tgt_circ_pts);
+
+    /* get the original points in the source box */
+    bfInitEmptyMat(&src_node_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
+                   (BfSize[]) {Z1_col_block_sizes[i], 2});
+    bfGetQuadtreeNodePoints(current_src_node, &src_node_pts);
+
+    /* set the current block to the kernel matrix */
+    BfMat *Z1_block = bfGetBlock(&Z1_block_mat, i, i);
+    bfHelm2KernelMatrixFromPoints(Z1_block, &src_node_pts, &tgt_circ_pts, k);
+
+    bfFreeMat(&tgt_circ_pts); // TODO: better resize instead of re-allocating
+    bfFreeMat(&src_node_pts); // and re-freeing over and over again
+  }
+
+  /* probably makes more sense to build the array of matrices and then
+   * construct the block diagonal matrix as a view of them... */
+
+  /* also, we can infer the row and col block sizes from the matrices
+   * stored in the BfBlockMat themselves, so no need to additionally
+   * hold that pointer */
+
+  /* Z1 and Z2 have the same number of blocks */
+  BfSize Z2_num_blocks = Z1_num_blocks;
+  BfMat *Z2_blocks = malloc(Z1_num_blocks*sizeof(BfMat));
+  BfMat kernel;
+
+  for (BfSize i = 0; i < Z2_num_blocks; ++i) {
+    bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
+
+    p = Z1_row_block_sizes[i];
+    BfSize pts_shape[] = {p, 2};
+
+    /* sample points on the target circle */
+    bfInitEmptyMat(&tgt_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfSamplePointsOnCircle2(&current_tgt_circ, &tgt_circ_pts);
+
+    /* sample points on the source circle */
+    bfInitEmptyMat(&src_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, pts_shape);
+    bfSamplePointsOnCircle2(&current_src_circ, &src_circ_pts);
+
+    /* compute the kernel matrix for this set of interactions */
+    bfInitEmptyMat(&kernel, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
+                            (BfSize[]) {p, p});
+    bfHelm2KernelMatrixFromPoints(&kernel, &src_circ_pts, &tgt_circ_pts, k);
+
+    bfFreeMat(&tgt_circ_pts);
+    bfFreeMat(&src_circ_pts);
+
+    /* compute its pseudoinverse and store it in the current block */
+    bfComputePinv(&kernel, PINV_ATOL, PINV_RTOL, &Z2_blocks[i]);
+
+    bfFreeMat(&kernel);
+  }
+
+  /* next, we want to create the first layer of butterfly matrices */
+
+  BfSize getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *ch[4]) {
+    for (BfSize i = 0; i < 4; ++i)
+      ch[i] = NULL;
+    BfSize num_children = 0;
+    for (BfSize i = 0; i < 4; ++i)
+      if (node->child[i] != NULL)
+        ch[num_children++] = node->child[i];
+    return num_children;
+  }
+
+  void makeBfacLayer() {
+    printf("makeBfacLayer()\n");
+
+    bfQuadtreeLevelIterNext(&src_level_iter); // go up a level on the source tree
+
+    BfSize depth;
+
+    bfQuadtreeLevelIterCurrentDepth(&src_level_iter, &depth);
+    printf("* src_level_iter depth: %lu\n", depth);
+
+    bfQuadtreeLevelIterCurrentDepth(&tgt_level_iter, &depth);
+    printf("* tgt_level_iter depth: %lu\n", depth);
+
+    BfSize num_tgt_ch, num_src_ch;
+    BfQuadtreeNode const *tgt_child[4], *src_child[4];
+    BfCircle2 tgt_child_circ[4], src_child_circ[4];
+
+    for (BfSize _ = 0; _ < bfPtrArraySize(&tgt_level_iter.level_nodes); ++_) {
+      bfPtrArrayGet(&tgt_level_iter.level_nodes, _, (BfPtr *)&current_tgt_node);
+
+      printf("  - current_tgt_node #%lu (%p)\n", _, current_tgt_node);
+
+      num_tgt_ch = getChildren(current_tgt_node, tgt_child);
+      for (BfSize i = 0; i < num_tgt_ch; ++i)
+        tgt_child_circ[i] = bfGetQuadtreeNodeBoundingCircle(tgt_child[i]);
+
+      for (BfSize i = 0; i < bfPtrArraySize(&src_level_iter.level_nodes); ++i) {
+        bfPtrArrayGet(&src_level_iter.level_nodes, i, (BfPtr *)&current_src_node);
+
+        printf("    - current_src_node #%lu (%p)\n", i, current_src_node);
+
+        /* get the current source circle---we should have this handy
+         * already so that we don't need to recompute or get the points
+         * again */
+        current_src_circ = bfGetQuadtreeNodeBoundingCircle(current_src_node);
+
+        num_src_ch = getChildren(current_src_node, src_child);
+        for (BfSize j = 0; j < num_src_ch; ++j)
+          src_child_circ[j] = bfGetQuadtreeNodeBoundingCircle(src_child[j]);
+
+        for (BfSize j = 0; j < num_tgt_ch; ++j) {
+          bfHelm2RankEstForTwoCircles(
+            current_src_circ, tgt_child_circ[j], k, 1, 1e-15, &p_hat);
+
+          p = (BfSize)ceil(p_hat);
+
+          for (BfSize l = 0; l < num_src_ch; ++l) {
+
+            printf("      - src_child[%lu] -> tgt_child[%lu]\n", l, j);
+
+            BfSize q = Z1_row_block_sizes[i];
+
+            BfMat Y_child;
+            bfInitEmptyMat(&Y_child, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {p, 2});
+            bfSamplePointsOnCircle2(&tgt_child_circ[j], &Y_child);
+
+            BfMat X_child;
+            bfInitEmptyMat(&X_child, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {q, 2});
+            bfSamplePointsOnCircle2(&src_child_circ[l], &X_child);
+
+            BfMat Z_eval;
+            bfInitEmptyMat(&Z_eval, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {q, p});
+            bfHelm2KernelMatrixFromPoints(&Z_eval, &X_child, &Y_child, k);
+
+            BfMat X;
+            bfInitEmptyMat(&X, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {p, 2});
+            bfSamplePointsOnCircle2(&current_src_circ, &X);
+
+            BfMat Z_eq;
+            bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, p});
+            bfHelm2KernelMatrixFromPoints(&Z_eq, &X, &Y_child, k);
+
+            BfMat Z_eq_pinv;
+            bfInitEmptyMat(&Z_eq_pinv, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
+                           (BfSize[]) {p, p});
+            bfComputePinv(&Z_eq, PINV_ATOL, PINV_RTOL, &Z_eq_pinv);
+
+            // set block to Z_eq\Z_eval
+
+            BfMat block;
+            bfInitEmptyMat(&block, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
+                           (BfSize[]) {p, q});
+            bfMatMul(&Z_eq_pinv, &Z_eq, &block);
+
+            bfFreeMat(&Y_child);
+            bfFreeMat(&X_child);
+            bfFreeMat(&Z_eval);
+            bfFreeMat(&X);
+            bfFreeMat(&Z_eq);
+            bfFreeMat(&Z_eq_pinv);
+            bfFreeMat(&block);
+          }
+        }
+      }
+    }
+
+    bfQuadtreeLevelIterNext(&tgt_level_iter);
+  }
+
+  makeBfacLayer();
+  makeBfacLayer();
+  makeBfacLayer();
+  makeBfacLayer();
+
+  /* clean up */
+
+  free(Z2_blocks);
+  free(Z1_row_block_sizes);
+  free(Z1_col_block_sizes);
+
+  // TODO: next we'll iterate over the edges connecting each level
+
+  // TODO: finally, we'll set up the block diagonal matrix used to evaluate
+
+  /* Clean up */
+
+  bfFreeMat(&tgt_pts);
+  bfFreeMat(&src_pts);
 }
 
 int main(int argc, char const *argv[]) {

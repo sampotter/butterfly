@@ -5,13 +5,6 @@
 #include "const.h"
 #include "geom.h"
 
-BfComplex
-bfHelm2GetKernelValue(BfPoint2 const p, BfPoint2 const q, BfReal k)
-{
-  BfReal arg = k*bfPoint2Dist(p, q);
-  return (I*j0(arg) - y0(arg))/4;
-}
-
 enum BfError
 bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
                             BfReal k, BfReal C, BfReal eps, BfReal *p)
@@ -33,45 +26,47 @@ bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
   return BF_ERROR_NO_ERROR;
 }
 
+BfComplex
+bfHelm2GetKernelValue(BfVec const *x, BfVec const *y, BfReal k)
+{
+  BfReal r = bfVecDist(x, y);
+  BfReal arg = k*r;
+  return (I*j0(arg) - y0(arg))/4;
+}
+
 enum BfError
 bfHelm2KernelMatrixFromPoints(BfMat *K, BfMat const *X, BfMat const *Y, BfReal k)
 {
-  BfSize m = K->shape[0], n = K->shape[1];
+  if (K->dtype != BF_DTYPE_COMPLEX)
+    return BF_ERROR_BAD_DTYPE;
 
-  if (X->shape[0] != n)
+  if (X->dtype != BF_DTYPE_REAL)
+    return BF_ERROR_BAD_DTYPE;
+
+  if (Y->dtype != BF_DTYPE_REAL)
+    return BF_ERROR_BAD_DTYPE;
+
+  BfSize m = bfMatNumRows(K), n = bfMatNumCols(K);
+
+  if (bfMatNumRows(X) != n)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (X->shape[1] != 2)
+  if (bfMatNumCols(X) != 2)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (Y->shape[0] != m)
+  if (bfMatNumRows(Y) != m)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if (Y->shape[1] != 2)
+  if (bfMatNumCols(Y) != 2)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  BfReal *x, *y;
-  BfComplex *row;
-
-  enum BfError error = BF_ERROR_NO_ERROR;
-
-  for (BfSize i = 0; i < m; ++i)
-  {
-    error = bfGetMatRow(K, i, (void **)&row);
-    if (error)
-      return error;
-
-    error = bfGetMatRow(Y, i, (void **)&y);
-    if (error)
-      return error;
-
-    for (BfSize j = 0; j < n; ++j)
-    {
-      error = bfGetMatRow(X, j, (void **)&x);
-      if (error)
-        return error;
-
-      row[j] = bfHelm2GetKernelValue(x, y, k);
+  BfVec x, y, row;
+  for (BfSize i = 0; i < m; ++i) {
+    row = bfGetMatRow(K, i);
+    y = bfGetMatRow(Y, i);
+    for (BfSize j = 0; j < n; ++j) {
+      x = bfGetMatRow(X, j);
+      *(BfComplex *)bfVecGetEltPtr(&row, j) = bfHelm2GetKernelValue(&x, &y, k);
     }
   }
 
