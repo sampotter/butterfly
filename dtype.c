@@ -1,5 +1,7 @@
 #include "dtype.h"
 
+#include <assert.h>
+
 #include "mat.h"
 
 BfSize bfDtypeSize(enum BfDtypes dtype) {
@@ -34,4 +36,11 @@ static enum BfDtypes const DTYPE_VALID_MASK =
 
 bool bfDtypeIsValid(enum BfDtypes dtype) {
   return dtype & DTYPE_VALID_MASK;
+}
+
+void bfGetDtypeZero(enum BfDtypes dtype, BfPtr ptr) {
+  assert(bfDtypeIsValid(dtype) && dtype != BF_DTYPE_MAT);
+
+  if (dtype == BF_DTYPE_REAL)    *(BfReal *)ptr = 0;
+  if (dtype == BF_DTYPE_COMPLEX) *(BfComplex *)ptr = 0;
 }

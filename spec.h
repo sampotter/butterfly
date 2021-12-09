@@ -25,7 +25,7 @@ enum BfKernel {
 };
 
 enum BfQuad {
-  BF_QUAD_TRAPEZOIDAL
+  BF_QUAD_TRAPEZOID
 };
 
 typedef struct {

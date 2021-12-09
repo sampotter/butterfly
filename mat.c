@@ -154,31 +154,64 @@ bfFillMatRandn(BfMat *A)
   }
 }
 
-static bool check_offset(BfMat const *A, BfSize i, BfSize j) {
+static bool validIndex(BfMat const *A, BfSize i, BfSize j) {
   return i < A->shape[0] && j < A->shape[1];
 }
 
 static BfSize offset(BfMat const *A, BfSize i, BfSize j) {
+  assert(A->props & ~BF_MAT_PROP_DIAGONAL);
+
   return i*A->stride[0] + j*A->stride[1];
+}
+
+static void
+getDiagonalMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr) {
+  assert(A->dtype != BF_DTYPE_MAT);
+
+  if (i == j) {
+    BfSize size = bfDtypeSize(A->dtype);
+    memcpy(ptr, A->data + i*size, size);
+  } else {
+    bfGetDtypeZero(A->dtype, ptr);
+  }
 }
 
 enum BfError
 bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr) {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  if (!check_offset(A, i, j))
+  if (!validIndex(A, i, j))
     return BF_ERROR_OUT_OF_RANGE;
 
-  BfSize dtype_size = bfDtypeSize(A->dtype);
-  memcpy(ptr, A->data + offset(A, i, j), dtype_size);
+  if (A->props & BF_MAT_PROP_DIAGONAL) {
+    getDiagonalMatElt(A, i, j, ptr);
+  } else {
+    BfSize dtype_size = bfDtypeSize(A->dtype);
+    memcpy(ptr, A->data + offset(A, i, j), dtype_size);
+  }
+
+  return BF_ERROR_NO_ERROR;
+}
+
+enum BfError
+getDiagonalMatEltPtr(BfMat const *A, BfSize i, BfSize j, BfPtr *ptr) {
+  if (i != j)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  BfSize size = bfDtypeSize(A->dtype);
+
+  *ptr = A->data + i*size;
 
   return BF_ERROR_NO_ERROR;
 }
 
 enum BfError
 bfGetMatEltPtr(BfMat const *A, BfSize i, BfSize j, BfPtr *ptr) {
-  if (!check_offset(A, i, j))
+  if (!validIndex(A, i, j))
     return BF_ERROR_OUT_OF_RANGE;
+
+  if (A->props & BF_MAT_PROP_DIAGONAL)
+    return getDiagonalMatEltPtr(A, i, j, ptr);
 
   *ptr = A->data + offset(A, i, j);
 

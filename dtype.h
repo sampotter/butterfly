@@ -14,3 +14,5 @@ BfSize bfDtypeSize(enum BfDtypes dtype);
 enum BfError bfSizeOfDtype(enum BfDtypes dtype, BfSize *size);
 
 bool bfDtypeIsValid(enum BfDtypes dtype);
+
+void bfGetDtypeZero(enum BfDtypes dtype, BfPtr ptr);
