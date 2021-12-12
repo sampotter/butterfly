@@ -45,29 +45,29 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   BfSize n = bfQuadtreeNodeNumPoints(src_node);
 
   BfMat tgt_pts;
-  bfInitEmptyMat(&tgt_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {m, 2});
+  bfInitEmptyMat(&tgt_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, m, 2);
   bfGetQuadtreeNodePoints(tgt_node, &tgt_pts);
 
   bfSaveMat(&tgt_pts, "tgt_pts.bin");
   puts("wrote tgt_pts.bin");
 
   BfMat src_pts;
-  bfInitEmptyMat(&src_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, (BfSize[]) {n, 2});
+  bfInitEmptyMat(&src_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, n, 2);
   bfGetQuadtreeNodePoints(src_node, &src_pts);
 
   bfSaveMat(&src_pts, "src_pts.bin");
   puts("wrote src_pts.bin");
 
   BfMat Z_gt;
-  bfInitEmptyMat(&Z_gt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, n});
+  bfInitEmptyMat(&Z_gt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, n);
   bfHelm2KernelMatrixFromPoints(&Z_gt, &src_pts, &tgt_pts, K);
 
   BfSize num_bytes;
   bfMatNumBytes(&Z_gt, &num_bytes);
 
   printf("computed groundtruth subblock of kernel matrix:\n");
-  printf("- rows: %lu\n", Z_gt.shape[0]);
-  printf("- columns: %lu\n", Z_gt.shape[1]);
+  printf("- rows: %lu\n", Z_gt.numRows);
+  printf("- columns: %lu\n", Z_gt.numCols);
   printf("- size: %1.2f MB\n", ((double)num_bytes)/(1024*1024));
 
   bfSaveMat(&Z_gt, "Z_gt.bin");
@@ -97,14 +97,14 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   printf("rank estimate for single stage: p = %lu\n", p);
 
   BfMat src_circ_pts;
-  bfInitEmptyMat(&src_circ_pts,BF_DTYPE_REAL,BF_MAT_PROP_NONE,(BfSize[]){p,2});
+  bfInitEmptyMat(&src_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
   bfSamplePointsOnCircle2(&src_circ, &src_circ_pts);
 
   bfSaveMat(&src_circ_pts, "src_circ_pts.bin");
   puts("wrote src_circ_pts.bin");
 
   BfMat tgt_circ_pts;
-  bfInitEmptyMat(&tgt_circ_pts,BF_DTYPE_REAL,BF_MAT_PROP_NONE,(BfSize[]){p,2});
+  bfInitEmptyMat(&tgt_circ_pts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
   bfSamplePointsOnCircle2(&tgt_circ, &tgt_circ_pts);
 
   bfSaveMat(&tgt_circ_pts, "tgt_circ_pts.bin");
@@ -113,21 +113,21 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   printf("computed Z1\n");
 
   BfMat Z1;
-  bfInitEmptyMat(&Z1, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, n});
+  bfInitEmptyMat(&Z1, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, n);
   error = bfHelm2KernelMatrixFromPoints(&Z1, &src_pts, &tgt_circ_pts, K);
   assert(!error);
 
   printf("computed Z2\n");
 
   BfMat Z2;
-  bfInitEmptyMat(&Z2, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, p});
+  bfInitEmptyMat(&Z2, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, p);
   error = bfHelm2KernelMatrixFromPoints(&Z2, &src_circ_pts, &tgt_circ_pts, K);
   assert(!error);
 
   printf("computed Z3\n");
 
   BfMat Z3;
-  bfInitEmptyMat(&Z3, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, p});
+  bfInitEmptyMat(&Z3, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, p);
   bfHelm2KernelMatrixFromPoints(&Z3, &src_circ_pts, &tgt_pts, K);
 
   bfSaveMat(&Z1, "Z1.bin");
@@ -152,14 +152,14 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   BfSize num_trials = 10;
 
   BfMat x;
-  bfInitEmptyMat(&x,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){n,num_trials});
+  bfInitEmptyMat(&x, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, n, num_trials);
   bfFillMatRandn(&x);
 
   bfSaveMat(&x, "x.bin");
   puts("wrote x.bin");
 
   BfMat b_gt;
-  bfInitEmptyMat(&b_gt,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){m,num_trials});
+  bfInitEmptyMat(&b_gt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, num_trials);
   bfMatMul(&Z_gt, &x, &b_gt);
 
   bfSaveMat(&b_gt, "b_gt.bin");
@@ -167,9 +167,9 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   puts("wrote b_gt.bin");
 
   BfMat b1, b2, b;
-  bfInitEmptyMat(&b1,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){p,num_trials});
-  bfInitEmptyMat(&b2,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){p,num_trials});
-  bfInitEmptyMat(&b,BF_DTYPE_COMPLEX,BF_MAT_PROP_NONE,(BfSize[]){m,num_trials});
+  bfInitEmptyMat(&b1, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, num_trials);
+  bfInitEmptyMat(&b2, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, num_trials);
+  bfInitEmptyMat(&b, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, num_trials);
 
   error |= bfMatMul(&Z1, &x, &b1); // b1 = Z1*x
   error |= bfMatSolve(&U2, &b1, &b2); // b2 = U2\b1
@@ -298,7 +298,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
 
     /* initialize the block diagonal butterfly factor */
     bfInitEmptyMat(factor, BF_DTYPE_MAT, BF_MAT_PROP_DIAGONAL,
-                   (BfSize[]) {num_blocks, num_blocks});
+                   num_blocks, num_blocks);
 
     /* iterate over each node at the starting level of the source tree
      * and compute the matrix which will maps the charges at the
@@ -314,7 +314,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       BfSize numSrcPts = bfQuadtreeNodeNumPoints(srcNode);
       BfMat srcPts;
       bfInitEmptyMat(&srcPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
-                     (BfSize[]) {numSrcPts, 2});
+                     numSrcPts, 2);
       bfGetQuadtreeNodePoints(srcNode, &srcPts);
 
       /* get the rank estimate for the current pair of source and
@@ -323,23 +323,20 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       bfHelm2RankEstForTwoCircles(srcCirc, tgtCirc, K, 1, 1e-15, &p_hat);
       BfSize p = ceil(p_hat);
 
-      BfSize circShape[] = {p, 2};
-
       /* sample points on the target circle */
       BfMat tgtCircPts;
-      bfInitEmptyMat(&tgtCircPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, circShape);
+      bfInitEmptyMat(&tgtCircPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
       bfSamplePointsOnCircle2(&tgtCirc, &tgtCircPts);
 
       /* sample points on the source circle */
       BfMat srcCircPts;
-      bfInitEmptyMat(&srcCircPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, circShape);
+      bfInitEmptyMat(&srcCircPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
       bfSamplePointsOnCircle2(&srcCirc, &srcCircPts);
 
       /* compute the kernel matrix mapping charges on the original
        * points to potentials on the target circle */
       BfMat Z_or;
-      bfInitEmptyMat(&Z_or, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                     (BfSize[]) {p, numSrcPts});
+      bfInitEmptyMat(&Z_or, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, numSrcPts);
       bfHelm2KernelMatrixFromPoints(&Z_or, &srcPts, &tgtCircPts, K);
 
       bfSaveMat(&Z_or, "Z_or.bin");
@@ -347,16 +344,14 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       /* compute the kernel matrix mapping charges on the source
        * circle to potentials on the target circle */
       BfMat Z_eq;
-      bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                     (BfSize[]) {p, p});
+      bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, p);
       bfHelm2KernelMatrixFromPoints(&Z_eq, &srcCircPts, &tgtCircPts, K);
 
       bfSaveMat(&Z_eq, "Z_eq.bin");
 
       /* compute the pseudoinverse of Z_eq */
       BfMat Z_eq_pinv;
-      bfInitEmptyMat(&Z_eq_pinv, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                     (BfSize[]) {p, p});
+      bfInitEmptyMat(&Z_eq_pinv, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, p);
       bfComputePinv(&Z_eq, PINV_ATOL, PINV_RTOL, &Z_eq_pinv);
 
       bfSaveMat(&Z_eq_pinv, "Z_eq_pinv.bin");
@@ -365,8 +360,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
        * Z_eq\Z_or */
       BfMat *block;
       bfGetMatEltPtr(factor, i, i, (BfPtr *)&block);
-      bfInitEmptyMat(block, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                     (BfSize[]){p, numSrcPts});
+      bfInitEmptyMat(block, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, numSrcPts);
       bfMatMul(&Z_eq_pinv, &Z_or, block);
 
       bfSaveMat(block,"block.bin");
@@ -395,12 +389,22 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
     return numChildren;
   }
 
+  BfSize numBlockRows(BfMat const *block_mat, BfSize i) {
+    assert(block_mat->dtype == BF_DTYPE_MAT);
+
+    BfMat const *mat;
+    assert(!bfGetMatEltPtr(block_mat, i, 0, (BfPtr *)&mat));
+
+    return bfMatNumRows(mat);
+  }
+
   void makeFactor(BfMat *factor, BfMat *prevFactor) {
     /* go up a level on the source tree */
     bfQuadtreeLevelIterNext(&src_level_iter);
 
-    // TODO:
     assert(false);
+    (void)factor;
+    // bfInitEmptyMat(factor,
 
     for (BfSize i = 0; i < bfPtrArraySize(&tgt_level_iter.level_nodes); ++i) {
       BfQuadtreeNode const *tgtNode;
@@ -426,46 +430,43 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
         for (BfSize k = 0; k < numSrcChildren; ++k)
           srcChildCirc[k] = bfGetQuadtreeNodeBoundingCircle(srcChild[k]);
 
+        BfMat *block;
+        assert(false); // TODO: get block?
+
         for (BfSize k = 0; k < numTgtChildren; ++k) {
           BfReal p_hat;
           bfHelm2RankEstForTwoCircles(srcCirc,tgtChildCirc[k],K,1,1e-15,&p_hat);
           BfSize p = ceil(p_hat);
 
           BfMat tgtChildPts;
-          bfInitEmptyMat(&tgtChildPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
-                         (BfSize[]) {p, 2});
+          bfInitEmptyMat(&tgtChildPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
           bfSamplePointsOnCircle2(&tgtChildCirc[k], &tgtChildPts);
 
           for (BfSize l = 0; l < numSrcChildren; ++l) {
-            BfSize q = getBlockRows(prevFactor, i);
+            BfSize q = numBlockRows(prevFactor, i);
 
             BfMat srcChildPts;
-            bfInitEmptyMat(&srcChildPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
-                           (BfSize[]) {q, 2});
+            bfInitEmptyMat(&srcChildPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, q, 2);
             bfSamplePointsOnCircle2(&srcChildCirc[l], &srcChildPts);
 
             BfMat Z_eval;
-            bfInitEmptyMat(&Z_eval, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                           (BfSize[]) {p, q});
+            bfInitEmptyMat(&Z_eval, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, q);
             bfHelm2KernelMatrixFromPoints(&Z_eval,&srcChildPts,&tgtChildPts,K);
 
             BfMat srcPts;
-            bfInitEmptyMat(&srcPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE,
-                           (BfSize[]) {p, 2});
+            bfInitEmptyMat(&srcPts, BF_DTYPE_REAL, BF_MAT_PROP_NONE, p, 2);
             bfSamplePointsOnCircle2(&srcCirc, &srcPts);
 
             BfMat Z_eq;
-            bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                           (BfSize[]) {p, p});
+            bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, p);
             bfHelm2KernelMatrixFromPoints(&Z_eq, &srcPts, &tgtChildPts, K);
 
             BfMat *subBlock;
             bfGetMatEltPtr(block, k, l, (BfPtr *)&subBlock);
-            bfInitEmptyMat(subBlock, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
-                           (BfSize[]) {p, q});
+            bfInitEmptyMat(subBlock, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, q);
             bfMatLstSq(&Z_eq, &Z_eval, subBlock);
 
-            bfFreemat(&Z_eq);
+            bfFreeMat(&Z_eq);
             bfFreeMat(&srcPts);
             bfFreeMat(&Z_eval);
             bfFreeMat(&srcChildPts);
@@ -481,6 +482,8 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   }
 
   void makeLastFactor(BfMat *factor, BfMat const *prevFactor) {
+    (void)factor;
+    (void)prevFactor;
     assert(false); // TODO: implement me
   }
 

@@ -16,10 +16,10 @@ BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
 enum BfError
 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfMat *X)
 {
-  if (X->shape[1] != 2)
+  if (X->numCols != 2)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  BfSize num_points = X->shape[0];
+  BfSize num_points = X->numRows;
 
   BfReal scale = BF_TWO_PI/((BfReal)num_points), *x;
   for (BfSize i = 0; i < num_points; ++i) {

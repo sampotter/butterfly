@@ -14,7 +14,7 @@ BfSize bfMatSize(BfMat const *A)
 {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  return A->shape[0]*A->shape[1];
+  return A->numRows*A->numCols;
 }
 
 enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
@@ -28,7 +28,7 @@ enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
   if (error)
     return error;
 
-  BfSize m = A->shape[0], n = A->shape[1];
+  BfSize m = A->numRows, n = A->numCols;
 
   BfSize num_entries = A->props & BF_MAT_PROP_DIAGONAL ?
     (m < n ? m : n) :
@@ -42,33 +42,33 @@ enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes)
 BfSize bfMatNumRows(BfMat const *A) {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  return bfMatIsTransposed(A) ? A->shape[1] : A->shape[0];
+  return bfMatIsTransposed(A) ? A->numCols : A->numRows;
 }
 
 BfSize bfMatNumCols(BfMat const *A) {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  return bfMatIsTransposed(A) ? A->shape[0] : A->shape[1];
+  return bfMatIsTransposed(A) ? A->numRows : A->numCols;
 }
 
 bool bfMatIsAligned(BfMat const *A) {
   assert(A->dtype != BF_DTYPE_MAT);
 
   BfSize dtype_size = bfDtypeSize(A->dtype);
-  bool ptr_aligned = (BfSize)A->data % dtype_size == 0;
-  bool stride_0_aligned = A->stride[0] % dtype_size == 0;
-  bool stride_1_aligned = A->stride[1] % dtype_size == 0;
-  return ptr_aligned && stride_0_aligned && stride_1_aligned;
+
+  return ((BfSize)A->data % dtype_size == 0)
+      && (A->rowStride % dtype_size == 0)
+      && (A->colStride % dtype_size == 0);
 }
 
 BfSize bfMatRowStride(BfMat const *A) {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  return bfMatIsTransposed(A) ? A->stride[1] : A->stride[0];
+  return bfMatIsTransposed(A) ? A->colStride : A->rowStride;
 }
 
 BfSize bfMatColStride(BfMat const *A) {
-  return bfMatIsTransposed(A) ? A->stride[0] : A->stride[1];
+  return bfMatIsTransposed(A) ? A->rowStride : A->colStride;
 }
 
 enum BfError bfFreeMat(BfMat *A)
@@ -82,7 +82,7 @@ enum BfError bfFreeMat(BfMat *A)
 
 enum BfError
 bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
-               BfSize const shape[2])
+               BfSize numRows, BfSize numCols)
 {
   assert(A->dtype != BF_DTYPE_MAT);
 
@@ -90,18 +90,18 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
 
   A->dtype = dtype;
   A->props = props;
-  A->shape[0] = shape[0];
-  A->shape[1] = shape[1];
+  A->numRows = numRows;
+  A->numCols = numCols;
 
   BfSize dtype_size;
   error |= bfSizeOfDtype(A->dtype, &dtype_size);
   if (error)
     return error;
 
-  A->stride[0] = dtype_size*shape[1];
-  A->stride[1] = dtype_size;
+  A->rowStride = dtype_size*numCols;
+  A->colStride = dtype_size;
 
-  A->data = malloc(dtype_size*shape[0]*shape[1]);
+  A->data = malloc(dtype_size*numRows*numCols);
 
   return error;
 }
@@ -120,7 +120,7 @@ bfSaveMat(BfMat const *A, char const *path)
   if (error)
     goto cleanup;
 
-  BfSize m = A->shape[0], n = A->shape[1];
+  BfSize m = A->numRows, n = A->numCols;
 
   BfSize num_entries = A->props & BF_MAT_PROP_DIAGONAL ?
     (m < n ? m : n) :
@@ -155,13 +155,13 @@ bfFillMatRandn(BfMat *A)
 }
 
 static bool validIndex(BfMat const *A, BfSize i, BfSize j) {
-  return i < A->shape[0] && j < A->shape[1];
+  return i < A->numRows && j < A->numCols;
 }
 
 static BfSize offset(BfMat const *A, BfSize i, BfSize j) {
   assert(A->props & ~BF_MAT_PROP_DIAGONAL);
 
-  return i*A->stride[0] + j*A->stride[1];
+  return i*A->rowStride + j*A->colStride;
 }
 
 static void
@@ -248,7 +248,7 @@ bfSetMatRow(BfMat *A, BfSize i, void const *data)
 {
   assert(A->dtype != BF_DTYPE_MAT);
 
-  BfSize m = A->shape[0], n = A->shape[1];
+  BfSize m = A->numRows, n = A->numCols;
 
   if (i >= m)
     return BF_ERROR_INVALID_ARGUMENTS;
@@ -308,8 +308,8 @@ BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
     A_rows.props ^= BF_MAT_PROP_SEMI_UNITARY;
   }
 
-  A_rows.shape[0] = i1 - i0;
-  A_rows.data += i0*A->shape[1];
+  A_rows.numRows = i1 - i0;
+  A_rows.data += i0*A->numCols;
 
   return A_rows;
 }
@@ -326,7 +326,7 @@ BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
     A_cols.props ^= BF_MAT_PROP_SEMI_UNITARY;
   }
 
-  A_cols.shape[1] = j1 - j0;
+  A_cols.numCols = j1 - j0;
   A_cols.data += j0;
 
   return A_cols;
@@ -338,9 +338,9 @@ BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
 
   BfMat A_subblock = *A;
   A_subblock.props |= BF_MAT_PROP_VIEW;
-  A_subblock.shape[0] = i1 - i0;
-  A_subblock.shape[1] = j1 - j0;
-  A_subblock.data += i0*A->shape[1] + j0;
+  A_subblock.numRows = i1 - i0;
+  A_subblock.numCols = j1 - j0;
+  A_subblock.data += i0*A->numCols + j0;
   return A_subblock;
 }
 
@@ -448,7 +448,7 @@ realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 
   BfReal scale;
   if (A->props & BF_MAT_PROP_DIAGONAL) {
-    BfSize n = A->shape[1];
+    BfSize n = A->numCols;
     BfVec row;
     for (BfSize i = 0; i < n; ++i) {
       bfCopyMatRow(B, i, C, i);
@@ -471,7 +471,7 @@ complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
     return BF_ERROR_INVALID_ARGUMENTS;
 
   if (A->props & BF_MAT_PROP_UNITARY) {
-    BfSize m = A->shape[1], n = B->shape[1], k = A->shape[0];
+    BfSize m = A->numCols, n = B->numCols, k = A->numRows;
 
     BfComplex alpha = 1, beta = 0;
 
@@ -497,24 +497,24 @@ bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 
   /* check whether A and B have compatible shapes to form A\B */
 
-  if ((!A_trans && !B_trans && A->shape[0] != B->shape[0]) ||
-      ( A_trans && !B_trans && A->shape[1] != B->shape[0]) ||
-      (!A_trans &&  B_trans && A->shape[0] != B->shape[1]) ||
-      ( A_trans &&  B_trans && A->shape[1] != B->shape[1]))
+  if ((!A_trans && !B_trans && A->numRows != B->numRows) ||
+      ( A_trans && !B_trans && A->numCols != B->numRows) ||
+      (!A_trans &&  B_trans && A->numRows != B->numCols) ||
+      ( A_trans &&  B_trans && A->numCols != B->numCols))
     return BF_ERROR_INVALID_ARGUMENTS;
 
   /* check that A\B and C have the same shape */
 
-  if ((!A_trans && !C_trans && A->shape[1] != C->shape[0]) ||
-      ( A_trans && !C_trans && A->shape[0] != C->shape[0]) ||
-      (!A_trans &&  C_trans && A->shape[1] != C->shape[1]) ||
-      ( A_trans &&  C_trans && A->shape[0] != C->shape[1]))
+  if ((!A_trans && !C_trans && A->numCols != C->numRows) ||
+      ( A_trans && !C_trans && A->numRows != C->numRows) ||
+      (!A_trans &&  C_trans && A->numCols != C->numCols) ||
+      ( A_trans &&  C_trans && A->numRows != C->numCols))
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  if ((!B_trans && !C_trans && B->shape[1] != C->shape[1]) ||
-      ( B_trans && !C_trans && B->shape[0] != C->shape[1]) ||
-      (!B_trans &&  C_trans && B->shape[1] != C->shape[0]) ||
-      ( B_trans &&  C_trans && B->shape[0] != C->shape[0]))
+  if ((!B_trans && !C_trans && B->numCols != C->numCols) ||
+      ( B_trans && !C_trans && B->numRows != C->numCols) ||
+      (!B_trans &&  C_trans && B->numCols != C->numRows) ||
+      ( B_trans &&  C_trans && B->numRows != C->numRows))
     return BF_ERROR_INVALID_ARGUMENTS;
 
   if (A->dtype == BF_DTYPE_REAL && B->dtype == BF_DTYPE_COMPLEX)
@@ -532,27 +532,24 @@ initEmptySvdMatsComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  BfSize m = A->shape[0];
-  BfSize n = A->shape[1];
+  BfSize m = A->numRows;
+  BfSize n = A->numCols;
   BfSize p = m < n ? m : n;
 
   /* init U */
-  BfSize U_shape[] = {m, p};
-  error = bfInitEmptyMat(U, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, U_shape);
+  error = bfInitEmptyMat(U, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, p);
   if (error)
     return error;
 
   /* init S */
-  BfSize S_shape[] = {p, p};
-  error = bfInitEmptyMat(S, BF_DTYPE_REAL, BF_MAT_PROP_DIAGONAL, S_shape);
+  error = bfInitEmptyMat(S, BF_DTYPE_REAL, BF_MAT_PROP_DIAGONAL, p, p);
   if (error) {
     bfFreeMat(U);
     return error;
   }
 
   /* init Vt */
-  BfSize Vt_shape[] = {p, n};
-  error = bfInitEmptyMat(Vt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, Vt_shape);
+  error = bfInitEmptyMat(Vt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, n);
   if (error) {
     bfFreeMat(U);
     bfFreeMat(S);
@@ -582,8 +579,8 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  lapack_int m = A->shape[0];
-  lapack_int n = A->shape[1];
+  lapack_int m = A->numRows;
+  lapack_int n = A->numCols;
 
   /* zgesvd will overwrite A, so make a copy of it here for input */
   BfComplex *A_data_copy = malloc(m*n*sizeof(BfComplex));
@@ -658,7 +655,7 @@ bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
   /* compute tolerance and compute number of terms to
    * retain in pseudoinverse */
 
-  BfSize m = A->shape[0], n = A->shape[1];
+  BfSize m = A->numRows, n = A->numCols;
   BfSize k_max = m < n ? m : n;
 
   BfReal *sigma = S.data;
@@ -684,7 +681,7 @@ bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
 
   BfMat WkH;
 
-  error = bfInitEmptyMat(&WkH, UkH.dtype, BF_MAT_PROP_NONE, (BfSize[]) {k, n});
+  error = bfInitEmptyMat(&WkH, UkH.dtype, BF_MAT_PROP_NONE, k, n);
   if (error)
     goto cleanup;
 
@@ -692,7 +689,7 @@ bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
   if (error)
     goto cleanup;
 
-  error = bfInitEmptyMat(pinv, A->dtype, A->props, (BfSize[]) {n, m});
+  error = bfInitEmptyMat(pinv, A->dtype, A->props, n, m);
   if (error)
     goto cleanup;
 
@@ -714,8 +711,8 @@ bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
 
   BfReal const atol = BF_EPS_MACH;
 
-  BfSize m = A->shape[0];
-  BfSize n = A->shape[1];
+  BfSize m = A->numRows;
+  BfSize n = A->numCols;
   BfReal const rtol = (m > n ? m : n)*BF_EPS_MACH;
 
   BfMat A_pinv;

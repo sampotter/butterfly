@@ -381,7 +381,7 @@ bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfMat *X)
   size_t *node_indices;
   bfGetQuadtreeNodeIndices(node, &num_points, &node_indices);
 
-  if (X->shape[0] != num_points)
+  if (X->numRows != num_points)
     return BF_ERROR_INVALID_ARGUMENTS;
 
   BfQuadtree const *tree = bfGetQuadtreeFromNode(node);

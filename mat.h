@@ -18,8 +18,8 @@ enum BfMatProps {
 typedef struct BfMat {
   enum BfDtypes dtype;
   enum BfMatProps props;
-  BfSize shape[2];
-  BfSize stride[2];
+  BfSize numRows, numCols;
+  BfSize rowStride, colStride;
   BfPtr data;
 } BfMat;
 
@@ -37,7 +37,7 @@ enum BfError bfFreeMat(BfMat *A);
 
 enum BfError
 bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
-               BfSize const shape[2]);
+               BfSize numRows, BfSize numCols);
 
 enum BfError
 bfSaveMat(BfMat const *A, char const *path);
