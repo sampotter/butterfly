@@ -60,7 +60,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
 
   BfMat Z_gt;
   bfInitEmptyMat(&Z_gt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, n});
-  bfHelm2KernelMatrixFromPoints(&Z_gt, &src_pts, &tgt_pts, k);
+  bfHelm2KernelMatrixFromPoints(&Z_gt, &src_pts, &tgt_pts, K);
 
   BfSize num_bytes;
   bfMatNumBytes(&Z_gt, &num_bytes);
@@ -89,7 +89,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
   BfCircle2 tgt_circ = bfGetQuadtreeNodeBoundingCircle(tgt_node);
 
   BfReal p_hat;
-  error = bfHelm2RankEstForTwoCircles(src_circ, tgt_circ, k, 1, 1e-15, &p_hat);
+  error = bfHelm2RankEstForTwoCircles(src_circ, tgt_circ, K, 1, 1e-15, &p_hat);
   assert(!error);
 
   BfSize p = ceil(p_hat);
@@ -114,21 +114,21 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
 
   BfMat Z1;
   bfInitEmptyMat(&Z1, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, n});
-  error = bfHelm2KernelMatrixFromPoints(&Z1, &src_pts, &tgt_circ_pts, k);
+  error = bfHelm2KernelMatrixFromPoints(&Z1, &src_pts, &tgt_circ_pts, K);
   assert(!error);
 
   printf("computed Z2\n");
 
   BfMat Z2;
   bfInitEmptyMat(&Z2, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {p, p});
-  error = bfHelm2KernelMatrixFromPoints(&Z2, &src_circ_pts, &tgt_circ_pts, k);
+  error = bfHelm2KernelMatrixFromPoints(&Z2, &src_circ_pts, &tgt_circ_pts, K);
   assert(!error);
 
   printf("computed Z3\n");
 
   BfMat Z3;
   bfInitEmptyMat(&Z3, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, (BfSize[]) {m, p});
-  bfHelm2KernelMatrixFromPoints(&Z3, &src_circ_pts, &tgt_pts, k);
+  bfHelm2KernelMatrixFromPoints(&Z3, &src_circ_pts, &tgt_pts, K);
 
   bfSaveMat(&Z1, "Z1.bin");
   bfSaveMat(&Z2, "Z2.bin");
@@ -320,7 +320,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       /* get the rank estimate for the current pair of source and
        * target bounding circles */
       BfReal p_hat;
-      bfHelm2RankEstForTwoCircles(srcCirc, tgtCirc, k, 1, 1e-15, &p_hat);
+      bfHelm2RankEstForTwoCircles(srcCirc, tgtCirc, K, 1, 1e-15, &p_hat);
       BfSize p = ceil(p_hat);
 
       BfSize circShape[] = {p, 2};
@@ -340,7 +340,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       BfMat Z_or;
       bfInitEmptyMat(&Z_or, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
                      (BfSize[]) {p, numSrcPts});
-      bfHelm2KernelMatrixFromPoints(&Z_or, &srcPts, &tgtCircPts, k);
+      bfHelm2KernelMatrixFromPoints(&Z_or, &srcPts, &tgtCircPts, K);
 
       bfSaveMat(&Z_or, "Z_or.bin");
 
@@ -349,7 +349,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
       BfMat Z_eq;
       bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
                      (BfSize[]) {p, p});
-      bfHelm2KernelMatrixFromPoints(&Z_eq, &srcCircPts, &tgtCircPts, k);
+      bfHelm2KernelMatrixFromPoints(&Z_eq, &srcCircPts, &tgtCircPts, K);
 
       bfSaveMat(&Z_eq, "Z_eq.bin");
 
@@ -384,7 +384,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
     return BF_ERROR_NO_ERROR;
   }
 
-  BfSize getChildren(BfQuadtreeNode const *node, BfQuadtreeNode *child[4]) {
+  BfSize getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
     for (BfSize i = 0; i < 4; ++i)
       child[i] = NULL;
 
@@ -457,7 +457,7 @@ static void bf_one_block(BfQuadtree const *tree, double K) {
             BfMat Z_eq;
             bfInitEmptyMat(&Z_eq, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE,
                            (BfSize[]) {p, p});
-            bfHelm2KernelMatrixFromPoints(&Z_eq, &srcPt,s &tgtChildPts, K);
+            bfHelm2KernelMatrixFromPoints(&Z_eq, &srcPts, &tgtChildPts, K);
 
             BfMat *subBlock;
             bfGetMatEltPtr(block, k, l, (BfPtr *)&subBlock);
