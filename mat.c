@@ -706,3 +706,29 @@ cleanup:
 
   return error;
 }
+
+enum BfError
+bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  BfReal const atol = BF_EPS_MACH;
+
+  BfSize m = A->shape[0];
+  BfSize n = A->shape[1];
+  BfReal const rtol = (m > n ? m : n)*BF_EPS_MACH;
+
+  BfMat A_pinv;
+  error = bfComputePinv(A, atol, rtol, &A_pinv);
+  if (error)
+    goto cleanup;
+
+  error = bfMatMul(&A_pinv, B, C);
+  if (error)
+    goto cleanup;
+
+cleanup:
+  bfFreeMat(&A_pinv);
+
+  return error;
+}

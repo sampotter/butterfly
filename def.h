@@ -12,6 +12,7 @@
 typedef double BfReal;
 typedef double _Complex BfComplex;
 typedef double BfPoint2[2];
+#define BF_EPS_MACH 2.220446049250313e-16
 #elif BF_SINGLE
 #  error "single precision not yet implemented"
 #else
