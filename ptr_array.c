@@ -52,7 +52,7 @@ enum BfError extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
   if (new_capacity <= arr->capacity)
     return BF_ERROR_INVALID_ARGUMENTS;
 
-  void *new_data = reallocarray(arr->data, new_capacity, sizeof(BfPtr));
+  void *new_data = realloc(arr->data, sizeof(BfPtr)*new_capacity);
   if (new_data == NULL)
     return BF_ERROR_MEMORY_ERROR;
 
