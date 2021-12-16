@@ -12,7 +12,7 @@ enum BfMatProps {
   BF_MAT_PROP_CONJ_TRANS    = (1 << 3),
   BF_MAT_PROP_UNITARY       = (1 << 4),
   BF_MAT_PROP_SEMI_UNITARY  = (1 << 5),
-  BF_MAT_PROP_SPARSE_CSR    = (1 << 6)
+  BF_MAT_PROP_SPARSE_CSR    = (1 << 6),
 };
 
 typedef struct BfMat {
@@ -22,6 +22,10 @@ typedef struct BfMat {
   BfSize rowStride, colStride;
   BfPtr data;
 } BfMat;
+
+BfMat bfGetUninitializedMat();
+
+bool bfMatIsInitialized(BfMat const *A);
 
 BfSize bfMatSize(BfMat const *A);
 enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes);

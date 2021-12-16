@@ -18,4 +18,4 @@ typedef struct BfVec {
 
 BfPtr bfVecGetEltPtr(BfVec *x, BfSize i);
 BfReal bfVecDist(BfVec const *x, BfVec const *y);
-void bfVecScale(BfVec *x, BfPtr value);
+void bfVecScaleByReal(BfVec *x, BfReal scale);

@@ -22,6 +22,7 @@ plt.colorbar()
 plt.scatter(*tgt_circ_pts.T, s=2, c='k', marker='.')
 plt.scatter(*src_circ_pts.T, s=2, c='k', marker='.')
 plt.gca().set_aspect('equal')
+plt.show()
 
 Z_gt = np.fromfile('Z_gt.bin', dtype=np.complex128).reshape(m, n)
 
@@ -44,9 +45,16 @@ b_gt = np.fromfile('b_gt.bin', dtype=np.complex128).reshape(m, -1)
 num_trials = x.shape[1]
 assert b.shape[1] == num_trials and b_gt.shape[1] == num_trials
 
-def Complex2HSV(z, rmin, rmax, hue_start=90):
-    # get amplidude of z and limit to [rmin, rmax]
+def Complex2HSV(z, rmin=None, rmax=None, hue_start=90):
     amp = np.abs(z)
+
+    if rmin is None:
+        rmin = amp.min()
+
+    if rmax is None:
+        rmax = amp.max()
+
+    # get amplidude of z and limit to [rmin, rmax]
     amp = np.where(amp < rmin, rmin, amp)
     amp = np.where(amp > rmax, rmax, amp)
     ph = np.angle(z, deg=1) + hue_start
@@ -56,11 +64,54 @@ def Complex2HSV(z, rmin, rmax, hue_start=90):
     v = (amp -rmin) / (rmax - rmin)
     return hsv_to_rgb(np.dstack((h,s,v)))
 
+############################################################################
+# quick test for computing shift matrices
 
-Z_or = np.fromfile('Z_or.bin', dtype=np.complex128).reshape(19, 34)
-Z_eq = np.fromfile('Z_eq.bin', dtype=np.complex128).reshape(19, 19)
-Z_eq_pinv = np.fromfile('Z_eq_pinv.bin', dtype=np.complex128).reshape(19, 19)
+Z_or = np.fromfile('Z_or.bin', dtype=np.complex128).reshape(17, 17)
+Z_eq = np.fromfile('Z_eq.bin', dtype=np.complex128).reshape(17, 17)
+# Z_eq_pinv = np.fromfile('Z_eq_pinv.bin', dtype=np.complex128).reshape(19, 19)
+# Z_eq_pinv_gt = np.linalg.pinv(Z_eq)
+Z_shift = np.fromfile('Z_shift.bin', dtype=np.complex128).reshape(17, 17)
+Z_shift_gt = np.linalg.lstsq(Z_eq, Z_or, rcond=None)[0]
 
-mask = S > 1e-10
-_ = (VH[mask].conj().T@(U[:, mask]/S[mask]).conj().T)@Z_or
-plt.imshow(Complex2HSV(_, 0, abs(_).max()))
+plt.figure(figsize=(6, 8))
+plt.subplot(2, 2, 1)
+plt.imshow(Complex2HSV(Z_or, rmin=0))
+plt.subplot(2, 2, 2)
+plt.imshow(Complex2HSV(Z_eq, rmin=0))
+plt.subplot(2, 2, 3)
+plt.imshow(Complex2HSV(Z_shift, rmin=0))
+plt.subplot(2, 2, 4)
+plt.imshow(Complex2HSV(Z_shift_gt, rmin=0))
+plt.tight_layout()
+plt.show()
+
+############################################################################
+# check sparsity pattern of butterfly factors
+
+import glob
+
+paths = glob.glob("ij*.txt")
+
+IJs = dict()
+
+for path in paths:
+    level = int(path.split('.')[0][2:])
+    IJs[level] = np.loadtxt(path).astype(int)
+
+mats = dict()
+for level, IJ in IJs.items():
+    m, n = IJ.max(0) + 1
+    mat = np.empty((m, n), dtype=np.float64)
+    mat[...] = np.nan
+    for c, (i, j) in enumerate(IJ):
+        mat[i, j] = c
+    mats[level] = mat
+
+plt.figure()
+for level, mat in mats.items():
+    plt.subplot(1, len(mats), len(mats) - level + 1)
+    plt.imshow(mat, cmap=cc.cm.colorwheel)
+    plt.gca().set_aspect('equal')
+    plt.title('level = %d' % (level,))
+plt.show()

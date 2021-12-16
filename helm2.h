@@ -4,12 +4,13 @@
 #include "error.h"
 #include "geom.h"
 
-BfComplex bfHelm2GetKernelValue(BfVec const *x, BfVec const *y, BfReal k);
+BfComplex bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K);
 
 enum BfError
 bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
-                            BfReal k, BfReal C, BfReal eps, BfReal *p);
+                            BfReal k, BfReal C, BfReal eps, BfSize *rank);
 
 enum BfError
-bfHelm2KernelMatrixFromPoints(BfMat *K, BfMat const *X, BfMat const *Y,
-                              BfReal k);
+bfGetHelm2KernelMatrix(BfMat *kernelMat,
+                       BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
+                       BfReal K);

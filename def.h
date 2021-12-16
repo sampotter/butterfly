@@ -22,5 +22,7 @@ typedef double BfPoint2[2];
 typedef uint8_t BfByte;
 typedef size_t BfSize;
 
+#define BF_SIZE_BAD_VALUE (BfSize)(-1)
+
 typedef void *BfPtr;
 typedef void const *BfConstPtr;

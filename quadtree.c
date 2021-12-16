@@ -35,12 +35,14 @@ size_t child_flag_to_index[] = {
 static
 enum BfError
 recInitQuadtreeFromPoints(BfQuadtreeNode *node,
-                          BfPoint2 const *points, BfBbox2 bbox,
+                          BfPoints2 const *points, BfBbox2 bbox,
                           size_t perm_size, size_t *perm,
                           BfSize current_depth)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
   size_t i, j;
+
+  BfPoint2 *point = points->data;
 
   BfReal const *split = node->split;
 
@@ -53,12 +55,12 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // sift permutation indices for child[0] into place...
   i = node->offset[0];
   while (i < perm_size &&
-         (points[perm[i]][0] <= split[0] && points[perm[i]][1] <= split[1]))
+         (point[perm[i]][0] <= split[0] && point[perm[i]][1] <= split[1]))
     ++i;
   j = i == perm_size ? i : i + 1;
   while (j < perm_size) {
-    if (points[perm[j]][0] <= split[0] && points[perm[j]][1] <= split[1] &&
-        (points[perm[i]][0] > split[0] || points[perm[i]][1] > split[1])) {
+    if (point[perm[j]][0] <= split[0] && point[perm[j]][1] <= split[1] &&
+        (point[perm[i]][0] > split[0] || point[perm[i]][1] > split[1])) {
       SWAP(perm[i], perm[j]);
       ++i;
     }
@@ -70,7 +72,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // (verify that child[0]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
-      points[perm[k]][0] <= split[0] && points[perm[k]][1] <= split[1];
+      point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1];
     assert(node->offset[0] <= k && k < node->offset[1] ?
            in_quadrant : !in_quadrant);
   }
@@ -79,12 +81,12 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // ... for child[1]...
   i = node->offset[1];
   while (i < perm_size &&
-         (points[perm[i]][0] <= split[0] && points[perm[i]][1] > split[1]))
+         (point[perm[i]][0] <= split[0] && point[perm[i]][1] > split[1]))
     ++i;
   j = i == perm_size ? i : i + 1;
   while (j < perm_size) {
-    if (points[perm[j]][0] <= split[0] && points[perm[j]][1] > split[1] &&
-        (points[perm[i]][0] > split[0] || points[perm[i]][1] <= split[1])) {
+    if (point[perm[j]][0] <= split[0] && point[perm[j]][1] > split[1] &&
+        (point[perm[i]][0] > split[0] || point[perm[i]][1] <= split[1])) {
       SWAP(perm[i], perm[j]);
       ++i;
     }
@@ -96,7 +98,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // (verify that child[1]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
-      points[perm[k]][0] <= split[0] && points[perm[k]][1] > split[1];
+      point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1];
     assert(node->offset[1] <= k && k < node->offset[2] ?
            in_quadrant : !in_quadrant);
   }
@@ -105,12 +107,12 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // ... for child[2]...
   i = node->offset[2];
   while (i < perm_size &&
-         (points[perm[i]][0] > split[0] && points[perm[i]][1] <= split[1]))
+         (point[perm[i]][0] > split[0] && point[perm[i]][1] <= split[1]))
     ++i;
   j = i == perm_size ? i : i + 1;
   while (j < perm_size) {
-    if (points[perm[j]][0] > split[0] && points[perm[j]][1] <= split[1] &&
-        (points[perm[i]][0] <= split[0] || points[perm[i]][1] > split[1])) {
+    if (point[perm[j]][0] > split[0] && point[perm[j]][1] <= split[1] &&
+        (point[perm[i]][0] <= split[0] || point[perm[i]][1] > split[1])) {
       SWAP(perm[i], perm[j]);
       ++i;
     }
@@ -122,7 +124,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // (verify that child[2]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
-      points[perm[k]][0] > split[0] && points[perm[k]][1] <= split[1];
+      point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1];
     assert(node->offset[2] <= k && k < node->offset[3] ?
            in_quadrant : !in_quadrant);
   }
@@ -140,7 +142,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   // (verify that child[2]'s indices are correctly sifted)
   for (size_t k = 0; k < perm_size; ++k) {
     bool in_quadrant =
-      points[perm[k]][0] > split[0] && points[perm[k]][1] > split[1];
+      point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1];
     assert(node->offset[3] <= k && k < node->offset[4] ?
            in_quadrant : !in_quadrant);
   }
@@ -148,9 +150,9 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
 
 #ifdef BF_DEBUG
   // (verify that child[3]'s indices are correctly sifted)
-  for (size_t i = node->offset[3], j; i < perm_size; ++i) {
-    j = perm[i];
-    assert(points[j][0] > split[0] && points[j][1] > split[1]);
+  for (BfSize k = node->offset[3], l; k < perm_size; ++k) {
+    l = perm[k];
+    assert(point[l][0] > split[0] && point[l][1] > split[1]);
   }
 #endif
 
@@ -174,11 +176,11 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     }
   };
 
-  for (size_t q = 0, perm_size; q < 4; ++q) {
-    perm_size = node->offset[q + 1] - node->offset[q];
+  for (BfSize q = 0; q < 4; ++q) {
+    BfSize childPermSize = node->offset[q + 1] - node->offset[q];
 
     // TODO: for now, we build the quadtree out to the maximum depth possible
-    if (perm_size <= 1) {
+    if (childPermSize <= 1) {
       node->child[q] = NULL;
       continue;
     }
@@ -193,8 +195,8 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     node->child[q]->split[1] = (child_bbox[q].min[1] + child_bbox[q].max[1])/2;
 
     error |= recInitQuadtreeFromPoints(
-      node->child[q], points, child_bbox[q], perm_size, &perm[node->offset[q]],
-      current_depth + 1);
+      node->child[q], points, child_bbox[q], childPermSize,
+      &perm[node->offset[q]], current_depth + 1);
 
     if (error)
       break;
@@ -208,13 +210,13 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
 }
 
 enum BfError
-bfInitQuadtreeFromPoints(BfQuadtree *tree,
-                         size_t num_points, BfPoint2 const *points)
+bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  tree->num_points = num_points;
   tree->points = points;
+
+  BfSize num_points = points->size;
 
   // initialize permutation to identity
   tree->perm = malloc(num_points*sizeof(size_t));
@@ -226,19 +228,9 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree,
   tree->root->parent = tree;
 
   // compute the bounding box for the entire quadtree
-  BfBbox2 bbox = {
-    .min = {INFINITY, INFINITY},
-    .max = {-INFINITY, -INFINITY}
-  };
-  for (size_t i = 0; i < num_points; ++i) {
-    bbox.min[0] = fmin(bbox.min[0], points[i][0]);
-    bbox.max[0] = fmax(bbox.max[0], points[i][0]);
-    bbox.min[1] = fmin(bbox.min[1], points[i][1]);
-    bbox.max[1] = fmax(bbox.max[1], points[i][1]);
-  }
-
-  assert(bbox.min[0] < bbox.max[0]);
-  assert(bbox.min[1] < bbox.max[1]);
+  BfBbox2 bbox = bfGetPoints2BoundingBox(points);
+  if (bfBbox2IsEmpty(&bbox))
+    return BF_ERROR_INVALID_ARGUMENTS;
 
   // rescale the bounding box so that it's square
   BfReal w = bbox.max[0] - bbox.min[0];
@@ -260,7 +252,7 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree,
   tree->root->split[1] = (bbox.min[1] + bbox.max[1])/2;
 
   error |= recInitQuadtreeFromPoints(tree->root, tree->points, bbox,
-                                     tree->num_points, tree->perm, 0);
+                                     num_points, tree->perm, 0);
 
   return error;
 }
@@ -331,6 +323,13 @@ BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node)
   return circ;
 }
 
+BfSize bfQuadtreeNodeNumChildren(BfQuadtreeNode const *node) {
+  BfSize numChildren = 0;
+  for (BfSize i = 0; i < 4; ++i)
+    numChildren += node->child[i] != NULL;
+  return numChildren;
+}
+
 bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node) {
   return node->child[0] == NULL
       && node->child[1] == NULL
@@ -375,24 +374,28 @@ BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node) {
  * `X[offset[1] - 1]` will correspond to the points returned by
  * `bfGetQuadtreeFromNode(node->child[0])`, and in the same order. */
 enum BfError
-bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfMat *X)
+bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfPoints2 *points)
 {
-  size_t num_points;
-  size_t *node_indices;
-  bfGetQuadtreeNodeIndices(node, &num_points, &node_indices);
+  enum BfError error = BF_ERROR_NO_ERROR;
 
-  if (X->numRows != num_points)
-    return BF_ERROR_INVALID_ARGUMENTS;
-
-  BfQuadtree const *tree = bfGetQuadtreeFromNode(node);
-
-  for (BfSize i = 0; i < num_points; ++i) {
-    enum BfError error = bfSetMatRow(X, i, tree->points[node_indices[i]]);
-    if (error)
-      return error;
+  BfSize numInds, *inds;
+  error = bfGetQuadtreeNodeIndices(node, &numInds, &inds);
+  if (error) {
+    free(inds);
+    return error;
   }
 
-  return BF_ERROR_NO_ERROR;
+  BfQuadtree const *tree = bfGetQuadtreeFromNode(node);
+  BfPoints2 const *treePoints = tree->points;
+
+  error = bfGetPointsByIndex(treePoints, numInds, inds, points);
+  if (error) {
+    free(inds);
+    bfFreePoints2(points);
+    return error;
+  }
+
+  return error;
 }
 
 static enum BfError clearDirtyBit(BfQuadtreeNode *node, void *arg) {

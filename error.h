@@ -8,5 +8,6 @@ enum BfError {
   BF_ERROR_MEMORY_ERROR = (1 << 3),
   BF_ERROR_BAD_SHAPE = (1 << 4),
   BF_ERROR_OUT_OF_RANGE = (1 << 5),
-  BF_ERROR_BAD_DTYPE = (1 << 6)
+  BF_ERROR_BAD_DTYPE = (1 << 6),
+  BF_ERROR_FILE_ERROR = (1 << 7)
 };

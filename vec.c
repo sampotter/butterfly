@@ -4,7 +4,7 @@
 #include <math.h>
 
 BfPtr bfVecGetEltPtr(BfVec *x, BfSize i) {
-  return x->data + i*x->stride;
+  return (BfByte *)x->data + i*x->stride;
 }
 
 BfReal bfVecDist(BfVec const *x, BfVec const *y) {
@@ -15,7 +15,7 @@ BfReal bfVecDist(BfVec const *x, BfVec const *y) {
 
   BfReal sum = 0;
 
-  BfPtr x_ptr = x->data, y_ptr = y->data;
+  BfByte *x_ptr = x->data, *y_ptr = y->data;
 
   if (x->dtype == BF_DTYPE_REAL) {
     BfReal diff = 0;
@@ -40,12 +40,11 @@ BfReal bfVecDist(BfVec const *x, BfVec const *y) {
   return sqrt(sum);
 }
 
-void bfVecScale(BfVec *x, BfPtr value) {
+void bfVecScaleByReal(BfVec *x, BfReal scale) {
   BfSize n = x->size;
-  BfPtr x_ptr = x->data;
+  BfByte *x_ptr = x->data;
 
   if (x->dtype == BF_DTYPE_REAL) {
-    BfReal scale = *(BfReal *)value;
     for (BfSize i = 0; i < n; ++i) {
       *(BfReal *)x_ptr *= scale;
       x_ptr += x->stride;
@@ -53,7 +52,6 @@ void bfVecScale(BfVec *x, BfPtr value) {
   }
 
   if (x->dtype == BF_DTYPE_COMPLEX) {
-    BfComplex scale = *(BfComplex *)value;
     for (BfSize i = 0; i < n; ++i) {
       *(BfComplex *)x_ptr *= scale;
       x_ptr += x->stride;

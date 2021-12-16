@@ -3,6 +3,11 @@
 #include "def.h"
 #include "mat.h"
 
+typedef struct BfPoints2 {
+  BfPoint2 *data;
+  BfSize size;
+} BfPoints2;
+
 typedef struct BfBbox2 {
   BfPoint2 min, max;
 } BfBbox2;
@@ -14,4 +19,17 @@ typedef struct BfCircle2 {
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point);
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q);
-enum BfError bfSamplePointsOnCircle2(BfCircle2 const *circ, BfMat *X);
+BfPoints2 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfSize numPoints);
+
+BfBbox2 bfGetEmptyBbox2();
+bool bfBbox2IsEmpty(BfBbox2 const *bbox);
+
+enum BfError bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
+enum BfError bfReadPoints2FromFile(char const *path, BfPoints2 *points);
+void bfFreePoints2(BfPoints2 *points);
+BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points);
+enum BfError bfGetPointsByIndex(BfPoints2 const *points,
+                                BfSize numInds, BfSize const *inds,
+                                BfPoints2 *indexedPoints);
+void bfPrintPoints2(BfPoints2 const *points);
+enum BfError bfSavePoints2(BfPoints2 const *points, char const *path);
