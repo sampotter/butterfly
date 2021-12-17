@@ -6,6 +6,75 @@
 
 #include "helm2.h"
 
+static enum BfError
+initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
+                BfSize numBlocks)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  factor->numBlockRows = numBlockRows;
+  factor->numBlockCols = numBlockCols;
+  factor->numBlocks = numBlocks;
+
+  /* allocate and initialize row indices to dummy values */
+  factor->rowInd = malloc(numBlocks*sizeof(BfSize));
+  if (factor->rowInd == NULL) {
+    error = BF_ERROR_MEMORY_ERROR;
+    goto cleanup;
+  }
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->rowInd[i] = BF_SIZE_BAD_VALUE;
+
+  /* allocate and initialize column indices to dummy values */
+  factor->colInd = malloc(numBlocks*sizeof(BfSize));
+  if (factor->colInd == NULL) {
+    error = BF_ERROR_MEMORY_ERROR;
+    goto cleanup;
+  }
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->colInd[i] = BF_SIZE_BAD_VALUE;
+
+  /* allocate and initialize the number of rows corresponding to each
+   * row of blocks */
+  factor->numRows = malloc(numBlockRows*sizeof(BfSize));
+  if (factor->numRows == NULL) {
+    error = BF_ERROR_MEMORY_ERROR;
+    goto cleanup;
+  }
+  for (BfSize i = 0; i < numBlockRows; ++i)
+    factor->numRows[i] = BF_SIZE_BAD_VALUE;
+
+  /* allocate and initialize the number of columns corresponding to
+   * column of blocks */
+  factor->numCols = malloc(numBlockCols*sizeof(BfSize));
+  if (factor->numCols == NULL) {
+    error = BF_ERROR_MEMORY_ERROR;
+    goto cleanup;
+  }
+  for (BfSize i = 0; i < numBlockCols; ++i)
+    factor->numCols[i] = BF_SIZE_BAD_VALUE;
+
+  /* allocat and initialize each nonzero (diagonal) block */
+  factor->block = malloc(numBlocks*sizeof(BfMat));
+  if (factor->block == NULL) {
+    error = BF_ERROR_MEMORY_ERROR;
+    goto cleanup;
+  }
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->block[i] = bfGetUninitializedMat();
+
+cleanup:
+  if (error) {
+    free(factor->rowInd);
+    free(factor->colInd);
+    free(factor->numRows);
+    free(factor->numCols);
+    free(factor->block);
+  }
+
+  return error;
+}
+
 static enum BfError initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   enum BfError error = BF_ERROR_NO_ERROR;
 
@@ -229,9 +298,16 @@ makeFactor(BfSize factorIndex,
 
   printf("makeFactor()\n");
 
-  /* first, we need to figure out how big to make this factor */
+  /* first, we need to determine the number of blocks in each row and
+   * column
+   *
+   * at the same time, we count the total number of blocks so we can
+   * preallocate them */
 
-  BfSize numRowBlocks = 0, numColBlocks = 0, numBlocks = 0;
+  /* and the number of rows and columns in each row or column of
+   * blocks */
+
+  BfSize numBlockRows = 0, numBlockCols = 0, numBlocks = 0;
 
   for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
     BfQuadtreeNode const *tgtNode;
@@ -241,22 +317,71 @@ makeFactor(BfSize factorIndex,
     BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
 
     BfSize qmax = 0;
+
+    BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+
     for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
+      BfCircle2 tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
+
       for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
         BfQuadtreeNode const *srcNode;
         bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
+
+        BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
 
         BfQuadtreeNode const *srcChild[4];
         BfSize numSrcChildren = getChildren(srcNode, srcChild);
 
         for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
           BfSize j = q + dj;
-          numColBlocks = j + 1 > numColBlocks ? j + 1 : numColBlocks;
+
+          /* update the number of block columns and the total number
+           * of blocks */
+          numBlockCols = j + 1 > numBlockCols ? j + 1 : numBlockCols;
           ++numBlocks;
+
+          /* the number of original source points matches the number
+           * of rows in the jth block of the previous factor */
+          BfSize numSrcChildPts = prevFactor->numRows[j];
+
+          /* set number of columns for current block */
+          assert(j < factor->numBlockCols);
+          if (factor->numCols[j] == BF_SIZE_BAD_VALUE)
+            factor->numCols[j] = numSrcChildPts;
+          else
+            assert(factor->numCols[j] == numSrcChildPts);
+
+          /* get the bounding circle for the current source child */
+          BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
+
+          /* a priori rank estimate for the original circles */
+          BfSize rankOr;
+          bfHelm2RankEstForTwoCircles(srcChildCirc,tgtCirc,K,1,1e-15,&rankOr);
+
+          /* a priori rank estimate for the new circles */
+          BfSize rankEq;
+          bfHelm2RankEstForTwoCircles(srcCirc,tgtChildCirc,K,1,1e-15,&rankEq);
+
+          /* use the larger of the two rank estimates... not sure if
+           * this is totally necessary, probably being a little
+           * paranoid... they should be nearly the same, but might
+           * differ a little due to rounding */
+          BfSize rank = rankOr > rankEq ? rankOr : rankEq;
+
+          /* set number of rows for current block */
+          assert(i < factor->numBlockRows);
+          if (factor->numRows[i] == BF_SIZE_BAD_VALUE)
+            factor->numRows[i] = rank;
+          else
+            assert(factor->numRows[i] == rank);
+
           ++q;
           qmax = q > qmax ? q : qmax;
         }
-        numRowBlocks = i + 1 > numRowBlocks ? i + 1 : numRowBlocks;
+
+        /* update the number of block rows */
+        numBlockRows = i + 1 > numBlockRows ? i + 1 : numBlockRows;
+
         ++i;
       }
       ++p;
@@ -264,15 +389,19 @@ makeFactor(BfSize factorIndex,
     dj += qmax;
   }
 
-  printf("* numRowBlocks: %lu\n", numRowBlocks);
-  printf("* numColBlocks: %lu\n", numColBlocks);
+  printf("* numBlockRows: %lu\n", numBlockRows);
+  printf("* numBlockCols: %lu\n", numBlockCols);
   printf("* numBlocks: %lu\n", numBlocks);
+
+  initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
 
   // foreach tgtNode:
   //     foreach tgtChildNode:
   //         foreach srcParentNode:
   //             foreach srcChildNode:
   //                 set corresponding block to shift matrix
+
+  BfSize blockIndex = 0;
 
   for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
     printf("next target node\n");
@@ -282,8 +411,6 @@ makeFactor(BfSize factorIndex,
 
     BfQuadtreeNode const *tgtChild[4];
     BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
-
-    BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
 
     BfSize qmax = 0;
 
@@ -311,43 +438,25 @@ makeFactor(BfSize factorIndex,
 
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
-          /* the number of original source points matches the number
-           * of rows in the jth block of the previous factor */
-          BfSize numSrcChildPts = prevFactor->numRows[j];
-
-          /* a priori rank estimate for the original circles */
-          BfSize rankOrig;
-          bfHelm2RankEstForTwoCircles(srcChildCirc,tgtCirc,K,1,1e-15,&rankOrig);
-
-          /* a priori rank estimate for the new circles */
-          BfSize rankEquiv;
-          bfHelm2RankEstForTwoCircles(srcCirc,tgtChildCirc,K,1,1e-15,&rankEquiv);
-
-          /* use the larger of the two rank estimates... not sure if
-           * this is totally necessary, probably being a little
-           * paranoid... they should be nearly the same, but might
-           * differ a little due to rounding */
-          BfSize rank = rankOrig > rankEquiv ? rankOrig : rankEquiv;
-
           /* sample points on each of the circles */
-          BfPoints2 srcChildCircPts = bfSamplePointsOnCircle2(&srcChildCirc, numSrcChildPts);
-          BfPoints2 srcCircPts = bfSamplePointsOnCircle2(&srcCirc, rank);
-          BfPoints2 tgtChildCircPts = bfSamplePointsOnCircle2(&tgtChildCirc, rank);
+          BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, factor->numRows[j]);
+          BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, factor->numCols[i]);
+          BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, factor->numCols[i]);
 
           /* compute the shift matrix for this configuration of circles */
-          BfMat Z_shift; // TODO: get from preallocated list of blocks
-          error = getShiftMat(
-            &srcChildCircPts, &srcCircPts, &tgtChildCircPts, K, &Z_shift);
+          BfMat *Z_shift = &factor->block[blockIndex];
+          error = getShiftMat(&srcChildPts, &srcPts, &tgtChildPts, K, Z_shift);
           assert(!error);
 
-          (void)factor;
-          assert(false); // TODO: do something with thie block...
+          /* set block row and column indices */
+          assert(blockIndex < factor->numBlocks);
+          factor->rowInd[blockIndex] = i;
+          factor->colInd[blockIndex] = j;
 
+          ++blockIndex;
           ++q;
-
           qmax = q > qmax ? q : qmax;
         }
-
         ++i;
       }
 
