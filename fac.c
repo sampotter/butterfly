@@ -42,7 +42,7 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
     goto cleanup;
   }
   for (BfSize i = 0; i < numBlockRows; ++i)
-    factor->numRows[i] = BF_SIZE_BAD_VALUE;
+    factor->numRows[i] = 0;
 
   /* allocate and initialize the number of columns corresponding to
    * column of blocks */
@@ -52,7 +52,7 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
     goto cleanup;
   }
   for (BfSize i = 0; i < numBlockCols; ++i)
-    factor->numCols[i] = BF_SIZE_BAD_VALUE;
+    factor->numCols[i] = 0;
 
   /* allocat and initialize each nonzero (diagonal) block */
   factor->block = malloc(numBlocks*sizeof(BfMat));
