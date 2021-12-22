@@ -659,7 +659,7 @@ bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
 
-  enum BfError error;
+  enum BfError error = BF_ERROR_NO_ERROR;
 
   /* compute SVD of A */
 
@@ -699,10 +699,12 @@ bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
 
   BfMat WkH = bfGetUninitializedMat();
   error = bfMatSolve(&Sk, &UkH, &WkH);
+  assert(!error);
   if (error)
     goto cleanup;
 
   error = bfMatMul(&Vk, &WkH, pinv);
+  assert(!error);
 
 cleanup:
   bfFreeMat(&U);
