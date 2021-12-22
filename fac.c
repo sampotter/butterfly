@@ -225,6 +225,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 
   /* initialize the first block diagonal butterfly factor */
   error = initDiagonalFactor(factor, numBlocks);
+  assert(!error);
 
   /* iterate over each node at the starting level of the source tree
    * and compute the matrix which will maps the charges at the
@@ -304,10 +305,58 @@ makeFactor(BfSize factorIndex,
    * at the same time, we count the total number of blocks so we can
    * preallocate them */
 
-  /* and the number of rows and columns in each row or column of
-   * blocks */
-
   BfSize numBlockRows = 0, numBlockCols = 0, numBlocks = 0;
+
+  for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
+    BfQuadtreeNode const *tgtNode;
+    bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
+
+    BfQuadtreeNode const *tgtChild[4];
+    BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
+
+    BfSize qmax = 0;
+
+    for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
+      for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
+        BfQuadtreeNode const *srcNode;
+        bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
+
+        BfQuadtreeNode const *srcChild[4]; // TODO: don't actually
+                                           // need the source children
+                                           // here, just their number
+        BfSize numSrcChildren = getChildren(srcNode, srcChild);
+
+        for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
+          BfSize j = q + dj;
+
+          /* update the number of block columns and the total number
+           * of blocks */
+          numBlockCols = j + 1 > numBlockCols ? j + 1 : numBlockCols;
+
+          ++numBlocks;
+
+          ++q;
+          qmax = q > qmax ? q : qmax;
+        }
+
+        /* update the number of block rows */
+        numBlockRows = i + 1 > numBlockRows ? i + 1 : numBlockRows;
+
+        ++i;
+      }
+      ++p;
+    }
+    dj += qmax;
+  }
+
+  initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
+
+  printf("* numBlockRows: %lu\n", numBlockRows);
+  printf("* numBlockCols: %lu\n", numBlockCols);
+  printf("* numBlocks: %lu\n", numBlocks);
+
+  /* next, we set the number of rows and columns in each row or column of
+   * blocks */
 
   for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
     BfQuadtreeNode const *tgtNode;
@@ -335,21 +384,14 @@ makeFactor(BfSize factorIndex,
         for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
           BfSize j = q + dj;
 
-          /* update the number of block columns and the total number
-           * of blocks */
-          numBlockCols = j + 1 > numBlockCols ? j + 1 : numBlockCols;
-          ++numBlocks;
-
           /* the number of original source points matches the number
            * of rows in the jth block of the previous factor */
           BfSize numSrcChildPts = prevFactor->numRows[j];
 
           /* set number of columns for current block */
-          assert(j < factor->numBlockCols);
-          if (factor->numCols[j] == BF_SIZE_BAD_VALUE)
+          assert(j < numBlockCols);
+          if (numSrcChildPts > factor->numCols[j])
             factor->numCols[j] = numSrcChildPts;
-          else
-            assert(factor->numCols[j] == numSrcChildPts);
 
           /* get the bounding circle for the current source child */
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
@@ -368,19 +410,14 @@ makeFactor(BfSize factorIndex,
            * differ a little due to rounding */
           BfSize rank = rankOr > rankEq ? rankOr : rankEq;
 
-          /* set number of rows for current block */
+          /* update number of rows for current block */
           assert(i < factor->numBlockRows);
-          if (factor->numRows[i] == BF_SIZE_BAD_VALUE)
+          if (rank > factor->numRows[i])
             factor->numRows[i] = rank;
-          else
-            assert(factor->numRows[i] == rank);
 
           ++q;
           qmax = q > qmax ? q : qmax;
         }
-
-        /* update the number of block rows */
-        numBlockRows = i + 1 > numBlockRows ? i + 1 : numBlockRows;
 
         ++i;
       }
@@ -388,12 +425,6 @@ makeFactor(BfSize factorIndex,
     }
     dj += qmax;
   }
-
-  printf("* numBlockRows: %lu\n", numBlockRows);
-  printf("* numBlockCols: %lu\n", numBlockCols);
-  printf("* numBlocks: %lu\n", numBlocks);
-
-  initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
 
   // foreach tgtNode:
   //     foreach tgtChildNode:
@@ -439,9 +470,9 @@ makeFactor(BfSize factorIndex,
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
           /* sample points on each of the circles */
-          BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, factor->numRows[j]);
-          BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, factor->numCols[i]);
-          BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, factor->numCols[i]);
+          BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, factor->numCols[j]);
+          BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, factor->numRows[i]);
+          BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, factor->numRows[i]);
 
           /* compute the shift matrix for this configuration of circles */
           BfMat *Z_shift = &factor->block[blockIndex];
@@ -474,10 +505,74 @@ makeFactor(BfSize factorIndex,
   return error;
 }
 
-void makeLastFactor(BfFactor *factor, BfFactor const *prevFactor) {
-  (void)factor;
-  (void)prevFactor;
-  assert(false); // TODO: implement me
+static enum BfError
+makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
+               BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  /* the should only be one source node when we make the last
+   * butterfly factor */
+  if (bfPtrArraySize(srcLevelNodes) != 1)
+    return BF_ERROR_RUNTIME_ERROR;
+
+  /* get the lone source node and its bounding circle */
+  BfQuadtreeNode const *srcNode;
+  bfPtrArrayGetFirst(srcLevelNodes, (BfPtr *)&srcNode);
+  BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+
+  /* the current level of the target node tree shouldn't be empty */
+  if (bfPtrArrayIsEmpty(tgtLevelNodes))
+    return BF_ERROR_RUNTIME_ERROR;
+
+  /* the number of diagonal blocks in the last factor equals the
+   * number of nodes at the current depth of the target tree ... */
+  BfSize numBlocks = bfPtrArraySize(tgtLevelNodes);
+
+  /* ... and this number of blocks should match the number of block
+   *  rows of the previous factor */
+  if (numBlocks != prevFactor->numBlockRows)
+    return BF_ERROR_RUNTIME_ERROR;
+
+  /* initialize the last butterfly factor */
+  error = initDiagonalFactor(factor, numBlocks);
+  assert(!error);
+
+  /* iterate over each node of the final level of the target node tree
+   * and compute the matrix which will evaluate the potential at each
+   * target point due to the charges on the source proxy points */
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    /* get the proxy points on the source circle for the current
+     * source block */
+    BfPoints2 srcCircPts = bfSamplePointsOnCircle2(&srcCirc, prevFactor->numRows[i]);
+
+    /* get the current target node */
+    BfQuadtreeNode const *tgtNode;
+    bfPtrArrayGet(tgtLevelNodes, i, (BfPtr *)&tgtNode);
+
+    /* get the current set of target points */
+    BfPoints2 tgtPts;
+    bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
+
+    error = bfGetHelm2KernelMatrix(&factor->block[i], &srcCircPts, &tgtPts, K);
+    assert(!error);
+
+    assert(factor->numRows[i] == BF_SIZE_BAD_VALUE);
+    factor->numRows[i] = factor->block[i].numRows;
+
+    assert(factor->numCols[i] == BF_SIZE_BAD_VALUE);
+    factor->numCols[i] = factor->block[i].numCols;
+
+    bfFreePoints2(&srcCircPts);
+    bfFreePoints2(&tgtPts);
+
+    if (error)
+      break;
+  }
+
+  // TODO: if (error) { free stuff }
+
+  return error;
 }
 
 enum BfError
@@ -538,7 +633,8 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
     bfQuadtreeLevelIterNext(&tgtLevelIter);
   }
 
-  makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2]);
+  makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2], K,
+                 &srcLevelIter.level_nodes, &tgtLevelIter.level_nodes);
 
   return BF_ERROR_NO_ERROR;
 }
