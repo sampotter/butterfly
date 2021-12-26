@@ -34,27 +34,25 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->colInd[i] = BF_SIZE_BAD_VALUE;
 
-  /* allocate and initialize the number of rows corresponding to each
-   * row of blocks */
-  factor->numRows = malloc(numBlockRows*sizeof(BfSize));
-  if (factor->numRows == NULL) {
+  /* alloc and init the row index offsets for each block row */
+  factor->rowOffset = malloc((numBlockRows + 1)*sizeof(BfSize));
+  if (factor->rowOffset == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
     goto cleanup;
   }
-  for (BfSize i = 0; i < numBlockRows; ++i)
-    factor->numRows[i] = 0;
+  for (BfSize i = 0; i < numBlockRows + 1; ++i)
+    factor->rowOffset[i] = BF_SIZE_BAD_VALUE;
 
-  /* allocate and initialize the number of columns corresponding to
-   * column of blocks */
-  factor->numCols = malloc(numBlockCols*sizeof(BfSize));
-  if (factor->numCols == NULL) {
+  /* alloc and init the column index offsets for each block column */
+  factor->colOffset = malloc((numBlockCols + 1)*sizeof(BfSize));
+  if (factor->colOffset == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
     goto cleanup;
   }
-  for (BfSize i = 0; i < numBlockCols; ++i)
-    factor->numCols[i] = 0;
+  for (BfSize i = 0; i < numBlockCols + 1; ++i)
+    factor->colOffset[i] = BF_SIZE_BAD_VALUE;
 
-  /* allocat and initialize each nonzero (diagonal) block */
+  /* allocate and initialize each nonzero (diagonal) block */
   factor->block = malloc(numBlocks*sizeof(BfMat));
   if (factor->block == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
@@ -67,8 +65,8 @@ cleanup:
   if (error) {
     free(factor->rowInd);
     free(factor->colInd);
-    free(factor->numRows);
-    free(factor->numCols);
+    free(factor->rowOffset);
+    free(factor->colOffset);
     free(factor->block);
   }
 
@@ -100,27 +98,25 @@ static enum BfError initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->colInd[i] = i;
 
-  /* allocate and initialize the number of rows corresponding to each
-   * row of blocks */
-  factor->numRows = malloc(numBlocks*sizeof(BfSize));
-  if (factor->numRows == NULL) {
+  /* alloc and init the row index offsets for each block row */
+  factor->rowOffset = malloc((numBlocks + 1)*sizeof(BfSize));
+  if (factor->rowOffset == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
     goto cleanup;
   }
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->numRows[i] = BF_SIZE_BAD_VALUE;
+  for (BfSize i = 0; i < numBlocks + 1; ++i)
+    factor->rowOffset[i] = BF_SIZE_BAD_VALUE;
 
-  /* allocate and initialize the number of columns corresponding to
-   * column of blocks */
-  factor->numCols = malloc(numBlocks*sizeof(BfSize));
-  if (factor->numCols == NULL) {
+  /* alloc and init the column index offsets for each block column */
+  factor->colOffset = malloc((numBlocks + 1)*sizeof(BfSize));
+  if (factor->colOffset == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
     goto cleanup;
   }
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->numCols[i] = BF_SIZE_BAD_VALUE;
+  for (BfSize i = 0; i < numBlocks + 1; ++i)
+    factor->colOffset[i] = BF_SIZE_BAD_VALUE;
 
-  /* allocat and initialize each nonzero (diagonal) block */
+  /* allocate and initialize each nonzero (diagonal) block */
   factor->block = malloc(numBlocks*sizeof(BfMat));
   if (factor->block == NULL) {
     error = BF_ERROR_MEMORY_ERROR;
@@ -133,8 +129,8 @@ cleanup:
   if (error) {
     free(factor->rowInd);
     free(factor->colInd);
-    free(factor->numRows);
-    free(factor->numCols);
+    free(factor->rowOffset);
+    free(factor->colOffset);
     free(factor->block);
   }
 
@@ -198,6 +194,44 @@ getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
   return error;
 }
 
+static BfSize getRows(BfFactor const *factor, BfSize i) {
+  assert(i < factor->numBlockRows);
+
+  return factor->rowOffset[i + 1] - factor->rowOffset[i];
+}
+
+static BfSize getCols(BfFactor const *factor, BfSize j) {
+  assert(j < factor->numBlockCols);
+
+  return factor->colOffset[j + 1] - factor->colOffset[j];
+}
+
+static BfSize getNumRows(BfFactor const *factor) {
+  return factor->rowOffset[factor->numBlockRows];
+}
+
+static BfSize getNumCols(BfFactor const *factor) {
+  return factor->colOffset[factor->numBlockCols];
+}
+
+/* When initializing `factor`, we first set `factor->rowOffset[i + 1]`
+ * and `factor->colOffset[j + 1]` for each `i` and `j` to contain the
+ * number of rows and columns in the `i`th block row and `j`th block
+ * column, respectively. Afterwards, to transform these arrays into
+ * the actual block row and column offsets, we set the first value of
+ * each array to zero and take their running sums in place. */
+static void cumSumRowAndColOffsets(BfFactor *factor) {
+  /* replace `rowOffset` with its cumulative sum */
+  factor->rowOffset[0] = 0;
+  for (BfSize i = 0; i < factor->numBlockRows; ++i)
+    factor->rowOffset[i + 1] += factor->rowOffset[i];
+
+  /* replace `colOffset` with its cumulative sum */
+  factor->colOffset[0] = 0;
+  for (BfSize i = 0; i < factor->numBlockCols; ++i)
+    factor->colOffset[i + 1] += factor->colOffset[i];
+}
+
 static enum BfError
 makeFirstFactor(BfFactor *factor, BfReal K,
                 BfPtrArray const *srcLevelNodes,
@@ -230,7 +264,11 @@ makeFirstFactor(BfFactor *factor, BfReal K,
   /* iterate over each node at the starting level of the source tree
    * and compute the matrix which will maps the charges at the
    * original points in each source node to equivalent sources on a
-   * circle surrounding the source box */
+   * circle surrounding the source box
+   *
+   * in the following loop, we initially set `rowOffset[i + 1]` and
+   * `colOffset[i + 1]` to the number of rows in each block row and
+   * column */
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
     BfQuadtreeNode const *srcNode;
@@ -253,17 +291,8 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     /* compute the shift matrix and store it in the current block */
     error = getShiftMat(&srcPts, &srcCircPts, &tgtCircPts, K, &factor->block[i]);
 
-    /* update factor's number of rows for this block */
-    if (factor->numRows[i] == BF_SIZE_BAD_VALUE)
-      factor->numRows[i] = factor->block[i].numRows;
-    else
-      assert(factor->numRows[i] == factor->block[i].numRows);
-
-    /* update factor's number of columns for this block */
-    if (factor->numCols[i] == BF_SIZE_BAD_VALUE)
-      factor->numCols[i] = factor->block[i].numCols;
-    else
-      assert(factor->numCols[i] == factor->block[i].numCols);
+    factor->rowOffset[i + 1] = factor->block[i].numRows;
+    factor->colOffset[i + 1] = factor->block[i].numCols;
 
     /* free all temporaries */
     bfFreePoints2(&srcPts);
@@ -273,6 +302,8 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     if (error)
       break;
   }
+
+  cumSumRowAndColOffsets(factor);
 
   // TODO: if (error) { free blocks }
 
@@ -351,6 +382,12 @@ makeFactor(BfSize factorIndex,
 
   initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
 
+  for (BfSize i = 1; i <= numBlockRows; ++i)
+    factor->rowOffset[i] = 0;
+
+  for (BfSize j = 1; j <= numBlockCols; ++j)
+    factor->colOffset[j] = 0;
+
   printf("* numBlockRows: %lu\n", numBlockRows);
   printf("* numBlockCols: %lu\n", numBlockCols);
   printf("* numBlocks: %lu\n", numBlocks);
@@ -386,12 +423,13 @@ makeFactor(BfSize factorIndex,
 
           /* the number of original source points matches the number
            * of rows in the jth block of the previous factor */
-          BfSize numSrcChildPts = prevFactor->numRows[j];
+          BfSize numSrcChildPts = getRows(prevFactor, j);
 
-          /* set number of columns for current block */
+          /* set number of columns for current block: we find the
+           * maximum over each number of source child points */
           assert(j < numBlockCols);
-          if (numSrcChildPts > factor->numCols[j])
-            factor->numCols[j] = numSrcChildPts;
+          if (numSrcChildPts > factor->colOffset[j + 1])
+            factor->colOffset[j + 1] = numSrcChildPts;
 
           /* get the bounding circle for the current source child */
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
@@ -412,8 +450,8 @@ makeFactor(BfSize factorIndex,
 
           /* update number of rows for current block */
           assert(i < factor->numBlockRows);
-          if (rank > factor->numRows[i])
-            factor->numRows[i] = rank;
+          if (rank > factor->rowOffset[i + 1])
+            factor->rowOffset[i + 1] = rank;
 
           ++q;
           qmax = q > qmax ? q : qmax;
@@ -425,6 +463,8 @@ makeFactor(BfSize factorIndex,
     }
     dj += qmax;
   }
+
+  cumSumRowAndColOffsets(factor);
 
   // foreach tgtNode:
   //     foreach tgtChildNode:
@@ -469,10 +509,13 @@ makeFactor(BfSize factorIndex,
 
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
+          BfSize numRows = getRows(factor, i);
+          BfSize numCols = getCols(factor, j);
+
           /* sample points on each of the circles */
-          BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, factor->numCols[j]);
-          BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, factor->numRows[i]);
-          BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, factor->numRows[i]);
+          BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, numCols);
+          BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, numRows);
+          BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, numRows);
 
           /* compute the shift matrix for this configuration of circles */
           BfMat *Z_shift = &factor->block[blockIndex];
@@ -542,9 +585,11 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * and compute the matrix which will evaluate the potential at each
    * target point due to the charges on the source proxy points */
   for (BfSize i = 0; i < numBlocks; ++i) {
+    BfSize prevNumRows = getRows(prevFactor, i);
+
     /* get the proxy points on the source circle for the current
      * source block */
-    BfPoints2 srcCircPts = bfSamplePointsOnCircle2(&srcCirc, prevFactor->numRows[i]);
+    BfPoints2 srcCircPts = bfSamplePointsOnCircle2(&srcCirc, prevNumRows);
 
     /* get the current target node */
     BfQuadtreeNode const *tgtNode;
@@ -557,11 +602,11 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     error = bfGetHelm2KernelMatrix(&factor->block[i], &srcCircPts, &tgtPts, K);
     assert(!error);
 
-    assert(factor->numRows[i] == BF_SIZE_BAD_VALUE);
-    factor->numRows[i] = factor->block[i].numRows;
+    assert(factor->rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    factor->rowOffset[i + 1] = factor->block[i].numRows;
 
-    assert(factor->numCols[i] == BF_SIZE_BAD_VALUE);
-    factor->numCols[i] = factor->block[i].numCols;
+    assert(factor->colOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    factor->colOffset[i + 1] = factor->block[i].numCols;
 
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
@@ -569,6 +614,8 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     if (error)
       break;
   }
+
+  cumSumRowAndColOffsets(factor);
 
   // TODO: if (error) { free stuff }
 
