@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdio.h>
 
 #include "helm2.h"
 
@@ -317,18 +316,10 @@ makeFirstFactor(BfFactor *factor, BfReal K,
  */
 static
 enum BfError
-makeFactor(BfSize factorIndex,
-           BfFactor *factor, BfFactor const *prevFactor, BfReal K,
+makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
            BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
-
-  char filename[128];
-  sprintf(filename, "ij%lu.txt", factorIndex);
-
-  FILE *fp = fopen(filename, "w");
-
-  printf("makeFactor()\n");
 
   /* first, we need to determine the number of blocks in each row and
    * column
@@ -387,10 +378,6 @@ makeFactor(BfSize factorIndex,
 
   for (BfSize j = 1; j <= numBlockCols; ++j)
     factor->colOffset[j] = 0;
-
-  printf("* numBlockRows: %lu\n", numBlockRows);
-  printf("* numBlockCols: %lu\n", numBlockCols);
-  printf("* numBlocks: %lu\n", numBlocks);
 
   /* next, we set the number of rows and columns in each row or column of
    * blocks */
@@ -475,8 +462,6 @@ makeFactor(BfSize factorIndex,
   BfSize blockIndex = 0;
 
   for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    printf("next target node\n");
-
     BfQuadtreeNode const *tgtNode;
     bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
 
@@ -486,13 +471,9 @@ makeFactor(BfSize factorIndex,
     BfSize qmax = 0;
 
     for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
-      printf("  next target child\n");
-
       BfCircle2 tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
 
       for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        printf("    next source node\n");
-
         BfQuadtreeNode const *srcNode;
         bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
 
@@ -503,9 +484,6 @@ makeFactor(BfSize factorIndex,
 
         for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
           BfSize j = q + dj;
-
-          printf("    * (i, j) = (%lu, %lu)\n", i, j);
-          fprintf(fp, "%lu %lu\n", i, j);
 
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
@@ -533,17 +511,10 @@ makeFactor(BfSize factorIndex,
         }
         ++i;
       }
-
-      printf("  qmax = %lu\n", qmax);
-
       ++p;
     }
-
     dj += qmax;
-    printf("dj = %lu\n", dj);
   }
-
-  fclose(fp);
 
   return error;
 }
@@ -644,17 +615,14 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
 
   BfSize current_src_depth;
   bfQuadtreeLevelIterCurrentDepth(&srcLevelIter, &current_src_depth);
-  printf("starting source depth: %lu\n", current_src_depth);
 
   BfSize current_tgt_depth;
   bfQuadtreeLevelIterCurrentDepth(&tgtLevelIter, &current_tgt_depth);
-  printf("starting target depth: %lu\n", current_tgt_depth);
 
   assert(current_tgt_depth <= current_src_depth);
 
   /* get number of factors in the butterfly factorization */
   *numFactors = current_src_depth - current_tgt_depth + 2;
-  printf("computing butterfly factorization with %lu factors\n", *numFactors);
 
   /* allocate space for the butterfly factors
    *
@@ -673,7 +641,7 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
     bfQuadtreeLevelIterNext(&srcLevelIter);
 
     /* make the next factor */
-    makeFactor(i, &factor[i], &factor[i - 1], K,
+    makeFactor(&factor[i], &factor[i - 1], K,
                &srcLevelIter.level_nodes, &tgtLevelIter.level_nodes);
 
     /* go down a level on the target tree */
