@@ -54,3 +54,6 @@ typedef struct BfFactor {
 enum BfError
 bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
           BfReal K, BfSize *numFactors, BfFactor **factors);
+
+enum BfError
+bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y);

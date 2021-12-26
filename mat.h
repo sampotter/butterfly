@@ -44,6 +44,9 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
                BfSize numRows, BfSize numCols);
 
 enum BfError
+bfMatZeros(BfMat *A, enum BfDtypes dtype, BfSize numRows, BfSize numCols);
+
+enum BfError
 bfSaveMat(BfMat const *A, char const *path);
 
 enum BfError
@@ -66,6 +69,8 @@ bfSetMatRow(BfMat *A, BfSize i, void const *data);
 enum BfError
 bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j);
 
+BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1);
+
 BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1);
 
 BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
@@ -74,6 +79,8 @@ BfMat bfGetMatContSubblock(BfMat const *A, BfSize i0, BfSize i1,
 bool bfMatIsTransposed(BfMat const *A);
 
 BfMat bfConjTrans(BfMat const *A);
+
+enum BfError bfMatAddInplace(BfMat *A, BfMat const *B);
 
 enum BfError
 bfMatMul(BfMat const *A, BfMat const *B, BfMat *C);

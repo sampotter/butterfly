@@ -117,6 +117,51 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
 }
 
 enum BfError
+bfMatZeros(BfMat *A, enum BfDtypes dtype, BfSize numRows, BfSize numCols)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  if (dtype != BF_DTYPE_REAL && dtype != BF_DTYPE_COMPLEX)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  error = bfInitEmptyMat(A, dtype, BF_MAT_PROP_NONE, numRows, numCols);
+  if (error)
+    goto cleanup;
+
+  assert(dtype == BF_DTYPE_REAL || dtype == BF_DTYPE_COMPLEX);
+
+  if (dtype == BF_DTYPE_REAL) {
+    BfByte *row_ptr = A->data;
+    for (BfSize i = 0; i < numRows; ++i) {
+      BfByte *col_ptr = row_ptr;
+      for (BfSize j = 0; j < numCols; ++j) {
+        *(BfReal *)col_ptr = 0;
+        col_ptr += A->colStride;
+      }
+      row_ptr += A->rowStride;
+    }
+  }
+
+  if (dtype == BF_DTYPE_COMPLEX) {
+    BfByte *row_ptr = A->data;
+    for (BfSize i = 0; i < numRows; ++i) {
+      BfByte *col_ptr = row_ptr;
+      for (BfSize j = 0; j < numCols; ++j) {
+        *(BfComplex *)col_ptr = 0;
+        col_ptr += A->colStride;
+      }
+      row_ptr += A->rowStride;
+    }
+  }
+
+cleanup:
+  if (error)
+    bfFreeMat(A);
+
+  return error;
+}
+
+enum BfError
 bfSaveMat(BfMat const *A, char const *path)
 {
   assert(A->dtype != BF_DTYPE_MAT);
@@ -424,6 +469,52 @@ static BfSize getLeadingDimension(BfMat const *A) {
   return bfMatIsTransposed(A) ?
     bfMatColStride(A)/dtype_size :
     bfMatRowStride(A)/dtype_size;
+}
+
+enum BfError bfMatAddInplace(BfMat *A, BfMat const *B) {
+  if (A->dtype != B->dtype)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  if (A->dtype != BF_DTYPE_REAL && A->dtype != BF_DTYPE_COMPLEX)
+    return BF_ERROR_INVALID_ARGUMENTS;
+
+  BfSize m = A->numRows;
+  if (m != B->numRows)
+    return BF_ERROR_BAD_SHAPE;
+
+  BfSize n = A->numCols;
+  if (n != B->numCols)
+    return BF_ERROR_BAD_SHAPE;
+
+  if (A->dtype == BF_DTYPE_REAL) {
+    BfByte *A_row_ptr = A->data, *B_row_ptr = B->data;
+    for (BfSize i = 0; i < m; ++i) {
+      BfByte *A_col_ptr = A_row_ptr, *B_col_ptr = B_row_ptr;
+      for (BfSize j = 0; j < n; ++j) {
+        *(BfReal *)A_col_ptr += *(BfReal *)B_col_ptr;
+        A_col_ptr += A->colStride;
+        B_col_ptr += B->colStride;
+      }
+      A_row_ptr += A->rowStride;
+      B_row_ptr += B->rowStride;
+    }
+  }
+
+  if (A->dtype == BF_DTYPE_COMPLEX) {
+    BfByte *A_row_ptr = A->data, *B_row_ptr = B->data;
+    for (BfSize i = 0; i < m; ++i) {
+      BfByte *A_col_ptr = A_row_ptr, *B_col_ptr = B_row_ptr;
+      for (BfSize j = 0; j < n; ++j) {
+        *(BfComplex *)A_col_ptr += *(BfComplex *)B_col_ptr;
+        A_col_ptr += A->colStride;
+        B_col_ptr += B->colStride;
+      }
+      A_row_ptr += A->rowStride;
+      B_row_ptr += B->rowStride;
+    }
+  }
+
+  return BF_ERROR_NO_ERROR;
 }
 
 static void

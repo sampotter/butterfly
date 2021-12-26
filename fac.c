@@ -685,3 +685,48 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
 
   return BF_ERROR_NO_ERROR;
 }
+
+enum BfError
+bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y)
+{
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  BfSize p = getNumCols(factor);
+
+  if (X->numRows != p) {
+    error = BF_ERROR_BAD_SHAPE;
+    goto cleanup;
+  }
+
+  BfSize m = getNumRows(factor), n = X->numCols;
+
+  *Y = bfGetUninitializedMat();
+  error = bfMatZeros(Y, BF_DTYPE_COMPLEX, m, n);
+  assert(!error);
+
+  for (BfSize k = 0; k < factor->numBlocks; ++k) {
+    BfSize i0 = factor->rowOffset[factor->rowInd[k]];
+    BfSize i1 = factor->rowOffset[factor->rowInd[k] + 1];
+
+    BfSize j0 = factor->colOffset[factor->colInd[k]];
+    BfSize j1 = factor->colOffset[factor->colInd[k] + 1];
+
+    BfMat Xrows = bfGetMatRowRange(X, j0, j1);
+
+    BfMat tmp = bfGetUninitializedMat();
+    error = bfMatMul(&factor->block[k], &Xrows, &tmp);
+    assert(!error);
+
+    BfMat Yrows = bfGetMatRowRange(Y, i0, i1);
+    error = bfMatAddInplace(&Yrows, &tmp);
+    assert(!error);
+
+    bfFreeMat(&tmp);
+  }
+
+cleanup:
+  if (error)
+    bfFreeMat(Y);
+
+  return error;
+}
