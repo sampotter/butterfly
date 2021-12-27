@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special
 
-from matplotlib.colors import hsv_to_rgb
+from util import complex_to_hsv as Complex2HSV
 
 tgt_pts = np.fromfile('tgt_pts.bin', dtype=np.float64).reshape(-1, 2)
 src_pts = np.fromfile('src_pts.bin', dtype=np.float64).reshape(-1, 2)
@@ -44,25 +44,6 @@ b_gt = np.fromfile('b_gt.bin', dtype=np.complex128).reshape(m, -1)
 
 num_trials = x.shape[1]
 assert b.shape[1] == num_trials and b_gt.shape[1] == num_trials
-
-def Complex2HSV(z, rmin=None, rmax=None, hue_start=90):
-    amp = np.abs(z)
-
-    if rmin is None:
-        rmin = amp.min()
-
-    if rmax is None:
-        rmax = amp.max()
-
-    # get amplidude of z and limit to [rmin, rmax]
-    amp = np.where(amp < rmin, rmin, amp)
-    amp = np.where(amp > rmax, rmax, amp)
-    ph = np.angle(z, deg=1) + hue_start
-    # HSV are values in range [0,1]
-    h = (ph % 360) / 360
-    s = 0.85 * np.ones_like(h)
-    v = (amp -rmin) / (rmax - rmin)
-    return hsv_to_rgb(np.dstack((h,s,v)))
 
 ############################################################################
 # quick test for computing shift matrices
