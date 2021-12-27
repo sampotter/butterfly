@@ -368,14 +368,20 @@ bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j)
 }
 
 BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
+  assert(i0 < i1);
+  assert(i1 <= A->numRows);
+
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
 
   assert(!bfMatIsTransposed(A));
 
   BfMat A_rows = *A;
+  if (i1 - i0 == A->numRows)
+    return A_rows;
 
   A_rows.props |= BF_MAT_PROP_VIEW;
+
   if (A_rows.props & BF_MAT_PROP_UNITARY) {
     A_rows.props ^= BF_MAT_PROP_UNITARY;
     A_rows.props ^= BF_MAT_PROP_SEMI_UNITARY;
@@ -388,6 +394,9 @@ BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1) {
 }
 
 BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
+  assert(j0 < j1);
+  assert(j1 <= A->numCols);
+
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
 
@@ -396,6 +405,8 @@ BfMat bfGetMatColRange(BfMat const *A, BfSize j0, BfSize j1) {
   BfMat A_cols = *A;
 
   A_cols.props |= BF_MAT_PROP_VIEW;
+  if (j1 - j0 == A->numCols)
+    return A_cols;
 
   if (A_cols.props & BF_MAT_PROP_UNITARY) {
     A_cols.props ^= BF_MAT_PROP_UNITARY;
@@ -599,9 +610,10 @@ enum BfError
 complexComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
-  assert(!(A->props & BF_MAT_PROP_SEMI_UNITARY));
 
-  if (A->props & BF_MAT_PROP_UNITARY) {
+  if (A->props & BF_MAT_PROP_UNITARY ||
+      (A->props & BF_MAT_PROP_SEMI_UNITARY
+       && bfMatNumRows(A) > bfMatNumCols(A))) {
     BfMat AH = *A;
     AH.props ^= (AH.props & BF_MAT_PROP_CONJ_TRANS);
     complexComplexMatMul(&AH, B, C);
