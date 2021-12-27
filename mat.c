@@ -810,28 +810,73 @@ enum BfError
 bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
 {
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
+  assert(A->dtype != BF_DTYPE_MAT);
 
   enum BfError error = BF_ERROR_NO_ERROR;
 
   BfReal const atol = BF_EPS_MACH;
 
-  BfSize m = A->numRows;
-  BfSize n = A->numCols;
+  BfSize m = A->numRows, n = A->numCols;
+
   BfReal const rtol = (m > n ? m : n)*BF_EPS_MACH;
 
-  BfMat A_pinv = bfGetUninitializedMat();
-  error = bfComputePinv(A, atol, rtol, &A_pinv);
+  /* compute SVD of A */
+
+  BfMat U = bfGetUninitializedMat();
+  BfMat S = bfGetUninitializedMat();
+  BfMat VH = bfGetUninitializedMat();
+  error = bfComputeMatSvd(A, &U, &S, &VH);
   if (error)
     goto cleanup;
 
-  bfSaveMat(&A_pinv, "Z_eq_pinv.bin");
+  /* compute tolerance and compute number of terms to
+   * retain in pseudoinverse */
 
-  error = bfMatMul(&A_pinv, B, C);
+  BfSize k_max = m < n ? m : n;
+
+  BfReal *sigma = S.data;
+
+  BfReal tol = rtol*sigma[0] + atol;
+
+  BfSize k;
+  for (k = 0; k < k_max; ++k)
+    if (sigma[k] < tol)
+      break;
+
+  /* get subblocks of truncated SVD */
+
+  BfMat UkH = bfGetMatColRange(&U, 0, k);
+  UkH = bfConjTrans(&UkH);
+
+  BfMat Sk = bfGetMatContSubblock(&S, 0, k, 0, k);
+
+  BfMat Vk = bfGetMatRowRange(&VH, 0, k);
+  Vk = bfConjTrans(&Vk);
+
+  /* solve least squares problem */
+
+  BfMat tmp1 = bfGetUninitializedMat();
+  error = bfMatMul(&UkH, B, &tmp1);
+  if (error)
+    goto cleanup;
+
+  BfMat tmp2 = bfGetUninitializedMat();
+  error = bfMatSolve(&Sk, &tmp1, &tmp2);
+  if (error)
+    goto cleanup;
+
+  error = bfMatMul(&Vk, &tmp2, C);
   if (error)
     goto cleanup;
 
 cleanup:
-  bfFreeMat(&A_pinv);
+  bfFreeMat(&U);
+  bfFreeMat(&S);
+  bfFreeMat(&VH);
+  bfFreeMat(&tmp1);
+  bfFreeMat(&tmp2);
+  if (error)
+    bfFreeMat(C);
 
   return error;
 }
