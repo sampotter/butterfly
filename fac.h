@@ -50,12 +50,18 @@ typedef struct BfFactor {
   /* The blocks in the factor (`numBlocks` total). */
   BfMat *block;
 
+#if BF_DEBUG
   BfPoints2 *srcPtsOrig, *srcPtsEquiv, *tgtPts;
+#endif
 } BfFactor;
+
+void bfFreeFactor(BfFactor *factor);
 
 enum BfError
 bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
           BfReal K, BfSize *numFactors, BfFactor **factors);
+
+void bfFreeFac(BfSize numFactors, BfFactor **factorPtr);
 
 enum BfError
 bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y);

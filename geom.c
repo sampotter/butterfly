@@ -60,6 +60,10 @@ bool bfBbox2IsEmpty(BfBbox2 const *bbox) {
   return bbox->min[0] >= bbox->max[0] && bbox->min[1] >= bbox->max[1];
 }
 
+BfPoints2 bfGetUninitializedPoints2() {
+  return (BfPoints2) {.data = NULL, .size = 0};
+}
+
 enum BfError bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
   if (numPoints == 0)
     return BF_ERROR_INVALID_ARGUMENTS;
@@ -74,17 +78,24 @@ enum BfError bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
 }
 
 enum BfError bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
+  enum BfError error = BF_ERROR_NO_ERROR;
+
+  /* open the file for reading */
   FILE *fp = fopen(path, "r");
-  if (fp == NULL)
-    return BF_ERROR_RUNTIME_ERROR;
+  if (fp == NULL) {
+    error = BF_ERROR_RUNTIME_ERROR;
+    goto cleanup;
+  }
 
   /* get the size of the file */
   fseek(fp, 0, SEEK_END);
   BfSize size = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  if (size % sizeof(BfPoint2) != 0)
-    return BF_ERROR_RUNTIME_ERROR;
+  if (size % sizeof(BfPoint2) != 0) {
+    error = BF_ERROR_RUNTIME_ERROR;
+    goto cleanup;
+  }
 
   /* get the number of points */
   points->size = size/sizeof(BfPoint2);
@@ -93,11 +104,20 @@ enum BfError bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
   points->data = malloc(size);
   fread(points->data, sizeof(BfPoint2), points->size, fp);
 
-  return BF_ERROR_NO_ERROR;
+cleanup:
+  fclose(fp);
+  if (error)
+    free(points->data);
+
+  return error;
 }
 
 void bfFreePoints2(BfPoints2 *points) {
   free(points->data);
+}
+
+bool bfPoints2Initialized(BfPoints2 const *points) {
+  return points->data != NULL && points->size != 0;
 }
 
 BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points) {

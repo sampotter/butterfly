@@ -14,7 +14,7 @@ SAVE_PLOTS = True
 
 if SAVE_PLOTS:
     plots_path = Path('plots')
-    # plots_path.mkdir()
+    plots_path.mkdir()
 
 f = open('info.txt', 'r')
 info = dict()
@@ -211,12 +211,12 @@ for factorNum, path in enumerate(paths):
             tgtPts = np.fromfile(f'{path}/tgtPts{k}.bin', dtype=np.float64)
             tgtPts = tgtPts.reshape(-1, 2)
 
-            # fig = plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, Qprev[j0:j1], block, bbox=bbox)
-            # if SAVE_PLOTS:
-            #     img_path = plots_path/f'frame{frame}_factor{factorNum}_block{k}_i{i}_j{j}.png'
-            #     fig.savefig(img_path)
-            # else:
-            #     fig.show()
+            fig = plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, Qprev[j0:j1], block, bbox=bbox)
+            if SAVE_PLOTS:
+                img_path = plots_path/f'frame{frame}_factor{factorNum}_block{k}_i{i}_j{j}.png'
+                fig.savefig(img_path)
+            else:
+                fig.show()
 
         nnz += block.size
 

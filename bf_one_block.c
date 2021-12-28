@@ -18,6 +18,8 @@ enum BfError func(BfQuadtreeNode const *node, void *arg) {
 
   assert(bfBbox2ContainsPoints(&node->bbox, &points));
 
+  bfFreePoints2(&points);
+
   return BF_ERROR_NO_ERROR;
 }
 
@@ -142,6 +144,7 @@ int main(int argc, char const *argv[]) {
       sprintf(filename, "block%lu.bin", j);
       bfSaveMat(&factor[i].block[j], filename);
 
+#ifdef BF_DEBUG
       sprintf(filename, "srcPtsOrig%lu.bin", j);
       bfSavePoints2(&factor[i].srcPtsOrig[j], filename);
 
@@ -152,6 +155,7 @@ int main(int argc, char const *argv[]) {
 
       sprintf(filename, "tgtPts%lu.bin", j);
       bfSavePoints2(&factor[i].tgtPts[j], filename);
+#endif
     }
 
     chdir(cwd);
@@ -194,6 +198,15 @@ int main(int argc, char const *argv[]) {
 
   /* cleanup */
 
+  for (BfSize i = 0; i < numFactors; ++i)
+    bfFreeMat(&Phi[i]);
+  free(Phi);
+  bfFreeMat(&Phi_gt);
   bfFreeMat(&Q);
+  bfFreeFac(numFactors, &factor);
+  bfFreeMat(&Z_gt);
+  bfFreePoints2(&srcPts);
+  bfFreePoints2(&tgtPts);
+  bfFreeQuadtree(&tree);
   bfFreePoints2(&points);
 }

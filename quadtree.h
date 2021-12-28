@@ -78,6 +78,8 @@ struct BfQuadtree {
 enum BfError
 bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
 
+void bfFreeQuadtree(BfQuadtree *tree);
+
 enum BfError
 bfGetQuadtreeNode(BfQuadtree const *tree, size_t l, size_t i,
                   BfQuadtreeNode **node);

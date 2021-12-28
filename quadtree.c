@@ -226,6 +226,20 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   return error;
 }
 
+static void recFreeQuadtreeNode(BfQuadtreeNode *node) {
+  for (BfSize i = 0; i < 4; ++i)
+    if (node->child[i])
+      recFreeQuadtreeNode(node->child[i]);
+
+  free(node);
+}
+
+void bfFreeQuadtree(BfQuadtree *tree) {
+  recFreeQuadtreeNode(tree->root);
+
+  free(tree->perm);
+}
+
 enum BfError
 bfGetQuadtreeNode(BfQuadtree const *tree, size_t depth, size_t node_index,
                   BfQuadtreeNode **node)
@@ -478,6 +492,8 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtreeNode *node,
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
+  BfSize *offsets = NULL;
+
   /* initialize a queue of node pointers for the BFS */
   BfPtrArray queue;
   error = bfInitPtrArrayWithDefaultCapacity(&queue);
@@ -488,7 +504,7 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtreeNode *node,
   fillWithLrLevelOrderNodePtrs(&queue, node);
 
   /* get the offsets to each level */
-  BfSize num_levels, *offsets;
+  BfSize num_levels;
   error = findLevelOrderOffsets(&queue, &num_levels, &offsets);
   if (error)
     goto cleanup;
@@ -507,7 +523,8 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtreeNode *node,
 cleanup:
   bfMapPtrArray(&queue, (BfPtrFunc)clearDirtyBit, arg);
   bfFreePtrArray(&queue);
-  free(offsets);
+  if (offsets != NULL)
+    free(offsets);
 
   return error;
 }
@@ -725,7 +742,9 @@ bfQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter)
 static
 enum BfError
 freeLrLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter) {
-  free((LrLevelOrderInfo *)iter->aux);
+  LrLevelOrderInfo *info = iter->aux;
+  free(info->offsets);
+  free(info);
 
   iter->aux = NULL;
 

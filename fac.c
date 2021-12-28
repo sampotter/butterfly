@@ -60,19 +60,25 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->block[i] = bfGetUninitializedMat();
 
-  // TODO: temporary
+  /* if we're debugging, allocate space in this factor to store each
+   * block's points */
+#if BF_DEBUG
   factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->srcPtsOrig[i] = bfGetUninitializedPoints2();
+
   factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->srcPtsEquiv[i] = bfGetUninitializedPoints2();
+
   factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->tgtPts[i] = bfGetUninitializedPoints2();
+#endif
 
 cleanup:
-  if (error) {
-    free(factor->rowInd);
-    free(factor->colInd);
-    free(factor->rowOffset);
-    free(factor->colOffset);
-    free(factor->block);
-  }
+  if (error)
+    bfFreeFactor(factor);
 
   return error;
 }
@@ -129,21 +135,55 @@ static enum BfError initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->block[i] = bfGetUninitializedMat();
 
-  // TODO: temporary
+  /* if we're debugging, allocate space in this factor to store each
+   * block's points */
+#if BF_DEBUG
   factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->srcPtsOrig[i] = bfGetUninitializedPoints2();
+
   factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->srcPtsEquiv[i] = bfGetUninitializedPoints2();
+
   factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
+  for (BfSize i = 0; i < numBlocks; ++i)
+    factor->tgtPts[i] = bfGetUninitializedPoints2();
+#endif
 
 cleanup:
-  if (error) {
-    free(factor->rowInd);
-    free(factor->colInd);
-    free(factor->rowOffset);
-    free(factor->colOffset);
-    free(factor->block);
-  }
+  if (error)
+    bfFreeFactor(factor);
 
   return error;
+}
+
+void bfFreeFactor(BfFactor *factor) {
+  free(factor->rowInd);
+  free(factor->colInd);
+  free(factor->rowOffset);
+  free(factor->colOffset);
+
+  for (BfSize i = 0; i < factor->numBlocks; ++i)
+    bfFreeMat(&factor->block[i]);
+  free(factor->block);
+
+#if BF_DEBUG
+  for (BfSize i = 0; i < factor->numBlocks; ++i)
+    bfFreePoints2(&factor->srcPtsOrig[i]);
+  free(factor->srcPtsOrig);
+
+  /* note that the final factor doesn't have equivalent source points,
+   * so we don't need to free them here */
+  for (BfSize i = 0; i < factor->numBlocks; ++i)
+    if (bfPoints2Initialized(&factor->srcPtsEquiv[i]))
+      bfFreePoints2(&factor->srcPtsEquiv[i]);
+  free(factor->srcPtsEquiv);
+
+  for (BfSize i = 0; i < factor->numBlocks; ++i)
+    bfFreePoints2(&factor->tgtPts[i]);
+  free(factor->tgtPts);
+#endif
 }
 
 static BfSize
@@ -174,8 +214,6 @@ getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
     return error;
   }
 
-  bfSaveMat(&Z_orig, "Z_or.bin");
-
   /* compute the kernel matrix mapping charges on the source
    * circle to potentials on the target circle */
   BfMat Z_equiv = bfGetUninitializedMat();
@@ -185,8 +223,6 @@ getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
     bfFreeMat(&Z_equiv);
     return error;
   }
-
-  bfSaveMat(&Z_equiv, "Z_eq.bin");
 
   /* set the "shift matrix" to Z_equiv\Z_orig */
   *Z_shift = bfGetUninitializedMat();
@@ -198,7 +234,8 @@ getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
     return error;
   }
 
-  bfSaveMat(Z_shift, "Z_shift.bin");
+  bfFreeMat(&Z_orig);
+  bfFreeMat(&Z_equiv);
 
   return error;
 }
@@ -303,17 +340,20 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     /* compute the shift matrix and store it in the current block */
     error = getShiftMat(&srcPts, &srcCircPts, &tgtCircPts, K, &factor->block[i]);
 
-    factor->srcPtsOrig[i] = srcPts;
-    factor->srcPtsEquiv[i] = srcCircPts;
-    factor->tgtPts[i] = tgtCircPts;
-
     factor->rowOffset[i + 1] = factor->block[i].numRows;
     factor->colOffset[i + 1] = factor->block[i].numCols;
 
-    /* free all temporaries */
-//     bfFreePoints2(&srcPts);
-//     bfFreePoints2(&tgtCircPts);
-//     bfFreePoints2(&srcCircPts);
+    /* if we're debugging, store this block's points---free them
+     * otherwise */
+#if BF_DEBUG
+    factor->srcPtsOrig[i] = srcPts;
+    factor->srcPtsEquiv[i] = srcCircPts;
+    factor->tgtPts[i] = tgtCircPts;
+#else
+    bfFreePoints2(&srcPts);
+    bfFreePoints2(&tgtCircPts);
+    bfFreePoints2(&srcCircPts);
+#endif
 
     if (error)
       break;
@@ -512,15 +552,22 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, numRows);
           BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, numRows);
 
-          // TODO: temporary
-          factor->srcPtsOrig[blockIndex] = srcChildPts;
-          factor->srcPtsEquiv[blockIndex] = srcPts;
-          factor->tgtPts[blockIndex] = tgtChildPts;
-
           /* compute the shift matrix for this configuration of circles */
           BfMat *Z_shift = &factor->block[blockIndex];
           error = getShiftMat(&srcChildPts, &srcPts, &tgtChildPts, K, Z_shift);
           assert(!error);
+
+          /* if we're debugging, store this block's points---free them
+           * otherwise */
+#if BF_DEBUG
+          factor->srcPtsOrig[blockIndex] = srcChildPts;
+          factor->srcPtsEquiv[blockIndex] = srcPts;
+          factor->tgtPts[blockIndex] = tgtChildPts;
+#else
+          bfFreePoints2(&srcChildPts);
+          bfFreePoints2(&srcPts);
+          bfFreePoints2(&tgtChildPts);
+#endif
 
           /* set block row and column indices */
           assert(blockIndex < factor->numBlocks);
@@ -592,11 +639,6 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     BfPoints2 tgtPts;
     bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
 
-    // TODO: temporary
-    factor->srcPtsOrig[i] = srcCircPts;
-    bfInitEmptyPoints2(&factor->srcPtsEquiv[i], 0);
-    factor->tgtPts[i] = tgtPts;
-
     error = bfGetHelm2KernelMatrix(&factor->block[i], &srcCircPts, &tgtPts, K);
     assert(!error);
 
@@ -606,8 +648,15 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     assert(factor->colOffset[i + 1] == BF_SIZE_BAD_VALUE);
     factor->colOffset[i + 1] = factor->block[i].numCols;
 
+    /* hang onto this block's points if we're in debug mode, and free
+     * them otherwise */
+#if BF_DEBUG
+    factor->srcPtsOrig[i] = srcCircPts;
+    factor->tgtPts[i] = tgtPts;
+#else
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
+#endif
 
     if (error)
       break;
@@ -678,7 +727,18 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
   makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2], K,
                  &srcLevelIter.level_nodes, &tgtLevelIter.level_nodes);
 
+  bfFreeQuadtreeLevelIter(&srcLevelIter);
+  bfFreeQuadtreeLevelIter(&tgtLevelIter);
+
   return BF_ERROR_NO_ERROR;
+}
+
+void bfFreeFac(BfSize numFactors, BfFactor **factorPtr) {
+  BfFactor *factor = *factorPtr;
+  for (BfSize i = 0; i < numFactors; ++i)
+    bfFreeFactor(&factor[i]);
+  free(factor);
+  *factorPtr = NULL;
 }
 
 enum BfError
