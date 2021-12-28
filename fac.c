@@ -60,6 +60,11 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->block[i] = bfGetUninitializedMat();
 
+  // TODO: temporary
+  factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
+  factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
+  factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
+
 cleanup:
   if (error) {
     free(factor->rowInd);
@@ -123,6 +128,11 @@ static enum BfError initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   }
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->block[i] = bfGetUninitializedMat();
+
+  // TODO: temporary
+  factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
+  factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
+  factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
 
 cleanup:
   if (error) {
@@ -278,6 +288,9 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     BfPoints2 srcPts;
     bfGetQuadtreeNodePoints(srcNode, &srcPts);
 
+    /* verify that the source bounding circle contains the points */
+    assert(bfCircle2ContainsPoints(&srcCirc, &srcPts));
+
     /* get the rank estimate for the current pair of source and
 `     * target bounding circles */
     BfSize p;
@@ -290,13 +303,17 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     /* compute the shift matrix and store it in the current block */
     error = getShiftMat(&srcPts, &srcCircPts, &tgtCircPts, K, &factor->block[i]);
 
+    factor->srcPtsOrig[i] = srcPts;
+    factor->srcPtsEquiv[i] = srcCircPts;
+    factor->tgtPts[i] = tgtCircPts;
+
     factor->rowOffset[i + 1] = factor->block[i].numRows;
     factor->colOffset[i + 1] = factor->block[i].numCols;
 
     /* free all temporaries */
-    bfFreePoints2(&srcPts);
-    bfFreePoints2(&tgtCircPts);
-    bfFreePoints2(&srcCircPts);
+//     bfFreePoints2(&srcPts);
+//     bfFreePoints2(&tgtCircPts);
+//     bfFreePoints2(&srcCircPts);
 
     if (error)
       break;
@@ -495,6 +512,11 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           BfPoints2 srcPts = bfSamplePointsOnCircle2(&srcCirc, numRows);
           BfPoints2 tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, numRows);
 
+          // TODO: temporary
+          factor->srcPtsOrig[blockIndex] = srcChildPts;
+          factor->srcPtsEquiv[blockIndex] = srcPts;
+          factor->tgtPts[blockIndex] = tgtChildPts;
+
           /* compute the shift matrix for this configuration of circles */
           BfMat *Z_shift = &factor->block[blockIndex];
           error = getShiftMat(&srcChildPts, &srcPts, &tgtChildPts, K, Z_shift);
@@ -569,6 +591,11 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     /* get the current set of target points */
     BfPoints2 tgtPts;
     bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
+
+    // TODO: temporary
+    factor->srcPtsOrig[i] = srcCircPts;
+    bfInitEmptyPoints2(&factor->srcPtsEquiv[i], 0);
+    factor->tgtPts[i] = tgtPts;
 
     error = bfGetHelm2KernelMatrix(&factor->block[i], &srcCircPts, &tgtPts, K);
     assert(!error);

@@ -49,6 +49,8 @@ typedef struct BfFactor {
 
   /* The blocks in the factor (`numBlocks` total). */
   BfMat *block;
+
+  BfPoints2 *srcPtsOrig, *srcPtsEquiv, *tgtPts;
 } BfFactor;
 
 enum BfError

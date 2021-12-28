@@ -1,12 +1,25 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "fac.h"
 #include "helm2.h"
 #include "mat.h"
 #include "rand.h"
 #include "quadtree.h"
+
+enum BfError func(BfQuadtreeNode const *node, void *arg) {
+  (void)arg;
+
+  BfPoints2 points;
+  bfGetQuadtreeNodePoints(node, &points);
+
+  assert(bfBbox2ContainsPoints(&node->bbox, &points));
+
+  return BF_ERROR_NO_ERROR;
+}
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -16,16 +29,16 @@ int main(int argc, char const *argv[]) {
 
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  printf("reading points from %s...\n", argv[1]);
-
   BfPoints2 points;
   error = bfReadPoints2FromFile(argv[1], &points);
   assert(!error);
-
-  printf("building quadtree...\n");
+  printf("read points from %s\n", argv[1]);
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
+  puts("built quadtree");
+
+  bfMapQuadtreeNodes(tree.root, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, func, NULL);
 
   BfReal K = 3000;
 
@@ -52,9 +65,15 @@ int main(int argc, char const *argv[]) {
   error = bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
   assert(!error);
 
+  bfSavePoints2(&tgtPts, "tgtPts.bin");
+  puts("wrote target points to tgtPts.bin");
+
   BfPoints2 srcPts;
   error = bfGetQuadtreeNodePoints(srcNode, &srcPts);
   assert(!error);
+
+  bfSavePoints2(&srcPts, "srcPts.bin");
+  puts("wrote source points to srcPts.bin");
 
   BfMat Z_gt = bfGetUninitializedMat();
   bfGetHelm2KernelMatrix(&Z_gt, &srcPts, &tgtPts, K);
@@ -74,10 +93,107 @@ int main(int argc, char const *argv[]) {
    * target nodes */
 
   BfSize numFactors;
-  BfFactor *factors;
-  bfMakeFac(srcNode, tgtNode, K, &numFactors, &factors);
+  BfFactor *factor;
+  bfMakeFac(srcNode, tgtNode, K, &numFactors, &factor);
+  printf("computed kernel matrix's butterfly factorization\n");
+
+  /* write factors to disk */
+
+  char cmd[1024];
+  sprintf(cmd, "for i in $(seq 0 %lu); do rm -rf ./factor$i;"
+          "mkdir ./factor$i; done", numFactors - 1);
+  system(cmd);
+
+  char cwd[1024];
+  assert(getcwd(cwd, 1024) != NULL);
+  printf("cwd: %s\n", cwd);
+
+  for (BfSize i = 0; i < numFactors; ++i) {
+    char path[1024];
+    sprintf(path, "factor%lu", i);
+
+    chdir(path);
+
+    FILE *fp = fopen("info.txt", "w");
+    fprintf(fp, "numBlockRows %lu\n", factor[i].numBlockRows);
+    fprintf(fp, "numBlockCols %lu\n", factor[i].numBlockCols);
+    fprintf(fp, "numBlocks %lu\n", factor[i].numBlocks);
+    fclose(fp);
+
+    fp = fopen("rowInd.bin", "w");
+    fwrite(factor[i].rowInd, sizeof(BfSize), factor[i].numBlocks, fp);
+    fclose(fp);
+
+    fp = fopen("colInd.bin", "w");
+    fwrite(factor[i].colInd, sizeof(BfSize), factor[i].numBlocks, fp);
+    fclose(fp);
+
+    fp = fopen("rowOffset.bin", "w");
+    fwrite(factor[i].rowOffset, sizeof(BfSize), factor[i].numBlockRows + 1, fp);
+    fclose(fp);
+
+    fp = fopen("colOffset.bin", "w");
+    fwrite(factor[i].colOffset, sizeof(BfSize), factor[i].numBlockCols + 1, fp);
+    fclose(fp);
+
+    for (BfSize j = 0; j < factor[i].numBlocks; ++j) {
+      char filename[1024];
+
+      sprintf(filename, "block%lu.bin", j);
+      bfSaveMat(&factor[i].block[j], filename);
+
+      sprintf(filename, "srcPtsOrig%lu.bin", j);
+      bfSavePoints2(&factor[i].srcPtsOrig[j], filename);
+
+      if (i != numFactors - 1) {
+        sprintf(filename, "srcPtsEquiv%lu.bin", j);
+        bfSavePoints2(&factor[i].srcPtsEquiv[j], filename);
+      }
+
+      sprintf(filename, "tgtPts%lu.bin", j);
+      bfSavePoints2(&factor[i].tgtPts[j], filename);
+    }
+
+    chdir(cwd);
+  }
+
+  /* test multiplication */
+
+  BfComplex q[3];
+  bfRandn(6, (BfReal *)q);
+  BfMat Q = bfGetUninitializedMat();
+  bfInitEmptyMat(&Q, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, srcPts.size, 1);
+  for (BfSize i = 0; i < srcPts.size; ++i) {
+    BfComplex *ptr;
+    bfGetMatEltPtr(&Q, i, 0, (BfPtr *)&ptr);
+    *ptr = srcPts.data[i][0]*q[0] + srcPts.data[i][1]*q[1] + q[2];
+  }
+  puts("set up test problem");
+
+  BfMat Phi_gt = bfGetUninitializedMat();
+  bfMatMul(&Z_gt, &Q, &Phi_gt);
+  puts("did MVP with groundtruth kernel matrix");
+
+  BfMat *Phi = malloc(numFactors*sizeof(BfMat));
+  for (BfSize i = 0; i < numFactors; ++i)
+    Phi[i] = bfGetUninitializedMat();
+  bfMulFac(&factor[0], &Q, &Phi[0]);
+  for (BfSize i = 1; i < numFactors; ++i)
+    bfMulFac(&factor[i], &Phi[i - 1], &Phi[i]);
+  puts("did MVPs with each butterfly factor");
+
+  /* write simulation info to a text file */
+
+  FILE *fp = fopen("info.txt", "w");
+  fprintf(fp, "numSrcPts %lu\n", srcPts.size);
+  fprintf(fp, "numTgtPts %lu\n", tgtPts.size);
+  fprintf(fp, "numFactors %lu\n", numFactors);
+  fprintf(fp, "K %g\n", K);
+  fclose(fp);
+  puts("wrote simulation information to info.txt");
 
   /* cleanup */
 
+  bfFreeMat(&Q);
   bfFreePoints2(&points);
 }

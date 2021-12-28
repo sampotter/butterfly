@@ -68,16 +68,6 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
   node->offset[1] = i;
 
-#ifdef BF_DEBUG
-  // (verify that child[0]'s indices are correctly sifted)
-  for (size_t k = 0; k < perm_size; ++k) {
-    bool in_quadrant =
-      point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1];
-    assert(node->offset[0] <= k && k < node->offset[1] ?
-           in_quadrant : !in_quadrant);
-  }
-#endif
-
   // ... for child[1]...
   i = node->offset[1];
   while (i < perm_size &&
@@ -93,16 +83,6 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
     ++j;
   }
   node->offset[2] = i;
-
-#ifdef BF_DEBUG
-  // (verify that child[1]'s indices are correctly sifted)
-  for (size_t k = 0; k < perm_size; ++k) {
-    bool in_quadrant =
-      point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1];
-    assert(node->offset[1] <= k && k < node->offset[2] ?
-           in_quadrant : !in_quadrant);
-  }
-#endif
 
   // ... for child[2]...
   i = node->offset[2];
@@ -120,41 +100,8 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
   node->offset[3] = i;
 
-#ifdef BF_DEBUG
-  // (verify that child[2]'s indices are correctly sifted)
-  for (size_t k = 0; k < perm_size; ++k) {
-    bool in_quadrant =
-      point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1];
-    assert(node->offset[2] <= k && k < node->offset[3] ?
-           in_quadrant : !in_quadrant);
-  }
-#endif
-
   // we don't have to do any sifting for the last child! nice.
   // ... but let's verify that things are as they should be.
-
-#ifdef BF_DEBUG
-  assert(j == perm_size);
-  assert(j == node->offset[4]);
-#endif
-
-#ifdef BF_DEBUG
-  // (verify that child[2]'s indices are correctly sifted)
-  for (size_t k = 0; k < perm_size; ++k) {
-    bool in_quadrant =
-      point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1];
-    assert(node->offset[3] <= k && k < node->offset[4] ?
-           in_quadrant : !in_quadrant);
-  }
-#endif
-
-#ifdef BF_DEBUG
-  // (verify that child[3]'s indices are correctly sifted)
-  for (BfSize k = node->offset[3], l; k < perm_size; ++k) {
-    l = perm[k];
-    assert(point[l][0] > split[0] && point[l][1] > split[1]);
-  }
-#endif
 
   // compute the bounding boxes each child node
   BfBbox2 child_bbox[4] = {
@@ -175,6 +122,28 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
       .max = {bbox.max[0], bbox.max[1]}
     }
   };
+
+#ifdef BF_DEBUG
+  /* sanity checks */
+  assert(j == perm_size);
+  assert(j == node->offset[4]);
+
+  /* verify that child[0]'s indices are correctly sifted */
+  for (size_t k = node->offset[0]; k < node->offset[1]; ++k)
+    assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1]);
+
+  /* verify that child[1]'s indices are correctly sifted */
+  for (size_t k = node->offset[1]; k < node->offset[2]; ++k)
+    assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1]);
+
+  /* verify that child[2]'s indices are correctly sifted */
+  for (size_t k = node->offset[2]; k < node->offset[3]; ++k)
+    assert(point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1]);
+
+  /* verify that child[3]'s indices are correctly sifted */
+  for (BfSize k = node->offset[3]; k < node->offset[4]; ++k)
+    assert(point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1]);
+#endif
 
   for (BfSize q = 0; q < 4; ++q) {
     BfSize childPermSize = node->offset[q + 1] - node->offset[q];
@@ -298,7 +267,7 @@ bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
   size_t q, offset = 0;
 
   while (node->flags & child_mask) {
-    q = child_flag_to_index[node->flags];
+    q = child_flag_to_index[node->flags & child_mask];
     parent_node = node->parent;
     offset += parent_node->offset[q];
     node = parent_node;

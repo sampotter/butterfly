@@ -11,6 +11,13 @@ bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point) {
       && bbox->min[1] <= point[1] && point[1] <= bbox->max[1];
 }
 
+bool bfBbox2ContainsPoints(BfBbox2 const *bbox, BfPoints2 const *points) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (!bfBbox2ContainsPoint(bbox, points->data[i]))
+      return false;
+  return true;
+}
+
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
 }
@@ -29,6 +36,17 @@ BfPoints2 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfSize numPoints) {
   }
 
   return points;
+}
+
+bool bfCircle2ContainsPoint(BfCircle2 const *circ, BfPoint2 const point) {
+  return bfPoint2Dist(circ->center, point) <= circ->r;
+}
+
+bool bfCircle2ContainsPoints(BfCircle2 const *circ, BfPoints2 const *points) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (!bfCircle2ContainsPoint(circ, points->data[i]))
+      return false;
+  return true;
 }
 
 BfBbox2 bfGetEmptyBbox2() {

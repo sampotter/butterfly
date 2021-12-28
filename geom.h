@@ -18,8 +18,11 @@ typedef struct BfCircle2 {
 } BfCircle2;
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point);
+bool bfBbox2ContainsPoints(BfBbox2 const *bbox, BfPoints2 const *points);
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q);
 BfPoints2 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfSize numPoints);
+bool bfCircle2ContainsPoint(BfCircle2 const *circ, BfPoint2 const point);
+bool bfCircle2ContainsPoints(BfCircle2 const *circ, BfPoints2 const *points);
 
 BfBbox2 bfGetEmptyBbox2();
 bool bfBbox2IsEmpty(BfBbox2 const *bbox);
