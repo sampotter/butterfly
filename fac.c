@@ -361,7 +361,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 
   cumSumRowAndColOffsets(factor);
 
-  // TODO: if (error) { free blocks }
+  assert(!error); // TODO: if (error) { free blocks }
 
   return error;
 }
@@ -585,6 +585,8 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     dj += qmax;
   }
 
+  assert(!error); // TODO: if (error) { free stuff }
+
   return error;
 }
 
@@ -664,7 +666,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   cumSumRowAndColOffsets(factor);
 
-  // TODO: if (error) { free stuff }
+  assert(!error); // TODO: if (error) { free stuff }
 
   return error;
 }
@@ -685,9 +687,9 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
     &tgtLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
     (BfQuadtreeNode *)tgtNode);
 
-  // skip a few levels on the source side
-  for (BfSize i = 0; i < 5; ++i)
-    bfQuadtreeLevelIterNext(&srcLevelIter);
+//   // skip a few levels on the source side
+//   for (BfSize i = 0; i < 5; ++i)
+//     bfQuadtreeLevelIterNext(&srcLevelIter);
 
   BfSize current_src_depth;
   bfQuadtreeLevelIterCurrentDepth(&srcLevelIter, &current_src_depth);
