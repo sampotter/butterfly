@@ -711,8 +711,8 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
 
   BfFactor *factor = *factors;
 
-  makeFirstFactor(&factor[0], K, &srcLevelIter.level_nodes,
-                  &tgtLevelIter.level_nodes);
+  makeFirstFactor(&factor[0], K, &srcLevelIter.levelNodes,
+                  &tgtLevelIter.levelNodes);
 
   for (BfSize i = 1; i < *numFactors - 1; ++i) {
     /* go up a level on the source tree */
@@ -720,14 +720,14 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
 
     /* make the next factor */
     makeFactor(&factor[i], &factor[i - 1], K,
-               &srcLevelIter.level_nodes, &tgtLevelIter.level_nodes);
+               &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
 
     /* go down a level on the target tree */
     bfQuadtreeLevelIterNext(&tgtLevelIter);
   }
 
   makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2], K,
-                 &srcLevelIter.level_nodes, &tgtLevelIter.level_nodes);
+                 &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
 
   bfFreeQuadtreeLevelIter(&srcLevelIter);
   bfFreeQuadtreeLevelIter(&tgtLevelIter);

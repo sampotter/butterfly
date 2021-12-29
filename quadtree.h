@@ -86,7 +86,7 @@ bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i,
 
 enum BfError
 bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
-                         BfSize *num_indices, BfSize **indices);
+                         BfSize *numIndices, BfSize **indices);
 
 BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 
@@ -116,7 +116,7 @@ bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
 typedef struct BfQuadtreeLevelIter {
   enum BfTreeTraversals traversal;
   BfPtrArray nodes;
-  BfPtrArray level_nodes;
+  BfPtrArray levelNodes;
   void *aux;
 } BfQuadtreeLevelIter;
 
