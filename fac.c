@@ -455,7 +455,6 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           ++q;
           qmax = q > qmax ? q : qmax;
         }
-
         ++i;
       }
       ++p;
