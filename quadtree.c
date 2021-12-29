@@ -25,7 +25,7 @@ enum BfQuadtreeNodeFlags child_mask =
   BF_QUADTREE_NODE_FLAG_CHILD_2 |
   BF_QUADTREE_NODE_FLAG_CHILD_3;
 
-size_t child_flag_to_index[] = {
+BfSize child_flag_to_index[] = {
   [BF_QUADTREE_NODE_FLAG_CHILD_0] = 0,
   [BF_QUADTREE_NODE_FLAG_CHILD_1] = 1,
   [BF_QUADTREE_NODE_FLAG_CHILD_2] = 2,
@@ -36,11 +36,11 @@ static
 enum BfError
 recInitQuadtreeFromPoints(BfQuadtreeNode *node,
                           BfPoints2 const *points, BfBbox2 bbox,
-                          size_t perm_size, size_t *perm,
+                          BfSize perm_size, BfSize *perm,
                           BfSize current_depth)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
-  size_t i, j;
+  BfSize i, j;
 
   BfPoint2 *point = points->data;
 
@@ -129,15 +129,15 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   assert(j == node->offset[4]);
 
   /* verify that child[0]'s indices are correctly sifted */
-  for (size_t k = node->offset[0]; k < node->offset[1]; ++k)
+  for (BfSize k = node->offset[0]; k < node->offset[1]; ++k)
     assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1]);
 
   /* verify that child[1]'s indices are correctly sifted */
-  for (size_t k = node->offset[1]; k < node->offset[2]; ++k)
+  for (BfSize k = node->offset[1]; k < node->offset[2]; ++k)
     assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1]);
 
   /* verify that child[2]'s indices are correctly sifted */
-  for (size_t k = node->offset[2]; k < node->offset[3]; ++k)
+  for (BfSize k = node->offset[2]; k < node->offset[3]; ++k)
     assert(point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1]);
 
   /* verify that child[3]'s indices are correctly sifted */
@@ -172,7 +172,7 @@ recInitQuadtreeFromPoints(BfQuadtreeNode *node,
   }
 
   if (error)
-    for (size_t q = 0; q < 4; ++q)
+    for (BfSize q = 0; q < 4; ++q)
       free(node->child[q]);
 
   return error;
@@ -188,8 +188,8 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   BfSize num_points = points->size;
 
   // initialize permutation to identity
-  tree->perm = malloc(num_points*sizeof(size_t));
-  for (size_t i = 0; i < num_points; ++i)
+  tree->perm = malloc(num_points*sizeof(BfSize));
+  for (BfSize i = 0; i < num_points; ++i)
     tree->perm[i] = i;
 
   tree->root = malloc(sizeof(BfQuadtreeNode));
@@ -241,16 +241,16 @@ void bfFreeQuadtree(BfQuadtree *tree) {
 }
 
 enum BfError
-bfGetQuadtreeNode(BfQuadtree const *tree, size_t depth, size_t node_index,
+bfGetQuadtreeNode(BfQuadtree const *tree, BfSize depth, BfSize node_index,
                   BfQuadtreeNode **node)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  size_t nodes_at_depth = pow(4.0, depth);
+  BfSize nodes_at_depth = pow(4.0, depth);
   if (node_index >= nodes_at_depth)
     return error | BF_ERROR_INVALID_ARGUMENTS;
 
-  size_t i, r = node_index;
+  BfSize i, r = node_index;
 
   BfQuadtreeNode *current_node = tree->root;
   do {
@@ -269,7 +269,7 @@ bfGetQuadtreeNode(BfQuadtree const *tree, size_t depth, size_t node_index,
 
 enum BfError
 bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
-                         size_t *num_indices, size_t **indices)
+                         BfSize *num_indices, BfSize **indices)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
@@ -278,7 +278,7 @@ bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
   *num_indices = node->offset[4];
 
   BfQuadtreeNode const *parent_node;
-  size_t q, offset = 0;
+  BfSize q, offset = 0;
 
   while (node->flags & child_mask) {
     q = child_flag_to_index[node->flags & child_mask];

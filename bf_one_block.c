@@ -49,8 +49,8 @@ int main(int argc, char const *argv[]) {
   /* Get source and target nodes from quadtree and check that their
    * indices are OK */
 
-  size_t src_depth = 3, srcNodeIndex = 20;
-  size_t tgt_depth = 3, tgtNodeIndex = 16*3 + 4*3 + 2;
+  BfSize src_depth = 3, srcNodeIndex = 20;
+  BfSize tgt_depth = 3, tgtNodeIndex = 16*3 + 4*3 + 2;
 
   BfQuadtreeNode *srcNode;
   error = bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);

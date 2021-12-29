@@ -125,7 +125,7 @@ BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points) {
 
   BfSize numPoints = points->size;
 
-  for (size_t i = 0; i < numPoints; ++i) {
+  for (BfSize i = 0; i < numPoints; ++i) {
     BfReal const *point = points->data[i];
 
     BfReal x = point[0], y = point[1];

@@ -41,7 +41,7 @@ struct BfQuadtreeNode {
    * sentinel values: offset[0] == 0 and offset[4] == size (the number
    * of points contained in this node).
    */
-  size_t offset[5];
+  BfSize offset[5];
 
   /* Pointers to this node's children. If child[i] == NULL, then no
    * points are contained in the corresponding quadtree box, and
@@ -71,7 +71,7 @@ typedef enum BfError (*BfQuadtreeNodeFunc)(BfQuadtreeNode const *, void *);
 
 struct BfQuadtree {
   BfPoints2 const *points;
-  size_t *perm;
+  BfSize *perm;
   BfQuadtreeNode *root;
 };
 
@@ -81,12 +81,12 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
 void bfFreeQuadtree(BfQuadtree *tree);
 
 enum BfError
-bfGetQuadtreeNode(BfQuadtree const *tree, size_t l, size_t i,
+bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i,
                   BfQuadtreeNode **node);
 
 enum BfError
 bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
-                         size_t *num_indices, size_t **indices);
+                         BfSize *num_indices, BfSize **indices);
 
 BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 
