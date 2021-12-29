@@ -86,70 +86,15 @@ cleanup:
 static enum BfError initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  factor->numBlockRows = numBlocks;
-  factor->numBlockCols = numBlocks;
-  factor->numBlocks = numBlocks;
-
-  /* allocate and initialize row indices for each block */
-  factor->rowInd = malloc(numBlocks*sizeof(BfSize));
-  if (factor->rowInd == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
+  error = initEmptyFactor(factor, numBlocks, numBlocks, numBlocks);
+  if (error)
     goto cleanup;
-  }
+
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->rowInd[i] = i;
 
-  /* allocate and initialize column indices for each block */
-  factor->colInd = malloc(numBlocks*sizeof(BfSize));
-  if (factor->colInd == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
-    goto cleanup;
-  }
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->colInd[i] = i;
-
-  /* alloc and init the row index offsets for each block row */
-  factor->rowOffset = malloc((numBlocks + 1)*sizeof(BfSize));
-  if (factor->rowOffset == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
-    goto cleanup;
-  }
-  for (BfSize i = 0; i < numBlocks + 1; ++i)
-    factor->rowOffset[i] = BF_SIZE_BAD_VALUE;
-
-  /* alloc and init the column index offsets for each block column */
-  factor->colOffset = malloc((numBlocks + 1)*sizeof(BfSize));
-  if (factor->colOffset == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
-    goto cleanup;
-  }
-  for (BfSize i = 0; i < numBlocks + 1; ++i)
-    factor->colOffset[i] = BF_SIZE_BAD_VALUE;
-
-  /* allocate and initialize each nonzero (diagonal) block */
-  factor->block = malloc(numBlocks*sizeof(BfMat));
-  if (factor->block == NULL) {
-    error = BF_ERROR_MEMORY_ERROR;
-    goto cleanup;
-  }
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->block[i] = bfGetUninitializedMat();
-
-  /* if we're debugging, allocate space in this factor to store each
-   * block's points */
-#if BF_DEBUG
-  factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->srcPtsOrig[i] = bfGetUninitializedPoints2();
-
-  factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->srcPtsEquiv[i] = bfGetUninitializedPoints2();
-
-  factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->tgtPts[i] = bfGetUninitializedPoints2();
-#endif
 
 cleanup:
   if (error)
