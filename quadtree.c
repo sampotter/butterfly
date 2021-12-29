@@ -341,7 +341,7 @@ BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node) {
 }
 
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node) {
-  return node->offset[4];
+  return node->offset[4] - node->offset[0];
 }
 
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node) {
