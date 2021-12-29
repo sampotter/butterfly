@@ -643,12 +643,12 @@ initLrReverseLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
   if (error)
     return error;
 
-  info->currentLevel = info->numLevels;
+  info->currentLevel = info->numLevels - 1;
 
   error = bfPtrArrayGetRangeView(
     &iter->nodes,
-    info->offsets[info->currentLevel - 1],
     info->offsets[info->currentLevel],
+    info->offsets[info->currentLevel + 1],
     &iter->levelNodes);
 
   return error;
@@ -722,20 +722,18 @@ lrReverseLevelOrderQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter)
 {
   LrLevelOrderInfo *info = iter->aux;
 
+  if (info->currentLevel == 0)
+    return BF_ERROR_NO_ERROR;
+
+  --info->currentLevel;
+
   bfMakeEmptyPtrArrayView(&iter->levelNodes);
 
-  enum BfError error = info->currentLevel == 0 ?
-    BF_ERROR_NO_ERROR :
-    bfPtrArrayGetRangeView(
+  return bfPtrArrayGetRangeView(
       &iter->nodes,
-      info->offsets[info->currentLevel - 1],
       info->offsets[info->currentLevel],
+      info->offsets[info->currentLevel + 1],
       &iter->levelNodes);
-
-  if (info->currentLevel > 0)
-    --info->currentLevel;
-
-  return error;
 }
 
 bool
