@@ -757,68 +757,6 @@ bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 }
 
 enum BfError
-bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv)
-{
-  assert(A->dtype != BF_DTYPE_MAT);
-  assert(!(A->props & BF_MAT_PROP_DIAGONAL));
-
-  enum BfError error = BF_ERROR_NO_ERROR;
-
-  /* compute SVD of A */
-
-  BfMat U = bfGetUninitializedMat();
-  BfMat S = bfGetUninitializedMat();
-  BfMat VH = bfGetUninitializedMat();
-  error = bfComputeMatSvd(A, &U, &S, &VH);
-  if (error)
-    goto cleanup;
-
-  /* compute tolerance and compute number of terms to
-   * retain in pseudoinverse */
-
-  BfSize m = A->numRows, n = A->numCols;
-  BfSize k_max = m < n ? m : n;
-
-  BfReal *sigma = S.data;
-
-  BfReal tol = rtol*sigma[0] + atol;
-
-  BfSize k;
-  for (k = 0; k < k_max; ++k)
-    if (sigma[k] < tol)
-      break;
-
-  /* get subblocks of truncated SVD */
-
-  BfMat UkH = bfGetMatColRange(&U, 0, k);
-  UkH = bfConjTrans(&UkH);
-
-  BfMat Sk = bfGetMatContSubblock(&S, 0, k, 0, k);
-
-  BfMat Vk = bfGetMatRowRange(&VH, 0, k);
-  Vk = bfConjTrans(&Vk);
-
-  /* compute pseudonverse from truncated SVD */
-
-  BfMat WkH = bfGetUninitializedMat();
-  error = bfMatSolve(&Sk, &UkH, &WkH);
-  assert(!error);
-  if (error)
-    goto cleanup;
-
-  error = bfMatMul(&Vk, &WkH, pinv);
-  assert(!error);
-
-cleanup:
-  bfFreeMat(&U);
-  bfFreeMat(&S);
-  bfFreeMat(&VH);
-  bfFreeMat(&WkH);
-
-  return error;
-}
-
-enum BfError
 bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
 {
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));

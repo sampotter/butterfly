@@ -95,7 +95,4 @@ enum BfError
 bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt);
 
 enum BfError
-bfComputePinv(BfMat const *A, BfReal atol, BfReal rtol, BfMat *pinv);
-
-enum BfError
 bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C);
