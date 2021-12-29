@@ -419,20 +419,19 @@ findLevelOrderOffsets(BfPtrArray *nodes, BfSize *numLevels, BfSize **offsets)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
-  BfQuadtreeNode *prev, *node;
 
   /* start by computing the number of levels */
 
-  BfSize min_depth;
+  BfQuadtreeNode const *prev = NULL;
   bfPtrArrayGetFirst(nodes, (BfPtr *)&prev);
-  min_depth = prev->depth;
+  BfSize minDepth = prev->depth;
 
-  BfSize max_depth;
+  BfQuadtreeNode const *node = NULL;
   bfPtrArrayGetLast(nodes, (BfPtr *)&node);
-  max_depth = node->depth;
+  BfSize maxDepth = node->depth;
 
-  assert(max_depth >= min_depth);
-  *numLevels = max_depth - min_depth + 1;
+  assert(maxDepth >= minDepth);
+  *numLevels = maxDepth - minDepth + 1;
 
   /* allocate space for offsets */
   *offsets = malloc((*numLevels + 1)*sizeof(BfSize));
@@ -656,7 +655,7 @@ levelOrderQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter,
 
   BfSize i = info->offsets[info->currentLevel];
 
-  BfQuadtreeNode *node;
+  BfQuadtreeNode *node = NULL;
   bfPtrArrayGet(&iter->nodes, i, (BfPtr *)&node);
 
   *depth = node->depth;
