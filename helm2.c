@@ -1,31 +1,31 @@
 #include "helm2.h"
 
+#include <assert.h>
 #include <math.h>
 
 #include "const.h"
 #include "geom.h"
 
-enum BfError
-bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
-                            BfReal k, BfReal C, BfReal eps, BfSize *rank)
+BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
+                                   BfCircle2 const *circ2,
+                                   BfReal k, BfReal C, BfReal eps)
 {
-  if (k <= 0 || C <= 0 || eps <= 0)
-    return BF_ERROR_INVALID_ARGUMENTS;
+  assert(k > 0);
+  assert(C > 0);
+  assert(eps > 0);
 
-  BfReal R = bfPoint2Dist(circ1.center, circ2.center);
-  if (R <= 0)
-    return BF_ERROR_INVALID_ARGUMENTS;
+  BfReal R = bfPoint2Dist(circ1->center, circ2->center);
+  assert(R > 0);
+
+  BfReal r1 = circ1->r, r2 = circ2->r;
 
   /* Reading Michielssen & Boag, seems like there should be a factor
    * of two pi in front of this, but that leads to a rank estimate
    * which is way higher than necessary. */
-  BfReal p = k*circ1.r*circ2.r/(R - circ1.r - circ2.r) - C*log10(eps);
-  if (p <= 0)
-    return BF_ERROR_INVALID_ARGUMENTS;
+  BfReal p = k*r1*r2/(R - r1 - r2) - C*log10(eps);
+  assert(p > 0);
 
-  *rank = ceil(p);
-
-  return BF_ERROR_NO_ERROR;
+  return (BfSize)ceil(p);
 }
 
 BfComplex

@@ -6,9 +6,9 @@
 
 BfComplex bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K);
 
-enum BfError
-bfHelm2RankEstForTwoCircles(BfCircle2 const circ1, BfCircle2 const circ2,
-                            BfReal k, BfReal C, BfReal eps, BfSize *rank);
+BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
+                                   BfCircle2 const *circ2,
+                                   BfReal k, BfReal C, BfReal eps);
 
 enum BfError
 bfGetHelm2KernelMatrix(BfMat *kernelMat,

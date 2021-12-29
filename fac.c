@@ -276,8 +276,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 
     /* get the rank estimate for the current pair of source and
 `     * target bounding circles */
-    BfSize p;
-    bfHelm2RankEstForTwoCircles(srcCirc, tgtCirc, K, 1, 1e-15, &p);
+    BfSize p = bfHelm2RankEstForTwoCircles(&srcCirc, &tgtCirc, K, 1, 1e-15);
 
     /* sample points on the source and target circles */
     BfPoints2 tgtCircPts = bfSamplePointsOnCircle2(&tgtCirc, p);
@@ -425,12 +424,12 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
           /* a priori rank estimate for the original circles */
-          BfSize rankOr;
-          bfHelm2RankEstForTwoCircles(srcChildCirc,tgtCirc,K,1,1e-15,&rankOr);
+          BfSize rankOr = bfHelm2RankEstForTwoCircles(
+            &srcChildCirc, &tgtCirc, K, 1, 1e-15);
 
           /* a priori rank estimate for the new circles */
-          BfSize rankEq;
-          bfHelm2RankEstForTwoCircles(srcCirc,tgtChildCirc,K,1,1e-15,&rankEq);
+          BfSize rankEq = bfHelm2RankEstForTwoCircles(
+            &srcCirc, &tgtChildCirc, K, 1, 1e-15);
 
           /* use the larger of the two rank estimates... not sure if
            * this is totally necessary, probably being a little
