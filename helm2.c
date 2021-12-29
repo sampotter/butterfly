@@ -14,10 +14,10 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
   assert(C > 0);
   assert(eps > 0);
 
+  BfReal r1 = circ1->r;
+  BfReal r2 = circ2->r;
   BfReal R = bfPoint2Dist(circ1->center, circ2->center);
-  assert(R > 0);
-
-  BfReal r1 = circ1->r, r2 = circ2->r;
+  assert(r1 > 0 && r2 > 0 && R > 0);
 
   /* Reading Michielssen & Boag, seems like there should be a factor
    * of two pi in front of this, but that leads to a rank estimate
@@ -25,7 +25,9 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
   BfReal p = k*r1*r2/(R - r1 - r2) - C*log10(eps);
   assert(p > 0);
 
-  return (BfSize)ceil(p);
+  BfSize rank = (BfSize)ceil(p);
+  assert(rank > 0);
+  return rank;
 }
 
 BfComplex

@@ -214,13 +214,17 @@ static BfSize getNumCols(BfFactor const *factor) {
 static void cumSumRowAndColOffsets(BfFactor *factor) {
   /* replace `rowOffset` with its cumulative sum */
   factor->rowOffset[0] = 0;
-  for (BfSize i = 0; i < factor->numBlockRows; ++i)
+  for (BfSize i = 0; i < factor->numBlockRows; ++i) {
+    assert(factor->rowOffset[i + 1] > 0);
     factor->rowOffset[i + 1] += factor->rowOffset[i];
+  }
 
   /* replace `colOffset` with its cumulative sum */
   factor->colOffset[0] = 0;
-  for (BfSize i = 0; i < factor->numBlockCols; ++i)
+  for (BfSize i = 0; i < factor->numBlockCols; ++i) {
+    assert(factor->colOffset[i + 1] > 0);
     factor->colOffset[i + 1] += factor->colOffset[i];
+  }
 }
 
 static enum BfError
@@ -285,7 +289,12 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     /* compute the shift matrix and store it in the current block */
     error = getShiftMat(&srcPts, &srcCircPts, &tgtCircPts, K, &factor->block[i]);
 
+    /* set the next row offset to current block's number of rows */
+    assert(factor->block[i].numRows > 0);
     factor->rowOffset[i + 1] = factor->block[i].numRows;
+
+    /* set the next column offset to current block's number of column */
+    assert(factor->block[i].numCols > 0);
     factor->colOffset[i + 1] = factor->block[i].numCols;
 
     /* if we're debugging, store this block's points---free them
@@ -349,6 +358,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
                                            // need the source children
                                            // here, just their number
         BfSize numSrcChildren = getChildren(srcNode, srcChild);
+        assert(numSrcChildren > 0);
 
         for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
           BfSize j = q + dj;
@@ -491,6 +501,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
           BfSize numRows = getRows(factor, i);
           BfSize numCols = getCols(factor, j);
+          assert(numRows > 0 && numCols > 0);
 
           /* sample points on each of the circles */
           BfPoints2 srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, numCols);
