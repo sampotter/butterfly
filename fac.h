@@ -58,7 +58,8 @@ typedef struct BfFactor {
 void bfFreeFactor(BfFactor *factor);
 
 enum BfError
-bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
+bfMakeFac(BfQuadtree const *tree,
+          BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
           BfReal K, BfSize *numFactors, BfFactor **factors);
 
 void bfFreeFac(BfSize numFactors, BfFactor **factorPtr);

@@ -67,7 +67,7 @@ struct BfQuadtreeNode {
   BfSize depth;
 };
 
-typedef enum BfError (*BfQuadtreeNodeFunc)(BfQuadtreeNode const *, void *);
+typedef enum BfError (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
 
 struct BfQuadtree {
   BfPoints2 const *points;
@@ -96,22 +96,22 @@ bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
 
 BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
 
-BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node);
-
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
 
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
 
 enum BfError
-bfGetQuadtreeNodePoints(BfQuadtreeNode const *node, BfPoints2 *points);
+bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
+                        BfPoints2 *points);
 
 enum BfError
-bfMapQuadtreeNodes(BfQuadtreeNode *node, enum BfTreeTraversals traversal,
-                   BfQuadtreeNodeFunc func, void *arg);
+bfMapQuadtree(BfQuadtree *tree, enum BfTreeTraversals traversal,
+              BfQuadtreeFunc func, void *arg);
 
 enum BfError
-bfMapQuadtreeNodeLeaves(BfQuadtreeNode const *node,
-                        BfQuadtreeNodeFunc func, void *arg);
+bfMapQuadtreeNodes(BfQuadtree *tree, BfQuadtreeNode *node,
+                   enum BfTreeTraversals traversal,
+                   BfQuadtreeFunc func, void *arg);
 
 typedef struct BfQuadtreeLevelIter {
   enum BfTreeTraversals traversal;

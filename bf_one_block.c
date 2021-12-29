@@ -10,11 +10,12 @@
 #include "rand.h"
 #include "quadtree.h"
 
-enum BfError func(BfQuadtreeNode const *node, void *arg) {
+enum BfError func(BfQuadtree *tree, BfQuadtreeNode *node, void *arg) {
+  (void)tree;
   (void)arg;
 
   BfPoints2 points;
-  bfGetQuadtreeNodePoints(node, &points);
+  bfGetQuadtreeNodePoints(tree, node, &points);
 
   assert(bfBbox2ContainsPoints(&node->bbox, &points));
 
@@ -40,7 +41,7 @@ int main(int argc, char const *argv[]) {
   bfInitQuadtreeFromPoints(&tree, &points);
   puts("built quadtree");
 
-  bfMapQuadtreeNodes(tree.root, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, func, NULL);
+  bfMapQuadtree(&tree, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, func, NULL);
 
   BfReal K = 3000;
 
@@ -64,14 +65,14 @@ int main(int argc, char const *argv[]) {
    * the source and target nodes */
 
   BfPoints2 tgtPts;
-  error = bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
+  error = bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtPts);
   assert(!error);
 
   bfSavePoints2(&tgtPts, "tgtPts.bin");
   puts("wrote target points to tgtPts.bin");
 
   BfPoints2 srcPts;
-  error = bfGetQuadtreeNodePoints(srcNode, &srcPts);
+  error = bfGetQuadtreeNodePoints(&tree, srcNode, &srcPts);
   assert(!error);
 
   bfSavePoints2(&srcPts, "srcPts.bin");
@@ -96,7 +97,7 @@ int main(int argc, char const *argv[]) {
 
   BfSize numFactors;
   BfFactor *factor;
-  bfMakeFac(srcNode, tgtNode, K, &numFactors, &factor);
+  bfMakeFac(&tree, srcNode, tgtNode, K, &numFactors, &factor);
   printf("computed kernel matrix's butterfly factorization\n");
 
   /* write factors to disk */

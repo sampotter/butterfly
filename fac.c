@@ -280,6 +280,7 @@ static void cumSumRowAndColOffsets(BfFactor *factor) {
 
 static enum BfError
 makeFirstFactor(BfFactor *factor, BfReal K,
+                BfQuadtree const *tree,
                 BfPtrArray const *srcLevelNodes,
                 BfPtrArray const *tgtLevelNodes)
 {
@@ -323,7 +324,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 
     /* get the original points in the current source node box */
     BfPoints2 srcPts;
-    bfGetQuadtreeNodePoints(srcNode, &srcPts);
+    bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
 
     /* verify that the source bounding circle contains the points */
     assert(bfCircle2ContainsPoints(&srcCirc, &srcPts));
@@ -592,7 +593,9 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
 static enum BfError
 makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
-               BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
+               BfQuadtree const *tree,
+               BfPtrArray const *srcLevelNodes,
+               BfPtrArray const *tgtLevelNodes)
 {
   enum BfError error = BF_ERROR_NO_ERROR;
 
@@ -639,7 +642,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
     /* get the current set of target points */
     BfPoints2 tgtPts;
-    bfGetQuadtreeNodePoints(tgtNode, &tgtPts);
+    bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
 
     error = bfGetHelm2KernelMatrix(&factor->block[i], &srcCircPts, &tgtPts, K);
     assert(!error);
@@ -672,7 +675,8 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 }
 
 enum BfError
-bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
+bfMakeFac(BfQuadtree const *tree,
+          BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
           BfReal K, BfSize *numFactors, BfFactor **factors)
 {
   /* Let's try manually doing a couple levels */
@@ -687,9 +691,9 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
     &tgtLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
     (BfQuadtreeNode *)tgtNode);
 
-//   // skip a few levels on the source side
-//   for (BfSize i = 0; i < 5; ++i)
-//     bfQuadtreeLevelIterNext(&srcLevelIter);
+  // skip a few levels on the source side
+  for (BfSize i = 0; i < 5; ++i)
+    bfQuadtreeLevelIterNext(&srcLevelIter);
 
   BfSize current_src_depth;
   bfQuadtreeLevelIterCurrentDepth(&srcLevelIter, &current_src_depth);
@@ -711,7 +715,8 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
 
   BfFactor *factor = *factors;
 
-  makeFirstFactor(&factor[0], K, &srcLevelIter.levelNodes,
+  makeFirstFactor(&factor[0], K, tree,
+                  &srcLevelIter.levelNodes,
                   &tgtLevelIter.levelNodes);
 
   for (BfSize i = 1; i < *numFactors - 1; ++i) {
@@ -727,7 +732,7 @@ bfMakeFac(BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
   }
 
   makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2], K,
-                 &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+                 tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
 
   bfFreeQuadtreeLevelIter(&srcLevelIter);
   bfFreeQuadtreeLevelIter(&tgtLevelIter);
