@@ -340,6 +340,30 @@ BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node) {
   return node->depth;
 }
 
+static enum BfError
+getMaxDepthBelowQuadtreeFunc(BfQuadtree *tree, BfQuadtreeNode *node,
+                             BfSize *maxDepth)
+{
+  (void)tree;
+
+  *maxDepth = node->depth > *maxDepth ? node->depth : *maxDepth;
+
+  return BF_ERROR_NO_ERROR;
+}
+
+BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node) {
+  BfSize maxDepth = node->depth;
+
+  bfMapQuadtreeNodes(
+    bfGetQuadtreeFromNode(node),
+    (BfQuadtreeNode *)node,
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    (BfQuadtreeFunc)getMaxDepthBelowQuadtreeFunc,
+    &maxDepth);
+
+  return maxDepth;
+}
+
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node) {
   return node->offset[4] - node->offset[0];
 }

@@ -96,6 +96,8 @@ bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
 
 BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
 
+BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node);
+
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
 
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
