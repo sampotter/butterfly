@@ -1,5 +1,5 @@
 CFLAGS := ${CFLAGS} -g -O0 -std=gnu99 -DBF_DEBUG -DBF_DOUBLE -lm
-# CFLAGS := ${CFLAGS} -O3 -std=gnu99 -DBF_DOUBLE -lm
+# CFLAGS := ${CFLAGS} -O3 -std=gnu99 -DBF_DOUBLE -lm -flto
 CFLAGS := ${CFLAGS} -Wall -Wextra -Wshadow -pedantic
 CFLAGS := ${CFLAGS} -lopenblas -I/usr/include/openblas
 
