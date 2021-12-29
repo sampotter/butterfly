@@ -25,4 +25,3 @@ typedef size_t BfSize;
 #define BF_SIZE_BAD_VALUE (BfSize)(-1)
 
 typedef void *BfPtr;
-typedef void const *BfConstPtr;
