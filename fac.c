@@ -628,6 +628,39 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   return error;
 }
 
+static bool
+allSourceNodesHaveChildren(BfPtrArray const *srcLevelNodes)
+{
+  for (BfSize i = 0; i < bfPtrArraySize(srcLevelNodes); ++i) {
+    BfQuadtreeNode *srcNode;
+    bfPtrArrayGet(srcLevelNodes, i, (BfPtr *)&srcNode);
+    if (bfQuadtreeNodeIsLeaf(srcNode))
+      return false;
+  }
+  return true;
+}
+
+static bool
+allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
+                      BfPtrArray const *srcLevelNodes)
+{
+  BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+
+  for (BfSize i = 0; i < bfPtrArraySize(srcLevelNodes); ++i) {
+    BfQuadtreeNode *srcNode;
+    bfPtrArrayGet(srcLevelNodes, i, (BfPtr *)&srcNode);
+
+    BfSize numSrcPoints = bfQuadtreeNodeNumPoints(srcNode);
+    BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+    BfSize rank = bfHelm2RankEstForTwoCircles(&tgtCirc, &srcCirc, K, 1, 1e-15);
+
+    if (rank > numSrcPoints)
+      return false;
+  }
+
+  return true;
+}
+
 enum BfError
 bfMakeFac(BfQuadtree const *tree,
           BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
@@ -645,20 +678,46 @@ bfMakeFac(BfQuadtree const *tree,
     &tgtLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
     (BfQuadtreeNode *)tgtNode);
 
-  // skip a few levels on the source side
-  for (BfSize i = 0; i < 5; ++i)
+  BfSize currentSrcDepth;
+  bfQuadtreeLevelIterCurrentDepth(&srcLevelIter, &currentSrcDepth);
+
+  BfSize currentTgtDepth;
+  bfQuadtreeLevelIterCurrentDepth(&tgtLevelIter, &currentTgtDepth);
+
+  assert(currentTgtDepth <= currentSrcDepth);
+
+  /* skip source levels until we're no deeper than the maximum depth
+   * beneath the target node */
+  BfSize maxDepthBelowTgtNode = bfGetMaxDepthBelowQuadtreeNode(tgtNode);
+  while (currentSrcDepth > maxDepthBelowTgtNode) {
     bfQuadtreeLevelIterNext(&srcLevelIter);
+    --currentSrcDepth;
+  }
 
-  BfSize current_src_depth;
-  bfQuadtreeLevelIterCurrentDepth(&srcLevelIter, &current_src_depth);
+  /* skip source levels until we reach a level where each node has children
+   *
+   * TODO: I am *NOT AT ALL* sure this is right... but it should at
+   * get me unstuck for now at least. */
+  while (currentSrcDepth > 0 &&
+         !allSourceNodesHaveChildren(&srcLevelIter.levelNodes)) {
+    bfQuadtreeLevelIterNext(&srcLevelIter);
+    --currentSrcDepth;
+  }
+  assert(allSourceNodesHaveChildren(&srcLevelIter.levelNodes));
 
-  BfSize current_tgt_depth;
-  bfQuadtreeLevelIterCurrentDepth(&tgtLevelIter, &current_tgt_depth);
+  /* TODO: step the source level iterator until:
+   * - the rank estimate between the first target node and each source
+   *   node is smaller than corresponding the number of points */
 
-  assert(current_tgt_depth <= current_src_depth);
+  while (currentSrcDepth > 0 &&
+         !allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes)) {
+    bfQuadtreeLevelIterNext(&srcLevelIter);
+    --currentSrcDepth;
+  }
+  assert(allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes));
 
   /* get number of factors in the butterfly factorization */
-  *numFactors = current_src_depth - current_tgt_depth + 2;
+  *numFactors = currentSrcDepth - currentTgtDepth + 2;
 
   /* allocate space for the butterfly factors
    *
