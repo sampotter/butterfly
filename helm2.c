@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "const.h"
+#include "error_macros.h"
 #include "geom.h"
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
@@ -38,18 +39,22 @@ bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K)
   return (I*j0(arg) - y0(arg))/4;
 }
 
-enum BfError
+void
 bfGetHelm2KernelMatrix(BfMat *kernelMat,
                        BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
                        BfReal K)
 {
+  enum BfError error;
+  bool erred = false;
+
   if (bfMatIsInitialized(kernelMat))
-    return BF_ERROR_INVALID_ARGUMENTS;
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize m = tgtPts->size; /* number of rows */
   BfSize n = srcPts->size; /* number of columns */
 
   bfInitEmptyMat(kernelMat, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, n);
+  HANDLE_ERROR();
 
   BfPoint2 *srcPt = srcPts->data;
   BfPoint2 *tgtPt = tgtPts->data;
@@ -62,5 +67,7 @@ bfGetHelm2KernelMatrix(BfMat *kernelMat,
         bfHelm2GetKernelValue(srcPt[j], tgtPt[i], K);
   }
 
-  return BF_ERROR_NO_ERROR;
+cleanup:
+  if (erred)
+    bfFreeMat(kernelMat);
 }

@@ -27,7 +27,7 @@ BfMat bfGetUninitializedMat();
 bool bfMatIsInitialized(BfMat const *A);
 
 BfSize bfMatSize(BfMat const *A);
-enum BfError bfMatNumBytes(BfMat const *A, BfSize *nbytes);
+void bfMatNumBytes(BfMat const *A, BfSize *nbytes);
 
 BfSize bfMatNumRows(BfMat const *A);
 BfSize bfMatNumCols(BfMat const *A);
@@ -36,36 +36,36 @@ bool bfMatIsAligned(BfMat const *A);
 BfSize bfMatRowStride(BfMat const *A);
 BfSize bfMatColStride(BfMat const *A);
 
-enum BfError bfFreeMat(BfMat *A);
+void bfFreeMat(BfMat *A);
 
-enum BfError
+void
 bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
                BfSize numRows, BfSize numCols);
 
-enum BfError
+void
 bfMatZeros(BfMat *A, enum BfDtypes dtype, BfSize numRows, BfSize numCols);
 
-enum BfError
+void
 bfSaveMat(BfMat const *A, char const *path);
 
-enum BfError
+void
 bfFillMatRandn(BfMat *A);
 
-enum BfError
+void
 bfGetMatElt(BfMat const *A, BfSize i, BfSize j, BfPtr ptr);
 
-enum BfError
+void
 bfGetMatEltPtr(BfMat const *A, BfSize i, BfSize j, BfPtr *ptr);
 
 BfVec bfGetMatRow(BfMat const *A, BfSize i);
 
-enum BfError
+void
 bfGetRowPtr(BfMat const *A, BfSize i, BfPtr *ptr);
 
-enum BfError
+void
 bfSetMatRow(BfMat *A, BfSize i, void const *data);
 
-enum BfError
+void
 bfCopyMatRow(BfMat const *A, BfSize i, BfMat *B, BfSize j);
 
 BfMat bfGetMatRowRange(BfMat const *A, BfSize i0, BfSize i1);
@@ -79,19 +79,19 @@ bool bfMatIsTransposed(BfMat const *A);
 
 BfMat bfConjTrans(BfMat const *A);
 
-enum BfError bfMatAddInplace(BfMat *A, BfMat const *B);
+void bfMatAddInplace(BfMat *A, BfMat const *B);
 
-enum BfError
+void
 bfMatMul(BfMat const *A, BfMat const *B, BfMat *C);
 
-enum BfError
+void
 bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C);
 
-enum BfError
+void
 bfInitEmptySvdMats(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt);
 
-enum BfError
+void
 bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt);
 
-enum BfError
+void
 bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C);

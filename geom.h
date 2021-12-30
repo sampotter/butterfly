@@ -28,13 +28,13 @@ BfBbox2 bfGetEmptyBbox2();
 bool bfBbox2IsEmpty(BfBbox2 const *bbox);
 
 BfPoints2 bfGetUninitializedPoints2();
-enum BfError bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
-enum BfError bfReadPoints2FromFile(char const *path, BfPoints2 *points);
+void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
+void bfReadPoints2FromFile(char const *path, BfPoints2 *points);
 void bfFreePoints2(BfPoints2 *points);
 bool bfPoints2Initialized(BfPoints2 const *points);
 BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points);
-enum BfError bfGetPointsByIndex(BfPoints2 const *points,
+void bfGetPointsByIndex(BfPoints2 const *points,
                                 BfSize numInds, BfSize const *inds,
                                 BfPoints2 *indexedPoints);
 void bfPrintPoints2(BfPoints2 const *points);
-enum BfError bfSavePoints2(BfPoints2 const *points, char const *path);
+void bfSavePoints2(BfPoints2 const *points, char const *path);

@@ -16,38 +16,38 @@ typedef struct BfPtrArray {
   BfSize capacity, num_elts;
 } BfPtrArray;
 
-typedef enum BfError (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
+typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 
-enum BfError
+void
 bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 
-enum BfError
+void
 bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
 
-enum BfError
+void
 bfFreePtrArray(BfPtrArray *arr);
 
 BfSize bfPtrArraySize(BfPtrArray const *arr);
 
 bool bfPtrArrayIsEmpty(BfPtrArray const *arr);
 
-enum BfError
+void
 bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr);
 
-enum BfError
+void
 bfPtrArrayGet(BfPtrArray const *arr, BfSize pos, BfPtr *ptr);
 
-enum BfError
+void
 bfPtrArrayGetFirst(BfPtrArray const *arr, BfPtr *ptr);
 
-enum BfError
+void
 bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr);
 
-enum BfError
+void
 bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end,
                        BfPtrArray *view);
 
-enum BfError
+void
 bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);

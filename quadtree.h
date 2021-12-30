@@ -67,7 +67,7 @@ struct BfQuadtreeNode {
   BfSize depth;
 };
 
-typedef enum BfError (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
+typedef void (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
 
 struct BfQuadtree {
   BfPoints2 const *points;
@@ -75,18 +75,14 @@ struct BfQuadtree {
   BfQuadtreeNode *root;
 };
 
-enum BfError
+void
 bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
 
 void bfFreeQuadtree(BfQuadtree *tree);
 
-enum BfError
+void
 bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i,
                   BfQuadtreeNode **node);
-
-enum BfError
-bfGetQuadtreeNodeIndices(BfQuadtreeNode const *node,
-                         BfSize *numIndices, BfSize **indices);
 
 BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 
@@ -102,15 +98,15 @@ BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
 
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
 
-enum BfError
+void
 bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
                         BfPoints2 *points);
 
-enum BfError
+void
 bfMapQuadtree(BfQuadtree *tree, enum BfTreeTraversals traversal,
               BfQuadtreeFunc func, void *arg);
 
-enum BfError
+void
 bfMapQuadtreeNodes(BfQuadtree *tree, BfQuadtreeNode *node,
                    enum BfTreeTraversals traversal,
                    BfQuadtreeFunc func, void *arg);
@@ -122,17 +118,16 @@ typedef struct BfQuadtreeLevelIter {
   void *aux;
 } BfQuadtreeLevelIter;
 
-enum BfError
+void
 bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
                         enum BfTreeTraversals traversal, BfQuadtreeNode *node);
 
-enum BfError
-bfQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter, BfSize *depth);
+BfSize bfQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter);
 
 bool bfQuadtreeLevelIterIsDone(BfQuadtreeLevelIter const *iter);
 
-enum BfError
+void
 bfQuadtreeLevelIterNext(BfQuadtreeLevelIter *iter);
 
-enum BfError
+void
 bfFreeQuadtreeLevelIter(BfQuadtreeLevelIter *iter);

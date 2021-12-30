@@ -4,25 +4,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "error_macros.h"
 #include "fac.h"
 #include "helm2.h"
 #include "mat.h"
 #include "rand.h"
 #include "quadtree.h"
-
-enum BfError func(BfQuadtree *tree, BfQuadtreeNode *node, void *arg) {
-  (void)tree;
-  (void)arg;
-
-  BfPoints2 points;
-  bfGetQuadtreeNodePoints(tree, node, &points);
-
-  assert(bfBbox2ContainsPoints(&node->bbox, &points));
-
-  bfFreePoints2(&points);
-
-  return BF_ERROR_NO_ERROR;
-}
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -30,18 +17,18 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  enum BfError error = BF_ERROR_NO_ERROR;
+  enum BfError error;
+  bool erred = false;
 
   BfPoints2 points;
-  error = bfReadPoints2FromFile(argv[1], &points);
-  assert(!error);
+  bfReadPoints2FromFile(argv[1], &points);
+  HANDLE_ERROR();
   printf("read points from %s\n", argv[1]);
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
+  HANDLE_ERROR();
   puts("built quadtree");
-
-  bfMapQuadtree(&tree, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, func, NULL);
 
   BfReal K = 3000;
 
@@ -54,32 +41,35 @@ int main(int argc, char const *argv[]) {
   BfSize tgt_depth = 3, tgtNodeIndex = 16*3 + 4*3 + 2;
 
   BfQuadtreeNode *srcNode;
-  error = bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);
-  assert(!error);
+  bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);
+  HANDLE_ERROR();
 
   BfQuadtreeNode *tgtNode;
-  error = bfGetQuadtreeNode(&tree, tgt_depth, tgtNodeIndex, &tgtNode);
-  assert(!error);
+  bfGetQuadtreeNode(&tree, tgt_depth, tgtNodeIndex, &tgtNode);
+  HANDLE_ERROR();
 
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
 
   BfPoints2 tgtPts;
-  error = bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtPts);
-  assert(!error);
+  bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtPts);
+  HANDLE_ERROR();
 
   bfSavePoints2(&tgtPts, "tgtPts.bin");
+  HANDLE_ERROR();
   puts("wrote target points to tgtPts.bin");
 
   BfPoints2 srcPts;
-  error = bfGetQuadtreeNodePoints(&tree, srcNode, &srcPts);
-  assert(!error);
+  bfGetQuadtreeNodePoints(&tree, srcNode, &srcPts);
+  HANDLE_ERROR();
 
   bfSavePoints2(&srcPts, "srcPts.bin");
+  HANDLE_ERROR();
   puts("wrote source points to srcPts.bin");
 
   BfMat Z_gt = bfGetUninitializedMat();
   bfGetHelm2KernelMatrix(&Z_gt, &srcPts, &tgtPts, K);
+  HANDLE_ERROR();
 
   BfSize num_bytes;
   bfMatNumBytes(&Z_gt, &num_bytes);
@@ -90,6 +80,7 @@ int main(int argc, char const *argv[]) {
   printf("- size: %1.2f MB\n", ((double)num_bytes)/(1024*1024));
 
   bfSaveMat(&Z_gt, "Z_gt.bin");
+  HANDLE_ERROR();
   printf("wrote Z_gt.bin\n");
 
   /* compute a butterfly factorization of the selected source and
@@ -98,6 +89,7 @@ int main(int argc, char const *argv[]) {
   BfSize numFactors;
   BfFactor *factor;
   bfMakeFac(&tree, srcNode, tgtNode, K, &numFactors, &factor);
+  HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 
   /* write factors to disk */
@@ -197,8 +189,9 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   puts("wrote simulation information to info.txt");
 
-  /* cleanup */
-
+cleanup:
+  if (erred)
+    puts("error!");
   for (BfSize i = 0; i < numFactors; ++i)
     bfFreeMat(&Phi[i]);
   free(Phi);

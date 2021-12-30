@@ -10,7 +10,7 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,
                                    BfReal k, BfReal C, BfReal eps);
 
-enum BfError
+void
 bfGetHelm2KernelMatrix(BfMat *kernelMat,
                        BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
                        BfReal K);

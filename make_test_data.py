@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 
 theta = np.linspace(0, 2*np.pi, 2**14, endpoint=False)

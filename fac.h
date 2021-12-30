@@ -57,12 +57,10 @@ typedef struct BfFactor {
 
 void bfFreeFactor(BfFactor *factor);
 
-enum BfError
-bfMakeFac(BfQuadtree const *tree,
-          BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
-          BfReal K, BfSize *numFactors, BfFactor **factors);
+void bfMakeFac(BfQuadtree const *tree,
+               BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
+               BfReal K, BfSize *numFactors, BfFactor **factors);
 
 void bfFreeFac(BfSize numFactors, BfFactor **factorPtr);
 
-enum BfError
-bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y);
+void bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y);

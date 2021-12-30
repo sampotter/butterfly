@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "const.h"
+#include "error_macros.h"
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point) {
   return bbox->min[0] <= point[0] && point[0] <= bbox->max[0]
@@ -64,52 +65,52 @@ BfPoints2 bfGetUninitializedPoints2() {
   return (BfPoints2) {.data = NULL, .size = 0};
 }
 
-enum BfError bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
-  if (numPoints == 0)
-    return BF_ERROR_INVALID_ARGUMENTS;
+void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
+  if (numPoints == 0) {
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+    return;
+  }
 
   points->size = numPoints;
 
   points->data = malloc(numPoints*sizeof(BfPoint2));
   if (points->data == NULL)
-    return BF_ERROR_MEMORY_ERROR;
-
-  return BF_ERROR_NO_ERROR;
+    bfSetError(BF_ERROR_MEMORY_ERROR);
 }
 
-enum BfError bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
-  enum BfError error = BF_ERROR_NO_ERROR;
+void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
+  bool erred = false;
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
-  if (fp == NULL) {
-    error = BF_ERROR_RUNTIME_ERROR;
-    goto cleanup;
-  }
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* get the size of the file */
   fseek(fp, 0, SEEK_END);
   BfSize size = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  if (size % sizeof(BfPoint2) != 0) {
-    error = BF_ERROR_RUNTIME_ERROR;
-    goto cleanup;
-  }
+  /* make sure the binary file is the right size */
+  if (size % sizeof(BfPoint2) != 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* get the number of points */
   points->size = size/sizeof(BfPoint2);
 
-  /* allocate space for the points and read them in */
+  /* allocate space for the points */
   points->data = malloc(size);
+  if (points->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  /* read them in */
   fread(points->data, sizeof(BfPoint2), points->size, fp);
+  // TODO: error-handling
 
 cleanup:
   fclose(fp);
-  if (error)
+  if (erred)
     free(points->data);
-
-  return error;
 }
 
 void bfFreePoints2(BfPoints2 *points) {
@@ -139,14 +140,15 @@ BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points) {
   return bbox;
 }
 
-enum BfError
-bfGetPointsByIndex(BfPoints2 const *points,
-                   BfSize numInds, BfSize const *inds,
-                   BfPoints2 *indexedPoints)
+void bfGetPointsByIndex(BfPoints2 const *points,
+                        BfSize numInds, BfSize const *inds,
+                        BfPoints2 *indexedPoints)
 {
-  enum BfError error = bfInitEmptyPoints2(indexedPoints, numInds);
-  if (error)
-    return error;
+  enum BfError error;
+  bool erred = false;
+
+  bfInitEmptyPoints2(indexedPoints, numInds);
+  HANDLE_ERROR();
 
   BfPoint2 const *point = (BfPoint2 const *)points->data;
   BfPoint2 *indexedPoint = indexedPoints->data;
@@ -157,7 +159,9 @@ bfGetPointsByIndex(BfPoints2 const *points,
     indexedPoint[i][1] = point[j][1];
   }
 
-  return BF_ERROR_NO_ERROR;
+cleanup:
+  if (erred)
+    bfFreePoints2(indexedPoints);
 }
 
 void bfPrintPoints2(BfPoints2 const *points) {
@@ -165,19 +169,17 @@ void bfPrintPoints2(BfPoints2 const *points) {
     printf("points[%lu] = (%g, %g)\n",i,points->data[i][0],points->data[i][1]);
 }
 
-enum BfError bfSavePoints2(BfPoints2 const *points, char const *path) {
-  enum BfError error = BF_ERROR_NO_ERROR;
+void bfSavePoints2(BfPoints2 const *points, char const *path) {
+  bool erred = false;
 
   FILE *fp = fopen(path, "w");
-  if (fp == NULL) {
-    error = BF_ERROR_FILE_ERROR;
-    goto cleanup;
-  }
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
   fwrite(points->data, points->size, sizeof(BfPoint2), fp);
+  // TODO: error-handling
 
 cleanup:
-  fclose(fp);
-
-  return error;
+  if (erred)
+    fclose(fp);
 }

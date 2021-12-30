@@ -36,5 +36,3 @@ typedef struct {
   enum BfKernel kernel;
   enum BfQuad quad;
 } BfSpec;
-
-enum BfError bfSpecValidate(BfSpec const *spec);
