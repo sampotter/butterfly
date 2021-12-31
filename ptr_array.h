@@ -18,6 +18,8 @@ typedef struct BfPtrArray {
 
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 
+BfPtrArray bfGetUninitializedPtrArray();
+
 void
 bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 

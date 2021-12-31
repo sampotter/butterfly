@@ -684,18 +684,14 @@ bfMakeFac(BfQuadtree const *tree,
 
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
-  BfQuadtreeLevelIter srcLevelIter;
-  bfInitQuadtreeLevelIter(
-    &srcLevelIter, BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER,
-    (BfQuadtreeNode *)srcNode);
+  BfQuadtreeLevelIter srcLevelIter = bfInitQuadtreeLevelIter(
+    BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER, (BfQuadtreeNode *)srcNode);
   HANDLE_ERROR();
 
   /* set up the level iterator for the target tree, which goes from
    * the root to the leaves */
-  BfQuadtreeLevelIter tgtLevelIter;
-  bfInitQuadtreeLevelIter(
-    &tgtLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
-    (BfQuadtreeNode *)tgtNode);
+  BfQuadtreeLevelIter tgtLevelIter = bfInitQuadtreeLevelIter(
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tgtNode);
   HANDLE_ERROR();
 
   /* get the current source and target depths and make sure they're

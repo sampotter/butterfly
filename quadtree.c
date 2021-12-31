@@ -665,31 +665,41 @@ cleanup:
   }
 }
 
-void
-bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
-                        enum BfTreeTraversals traversal, BfQuadtreeNode *node)
+BfQuadtreeLevelIter bfGetInvalidQuadtreeLevelIter() {
+  return (BfQuadtreeLevelIter) {
+    .traversal = BF_TREE_TRAVERSAL_UNKNOWN,
+    .nodes = bfGetUninitializedPtrArray(),
+    .levelNodes = bfGetUninitializedPtrArray(),
+    .aux = NULL
+  };
+}
+
+BfQuadtreeLevelIter
+bfInitQuadtreeLevelIter(enum BfTreeTraversals traversal, BfQuadtreeNode *node)
 {
   enum BfError error;
 
-  iter->traversal = traversal;
+  BfQuadtreeLevelIter iter = {.traversal = traversal};
 
   if (traversal == BF_TREE_TRAVERSAL_LR_LEVEL_ORDER) {
-    initLrLevelOrderQuadtreeLevelIter(iter, node);
+    initLrLevelOrderQuadtreeLevelIter(&iter, node);
     error = bfGetError();
     if (error)
       bfSetError(error);
-    return;
+    return iter;
   }
 
   if (traversal == BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER) {
-    initLrReverseLevelOrderQuadtreeLevelIter(iter, node);
+    initLrReverseLevelOrderQuadtreeLevelIter(&iter, node);
     error = bfGetError();
     if (error)
       bfSetError(error);
-    return;
+    return iter;
   }
 
   bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+
+  return bfGetInvalidQuadtreeLevelIter();
 }
 
 static

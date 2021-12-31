@@ -6,6 +6,15 @@
 
 #include "error_macros.h"
 
+BfPtrArray bfGetUninitializedPtrArray() {
+  return (BfPtrArray) {
+    .flags = BF_PTR_ARRAY_FLAG_NONE,
+    .data = NULL,
+    .capacity = 0,
+    .num_elts = 0
+  };
+}
+
 void
 bfInitPtrArray(BfPtrArray *arr, BfSize capacity)
 {

@@ -121,9 +121,8 @@ typedef struct BfQuadtreeLevelIter {
   void *aux;
 } BfQuadtreeLevelIter;
 
-void
-bfInitQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
-                        enum BfTreeTraversals traversal, BfQuadtreeNode *node);
+BfQuadtreeLevelIter bfInitQuadtreeLevelIter(enum BfTreeTraversals traversal,
+                                            BfQuadtreeNode *node);
 
 BfSize bfQuadtreeLevelIterCurrentDepth(BfQuadtreeLevelIter const *iter);
 
