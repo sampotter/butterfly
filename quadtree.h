@@ -102,6 +102,9 @@ void
 bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
                         BfPoints2 *points);
 
+bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
+                                 BfQuadtreeNode const *node2);
+
 void
 bfMapQuadtree(BfQuadtree *tree, enum BfTreeTraversals traversal,
               BfQuadtreeFunc func, void *arg);

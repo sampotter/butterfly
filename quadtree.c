@@ -382,6 +382,16 @@ cleanup:
     bfFreePoints2(points);
 }
 
+bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
+                                 BfQuadtreeNode const *node2) {
+  BfCircle2 circ1 = bfGetQuadtreeNodeBoundingCircle(node1);
+  BfCircle2 circ2 = bfGetQuadtreeNodeBoundingCircle(node2);
+
+  BfReal R = bfPoint2Dist(circ1.center, circ2.center);
+
+  return R > circ1.r + circ2.r + 1e1*BF_EPS_MACH;
+}
+
 static void clearDirtyBit(BfQuadtreeNode *node, void *arg) {
   (void)arg;
   node->flags &= ~BF_QUADTREE_NODE_FLAG_DIRTY;
