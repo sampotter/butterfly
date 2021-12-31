@@ -20,6 +20,10 @@ int main(int argc, char const *argv[]) {
   enum BfError error;
   bool erred = false;
 
+  BfSize numFactors = BF_SIZE_BAD_VALUE;
+  BfFactor *factor = NULL;
+  BfMat *Phi = NULL;
+
   BfPoints2 points;
   bfReadPoints2FromFile(argv[1], &points);
   HANDLE_ERROR();
@@ -86,8 +90,6 @@ int main(int argc, char const *argv[]) {
   /* compute a butterfly factorization of the selected source and
    * target nodes */
 
-  BfSize numFactors;
-  BfFactor *factor;
   bfMakeFac(&tree, srcNode, tgtNode, K, &numFactors, &factor);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
@@ -171,7 +173,7 @@ int main(int argc, char const *argv[]) {
   bfMatMul(&Z_gt, &Q, &Phi_gt);
   puts("did MVP with groundtruth kernel matrix");
 
-  BfMat *Phi = malloc(numFactors*sizeof(BfMat));
+  Phi = malloc(numFactors*sizeof(BfMat));
   for (BfSize i = 0; i < numFactors; ++i)
     Phi[i] = bfGetUninitializedMat();
   bfMulFac(&factor[0], &Q, &Phi[0]);

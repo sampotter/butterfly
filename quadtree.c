@@ -593,13 +593,15 @@ initLrLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
   enum BfError error;
   bool erred = false;
 
+  LrLevelOrderInfo *info = NULL;
+
   bfInitPtrArrayWithDefaultCapacity(&iter->nodes);
   HANDLE_ERROR();
 
   fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
   HANDLE_ERROR();
 
-  LrLevelOrderInfo *info = malloc(sizeof(LrLevelOrderInfo));
+  info = malloc(sizeof(LrLevelOrderInfo));
   if (info == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   iter->aux = info;
@@ -631,13 +633,15 @@ initLrReverseLevelOrderQuadtreeLevelIter(BfQuadtreeLevelIter *iter,
   enum BfError error;
   bool erred = false;
 
+  LrLevelOrderInfo *info = NULL;
+
   bfInitPtrArrayWithDefaultCapacity(&iter->nodes);
   HANDLE_ERROR();
 
   fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
   HANDLE_ERROR();
 
-  LrLevelOrderInfo *info = malloc(sizeof(LrLevelOrderInfo));
+  info = malloc(sizeof(LrLevelOrderInfo));
   if (info == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   iter->aux = info;

@@ -747,6 +747,8 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   lapack_int m = A->numRows;
   lapack_int n = A->numCols;
 
+  BfReal *superb = NULL;
+
   /* zgesvd will overwrite A, so allocate space for a copy */
   BfComplex *A_data_copy = malloc(m*n*sizeof(BfComplex));
   if (A_data_copy == NULL)
@@ -760,7 +762,7 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
    * elements which didn't converge
    *
    * more info here: tinyurl.com/2p8f5ev3 */
-  BfReal *superb = malloc((((m < n) ? m : n) - 1)*sizeof(BfReal));
+  superb = malloc((((m < n) ? m : n) - 1)*sizeof(BfReal));
   if (superb == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

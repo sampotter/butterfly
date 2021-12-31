@@ -225,8 +225,10 @@ makeFirstFactor(BfFactor *factor, BfReal K,
   /* the current level of the source node tree shouldn't be empty */
   assert(!bfPtrArrayIsEmpty(srcLevelNodes));
 
+  BfQuadtreeNode const *srcNode = NULL;
+  BfQuadtreeNode const *tgtNode = NULL;
+
   /* get the lone target node and its bounding circle */
-  BfQuadtreeNode const *tgtNode;
   bfPtrArrayGetFirst(tgtLevelNodes, (BfPtr *)&tgtNode);
   BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
 
@@ -249,7 +251,6 @@ makeFirstFactor(BfFactor *factor, BfReal K,
   BfPoints2 srcPts, tgtCircPts, srcCircPts;
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
-    BfQuadtreeNode const *srcNode;
     bfPtrArrayGet(srcLevelNodes, i, (BfPtr *)&srcNode);
     BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
 
@@ -579,8 +580,10 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    *  rows of the previous factor */
   assert(numBlocks == prevFactor->numBlockRows);
 
+  BfQuadtreeNode const *srcNode = NULL;
+  BfQuadtreeNode const *tgtNode = NULL;
+
   /* get the lone source node and its bounding circle */
-  BfQuadtreeNode const *srcNode;
   bfPtrArrayGetFirst(srcLevelNodes, (BfPtr *)&srcNode);
   BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
 
@@ -597,7 +600,6 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     BfSize prevNumRows = getRows(prevFactor, i);
 
     /* get the current target node */
-    BfQuadtreeNode const *tgtNode;
     bfPtrArrayGet(tgtLevelNodes, i, (BfPtr *)&tgtNode);
 
     /* get the proxy points on the source circle for the current
