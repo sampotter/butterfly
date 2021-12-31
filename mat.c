@@ -19,7 +19,7 @@ BfMat bfGetUninitializedMat() {
     .numCols = BF_SIZE_BAD_VALUE,
     .rowStride = BF_SIZE_BAD_VALUE,
     .colStride = BF_SIZE_BAD_VALUE,
-    .data = 0x0
+    .data = NULL
   };
 }
 
