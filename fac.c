@@ -10,7 +10,7 @@ static void
 initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
                 BfSize numBlocks)
 {
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   factor->numBlockRows = numBlockRows;
   factor->numBlockCols = numBlockCols;
@@ -73,14 +73,13 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
     factor->tgtPts[i] = bfGetUninitializedPoints2();
 #endif
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeFactor(factor);
+  }
 }
 
 static void initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   initEmptyFactor(factor, numBlocks, numBlocks, numBlocks);
   HANDLE_ERROR();
@@ -91,9 +90,9 @@ static void initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
   for (BfSize i = 0; i < numBlocks; ++i)
     factor->colInd[i] = i;
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeFactor(factor);
+  }
 }
 
 void bfFreeFactor(BfFactor *factor) {
@@ -140,8 +139,7 @@ static void
 getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
             BfPoints2 const *tgtPts, BfReal K, BfMat *Z_shift)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* compute the kernel matrix mapping charges on the original sources
    * points to potentials on the original target points */
@@ -160,11 +158,12 @@ getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
   bfMatLstSq(&Z_equiv, &Z_orig, Z_shift);
   HANDLE_ERROR();
 
-cleanup:
+  END_ERROR_HANDLING() {
+    bfFreeMat(Z_shift);
+  }
+
   bfFreeMat(&Z_orig);
   bfFreeMat(&Z_equiv);
-  if (erred)
-    bfFreeMat(Z_shift);
 }
 
 static BfSize getRows(BfFactor const *factor, BfSize i) {
@@ -215,8 +214,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
                 BfPtrArray const *srcLevelNodes,
                 BfPtrArray const *tgtLevelNodes)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* there should only be one target node at the starting level of
    * the target tree when we begin the traversal */
@@ -300,8 +298,7 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 
   cumSumRowAndColOffsets(factor);
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
@@ -317,8 +314,7 @@ static void
 makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
            BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* neither the source nor target levels should be empty */
   assert(!bfPtrArrayIsEmpty(srcLevelNodes));
@@ -547,8 +543,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     dj += qmax;
   }
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreePoints2(&srcChildPts);
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtChildPts);
@@ -562,8 +557,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
                BfPtrArray const *srcLevelNodes,
                BfPtrArray const *tgtLevelNodes)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* the current level of the target node tree shouldn't be empty */
   assert(!bfPtrArrayIsEmpty(tgtLevelNodes));
@@ -633,8 +627,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   cumSumRowAndColOffsets(factor);
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
     bfFreeFactor(factor);
@@ -679,8 +672,7 @@ bfMakeFac(BfQuadtree const *tree,
           BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
           BfReal K, BfSize *numFactors, BfFactor **factors)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
@@ -771,12 +763,12 @@ bfMakeFac(BfQuadtree const *tree,
                  tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
   HANDLE_ERROR();
 
-cleanup:
-  bfFreeQuadtreeLevelIter(&srcLevelIter);
-  bfFreeQuadtreeLevelIter(&tgtLevelIter);
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreeFac(*numFactors, factors);
   }
+
+  bfFreeQuadtreeLevelIter(&srcLevelIter);
+  bfFreeQuadtreeLevelIter(&tgtLevelIter);
 }
 
 void bfFreeFac(BfSize numFactors, BfFactor **factorPtr) {
@@ -788,8 +780,7 @@ void bfFreeFac(BfSize numFactors, BfFactor **factorPtr) {
 }
 
 void bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y) {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   BfSize p = getNumCols(factor);
   if (X->numRows != p)
@@ -823,8 +814,7 @@ void bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y) {
     bfFreeMat(&tmp);
   }
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreeMat(&tmp);
     bfFreeMat(Y);
   }

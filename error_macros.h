@@ -1,16 +1,26 @@
 #pragma once
 
+#define BEGIN_ERROR_HANDLING()                  \
+  enum BfError __bf_error__;                    \
+  bool __bf_erred__ = false;                    \
+  (void)__bf_error__;                           \
+  (void)__bf_erred__;
+
 #define RAISE_ERROR(error) do { \
     bfSetError(error);          \
-    erred = true;               \
-    goto cleanup;               \
+    __bf_erred__ = true;        \
+    goto __bf_cleanup__;        \
   } while (0);
 
 #define HANDLE_ERROR() do {                     \
-    error = bfGetError();                       \
-    if (error) {                                \
-      bfSetError(error);                        \
-      erred = true;                             \
-      goto cleanup;                             \
+    __bf_error__ = bfGetError();                \
+    if (__bf_error__) {                         \
+      bfSetError(__bf_error__);                 \
+      __bf_erred__ = true;                      \
+      goto __bf_cleanup__;                      \
     }                                           \
   } while (0);
+
+#define END_ERROR_HANDLING()                    \
+__bf_cleanup__:                                 \
+  if (__bf_erred__)

@@ -17,8 +17,7 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   BfSize numFactors = BF_SIZE_BAD_VALUE;
   BfFactor *factor = NULL;
@@ -191,9 +190,10 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   puts("wrote simulation information to info.txt");
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     puts("error!");
+  }
+
   for (BfSize i = 0; i < numFactors; ++i)
     bfFreeMat(&Phi[i]);
   free(Phi);

@@ -91,7 +91,7 @@ void
 bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
                BfSize numRows, BfSize numCols)
 {
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   A->dtype = dtype;
   A->props = props;
@@ -111,16 +111,15 @@ bfInitEmptyMat(BfMat *A, enum BfDtypes dtype, enum BfMatProps props,
   if (A->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     free(A->data);
+  }
 }
 
 void
 bfMatZeros(BfMat *A, enum BfDtypes dtype, BfSize numRows, BfSize numCols)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(dtype == BF_DTYPE_REAL || dtype == BF_DTYPE_COMPLEX);
 
@@ -151,9 +150,9 @@ bfMatZeros(BfMat *A, enum BfDtypes dtype, BfSize numRows, BfSize numCols)
     }
   }
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeMat(A);
+  }
 }
 
 void
@@ -535,8 +534,7 @@ void bfMatAddInplace(BfMat *A, BfMat const *B) {
 static void
 complexComplexMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(A->dtype == BF_DTYPE_COMPLEX);
   assert(B->dtype == BF_DTYPE_COMPLEX);
@@ -566,9 +564,9 @@ complexComplexMatMul(BfMat const *A, BfMat const *B, BfMat *C)
               &alpha, A->data, lda, B->data, ldb, &beta, C->data, ldc);
   /* TODO: error-handling */
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeMat(C);
+  }
 }
 
 void
@@ -601,8 +599,7 @@ bfMatMul(BfMat const *A, BfMat const *B, BfMat *C)
 void
 realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(A->dtype == BF_DTYPE_REAL);
   assert(B->dtype == BF_DTYPE_COMPLEX);
@@ -626,9 +623,9 @@ realComplexMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
     }
   }
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeMat(C);
+  }
 }
 
 void
@@ -685,8 +682,7 @@ bfMatSolve(BfMat const *A, BfMat const *B, BfMat *C)
 void
 initEmptySvdMatsComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
@@ -707,8 +703,7 @@ initEmptySvdMatsComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   bfInitEmptyMat(Vt, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, p, n);
   HANDLE_ERROR();
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreeMat(U);
     bfFreeMat(S);
     bfFreeMat(Vt);
@@ -735,11 +730,7 @@ bfInitEmptySvdMats(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 void
 computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
-  enum BfError error;
-  bool erred = false;
-
-  (void)error;
-  (void)erred;
+  BEGIN_ERROR_HANDLING();
 
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
@@ -783,7 +774,8 @@ computeMatSvdComplex(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
   S->props |= BF_MAT_PROP_DIAGONAL;
   Vt->props |= BF_MAT_PROP_UNITARY;
 
-cleanup:
+  END_ERROR_HANDLING() {}
+
   free(A_data_copy);
   free(superb);
 }
@@ -791,8 +783,7 @@ cleanup:
 void
 bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(A->dtype != BF_DTYPE_MAT);
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
@@ -807,8 +798,7 @@ bfComputeMatSvd(BfMat const *A, BfMat *U, BfMat *S, BfMat *Vt)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-cleanup:
-  if (erred) {
+  END_ERROR_HANDLING() {
     bfFreeMat(U);
     bfFreeMat(S);
     bfFreeMat(Vt);
@@ -818,8 +808,7 @@ cleanup:
 void
 bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   assert(!(A->props & BF_MAT_PROP_DIAGONAL));
   assert(A->dtype != BF_DTYPE_MAT);
@@ -875,12 +864,13 @@ bfMatLstSq(BfMat const *A, BfMat const *B, BfMat *C)
   bfMatMul(&Vk, &tmp2, C);
   HANDLE_ERROR();
 
-cleanup:
+  END_ERROR_HANDLING() {
+    bfFreeMat(C);
+  }
+
   bfFreeMat(&U);
   bfFreeMat(&S);
   bfFreeMat(&VH);
   bfFreeMat(&tmp1);
   bfFreeMat(&tmp2);
-  if (erred)
-    bfFreeMat(C);
 }

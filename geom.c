@@ -79,7 +79,7 @@ void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
 }
 
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
@@ -107,10 +107,11 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
   fread(points->data, sizeof(BfPoint2), points->size, fp);
   // TODO: error-handling
 
-cleanup:
-  fclose(fp);
-  if (erred)
+  END_ERROR_HANDLING() {
     free(points->data);
+  }
+
+  fclose(fp);
 }
 
 void bfFreePoints2(BfPoints2 *points) {
@@ -144,8 +145,7 @@ void bfGetPointsByIndex(BfPoints2 const *points,
                         BfSize numInds, BfSize const *inds,
                         BfPoints2 *indexedPoints)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   bfInitEmptyPoints2(indexedPoints, numInds);
   HANDLE_ERROR();
@@ -159,9 +159,9 @@ void bfGetPointsByIndex(BfPoints2 const *points,
     indexedPoint[i][1] = point[j][1];
   }
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreePoints2(indexedPoints);
+  }
 }
 
 void bfPrintPoints2(BfPoints2 const *points) {
@@ -170,7 +170,7 @@ void bfPrintPoints2(BfPoints2 const *points) {
 }
 
 void bfSavePoints2(BfPoints2 const *points, char const *path) {
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
@@ -179,7 +179,7 @@ void bfSavePoints2(BfPoints2 const *points, char const *path) {
   fwrite(points->data, points->size, sizeof(BfPoint2), fp);
   // TODO: error-handling
 
-cleanup:
-  if (erred)
-    fclose(fp);
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
 }

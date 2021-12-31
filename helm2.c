@@ -47,8 +47,7 @@ bfGetHelm2KernelMatrix(BfMat *kernelMat,
                        BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
                        BfReal K)
 {
-  enum BfError error;
-  bool erred = false;
+  BEGIN_ERROR_HANDLING();
 
   if (bfMatIsInitialized(kernelMat))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -70,7 +69,7 @@ bfGetHelm2KernelMatrix(BfMat *kernelMat,
         bfHelm2GetKernelValue(srcPt[j], tgtPt[i], K);
   }
 
-cleanup:
-  if (erred)
+  END_ERROR_HANDLING() {
     bfFreeMat(kernelMat);
+  }
 }
