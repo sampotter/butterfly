@@ -1,10 +1,11 @@
 *.bin
 *.o
+*.pdf
+*.png
 *.txt
 *~
 GPATH
 GRTAGS
 GTAGS
+__pycache__
 vgcore.*
-*.pdf
-*.png
