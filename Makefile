@@ -22,3 +22,4 @@ all:
 
 	$(CC) $(CFLAGS) butterfly.c -o butterfly $(OBJECTS)
 	$(CC) $(CFLAGS) bf_one_block.c -o bf_one_block $(OBJECTS)
+	$(CC) $(CFLAGS) bf_all_blocks.c -o bf_all_blocks $(OBJECTS)
