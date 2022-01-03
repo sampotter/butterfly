@@ -704,7 +704,7 @@ bfMakeFac(BfQuadtree const *tree,
    *
    * TODO: I am *NOT AT ALL* sure this is right... but it should at
    * get me unstuck for now at least. */
-  while (currentSrcDepth > 0 &&
+  while (currentSrcDepth > currentTgtDepth &&
          !allSourceNodesHaveChildren(&srcLevelIter.levelNodes)) {
     bfQuadtreeLevelIterNext(&srcLevelIter);
     --currentSrcDepth;
@@ -715,7 +715,7 @@ bfMakeFac(BfQuadtree const *tree,
    * - the rank estimate between the first target node and each source
    *   node is smaller than corresponding the number of points */
 
-  while (currentSrcDepth > 0 &&
+  while (currentSrcDepth > currentTgtDepth &&
          !allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes)) {
     bfQuadtreeLevelIterNext(&srcLevelIter);
     --currentSrcDepth;
