@@ -359,6 +359,15 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   for (BfSize j = 1; j <= numBlockCols; ++j)
     factor->colOffset[j] = 0;
 
+  /* bookkeeping variables for the next two sections */
+  BfSize p0, p1, q0, q1;
+  BfSize i, j;
+  BfSize numTgtChildren, numSrcChildren;
+  BfQuadtreeNode const *tgtNode, *tgtChild[4];
+  BfQuadtreeNode const *srcNode, *srcChild[4];
+  BfCircle2 tgtCirc, tgtChildCirc;
+  BfCircle2 srcCirc, srcChildCirc;
+
   /* next, we set the number of block rows and block columns
    *
    * we need to do this as an intermediate step since the individual
@@ -367,31 +376,30 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * block to be compatible. hence, we use the corresponding maximum
    * rank estimate. */
 
-  for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    BfQuadtreeNode const *tgtNode;
+  BfSize blockIndex = 0;
+
+  i = 0;
+
+  /* iterate over all target children */
+  for (p0 = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
     bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
+    numTgtChildren = getChildren(tgtNode, tgtChild);
+    tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+    for (p1 = 0; p1 < numTgtChildren; ++p1) {
+      tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
 
-    BfQuadtreeNode const *tgtChild[4];
-    BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
+      j = p0*numSrcChildren;
 
-    BfSize qmax = 0;
-
-    BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
-
-    for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
-      BfCircle2 tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
-
-      for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        BfQuadtreeNode const *srcNode;
+      /* iterate over all source children */
+      for (q0 = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
         bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
+        numSrcChildren = getChildren(srcNode, srcChild);
+        srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+        for (q1 = 0; q1 < numSrcChildren; ++q1) {
+          srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
-        BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
-
-        BfQuadtreeNode const *srcChild[4];
-        BfSize numSrcChildren = getChildren(srcNode, srcChild);
-
-        for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
-          BfSize j = q + dj;
+          assert(i < numBlockRows);
+          assert(j < numBlockCols);
 
           /* the number of original source points matches the number
            * of rows in the jth block of the previous factor */
@@ -399,12 +407,8 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
           /* set number of columns for current block: we find the
            * maximum over each number of source child points */
-          assert(j < numBlockCols);
           if (numSrcChildPts > factor->colOffset[j + 1])
             factor->colOffset[j + 1] = numSrcChildPts;
-
-          /* get the bounding circle for the current source child */
-          BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
           /* a priori rank estimate for the original circles */
           BfSize rankOr = bfHelm2RankEstForTwoCircles(
@@ -421,19 +425,23 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           BfSize rank = rankOr > rankEq ? rankOr : rankEq;
 
           /* update number of rows for current block */
-          assert(i < factor->numBlockRows);
           if (rank > factor->rowOffset[i + 1])
             factor->rowOffset[i + 1] = rank;
 
-          ++q;
-          qmax = q > qmax ? q : qmax;
+          /* set block row and column indices */
+          assert(blockIndex < factor->numBlocks);
+          factor->rowInd[blockIndex] = i;
+          factor->colInd[blockIndex] = j;
+
+          ++blockIndex;
+
+          ++j;
         }
         ++i;
-      }
-      ++p;
+      } /* end loop over all source children */
+
     }
-    dj += qmax;
-  }
+  } /* end loop over all target children */
 
   cumSumRowAndColOffsets(factor);
 
@@ -445,36 +453,24 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   BfPoints2 srcChildPts, srcPts, tgtChildPts;
 
-  BfSize blockIndex = 0;
+  blockIndex = 0;
 
-  for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    BfQuadtreeNode const *tgtNode;
+  for (p0 = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
     bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
+    numTgtChildren = getChildren(tgtNode, tgtChild);
+    // tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+    for (p1 = 0; p1 < numTgtChildren; ++p1) {
+      tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
 
-    BfQuadtreeNode const *tgtChild[4];
-    BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
-
-    BfSize qmax = 0;
-
-    for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
-      BfCircle2 tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
-
-      for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        BfQuadtreeNode const *srcNode;
+      for (q0 = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
         bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
+        numSrcChildren = getChildren(srcNode, srcChild);
+        srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+        for (q1 = 0; q1 < numSrcChildren; ++q1) {
+          srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
 
-        BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
-
-        BfQuadtreeNode const *srcChild[4];
-        BfSize numSrcChildren = getChildren(srcNode, srcChild);
-
-        for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
-          BfSize j = q + dj;
-
-          BfCircle2 srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
-
-          BfSize numRows = getRows(factor, i);
-          BfSize numCols = getCols(factor, j);
+          BfSize numRows = getRows(factor, factor->rowInd[blockIndex]);
+          BfSize numCols = getCols(factor, factor->colInd[blockIndex]);
           assert(numRows > 0 && numCols > 0);
 
           /* sample points on the source child circle */
@@ -506,21 +502,13 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           bfFreePoints2(&tgtChildPts);
 #endif
 
-          /* set block row and column indices */
-          assert(blockIndex < factor->numBlocks);
-          factor->rowInd[blockIndex] = i;
-          factor->colInd[blockIndex] = j;
-
           ++blockIndex;
-          ++q;
-          qmax = q > qmax ? q : qmax;
-        }
-        ++i;
+
+        } /* end loop over all source children */
       }
-      ++p;
+
     }
-    dj += qmax;
-  }
+  } /* end loop over all target children */
 
   END_ERROR_HANDLING() {
     bfFreePoints2(&srcChildPts);
