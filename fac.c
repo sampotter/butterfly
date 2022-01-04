@@ -135,6 +135,14 @@ getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
   return numChildren;
 }
 
+static BfSize
+getNumChildren(BfQuadtreeNode const *node) {
+  BfSize numChildren = 0;
+  for (BfSize i = 0; i < 4; ++i)
+    numChildren += node->child[i] != NULL;
+  return numChildren;
+}
+
 static void
 getShiftMat(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
             BfPoints2 const *tgtPts, BfReal K, BfMat *Z_shift)
@@ -305,6 +313,16 @@ makeFirstFactor(BfFactor *factor, BfReal K,
   }
 }
 
+static BfSize getTotalNumChildren(BfPtrArray const *levelNodes) {
+  BfSize totalNumChildren = 0;
+  for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i) {
+    BfQuadtreeNode const *node;
+    bfPtrArrayGet(levelNodes, i, (BfPtr *)&node);
+    totalNumChildren += getNumChildren(node);
+  }
+  return totalNumChildren;
+}
+
 /* This function computes an inner factor in a butterfly
  * factorization.
  *
@@ -320,56 +338,17 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   assert(!bfPtrArrayIsEmpty(srcLevelNodes));
   assert(!bfPtrArrayIsEmpty(tgtLevelNodes));
 
-  /* first, we need to determine the number of blocks in each row and
-   * column
-   *
-   * at the same time, we count the total number of blocks so we can
-   * preallocate them */
+  /* count the total number of target children on this level */
+  BfSize totalNumTgtChildren = getTotalNumChildren(tgtLevelNodes);
 
-  BfSize numBlockRows = 0, numBlockCols = 0, numBlocks = 0;
+  /* count the total number of source children on this level */
+  BfSize totalNumSrcChildren = getTotalNumChildren(srcLevelNodes);
 
-  for (BfSize p0 = 0, p = 0, i = 0, dj = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    BfQuadtreeNode const *tgtNode;
-    bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
-
-    BfQuadtreeNode const *tgtChild[4];
-    BfSize numTgtChildren = getChildren(tgtNode, tgtChild);
-
-    BfSize qmax = 0;
-
-    for (BfSize p1 = 0; p1 < numTgtChildren; ++p1) {
-      for (BfSize q0 = 0, q = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        BfQuadtreeNode const *srcNode;
-        bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
-
-        BfQuadtreeNode const *srcChild[4]; // TODO: don't actually
-                                           // need the source children
-                                           // here, just their number
-        BfSize numSrcChildren = getChildren(srcNode, srcChild);
-        assert(numSrcChildren > 0);
-
-        for (BfSize q1 = 0; q1 < numSrcChildren; ++q1) {
-          BfSize j = q + dj;
-
-          /* update the number of block columns and the total number
-           * of blocks */
-          numBlockCols = j + 1 > numBlockCols ? j + 1 : numBlockCols;
-
-          ++numBlocks;
-
-          ++q;
-          qmax = q > qmax ? q : qmax;
-        }
-
-        /* update the number of block rows */
-        numBlockRows = i + 1 > numBlockRows ? i + 1 : numBlockRows;
-
-        ++i;
-      }
-      ++p;
-    }
-    dj += qmax;
-  }
+  /* compute the number of block rows and columns as well as the total
+   * number of blocks from this level's layout */
+  BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
+  BfSize numBlockRows = totalNumTgtChildren*bfPtrArraySize(srcLevelNodes);
+  BfSize numBlockCols = prevFactor->numBlockRows;
 
   initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
   HANDLE_ERROR();
