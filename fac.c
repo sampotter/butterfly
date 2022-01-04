@@ -356,8 +356,11 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   for (BfSize i = 1; i <= numBlockRows; ++i)
     factor->rowOffset[i] = 0;
 
-  for (BfSize j = 1; j <= numBlockCols; ++j)
-    factor->colOffset[j] = 0;
+  /* set the number of columns in each block column to equal the
+   * number of rows in each block row of the previous factor */
+  factor->colOffset[0] = 0;
+  for (BfSize j = 0; j < numBlockCols; ++j)
+    factor->colOffset[j + 1] = getRows(prevFactor, j);
 
   /* bookkeeping variables for the next two sections */
   BfSize p0, p1, q0, q1;
@@ -400,15 +403,6 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
           assert(i < numBlockRows);
           assert(j < numBlockCols);
-
-          /* the number of original source points matches the number
-           * of rows in the jth block of the previous factor */
-          BfSize numSrcChildPts = getRows(prevFactor, j);
-
-          /* set number of columns for current block: we find the
-           * maximum over each number of source child points */
-          if (numSrcChildPts > factor->colOffset[j + 1])
-            factor->colOffset[j + 1] = numSrcChildPts;
 
           /* a priori rank estimate for the original circles */
           BfSize rankOr = bfHelm2RankEstForTwoCircles(
