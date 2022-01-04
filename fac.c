@@ -364,7 +364,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   /* bookkeeping variables for the next two sections */
   BfSize p0, p1, q0, q1;
-  BfSize i, j;
+  BfSize i_offset, j;
   BfSize numTgtChildren, numSrcChildren;
   BfQuadtreeNode const *tgtNode, *tgtChild[4];
   BfQuadtreeNode const *srcNode, *srcChild[4];
@@ -381,7 +381,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   BfSize blockIndex = 0;
 
-  i = 0;
+  i_offset = 0;
 
   /* iterate over all target children */
   for (p0 = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
@@ -400,6 +400,8 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
         srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
         for (q1 = 0; q1 < numSrcChildren; ++q1) {
           srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
+
+          BfSize i = i_offset + q0;
 
           assert(i < numBlockRows);
           assert(j < numBlockCols);
@@ -430,9 +432,11 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
           ++blockIndex;
 
           ++j;
+
         }
-        ++i;
       } /* end loop over all source children */
+
+      i_offset += bfPtrArraySize(srcLevelNodes);
 
     }
   } /* end loop over all target children */
