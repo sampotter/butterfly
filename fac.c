@@ -323,6 +323,53 @@ static BfSize getTotalNumChildren(BfPtrArray const *levelNodes) {
   return totalNumChildren;
 }
 
+typedef struct {
+  BfPtrArray const *levelNodes;
+  BfSize nodeIndex;
+  BfSize childIndex;
+  BfSize numChildren;
+  BfQuadtreeNode const *node;
+  BfQuadtreeNode const *children[4];
+  BfQuadtreeNode const *child;
+  BfCircle2 circ;
+  BfCircle2 childCirc;
+} MakeFactorIter;
+
+static void resetMakeFactorIter(MakeFactorIter *iter, BfPtrArray const *levelNodes) {
+  iter->levelNodes = levelNodes;
+
+  iter->nodeIndex = iter->childIndex = 0;
+
+  bfPtrArrayGet(iter->levelNodes, iter->nodeIndex, (BfPtr *)&iter->node);
+  iter->numChildren = getChildren(iter->node, iter->children);
+  iter->child = iter->children[iter->childIndex];
+
+  iter->circ = bfGetQuadtreeNodeBoundingCircle(iter->node);
+  iter->childCirc = bfGetQuadtreeNodeBoundingCircle(iter->child);
+}
+
+static bool makeFactorIterNext(MakeFactorIter *iter) {
+  if (++iter->childIndex == iter->numChildren) {
+    if (++iter->nodeIndex == bfPtrArraySize(iter->levelNodes))
+      return false;
+
+    iter->childIndex = 0;
+
+    bfPtrArrayGet(iter->levelNodes, iter->nodeIndex, (BfPtr *)&iter->node);
+
+    iter->numChildren = getChildren(iter->node, iter->children);
+
+    iter->circ = bfGetQuadtreeNodeBoundingCircle(iter->node);
+  }
+
+  assert(iter->childIndex < iter->numChildren);
+  iter->child = iter->children[iter->childIndex];
+
+  iter->childCirc = bfGetQuadtreeNodeBoundingCircle(iter->child);
+
+  return true;
+}
+
 /* This function computes an inner factor in a butterfly
  * factorization.
  *
@@ -362,15 +409,6 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   for (BfSize j = 0; j < numBlockCols; ++j)
     factor->colOffset[j + 1] = getRows(prevFactor, j);
 
-  /* bookkeeping variables for the next two sections */
-  BfSize p0, p1, q0, q1;
-  BfSize i_offset, j;
-  BfSize numTgtChildren, numSrcChildren;
-  BfQuadtreeNode const *tgtNode, *tgtChild[4];
-  BfQuadtreeNode const *srcNode, *srcChild[4];
-  BfCircle2 tgtCirc, tgtChildCirc;
-  BfCircle2 srcCirc, srcChildCirc;
-
   /* next, we set the number of block rows and block columns
    *
    * we need to do this as an intermediate step since the individual
@@ -379,134 +417,103 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * block to be compatible. hence, we use the corresponding maximum
    * rank estimate. */
 
-  BfSize blockIndex = 0;
+  MakeFactorIter tgtIter, srcIter;
 
-  i_offset = 0;
+  BfSize blockIndex = 0, i_offset = 0, i, j;
 
-  /* iterate over all target children */
-  for (p0 = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
-    numTgtChildren = getChildren(tgtNode, tgtChild);
-    tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
-    for (p1 = 0; p1 < numTgtChildren; ++p1) {
-      tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
+  /* iterate over all target child nodes */
+  resetMakeFactorIter(&tgtIter, tgtLevelNodes);
+  do {
+    /* iterate over all source child nodes */
+    resetMakeFactorIter(&srcIter, srcLevelNodes);
+    j = tgtIter.nodeIndex*srcIter.numChildren;
+    do {
+      i = i_offset + srcIter.nodeIndex;
+      assert(i < numBlockRows);
+      assert(j < numBlockCols);
 
-      j = p0*numSrcChildren;
+      /* a priori rank estimate for the original circles */
+      BfSize rankOr = bfHelm2RankEstForTwoCircles(
+        &srcIter.childCirc, &tgtIter.circ, K, 1, 1e-15);
 
-      /* iterate over all source children */
-      for (q0 = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
-        numSrcChildren = getChildren(srcNode, srcChild);
-        srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
-        for (q1 = 0; q1 < numSrcChildren; ++q1) {
-          srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
+      /* a priori rank estimate for the new circles */
+      BfSize rankEq = bfHelm2RankEstForTwoCircles(
+        &srcIter.circ, &tgtIter.childCirc, K, 1, 1e-15);
 
-          BfSize i = i_offset + q0;
+      /* use the larger of the two rank estimates... not sure if
+       * this is totally necessary, probably being a little
+       * paranoid... they should be nearly the same, but might
+       * differ a little due to rounding */
+      BfSize rank = rankOr > rankEq ? rankOr : rankEq;
 
-          assert(i < numBlockRows);
-          assert(j < numBlockCols);
+      /* update number of rows for current block */
+      if (rank > factor->rowOffset[i + 1])
+        factor->rowOffset[i + 1] = rank;
 
-          /* a priori rank estimate for the original circles */
-          BfSize rankOr = bfHelm2RankEstForTwoCircles(
-            &srcChildCirc, &tgtCirc, K, 1, 1e-15);
+      /* set block row and column indices */
+      assert(blockIndex < factor->numBlocks);
+      factor->rowInd[blockIndex] = i;
+      factor->colInd[blockIndex] = j;
 
-          /* a priori rank estimate for the new circles */
-          BfSize rankEq = bfHelm2RankEstForTwoCircles(
-            &srcCirc, &tgtChildCirc, K, 1, 1e-15);
+      ++blockIndex;
+      ++j;
+    } while (makeFactorIterNext(&srcIter));
+    i_offset += bfPtrArraySize(srcLevelNodes);
+  } while (makeFactorIterNext(&tgtIter));
 
-          /* use the larger of the two rank estimates... not sure if
-           * this is totally necessary, probably being a little
-           * paranoid... they should be nearly the same, but might
-           * differ a little due to rounding */
-          BfSize rank = rankOr > rankEq ? rankOr : rankEq;
-
-          /* update number of rows for current block */
-          if (rank > factor->rowOffset[i + 1])
-            factor->rowOffset[i + 1] = rank;
-
-          /* set block row and column indices */
-          assert(blockIndex < factor->numBlocks);
-          factor->rowInd[blockIndex] = i;
-          factor->colInd[blockIndex] = j;
-
-          ++blockIndex;
-
-          ++j;
-
-        }
-      } /* end loop over all source children */
-
-      i_offset += bfPtrArraySize(srcLevelNodes);
-
-    }
-  } /* end loop over all target children */
-
+  /* cumulative sum the row and column sizes to get the offsets */
   cumSumRowAndColOffsets(factor);
 
-  // foreach tgtNode:
-  //     foreach tgtChildNode:
-  //         foreach srcParentNode:
-  //             foreach srcChildNode:
-  //                 set corresponding block to shift matrix
+  /* finally, we traverse the current source and target levels again,
+   * sample proxy points, and compute shift matrices to assemble the
+   * butterfly factor */
 
   BfPoints2 srcChildPts, srcPts, tgtChildPts;
 
   blockIndex = 0;
 
-  for (p0 = 0; p0 < bfPtrArraySize(tgtLevelNodes); ++p0) {
-    bfPtrArrayGet(tgtLevelNodes, p0, (BfPtr *)&tgtNode);
-    numTgtChildren = getChildren(tgtNode, tgtChild);
-    // tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
-    for (p1 = 0; p1 < numTgtChildren; ++p1) {
-      tgtChildCirc = bfGetQuadtreeNodeBoundingCircle(tgtChild[p1]);
+  /* iterate over all target child nodes */
+  resetMakeFactorIter(&tgtIter, tgtLevelNodes);
+  do {
+    /* iterate over all source child nodes */
+    resetMakeFactorIter(&srcIter, srcLevelNodes);
+    do {
+      BfSize numRows = getRows(factor, factor->rowInd[blockIndex]);
+      BfSize numCols = getCols(factor, factor->colInd[blockIndex]);
+      assert(numRows > 0 && numCols > 0);
 
-      for (q0 = 0; q0 < bfPtrArraySize(srcLevelNodes); ++q0) {
-        bfPtrArrayGet(srcLevelNodes, q0, (BfPtr *)&srcNode);
-        numSrcChildren = getChildren(srcNode, srcChild);
-        srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
-        for (q1 = 0; q1 < numSrcChildren; ++q1) {
-          srcChildCirc = bfGetQuadtreeNodeBoundingCircle(srcChild[q1]);
+      /* sample points on oh yeahthe source child circle */
+      srcChildPts = bfSamplePointsOnCircle2(&srcIter.childCirc, numCols);
+      HANDLE_ERROR();
 
-          BfSize numRows = getRows(factor, factor->rowInd[blockIndex]);
-          BfSize numCols = getCols(factor, factor->colInd[blockIndex]);
-          assert(numRows > 0 && numCols > 0);
+      /* sample points on the source circle */
+      srcPts = bfSamplePointsOnCircle2(&srcIter.circ, numRows);
+      HANDLE_ERROR();
 
-          /* sample points on the source child circle */
-          srcChildPts = bfSamplePointsOnCircle2(&srcChildCirc, numCols);
-          HANDLE_ERROR();
+      /* sample points on the target child circle */
+      tgtChildPts = bfSamplePointsOnCircle2(&tgtIter.childCirc, numRows);
+      HANDLE_ERROR();
 
-          /* sample points on the source circle */
-          srcPts = bfSamplePointsOnCircle2(&srcCirc, numRows);
-          HANDLE_ERROR();
+      /* compute the shift matrix for this configuration of circles */
+      getShiftMat(&srcChildPts, &srcPts, &tgtChildPts, K,
+                  &factor->block[blockIndex]);
+      HANDLE_ERROR();
 
-          /* sample points on the target child circle */
-          tgtChildPts = bfSamplePointsOnCircle2(&tgtChildCirc, numRows);
-          HANDLE_ERROR();
-
-          /* compute the shift matrix for this configuration of circles */
-          getShiftMat(&srcChildPts, &srcPts, &tgtChildPts, K,
-                      &factor->block[blockIndex]);
-          HANDLE_ERROR();
-
-          /* if we're debugging, store this block's points---free them
-           * otherwise */
+      /* if we're debugging, store this block's points---free them
+       * otherwise */
 #if BF_DEBUG
-          factor->srcPtsOrig[blockIndex] = srcChildPts;
-          factor->srcPtsEquiv[blockIndex] = srcPts;
-          factor->tgtPts[blockIndex] = tgtChildPts;
+      factor->srcPtsOrig[blockIndex] = srcChildPts;
+      factor->srcPtsEquiv[blockIndex] = srcPts;
+      factor->tgtPts[blockIndex] = tgtChildPts;
 #else
-          bfFreePoints2(&srcChildPts);
-          bfFreePoints2(&srcPts);
-          bfFreePoints2(&tgtChildPts);
+      bfFreePoints2(&srcChildPts);
+      bfFreePoints2(&srcPts);
+      bfFreePoints2(&tgtChildPts);
 #endif
 
-          ++blockIndex;
-
-        } /* end loop over all source children */
-      }
-
-    }
-  } /* end loop over all target children */
+      ++blockIndex;
+    } while (makeFactorIterNext(&srcIter));
+  } while (makeFactorIterNext(&tgtIter));
 
   END_ERROR_HANDLING() {
     bfFreePoints2(&srcChildPts);
