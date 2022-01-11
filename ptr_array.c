@@ -18,16 +18,20 @@ BfPtrArray bfGetUninitializedPtrArray() {
 void
 bfInitPtrArray(BfPtrArray *arr, BfSize capacity)
 {
+  BEGIN_ERROR_HANDLING();
+
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
   arr->data = malloc(capacity*sizeof(BfPtr));
-  if (arr->data == NULL) {
-    bfSetError(BF_ERROR_MEMORY_ERROR);
-    return;
-  }
+  if (arr->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   arr->capacity = capacity;
   arr->num_elts = 0;
+
+  END_ERROR_HANDLING() {
+    bfPtrArrayDeinit(arr);
+  }
 }
 
 void
@@ -42,6 +46,11 @@ void bfMakeEmptyPtrArrayView(BfPtrArray *arr)
   arr->data = NULL;
   arr->capacity = 0;
   arr->num_elts = 0;
+}
+
+void bfPtrArrayDeinit(BfPtrArray *arr) {
+  free(arr->data);
+  memset(arr, 0x0, sizeof(BfPtrArray));
 }
 
 void
@@ -86,15 +95,19 @@ bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr)
   arr->data[arr->num_elts++] = ptr;
 }
 
-void
-bfPtrArrayGet(BfPtrArray const *arr, BfSize pos, BfPtr *elt)
-{
-  if (pos >= arr->num_elts) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
-  }
+BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos) {
+  BEGIN_ERROR_HANDLING();
 
-  *elt = arr->data[pos];
+  BfPtr ptr = NULL;
+
+  if (pos >= arr->num_elts)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  ptr = arr->data[pos];
+
+  END_ERROR_HANDLING() {}
+
+  return ptr;
 }
 
 void

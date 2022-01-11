@@ -28,6 +28,8 @@ bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
 
+void bfPtrArrayDeinit(BfPtrArray *arr);
+
 void
 bfFreePtrArray(BfPtrArray *arr);
 
@@ -38,8 +40,7 @@ bool bfPtrArrayIsEmpty(BfPtrArray const *arr);
 void
 bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr);
 
-void
-bfPtrArrayGet(BfPtrArray const *arr, BfSize pos, BfPtr *ptr);
+BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos);
 
 void
 bfPtrArrayGetFirst(BfPtrArray const *arr, BfPtr *ptr);
