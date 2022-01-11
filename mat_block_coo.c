@@ -23,11 +23,7 @@ void bfMatBlockCooDelete(BfMatBlockCoo **mat) {
 }
 
 BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat) {
-  return &mat->super.super;
-}
-
-BfSize bfMatBlockCooGetNumBlockRows(BfMatBlockCoo const *mat) {
-  return mat->super.numBlockRows;
+  return &mat->super;
 }
 
 // static BfSize getNumRows(BfFactor const *factor) {

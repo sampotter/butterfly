@@ -19,8 +19,8 @@ initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
 
   BfMatBlockCoo *mat = factor->mat;
 
-  mat->super.numBlockRows = numBlockRows;
-  mat->super.numBlockCols = numBlockCols;
+  mat->super.numRows = numBlockRows;
+  mat->super.numCols = numBlockCols;
 
   mat->numBlocks = numBlocks;
 
@@ -151,13 +151,13 @@ getNumChildren(BfQuadtreeNode const *node) {
 
 static BfSize getRows(BfFactor const *factor, BfSize i) {
   BfMatBlockCoo *mat = factor->mat;
-  assert(i < mat->super.numBlockRows);
+  assert(i < mat->super.numRows);
   return mat->rowOffset[i + 1] - mat->rowOffset[i];
 }
 
 static BfSize getCols(BfFactor const *factor, BfSize j) {
   BfMatBlockCoo *mat = factor->mat;
-  assert(j < mat->super.numBlockCols);
+  assert(j < mat->super.numCols);
   return mat->colOffset[j + 1] - mat->colOffset[j];
 }
 
@@ -344,8 +344,7 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * number of blocks from this level's layout */
   BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
   BfSize numBlockRows = totalNumTgtChildren*bfPtrArraySize(srcLevelNodes);
-  // BfSize numBlockCols = prevFactor->mat->numBlockRows;
-  BfSize numBlockCols = bfMatBlockCooGetNumBlockRows(prevFactor->mat);
+  BfSize numBlockCols = prevFactor->mat->super.numRows;
 
   initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
   HANDLE_ERROR();
@@ -498,7 +497,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   /* ... and this number of blocks should match the number of block
    *  rows of the previous factor */
-  assert(numBlocks == bfMatBlockGetNumBlockRows(&prevFactor->mat->super));
+  assert(numBlocks == prevFactor->mat->super.numRows);
 
   BfQuadtreeNode const *srcNode = NULL;
   BfQuadtreeNode const *tgtNode = NULL;

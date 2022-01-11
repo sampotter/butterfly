@@ -103,8 +103,8 @@ int main(int argc, char const *argv[]) {
     chdir(path);
 
     FILE *fp = fopen("info.txt", "w");
-    fprintf(fp, "numBlockRows %lu\n", factor[i].mat->super.numBlockRows);
-    fprintf(fp, "numBlockCols %lu\n", factor[i].mat->super.numBlockCols);
+    fprintf(fp, "numBlockRows %lu\n", factor[i].mat->super.numRows);
+    fprintf(fp, "numBlockCols %lu\n", factor[i].mat->super.numCols);
     fprintf(fp, "numBlocks %lu\n", factor[i].mat->numBlocks);
     fclose(fp);
 
@@ -117,11 +117,11 @@ int main(int argc, char const *argv[]) {
     fclose(fp);
 
     fp = fopen("rowOffset.bin", "w");
-    fwrite(factor[i].mat->rowOffset, sizeof(BfSize), factor[i].mat->super.numBlockRows + 1, fp);
+    fwrite(factor[i].mat->rowOffset, sizeof(BfSize), factor[i].mat->super.numRows + 1, fp);
     fclose(fp);
 
     fp = fopen("colOffset.bin", "w");
-    fwrite(factor[i].mat->colOffset, sizeof(BfSize), factor[i].mat->super.numBlockCols + 1, fp);
+    fwrite(factor[i].mat->colOffset, sizeof(BfSize), factor[i].mat->super.numCols + 1, fp);
     fclose(fp);
 
     for (BfSize j = 0; j < factor[i].mat->numBlocks; ++j) {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "mat_block.h"
+#include "mat.h"
 
 struct BfMatBlockCoo {
-  BfMatBlock super;
+  BfMat super;
 
   /* The total number of blocks. */
   BfSize numBlocks;

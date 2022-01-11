@@ -4,7 +4,8 @@ BfMatBlockDense *bfMatBlockDenseNew() {
   return malloc(sizeof(BfMatBlockDense));
 }
 
-void BfMatBlockInit(
+void BfMatBlockInit(BfMatBlockDense *mat) {
+}
 
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat) {
 
