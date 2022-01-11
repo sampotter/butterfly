@@ -8,7 +8,7 @@ FILE *fp = NULL;
 
 BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
   BfPtrArray childNodes;
-  bfInitPtrArray(&childNodes, /*capacity: */ 4);
+  bfInitPtrArray(&childNodes, 4);
   for (BfSize i = 0; i < 4; ++i)
     if (node->child[i])
       bfPtrArrayAppend(&childNodes, node->child[i]);
@@ -34,12 +34,10 @@ static void makeMlFacRec(BfQuadtree const *tree, BfReal K,
   BfPtrArray tgtChildNodes;
 
   for (BfSize i = 0; i < bfPtrArraySize(tgtNodes); ++i) {
-    BfQuadtreeNode *tgtNode;
-    bfPtrArrayGet(tgtNodes, i, (BfPtr *)&tgtNode);
+    BfQuadtreeNode *tgtNode = bfPtrArrayGet(tgtNodes, i);
 
     for (BfSize j = 0; j < bfPtrArraySize(srcNodes); ++j) {
-      BfQuadtreeNode *srcNode;
-      bfPtrArrayGet(srcNodes, j, (BfPtr *)&srcNode);
+      BfQuadtreeNode *srcNode = bfPtrArrayGet(srcNodes, j);
 
       bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
 

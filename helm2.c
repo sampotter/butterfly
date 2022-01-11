@@ -5,7 +5,6 @@
 
 #include "const.h"
 #include "error_macros.h"
-#include "geom.h"
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,
@@ -42,34 +41,65 @@ bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K)
   return (I*j0(arg) - y0(arg))/4;
 }
 
-void
-bfGetHelm2KernelMatrix(BfMat *kernelMat,
-                       BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
-                       BfReal K)
+BfMatDenseComplex *
+bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts, BfReal K)
 {
   BEGIN_ERROR_HANDLING();
-
-  if (bfMatIsInitialized(kernelMat))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize m = tgtPts->size; /* number of rows */
   BfSize n = srcPts->size; /* number of columns */
 
-  bfInitEmptyMat(kernelMat, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, m, n);
+  BfMatDenseComplex *kernelMat = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(kernelMat, m, n);
   HANDLE_ERROR();
 
   BfPoint2 *srcPt = srcPts->data;
   BfPoint2 *tgtPt = tgtPts->data;
 
-  BfVec row;
+  BfComplex *value = kernelMat->data;
+
   for (BfSize i = 0; i < m; ++i) {
-    row = bfGetMatRow(kernelMat, i);
-    for (BfSize j = 0; j < n; ++j)
-      *(BfComplex *)bfVecGetEltPtr(&row, j) =
-        bfHelm2GetKernelValue(srcPt[j], tgtPt[i], K);
+    for (BfSize j = 0; j < n; ++j) {
+      *value = bfHelm2GetKernelValue(srcPt[j], tgtPt[i], K);
+      ++value;
+    }
   }
 
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDelete(&kernelMat);
+
+  return kernelMat;
+}
+
+BfMatDenseComplex *
+bfHelm2GetShiftMatrix(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
+                      BfPoints2 const *tgtPts, BfReal K)
+{
+  BEGIN_ERROR_HANDLING();
+
+  /* compute the kernel matrix mapping charges on the original sources
+   * points to potentials on the original target points */
+  BfMatDenseComplex *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, K);
+  HANDLE_ERROR();
+
+  /* compute the kernel matrix mapping charges on the source
+   * circle to potentials on the target circle */
+  BfMatDenseComplex *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, K);
+  HANDLE_ERROR();
+
+  /* set the "shift matrix" to Z_equiv\Z_orig */
+  BfMatDenseComplex *Z_shift = bfMatDenseComplexDenseComplexLstSq(Z_equiv, Z_orig);
+  HANDLE_ERROR();
+
   END_ERROR_HANDLING() {
-    bfFreeMat(kernelMat);
+    bfMatDenseComplexDeinit(Z_shift);
+    bfMatDenseComplexDelete(&Z_shift);
   }
+
+  bfMatDenseComplexDeinitAndDelete(&Z_orig);
+  bfMatDenseComplexDeinitAndDelete(&Z_equiv);
+
+  return Z_shift;
 }

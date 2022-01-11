@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "const.h"
+#include "error.h"
 #include "error_macros.h"
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point) {

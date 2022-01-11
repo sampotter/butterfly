@@ -7,7 +7,7 @@
 #include "error_macros.h"
 #include "fac.h"
 #include "helm2.h"
-#include "mat.h"
+#include "mat_dense_complex.h"
 #include "rand.h"
 #include "quadtree.h"
 
@@ -21,7 +21,6 @@ int main(int argc, char const *argv[]) {
 
   BfSize numFactors = BF_SIZE_BAD_VALUE;
   BfFactor *factor = NULL;
-  BfMat *Phi = NULL;
 
   BfPoints2 points;
   bfReadPoints2FromFile(argv[1], &points);
@@ -70,19 +69,12 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   puts("wrote source points to srcPts.bin");
 
-  BfMat Z_gt = bfGetUninitializedMat();
-  bfGetHelm2KernelMatrix(&Z_gt, &srcPts, &tgtPts, K);
+  BfMatDenseComplex *Z_gt = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
   HANDLE_ERROR();
 
-  BfSize num_bytes;
-  bfMatNumBytes(&Z_gt, &num_bytes);
+  printf("computed groundtruth subblock of kernel matrix\n");
 
-  printf("computed groundtruth subblock of kernel matrix:\n");
-  printf("- rows: %lu\n", Z_gt.numRows);
-  printf("- columns: %lu\n", Z_gt.numCols);
-  printf("- size: %1.2f MB\n", ((double)num_bytes)/(1024*1024));
-
-  bfSaveMat(&Z_gt, "Z_gt.bin");
+  bfMatDenseComplexSave(Z_gt, "Z_gt.bin");
   HANDLE_ERROR();
   printf("wrote Z_gt.bin\n");
 
@@ -111,32 +103,32 @@ int main(int argc, char const *argv[]) {
     chdir(path);
 
     FILE *fp = fopen("info.txt", "w");
-    fprintf(fp, "numBlockRows %lu\n", factor[i].numBlockRows);
-    fprintf(fp, "numBlockCols %lu\n", factor[i].numBlockCols);
-    fprintf(fp, "numBlocks %lu\n", factor[i].numBlocks);
+    fprintf(fp, "numBlockRows %lu\n", factor[i].mat->super.numBlockRows);
+    fprintf(fp, "numBlockCols %lu\n", factor[i].mat->super.numBlockCols);
+    fprintf(fp, "numBlocks %lu\n", factor[i].mat->numBlocks);
     fclose(fp);
 
     fp = fopen("rowInd.bin", "w");
-    fwrite(factor[i].rowInd, sizeof(BfSize), factor[i].numBlocks, fp);
+    fwrite(factor[i].mat->rowInd, sizeof(BfSize), factor[i].mat->numBlocks, fp);
     fclose(fp);
 
     fp = fopen("colInd.bin", "w");
-    fwrite(factor[i].colInd, sizeof(BfSize), factor[i].numBlocks, fp);
+    fwrite(factor[i].mat->colInd, sizeof(BfSize), factor[i].mat->numBlocks, fp);
     fclose(fp);
 
     fp = fopen("rowOffset.bin", "w");
-    fwrite(factor[i].rowOffset, sizeof(BfSize), factor[i].numBlockRows + 1, fp);
+    fwrite(factor[i].mat->rowOffset, sizeof(BfSize), factor[i].mat->super.numBlockRows + 1, fp);
     fclose(fp);
 
     fp = fopen("colOffset.bin", "w");
-    fwrite(factor[i].colOffset, sizeof(BfSize), factor[i].numBlockCols + 1, fp);
+    fwrite(factor[i].mat->colOffset, sizeof(BfSize), factor[i].mat->super.numBlockCols + 1, fp);
     fclose(fp);
 
-    for (BfSize j = 0; j < factor[i].numBlocks; ++j) {
+    for (BfSize j = 0; j < factor[i].mat->numBlocks; ++j) {
       char filename[1024];
 
       sprintf(filename, "block%lu.bin", j);
-      bfSaveMat(&factor[i].block[j], filename);
+      bfMatSave(factor[i].mat->block[j], filename);
 
 #ifdef BF_DEBUG
       sprintf(filename, "srcPtsOrig%lu.bin", j);
@@ -159,26 +151,14 @@ int main(int argc, char const *argv[]) {
 
   BfComplex q[3];
   bfRandn(6, (BfReal *)q);
-  BfMat Q = bfGetUninitializedMat();
-  bfInitEmptyMat(&Q, BF_DTYPE_COMPLEX, BF_MAT_PROP_NONE, srcPts.size, 1);
-  for (BfSize i = 0; i < srcPts.size; ++i) {
-    BfComplex *ptr;
-    bfGetMatEltPtr(&Q, i, 0, (BfPtr *)&ptr);
-    *ptr = srcPts.data[i][0]*q[0] + srcPts.data[i][1]*q[1] + q[2];
-  }
+
+  BfMatDenseComplex *Q = bfMatDenseComplexNew();
+  bfMatDenseComplexInit(Q, srcPts.size, 1);
+
+  for (BfSize i = 0; i < srcPts.size; ++i)
+    Q->data[i] = srcPts.data[i][0]*q[0] + srcPts.data[i][1]*q[1] + q[2];
+
   puts("set up test problem");
-
-  BfMat Phi_gt = bfGetUninitializedMat();
-  bfMatMul(&Z_gt, &Q, &Phi_gt);
-  puts("did MVP with groundtruth kernel matrix");
-
-  Phi = malloc(numFactors*sizeof(BfMat));
-  for (BfSize i = 0; i < numFactors; ++i)
-    Phi[i] = bfGetUninitializedMat();
-  bfMulFac(&factor[0], &Q, &Phi[0]);
-  for (BfSize i = 1; i < numFactors; ++i)
-    bfMulFac(&factor[i], &Phi[i - 1], &Phi[i]);
-  puts("did MVPs with each butterfly factor");
 
   /* write simulation info to a text file */
 
@@ -194,13 +174,9 @@ int main(int argc, char const *argv[]) {
     puts("error!");
   }
 
-  for (BfSize i = 0; i < numFactors; ++i)
-    bfFreeMat(&Phi[i]);
-  free(Phi);
-  bfFreeMat(&Phi_gt);
-  bfFreeMat(&Q);
+  bfMatDenseComplexDeinitAndDelete(&Q);
   bfFreeFac(numFactors, &factor);
-  bfFreeMat(&Z_gt);
+  bfMatDenseComplexDeinitAndDelete(&Z_gt);
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);
   bfFreeQuadtree(&tree);
