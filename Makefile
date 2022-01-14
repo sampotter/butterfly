@@ -15,6 +15,7 @@ all:
 	$(CC) $(CFLAGS) -c helm2.c
 	$(CC) $(CFLAGS) -c mat.c
 	$(CC) $(CFLAGS) -c mat_block_coo.c
+	$(CC) $(CFLAGS) -c mat_block_dense.c
 	$(CC) $(CFLAGS) -c mat_dense_complex.c
 	$(CC) $(CFLAGS) -c mat_diag_real.c
 	$(CC) $(CFLAGS) -c ptr_array.c

@@ -2,13 +2,22 @@
 
 #include "def.h"
 
+// TODO: rename: BF_MAT_TYPE_* -> BF_TYPE_MAT_* (so that first type is
+// BF_TYPE_MAT, which is consistent with the rest of the typenames)
 typedef enum BfMatTypes {
   BF_MAT_TYPE_MAT,
   BF_MAT_TYPE_DENSE_COMPLEX,
   BF_MAT_TYPE_DIAG_REAL,
+  BF_MAT_TYPE_BLOCK_DENSE,
   BF_MAT_TYPE_COUNT
 } BfMatType;
 
+// TODO: this is a little screwed up. The convention should probably be:
+//
+//   BfMat<Structure><Type>
+//
+// with Type = Block (or Blk... so: "BfMatDenseBlk") if we just keep a
+// pointer to BfMat
 typedef struct BfMat BfMat;
 typedef struct BfMatBlockCoo BfMatBlockCoo;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
