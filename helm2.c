@@ -5,6 +5,7 @@
 
 #include "const.h"
 #include "error_macros.h"
+#include "math.h"
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,
@@ -38,7 +39,7 @@ bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K)
 {
   BfReal r = bfPoint2Dist(srcPt, tgtPt);
   BfReal arg = K*r;
-  return (I*j0(arg) - y0(arg))/4;
+  return (I*bf_j0(arg) - bf_y0(arg))/4;
 }
 
 BfMatDenseComplex *
