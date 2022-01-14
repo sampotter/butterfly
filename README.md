@@ -23,4 +23,6 @@ The files that start with `mat` contain the start of an
 object-oriented matrix library. This is still in progress, but the
 goal is to have a fairly generic algorithm which will take a
 specification of a butterfly factorization and produce a hierarchical
-block matrix implemented using `mat`. This should
+block matrix implemented using `mat`. At the same time, this matrix
+library should be flexibleenough that we can start experimenting with
+direct solvers once the multilevel butterfly factorization works.
