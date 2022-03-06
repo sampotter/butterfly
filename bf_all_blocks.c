@@ -27,8 +27,7 @@ static void makeMlFacRec(BfQuadtree const *tree, BfReal K,
 
   BEGIN_ERROR_HANDLING();
 
-  BfSize numFactors = BF_SIZE_BAD_VALUE;
-  BfFactor *factorPtr = NULL;
+  BfMatProduct *factorization = NULL;
 
   BfPtrArray srcChildNodes;
   BfPtrArray tgtChildNodes;
@@ -54,7 +53,7 @@ static void makeMlFacRec(BfQuadtree const *tree, BfReal K,
                 srcNode->offset[0], srcNode->offset[4],
                 level);
 
-        bfMakeFac(tree, srcNode, tgtNode, K, &numFactors, &factorPtr);
+        factorization = bfFacMakeSingleLevelHelm2(tree, srcNode, tgtNode, K);
         printf(" done\n");
 
         HANDLE_ERROR();
@@ -79,7 +78,7 @@ static void makeMlFacRec(BfQuadtree const *tree, BfReal K,
   END_ERROR_HANDLING() {
     bfFreePtrArray(&srcChildNodes);
     bfFreePtrArray(&tgtChildNodes);
-    bfFreeFac(numFactors, &factorPtr);
+    bfMatProductDeinitAndDelete(&factorization);
   }
 }
 

@@ -6,9 +6,11 @@ CFLAGS := ${CFLAGS} -g -O0 -std=${CSTD} -DBF_DEBUG -DBF_DOUBLE -lm
 CFLAGS := ${CFLAGS} -Wall -Wextra -Wshadow -pedantic
 CFLAGS := ${CFLAGS} -lopenblas -I/usr/include/openblas
 
-OBJECTS := dtype.o error.o fac.o geom.o helm2.o mat.o mat_block_coo.o	\
-	mat_dense_complex.o mat_diag_real.o math.o ptr_array.o quadtree.o	\
-	rand.o splitmix64.o util.o vec.o xoshiro256plus.o
+OBJECTS := dtype.o error.o fac.o geom.o helm2.o mat.o mat_block.o	\
+	mat_block_coo.o mat_block_dense.o mat_block_diag.o				\
+	mat_dense_complex.o mat_diag_real.o mat_product.o math.o		\
+	ptr_array.o quadtree.o rand.o splitmix64.o util.o vec.o			\
+	xoshiro256plus.o
 
 all:
 	$(CC) $(CFLAGS) -c dtype.c
@@ -17,10 +19,13 @@ all:
 	$(CC) $(CFLAGS) -c geom.c
 	$(CC) $(CFLAGS) -c helm2.c
 	$(CC) $(CFLAGS) -c mat.c
+	$(CC) $(CFLAGS) -c mat_block.c
 	$(CC) $(CFLAGS) -c mat_block_coo.c
 	$(CC) $(CFLAGS) -c mat_block_dense.c
+	$(CC) $(CFLAGS) -c mat_block_diag.c
 	$(CC) $(CFLAGS) -c mat_dense_complex.c
 	$(CC) $(CFLAGS) -c mat_diag_real.c
+	$(CC) $(CFLAGS) -c mat_product.c
 	$(CC) $(CFLAGS) -c math.c
 	$(CC) $(CFLAGS) -c ptr_array.c
 	$(CC) $(CFLAGS) -c quadtree.c

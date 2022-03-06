@@ -5,129 +5,10 @@
 
 #include "error_macros.h"
 #include "helm2.h"
+#include "mat_block.h"
+#include "mat_block_coo.h"
+#include "mat_block_diag.h"
 #include "util.h"
-
-static void
-initEmptyFactor(BfFactor *factor, BfSize numBlockRows, BfSize numBlockCols,
-                BfSize numBlocks)
-{
-  BEGIN_ERROR_HANDLING();
-
-  factor->mat = malloc(sizeof(BfMatBlockCoo));
-  if (factor->mat == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  BfMatBlockCoo *mat = factor->mat;
-
-  mat->super.numRows = numBlockRows;
-  mat->super.numCols = numBlockCols;
-
-  mat->numBlocks = numBlocks;
-
-  /* allocate and initialize row indices to dummy values */
-  mat->rowInd = malloc(numBlocks*sizeof(BfSize));
-  if (mat->rowInd == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    mat->rowInd[i] = BF_SIZE_BAD_VALUE;
-
-  /* allocate and initialize column indices to dummy values */
-  mat->colInd = malloc(numBlocks*sizeof(BfSize));
-  if (mat->colInd == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    mat->colInd[i] = BF_SIZE_BAD_VALUE;
-
-  /* alloc and init the row index offsets for each block row */
-  mat->rowOffset = malloc((numBlockRows + 1)*sizeof(BfSize));
-  if (mat->rowOffset == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlockRows + 1; ++i)
-    mat->rowOffset[i] = BF_SIZE_BAD_VALUE;
-
-  /* alloc and init the column index offsets for each block column */
-  mat->colOffset = malloc((numBlockCols + 1)*sizeof(BfSize));
-  if (mat->colOffset == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlockCols + 1; ++i)
-    mat->colOffset[i] = BF_SIZE_BAD_VALUE;
-
-  /* allocate and initialize each nonzero (diagonal) block */
-  mat->block = malloc(numBlocks*sizeof(BfMat *));
-  if (mat->block == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    mat->block[i] = NULL;
-
-  /* if we're debugging, allocate space in this factor to store each
-   * block's points */
-#if BF_DEBUG
-  factor->srcPtsOrig = malloc(numBlocks*sizeof(BfPoints2));
-  if (factor->srcPtsOrig == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->srcPtsOrig[i] = bfGetUninitializedPoints2();
-
-  factor->srcPtsEquiv = malloc(numBlocks*sizeof(BfPoints2));
-  if (factor->srcPtsEquiv == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->srcPtsEquiv[i] = bfGetUninitializedPoints2();
-
-  factor->tgtPts = malloc(numBlocks*sizeof(BfPoints2));
-  if (factor->tgtPts == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numBlocks; ++i)
-    factor->tgtPts[i] = bfGetUninitializedPoints2();
-#endif
-
-  END_ERROR_HANDLING() {
-    bfFreeFactor(factor);
-  }
-}
-
-static void initDiagonalFactor(BfFactor *factor, BfSize numBlocks) {
-  BEGIN_ERROR_HANDLING();
-
-  initEmptyFactor(factor, numBlocks, numBlocks, numBlocks);
-  HANDLE_ERROR();
-
-  BfMatBlockCoo *mat = factor->mat;
-
-  for (BfSize i = 0; i < numBlocks; ++i)
-    mat->rowInd[i] = i;
-
-  for (BfSize i = 0; i < numBlocks; ++i)
-    mat->colInd[i] = i;
-
-  END_ERROR_HANDLING() {
-    bfFreeFactor(factor);
-  }
-}
-
-void bfFreeFactor(BfFactor *factor) {
-  BfMatBlockCoo *mat = factor->mat;
-
-#if BF_DEBUG
-  for (BfSize i = 0; i < mat->numBlocks; ++i)
-    bfFreePoints2(&factor->srcPtsOrig[i]);
-  free(factor->srcPtsOrig);
-
-  /* note that the final mat doesn't have equivalent source points,
-   * so we don't need to free them here */
-  for (BfSize i = 0; i < mat->numBlocks; ++i)
-    if (bfPoints2Initialized(&factor->srcPtsEquiv[i]))
-      bfFreePoints2(&factor->srcPtsEquiv[i]);
-  free(factor->srcPtsEquiv);
-
-  for (BfSize i = 0; i < mat->numBlocks; ++i)
-    bfFreePoints2(&factor->tgtPts[i]);
-  free(factor->tgtPts);
-#endif
-
-  bfMatBlockCooDeinit(mat);
-  bfMatBlockCooDelete(&mat);
-}
 
 static BfSize
 getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
@@ -149,23 +30,10 @@ getNumChildren(BfQuadtreeNode const *node) {
   return numChildren;
 }
 
-static BfSize getRows(BfFactor const *factor, BfSize i) {
-  BfMatBlockCoo *mat = factor->mat;
-  assert(i < mat->super.numRows);
-  return mat->rowOffset[i + 1] - mat->rowOffset[i];
-}
-
-static BfSize getCols(BfFactor const *factor, BfSize j) {
-  BfMatBlockCoo *mat = factor->mat;
-  assert(j < mat->super.numCols);
-  return mat->colOffset[j + 1] - mat->colOffset[j];
-}
-
-static void
-makeFirstFactor(BfFactor *factor, BfReal K,
-                BfQuadtree const *tree,
-                BfPtrArray const *srcLevelNodes,
-                BfPtrArray const *tgtLevelNodes)
+static BfMatBlockDiag *makeFirstFactor(BfReal K,
+                                       BfQuadtree const *tree,
+                                       BfPtrArray const *srcLevelNodes,
+                                       BfPtrArray const *tgtLevelNodes)
 {
   BEGIN_ERROR_HANDLING();
 
@@ -188,7 +56,8 @@ makeFirstFactor(BfFactor *factor, BfReal K,
   BfSize numBlocks = bfPtrArraySize(srcLevelNodes);
 
   /* initialize the first block diagonal butterfly factor */
-  initDiagonalFactor(factor, numBlocks);
+  BfMatBlockDiag *mat = bfMatBlockDiagNew();
+  bfMatBlockDiagInit(mat, numBlocks, numBlocks);
   HANDLE_ERROR();
 
   /* iterate over each node at the starting level of the source tree
@@ -225,24 +94,18 @@ makeFirstFactor(BfFactor *factor, BfReal K,
     HANDLE_ERROR();
 
     /* compute the shift matrix and store it in the current block */
-    factor->mat->block[i] = bfMatDenseComplexGetMatPtr(
+    mat->super.block[i] = bfMatDenseComplexGetMatPtr(
       bfHelm2GetShiftMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
     HANDLE_ERROR();
-
-    /* set the next row offset to current block's number of rows */
-    assert(factor->mat->block[i]->numRows > 0);
-    factor->mat->rowOffset[i + 1] = factor->mat->block[i]->numRows;
-
-    /* set the next column offset to current block's number of column */
-    assert(factor->mat->block[i]->numCols > 0);
-    factor->mat->colOffset[i + 1] = factor->mat->block[i]->numCols;
 
     /* if we're debugging, store this block's points---free them
      * otherwise */
 #if BF_DEBUG
-    factor->srcPtsOrig[i] = srcPts;
-    factor->srcPtsEquiv[i] = srcCircPts;
-    factor->tgtPts[i] = tgtCircPts;
+    BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
+    auxPts[0] = srcPts;
+    auxPts[1] = srcCircPts;
+    auxPts[2] = tgtCircPts;
+    mat->super.block[i]->aux = auxPts;
 #else
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
@@ -250,17 +113,14 @@ makeFirstFactor(BfFactor *factor, BfReal K,
 #endif
   }
 
-  factor->mat->rowOffset[0] = 0;
-  bfSizeRunningSum(numBlocks + 1, factor->mat->rowOffset);
-
-  factor->mat->colOffset[0] = 0;
-  bfSizeRunningSum(numBlocks + 1, factor->mat->colOffset);
-
   END_ERROR_HANDLING() {
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
+    bfMatBlockDiagDeinitAndDelete(&mat);
   }
+
+  return mat;
 }
 
 static BfSize getTotalNumChildren(BfPtrArray const *levelNodes) {
@@ -324,8 +184,8 @@ static bool makeFactorIterNext(MakeFactorIter *iter) {
  *
  * ... explain how this works ...
  */
-static void
-makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
+static BfMatBlockCoo *
+makeFactor(BfMatBlock const *prevMat, BfReal K,
            BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
 {
   BEGIN_ERROR_HANDLING();
@@ -344,21 +204,20 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * number of blocks from this level's layout */
   BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
   BfSize numBlockRows = totalNumTgtChildren*bfPtrArraySize(srcLevelNodes);
-  BfSize numBlockCols = prevFactor->mat->super.numRows;
+  BfSize numBlockCols = prevMat->super.numRows;
 
-  initEmptyFactor(factor, numBlockRows, numBlockCols, numBlocks);
+  BfMatBlockCoo *mat = bfMatBlockCooNew();
+  bfMatBlockCooInit(mat, numBlockRows, numBlockCols, numBlocks);
   HANDLE_ERROR();
-
-  BfMatBlockCoo *mat = factor->mat;
 
   /* set the number of columns in each block column to equal the
    * number of rows in each block row of the previous factor  */
   for (BfSize j = 0; j < numBlockCols; ++j)
-    mat->colOffset[j + 1] = getRows(prevFactor, j);
+    mat->super.colOffset[j + 1] = bfMatBlockGetNumBlockRows(prevMat, j);
 
   /* ... and compute their running sum to get the column offsets */
-  mat->colOffset[0] = 0;
-  bfSizeRunningSum(numBlockCols + 1, mat->colOffset);
+  mat->super.colOffset[0] = 0;
+  bfSizeRunningSum(numBlockCols + 1, mat->super.colOffset);
 
   /* next, we set the number of block rows and block columns
    *
@@ -398,9 +257,9 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
       BfSize rank = rankOr > rankEq ? rankOr : rankEq;
 
       /* update number of rows for current block */
-      BfSize rowOffset = mat->rowOffset[i + 1];
+      BfSize rowOffset = mat->super.rowOffset[i + 1];
       if (rowOffset == BF_SIZE_BAD_VALUE || rank > rowOffset)
-        mat->rowOffset[i + 1] = rank;
+        mat->super.rowOffset[i + 1] = rank;
 
       /* set block row and column indices */
       assert(blockIndex < mat->numBlocks);
@@ -414,8 +273,8 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   } while (makeFactorIterNext(&tgtIter));
 
   /* compute running sum of row sizes to get the row offsets */
-  mat->rowOffset[0] = 0;
-  bfSizeRunningSum(numBlockRows + 1, mat->rowOffset);
+  mat->super.rowOffset[0] = 0;
+  bfSizeRunningSum(numBlockRows + 1, mat->super.rowOffset);
 
   /* finally, we traverse the current source and target levels again,
    * sample proxy points, and compute shift matrices to assemble the
@@ -431,11 +290,11 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     /* iterate over all source child nodes */
     resetMakeFactorIter(&srcIter, srcLevelNodes);
     do {
-      BfSize numRows = getRows(factor, mat->rowInd[blockIndex]);
-      BfSize numCols = getCols(factor, mat->colInd[blockIndex]);
+      BfSize numRows = bfMatBlockGetNumBlockRows(&mat->super, mat->rowInd[blockIndex]);
+      BfSize numCols = bfMatBlockGetNumBlockCols(&mat->super, mat->colInd[blockIndex]);
       assert(numRows > 0 && numCols > 0);
 
-      /* sample points on oh yeahthe source child circle */
+      /* sample points on the source child circle */
       srcChildPts = bfSamplePointsOnCircle2(&srcIter.childCirc, numCols);
       HANDLE_ERROR();
 
@@ -448,16 +307,18 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
       HANDLE_ERROR();
 
       /* compute the shift matrix for this configuration of circles */
-      mat->block[blockIndex] =
+      mat->super.block[blockIndex] =
         (BfMat *)bfHelm2GetShiftMatrix(&srcChildPts, &srcPts, &tgtChildPts, K);
       HANDLE_ERROR();
 
       /* if we're debugging, store this block's points---free them
        * otherwise */
 #if BF_DEBUG
-      factor->srcPtsOrig[blockIndex] = srcChildPts;
-      factor->srcPtsEquiv[blockIndex] = srcPts;
-      factor->tgtPts[blockIndex] = tgtChildPts;
+      BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
+      auxPts[0] = srcChildPts;
+      auxPts[1] = srcPts;
+      auxPts[2] = tgtChildPts;
+      mat->super.block[blockIndex]->aux = auxPts;
 #else
       bfFreePoints2(&srcChildPts);
       bfFreePoints2(&srcPts);
@@ -472,15 +333,16 @@ makeFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     bfFreePoints2(&srcChildPts);
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtChildPts);
-    bfFreeFactor(factor);
+    bfMatBlockCooDeinitAndDelete(&mat);
   }
+
+  return mat;
 }
 
-static void
-makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
-               BfQuadtree const *tree,
-               BfPtrArray const *srcLevelNodes,
-               BfPtrArray const *tgtLevelNodes)
+static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
+                                      BfQuadtree const *tree,
+                                      BfPtrArray const *srcLevelNodes,
+                                      BfPtrArray const *tgtLevelNodes)
 {
   BEGIN_ERROR_HANDLING();
 
@@ -497,7 +359,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
 
   /* ... and this number of blocks should match the number of block
    *  rows of the previous factor */
-  assert(numBlocks == prevFactor->mat->super.numRows);
+  assert(numBlocks == prevMat->super.numRows);
 
   BfQuadtreeNode const *srcNode = NULL;
   BfQuadtreeNode const *tgtNode = NULL;
@@ -507,10 +369,9 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
 
   /* initialize the last butterfly factor */
-  initDiagonalFactor(factor, numBlocks);
+  BfMatBlockDiag *mat = bfMatBlockDiagNew();
+  bfMatBlockDiagInit(mat, numBlocks, numBlocks);
   HANDLE_ERROR();
-
-  BfMatBlockCoo *mat = factor->mat;
 
   BfPoints2 srcCircPts, tgtPts;
 
@@ -518,7 +379,7 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
    * and compute the matrix which will evaluate the potential at each
    * target point due to the charges on the source proxy points */
   for (BfSize i = 0; i < numBlocks; ++i) {
-    BfSize prevNumRows = getRows(prevFactor, i);
+    BfSize prevNumRows = bfMatBlockGetNumBlockRows(prevMat, i);
 
     /* get the current target node */
     tgtNode = bfPtrArrayGet(tgtLevelNodes, i);
@@ -532,20 +393,23 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
     bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
     HANDLE_ERROR();
 
-    mat->block[i] = (BfMat *)bfGetHelm2KernelMatrix(&srcCircPts, &tgtPts, K);
+    mat->super.block[i] = (BfMat *)bfGetHelm2KernelMatrix(&srcCircPts, &tgtPts, K);
     HANDLE_ERROR();
 
-    assert(mat->rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
-    mat->rowOffset[i + 1] = mat->block[i]->numRows;
+    assert(mat->super.rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    mat->super.rowOffset[i + 1] = mat->super.block[i]->numRows;
 
-    assert(mat->colOffset[i + 1] == BF_SIZE_BAD_VALUE);
-    mat->colOffset[i + 1] = mat->block[i]->numCols;
+    assert(mat->super.colOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    mat->super.colOffset[i + 1] = mat->super.block[i]->numCols;
 
     /* hang onto this block's points if we're in debug mode, and free
      * them otherwise */
 #if BF_DEBUG
-    factor->srcPtsOrig[i] = srcCircPts;
-    factor->tgtPts[i] = tgtPts;
+    BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
+    auxPts[0] = bfGetUninitializedPoints2();
+    auxPts[1] = srcCircPts;
+    auxPts[2] = tgtPts;
+    mat->super.block[i]->aux = auxPts;
 #else
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
@@ -553,18 +417,20 @@ makeLastFactor(BfFactor *factor, BfFactor const *prevFactor, BfReal K,
   }
 
   /* compute running sum of rows to get row offsets */
-  mat->rowOffset[0] = 0;
-  bfSizeRunningSum(numBlocks + 1, mat->rowOffset);
+  mat->super.rowOffset[0] = 0;
+  bfSizeRunningSum(numBlocks + 1, mat->super.rowOffset);
 
   /* compute running sum of columns to get column offsets */
-  mat->colOffset[0] = 0;
-  bfSizeRunningSum(numBlocks + 1, mat->colOffset);
+  mat->super.colOffset[0] = 0;
+  bfSizeRunningSum(numBlocks + 1, mat->super.colOffset);
 
   END_ERROR_HANDLING() {
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
-    bfFreeFactor(factor);
+    bfMatBlockDiagDeinitAndDelete(&mat);
   }
+
+  return mat;
 }
 
 static bool
@@ -598,10 +464,9 @@ allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
   return true;
 }
 
-void
-bfMakeFac(BfQuadtree const *tree,
-          BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode,
-          BfReal K, BfSize *numFactors, BfFactor **factors)
+BfMatProduct *
+bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
+                          BfQuadtreeNode const *tgtNode, BfReal K)
 {
   BEGIN_ERROR_HANDLING();
 
@@ -654,33 +519,38 @@ bfMakeFac(BfQuadtree const *tree,
   assert(allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes));
 
   /* get number of factors in the butterfly factorization */
-  *numFactors = currentSrcDepth - currentTgtDepth + 2;
+  BfSize numFactors = currentSrcDepth - currentTgtDepth + 2;
 
   /* allocate space for the butterfly factors
    *
    * when multiplying, the factors will be multiplied in the order
    * that they're stored here (e.g., bf_factors[0] is the first factor
    * that will be multiplied) */
-  *factors = malloc(*numFactors*sizeof(BfFactor));
-  if (*factors == NULL)
+  BfMat **factor = malloc(numFactors*sizeof(BfMat *));
+  if (factor == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfFactor *factor = *factors;
+  BfMatBlock *prevMatBlock;
+  BfMatBlockCoo *matBlockCoo;
+  BfMatBlockDiag *matBlockDiag;
 
   /* make the first factor in the butterfly factorization: this is the
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
-  makeFirstFactor(&factor[0], K, tree,
-                  &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+  matBlockDiag = makeFirstFactor(
+    K, tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+  factor[0] = bfMatBlockDiagGetMatPtr(matBlockDiag);
   HANDLE_ERROR();
 
-  for (BfSize i = 1; i < *numFactors - 1; ++i) {
+  for (BfSize i = 1; i < numFactors - 1; ++i) {
     /* go up a level on the source tree */
     bfQuadtreeLevelIterNext(&srcLevelIter);
 
     /* make the next factor */
-    makeFactor(&factor[i], &factor[i - 1], K,
-               &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+    prevMatBlock = (BfMatBlock *)factor[i - 1];
+    matBlockCoo = makeFactor(
+      prevMatBlock, K, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+    factor[i] = bfMatBlockCooGetMatPtr(matBlockCoo);
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
@@ -690,26 +560,23 @@ bfMakeFac(BfQuadtree const *tree,
   /* make the last factor in the butterfly factorization: this is the
    * evaluation factor, which computes the potential at each target
    * point due to the charges on the final source circle */
-  makeLastFactor(&factor[*numFactors - 1], &factor[*numFactors - 2], K,
-                 tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+  prevMatBlock = (BfMatBlock *)factor[numFactors - 2];
+  matBlockDiag = makeLastFactor(
+    prevMatBlock, K, tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+  factor[numFactors - 1] = bfMatBlockDiagGetMatPtr(matBlockDiag);
   HANDLE_ERROR();
 
+  BfMatProduct *prod = bfMatProductNew();
+  bfMatProductInit(prod);
+  for (BfSize i = 0; i < numFactors; ++i)
+
+
   END_ERROR_HANDLING() {
-    bfFreeFac(*numFactors, factors);
+    assert(false); // TODO: need to think carefully about how to do this
   }
 
   bfFreeQuadtreeLevelIter(&srcLevelIter);
   bfFreeQuadtreeLevelIter(&tgtLevelIter);
-}
 
-void bfFreeFac(BfSize numFactors, BfFactor **factorPtr) {
-  BfFactor *factor = *factorPtr;
-  for (BfSize i = 0; i < numFactors; ++i)
-    bfFreeFactor(&factor[i]);
-  free(factor);
-  *factorPtr = NULL;
-}
-
-BfMat *bfFactorMul(BfFactor const *factor, BfMat const *mat) {
-  return bfMatMul(bfMatBlockCooGetMatPtr(factor->mat), mat);
+  return prod;
 }

@@ -8,7 +8,10 @@ typedef enum BfMatTypes {
   BF_MAT_TYPE_MAT,
   BF_MAT_TYPE_DENSE_COMPLEX,
   BF_MAT_TYPE_DIAG_REAL,
+  BF_MAT_TYPE_BLOCK,
+  BF_MAT_TYPE_BLOCK_COO,
   BF_MAT_TYPE_BLOCK_DENSE,
+  BF_MAT_TYPE_BLOCK_DIAG,
   BF_MAT_TYPE_COUNT
 } BfMatType;
 
@@ -19,7 +22,9 @@ typedef enum BfMatTypes {
 // with Type = Block (or Blk... so: "BfMatDenseBlk") if we just keep a
 // pointer to BfMat
 typedef struct BfMat BfMat;
+typedef struct BfMatBlock BfMatBlock;
 typedef struct BfMatBlockCoo BfMatBlockCoo;
+typedef struct BfMatBlockDiag BfMatBlockDiag;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDiagReal BfMatDiagReal;
 
@@ -47,6 +52,9 @@ struct BfMat {
   BfMatProps props;
   BfSize numRows;
   BfSize numCols;
+#if BF_DEBUG
+  void *aux; /* pointer to extra user-defined data for purposes of debugging */
+#endif
 };
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);

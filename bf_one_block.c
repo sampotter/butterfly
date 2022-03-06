@@ -7,6 +7,8 @@
 #include "error_macros.h"
 #include "fac.h"
 #include "helm2.h"
+#include "mat_block.h"
+#include "mat_block_coo.h"
 #include "mat_dense_complex.h"
 #include "rand.h"
 #include "quadtree.h"
@@ -20,7 +22,8 @@ int main(int argc, char const *argv[]) {
   BEGIN_ERROR_HANDLING();
 
   BfSize numFactors = BF_SIZE_BAD_VALUE;
-  BfFactor *factor = NULL;
+  BfMatProduct *factorization = NULL;
+  BfMat *factor = NULL;
 
   BfPoints2 points;
   bfReadPoints2FromFile(argv[1], &points);
@@ -81,9 +84,11 @@ int main(int argc, char const *argv[]) {
   /* compute a butterfly factorization of the selected source and
    * target nodes */
 
-  bfMakeFac(&tree, srcNode, tgtNode, K, &numFactors, &factor);
+  factorization = bfFacMakeSingleLevelHelm2(&tree, srcNode, tgtNode, K);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
+
+  numFactors = bfMatProductNumFactors(factorization);
 
   /* write factors to disk */
 
@@ -97,50 +102,77 @@ int main(int argc, char const *argv[]) {
   printf("cwd: %s\n", cwd);
 
   for (BfSize i = 0; i < numFactors; ++i) {
+    factor = bfMatProductGetFactor(factorization, i);
+
+    // TODO: do this cast with a function w/ error handling
+    BfMatBlock *matBlock = (BfMatBlock *)factor;
+
+    BfMatType matType = bfMatGetType(factor);
+    BfSize numBlockRows = bfMatGetNumRows(factor);
+    BfSize numBlockCols = bfMatGetNumCols(factor);
+    BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
     char path[1024];
     sprintf(path, "factor%lu", i);
 
     chdir(path);
 
     FILE *fp = fopen("info.txt", "w");
-    fprintf(fp, "numBlockRows %lu\n", factor[i].mat->super.numRows);
-    fprintf(fp, "numBlockCols %lu\n", factor[i].mat->super.numCols);
-    fprintf(fp, "numBlocks %lu\n", factor[i].mat->numBlocks);
+    fprintf(fp, "numBlockRows %lu\n", numBlockRows);
+    fprintf(fp, "numBlockCols %lu\n", numBlockCols);
+    fprintf(fp, "numBlocks %lu\n", numBlocks);
     fclose(fp);
 
     fp = fopen("rowInd.bin", "w");
-    fwrite(factor[i].mat->rowInd, sizeof(BfSize), factor[i].mat->numBlocks, fp);
+    if (matType == BF_MAT_TYPE_BLOCK_COO)
+      fwrite(((BfMatBlockCoo *)factor)->rowInd, sizeof(BfSize), numBlocks, fp);
+    else if (matType == BF_MAT_TYPE_BLOCK_DIAG)
+      for (BfSize j = 0; j < numBlocks; ++j)
+        fwrite(&j, sizeof(BfSize), 1, fp);
+    else
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
     fclose(fp);
 
     fp = fopen("colInd.bin", "w");
-    fwrite(factor[i].mat->colInd, sizeof(BfSize), factor[i].mat->numBlocks, fp);
+    if (matType == BF_MAT_TYPE_BLOCK_COO)
+      fwrite(((BfMatBlockCoo *)factor)->colInd, sizeof(BfSize), numBlocks, fp);
+    else if (matType == BF_MAT_TYPE_BLOCK_DIAG)
+      for (BfSize j = 0; j < numBlocks; ++j)
+        fwrite(&j, sizeof(BfSize), 1, fp);
+    else
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
     fclose(fp);
 
     fp = fopen("rowOffset.bin", "w");
-    fwrite(factor[i].mat->rowOffset, sizeof(BfSize), factor[i].mat->super.numRows + 1, fp);
+    fwrite(matBlock->rowOffset, sizeof(BfSize), numBlockRows + 1, fp);
     fclose(fp);
 
     fp = fopen("colOffset.bin", "w");
-    fwrite(factor[i].mat->colOffset, sizeof(BfSize), factor[i].mat->super.numCols + 1, fp);
+    fwrite(matBlock->colOffset, sizeof(BfSize), numBlockCols + 1, fp);
     fclose(fp);
 
-    for (BfSize j = 0; j < factor[i].mat->numBlocks; ++j) {
+    for (BfSize j = 0; j < numBlocks; ++j) {
       char filename[1024];
 
       sprintf(filename, "block%lu.bin", j);
-      bfMatSave(factor[i].mat->block[j], filename);
+      bfMatSave(matBlock->block[j], filename);
 
 #ifdef BF_DEBUG
+      BfPoints2 *auxPts = (BfPoints2 *)matBlock->block[j]->aux;
+      BfPoints2 *srcChildPts = &auxPts[0];
+      BfPoints2 *srcPts = &auxPts[1];
+      BfPoints2 *tgtChildPts = &auxPts[2];
+
       sprintf(filename, "srcPtsOrig%lu.bin", j);
-      bfSavePoints2(&factor[i].srcPtsOrig[j], filename);
+      bfSavePoints2(srcChildPts, filename);
 
       if (i != numFactors - 1) {
         sprintf(filename, "srcPtsEquiv%lu.bin", j);
-        bfSavePoints2(&factor[i].srcPtsEquiv[j], filename);
+        bfSavePoints2(srcPts, filename);
       }
 
       sprintf(filename, "tgtPts%lu.bin", j);
-      bfSavePoints2(&factor[i].tgtPts[j], filename);
+      bfSavePoints2(tgtChildPts, filename);
 #endif
     }
 
@@ -175,7 +207,7 @@ int main(int argc, char const *argv[]) {
   }
 
   bfMatDenseComplexDeinitAndDelete(&Q);
-  bfFreeFac(numFactors, &factor);
+  // bfFreeFac(numFactors, &factor);
   bfMatDenseComplexDeinitAndDelete(&Z_gt);
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);

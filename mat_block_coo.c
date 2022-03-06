@@ -1,20 +1,68 @@
 #include "mat_block_coo.h"
 
+#include <assert.h>
 #include <stdlib.h>
+
+#include "error.h"
+#include "error_macros.h"
+
+static BfMatVtable matVtbl = {
+  .deinit = (__typeof__(&bfMatDeinit))bfMatBlockCooDeinit,
+  .delete = (__typeof__(&bfMatDelete))bfMatBlockCooDelete,
+  .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bfMatBlockCooDeinitAndDelete,
+  .getType = (__typeof__(&bfMatGetType))bfMatBlockCooGetType,
+  .numBytes = (__typeof__(&bfMatNumBytes))bfMatBlockCooNumBytes,
+  .save = (__typeof__(&bfMatSave))bfMatBlockCooSave,
+  .mul = (__typeof__(&bfMatMul))bfMatBlockCooMul,
+  .lstSq = (__typeof__(&bfMatLstSq))bfMatBlockCooLstSq
+};
+
+static BfMatBlockVtable matBlockVtbl = {
+  .numBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockCooNumBlocks
+};
 
 BfMatBlockCoo *bfMatBlockCooNew() {
   return malloc(sizeof(BfMatBlockCoo));
 }
 
-void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
-  free(mat->rowInd);
-  free(mat->colInd);
-  free(mat->rowOffset);
-  free(mat->colOffset);
+void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
+                       BfSize numBlockCols, BfSize numBlocks)
+{
+  BEGIN_ERROR_HANDLING();
 
-  for (BfSize i = 0; i < mat->numBlocks; ++i)
-    bfMatDeinitAndDelete(&mat->block[i]);
-  free(mat->block);
+  bfMatBlockInit(&mat->super,
+                 &matVtbl, &matBlockVtbl,
+                 numBlocks, numBlockRows, numBlockCols);
+  HANDLE_ERROR();
+
+  /* allocate and initialize row indices to dummy values */
+  mat->rowInd = malloc(numBlocks*sizeof(BfSize));
+  if (mat->rowInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  for (BfSize i = 0; i < numBlocks; ++i)
+    mat->rowInd[i] = BF_SIZE_BAD_VALUE;
+
+  /* allocate and initialize column indices to dummy values */
+  mat->colInd = malloc(numBlocks*sizeof(BfSize));
+  if (mat->colInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  for (BfSize i = 0; i < numBlocks; ++i)
+    mat->colInd[i] = BF_SIZE_BAD_VALUE;
+
+  END_ERROR_HANDLING() {
+    bfMatBlockDeinit(&mat->super);
+    free(mat->rowInd);
+    free(mat->colInd);
+  }
+}
+
+BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat) {
+  return &mat->super.super;
+}
+
+void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
+  (void)mat;
+  assert(false);
 }
 
 void bfMatBlockCooDelete(BfMatBlockCoo **mat) {
@@ -22,57 +70,59 @@ void bfMatBlockCooDelete(BfMatBlockCoo **mat) {
   *mat = NULL;
 }
 
-BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat) {
-  return &mat->super;
+void bfMatBlockCooDeinitAndDelete(BfMatBlockCoo **mat) {
+  bfMatBlockCooDeinit(*mat);
+  bfMatBlockCooDelete(mat);
 }
 
-// static BfSize getNumRows(BfFactor const *factor) {
-//   BfMatBlockCoo *mat = factor->mat;
-//   return mat->rowOffset[mat->super.numBlockRows];
-// }
+BfMatType bfMatBlockCooGetType(BfMatBlockCoo *mat) {
+  (void)mat;
+  return BF_MAT_TYPE_BLOCK_COO;
+}
 
-// static BfSize getNumCols(BfFactor const *factor) {
-//   BfMatBlockCoo *mat = factor->mat;
-//   return mat->colOffset[mat->super.numBlockCols];
-// }
+BfSize bfMatBlockCooNumBytes(BfMatBlockCoo *mat) {
+  BfSize num_bytes = 0;
 
-// void bfMulFac(BfFactor const *factor, BfMat const *X, BfMat *Y) {
-//   BEGIN_ERROR_HANDLING();
+  /* memory occupied by mat itself */
+  num_bytes += sizeof(BfMatBlockCoo);
 
-//   BfSize p = getNumCols(factor);
-//   if (X->numRows != p)
-//     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  /* memory occupied by blocks */
+  for (BfSize i = 0; i < mat->numBlocks; ++i)
+    num_bytes += bfMatNumBytes(mat->super.block[i]);
 
-//   BfSize m = getNumRows(factor), n = X->numCols;
+  /* mat->super.rowOffset and mat->super.colOffset */
+  num_bytes += (mat->super.super.numRows + 1)*sizeof(BfSize);
+  num_bytes += (mat->super.super.numCols + 1)*sizeof(BfSize);
 
-//   *Y = bfGetUninitializedMat();
-//   bfMatZeros(Y, BF_DTYPE_COMPLEX, m, n);
-//   HANDLE_ERROR();
+  /* mat->rowInd and mat->colInd */
+  num_bytes += 2*mat->numBlocks*sizeof(BfSize);
 
-//   BfMat tmp;
+  return num_bytes;
+}
 
-//   for (BfSize k = 0; k < factor->numBlocks; ++k) {
-//     BfSize i0 = factor->rowOffset[factor->rowInd[k]];
-//     BfSize i1 = factor->rowOffset[factor->rowInd[k] + 1];
+void bfMatBlockCooSave(BfMatBlockCoo const *mat, char const *path) {
+  (void)mat;
+  (void)path;
+  assert(false);
+}
 
-//     BfSize j0 = factor->colOffset[factor->colInd[k]];
-//     BfSize j1 = factor->colOffset[factor->colInd[k] + 1];
+BfMat *bfMatBlockCooMul(BfMatBlockCoo const *op1, BfMat const *op2) {
+  (void)op1;
+  (void)op2;
+  assert(false);
+  return NULL;
+}
 
-//     BfMat Xrows = bfGetMatRowRange(X, j0, j1);
+BfMat *bfMatBlockCooLstSq(BfMatBlockCoo const *lhs, BfMat const *rhs) {
+  (void)lhs;
+  (void)rhs;
+  assert(false);
+  return NULL;
 
-//     tmp = bfGetUninitializedMat();
-//     bfMatMul(&factor->block[k], &Xrows, &tmp);
-//     HANDLE_ERROR();
+  // TODO: not sure whether this should be implemented or not... see:
+  //   https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse
+}
 
-//     BfMat Yrows = bfGetMatRowRange(Y, i0, i1);
-//     bfMatAddInplace(&Yrows, &tmp);
-//     HANDLE_ERROR();
-
-//     bfMatFree(&tmp);
-//   }
-
-//   END_ERROR_HANDLING() {
-//     bfMatFree(&tmp);
-//     bfMatFree(Y);
-//   }
-// }
+BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *mat) {
+  return mat->numBlocks;
+}

@@ -1,5 +1,6 @@
 #include "mat_product.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "error.h"
@@ -17,17 +18,25 @@ BfMatProduct *bfMatProductNew() {
   return prod;
 }
 
-void bfMatProductInit(BfMatProduct *prod, BfSize numFactors) {
-  bfInitPtrArray(prod->factorArr, /* capacity: */ 4);
+void bfMatProductInit(BfMatProduct *prod) {
+  BEGIN_ERROR_HANDLING();
+
+  prod->factorArr = bfGetUninitializedPtrArray();
+
+  bfInitPtrArray(&prod->factorArr, /* capacity: */ 4);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfPtrArrayDeinit(&prod->factorArr);
 }
 
 void bfMatProductDeinit(BfMatProduct *prod) {
-  for (BfSize i = 0; i < bfPtrArraySize(prod->factorArr); ++i) {
-    BfMat *mat = bfPtrArrayGet(prod->factorArr, i);
-    BfMatDeinitAndDelete(&mat);
+  for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
+    BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
+    bfMatDeinitAndDelete(&mat);
   }
 
-  bfPtrArrayDeinitAndDelete(&prod->factorArr);
+  bfPtrArrayDeinit(&prod->factorArr);
 }
 
 void bfMatProductDelete(BfMatProduct **prod) {
@@ -40,6 +49,16 @@ void bfMatProductDeinitAndDelete(BfMatProduct **prod) {
   bfMatProductDelete(prod);
 }
 
+BfSize bfMatProductNumFactors(BfMatProduct *prod) {
+  return bfPtrArraySize(&prod->factorArr);
+}
+
+BfMat *bfMatProductGetFactor(BfMatProduct *prod, BfSize i) {
+  return bfPtrArrayGet(&prod->factorArr, i);
+}
+
 void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat) {
-  bfPtrArrayAppend(prod, mat);
+  assert(false); // TODO: verify that shapes are compatible
+
+  bfPtrArrayAppend(&prod->factorArr, mat);
 }

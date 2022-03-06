@@ -8,7 +8,7 @@
 #include "error_macros.h"
 #include "mat_diag_real.h"
 
-#include <cblas.h>
+#include <cblas_openblas.h>
 #include <lapacke.h>
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseComplex const *mat) {

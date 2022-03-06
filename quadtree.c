@@ -510,8 +510,10 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtree *tree, BfQuadtreeNode *node,
 {
   BEGIN_ERROR_HANDLING();
 
-  /* initialize a queue of node pointers for the BFS */
   BfPtrArray queue;
+  BfSize numLevels, *offsets = NULL;
+
+  /* initialize a queue of node pointers for the BFS */
   bfInitPtrArrayWithDefaultCapacity(&queue);
   HANDLE_ERROR();
 
@@ -520,7 +522,6 @@ mapQuadtreeNodesLrReverseLevelOrder(BfQuadtree *tree, BfQuadtreeNode *node,
   HANDLE_ERROR();
 
   /* get the offsets to each level */
-  BfSize numLevels, *offsets = NULL;
   findLevelOrderOffsets(&queue, &numLevels, &offsets);
   HANDLE_ERROR();
 
