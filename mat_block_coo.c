@@ -35,6 +35,8 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
                  numBlocks, numBlockRows, numBlockCols);
   HANDLE_ERROR();
 
+  mat->numBlocks = numBlocks;
+
   /* allocate and initialize row indices to dummy values */
   mat->rowInd = malloc(numBlocks*sizeof(BfSize));
   if (mat->rowInd == NULL)

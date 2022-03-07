@@ -98,6 +98,10 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
       bfHelm2GetShiftMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
     HANDLE_ERROR();
 
+    /* continue initializing the row and column offsets */
+    mat->super.rowOffset[i + 1] = bfMatGetNumRows(mat->super.block[i]);
+    mat->super.colOffset[i + 1] = bfMatGetNumCols(mat->super.block[i]);
+
     /* if we're debugging, store this block's points---free them
      * otherwise */
 #if BF_DEBUG
@@ -119,6 +123,11 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
     bfFreePoints2(&srcCircPts);
     bfMatBlockDiagDeinitAndDelete(&mat);
   }
+
+  /* finish initializing row and column offsets */
+  mat->super.rowOffset[0] = mat->super.colOffset[0] = 0;
+  bfSizeRunningSum(numBlocks + 1, mat->super.rowOffset);
+  bfSizeRunningSum(numBlocks + 1, mat->super.colOffset);
 
   return mat;
 }
@@ -569,7 +578,7 @@ bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
   BfMatProduct *prod = bfMatProductNew();
   bfMatProductInit(prod);
   for (BfSize i = 0; i < numFactors; ++i)
-
+    bfMatProductPostMultiply(prod, factor[numFactors - 1 - i]);
 
   END_ERROR_HANDLING() {
     assert(false); // TODO: need to think carefully about how to do this
