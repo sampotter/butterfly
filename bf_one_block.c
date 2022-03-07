@@ -89,6 +89,8 @@ int main(int argc, char const *argv[]) {
   printf("computed kernel matrix's butterfly factorization\n");
 
   numFactors = bfMatProductNumFactors(factorization);
+  if (numFactors == 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* write factors to disk */
 
