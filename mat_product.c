@@ -58,7 +58,6 @@ BfMat *bfMatProductGetFactor(BfMatProduct *prod, BfSize i) {
 }
 
 void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat) {
-  assert(false); // TODO: verify that shapes are compatible
-
+  // TODO: verify that shapes are compatible
   bfPtrArrayAppend(&prod->factorArr, mat);
 }
