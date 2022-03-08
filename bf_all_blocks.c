@@ -46,15 +46,23 @@ static void makeMlFacRec(BfQuadtree const *tree, BfReal K,
         BfSize numRows = tgtNode->offset[4] - tgtNode->offset[0];
         BfSize numCols = srcNode->offset[4] - srcNode->offset[0];
 
-        printf(", separated: make %lux%lu BF...", numRows, numCols);
+        printf(", separated: making %lux%lu BF...", numRows, numCols);
 
         fprintf(fp, "%lu %lu %lu %lu %lu\n",
                 tgtNode->offset[0], tgtNode->offset[4],
                 srcNode->offset[0], srcNode->offset[4],
                 level);
 
-        factorization = bfFacMakeSingleLevelHelm2(tree, srcNode, tgtNode, K);
-        printf(" done\n");
+        BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
+        BfSize numFactors = bfFacHelm2Prepare(tree, srcNode, tgtNode, K,
+                                              &srcLevelIter, &tgtLevelIter);
+        if (numFactors == 0) {
+          printf(" FAILED\n");
+        } else {
+          factorization = bfFacHelm2Make(
+            tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter, numFactors);
+          printf(" success\n");
+        }
 
         HANDLE_ERROR();
       } else {

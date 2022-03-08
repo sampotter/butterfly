@@ -473,35 +473,52 @@ allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
   return true;
 }
 
-BfMatProduct *
-bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
-                          BfQuadtreeNode const *tgtNode, BfReal K)
+/* Prepare a set of quadtree level iterators for computing a butterfly
+ * factorization of the kernel matrix mapping from the points in
+ * `srcNode` to the points in `tgtNode`. The newly initialized
+ * iterators will be pointed to by `srcLevelIter` and `tgtLevelIter`
+ * upon successful completion, otherwise they will both equal
+ * `NULL`. The number of butterfly factors is also returned. This
+ * function will return 0 if it determined that it was not possible to
+ * butterfly factorize the kernel matrix.
+ *
+ * If this function returns successfully, it is the caller's
+ * responsibility to clean up `srcLevelIter` and `tgtLevelIter`.
+ *
+ * (NOTE: the algorithm used to determine whether or not a kernel
+ * matrix is butterfliable is very crude at the moment, and may result
+ * in false negatives.) */
+BfSize
+bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
+                  BfQuadtreeNode const *tgtNode, BfReal K,
+                  BfQuadtreeLevelIter *srcLevelIter,
+                  BfQuadtreeLevelIter *tgtLevelIter)
 {
   BEGIN_ERROR_HANDLING();
 
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
-  BfQuadtreeLevelIter srcLevelIter = bfInitQuadtreeLevelIter(
+  *srcLevelIter = bfInitQuadtreeLevelIter(
     BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER, (BfQuadtreeNode *)srcNode);
   HANDLE_ERROR();
 
   /* set up the level iterator for the target tree, which goes from
    * the root to the leaves */
-  BfQuadtreeLevelIter tgtLevelIter = bfInitQuadtreeLevelIter(
+  *tgtLevelIter = bfInitQuadtreeLevelIter(
     BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tgtNode);
   HANDLE_ERROR();
 
   /* get the current source and target depths and make sure they're
    * compatible */
-  BfSize currentSrcDepth = bfQuadtreeLevelIterCurrentDepth(&srcLevelIter);
-  BfSize currentTgtDepth = bfQuadtreeLevelIterCurrentDepth(&tgtLevelIter);
+  BfSize currentSrcDepth = bfQuadtreeLevelIterCurrentDepth(srcLevelIter);
+  BfSize currentTgtDepth = bfQuadtreeLevelIterCurrentDepth(tgtLevelIter);
   assert(currentTgtDepth <= currentSrcDepth);
 
   /* skip source levels until we're no deeper than the maximum depth
    * beneath the target node */
   BfSize maxDepthBelowTgtNode = bfGetMaxDepthBelowQuadtreeNode(tgtNode);
   while (currentSrcDepth > maxDepthBelowTgtNode) {
-    bfQuadtreeLevelIterNext(&srcLevelIter);
+    bfQuadtreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
 
@@ -510,25 +527,48 @@ bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
    * TODO: I am *NOT AT ALL* sure this is right... but it should at
    * get me unstuck for now at least. */
   while (currentSrcDepth > currentTgtDepth &&
-         !allSourceNodesHaveChildren(&srcLevelIter.levelNodes)) {
-    bfQuadtreeLevelIterNext(&srcLevelIter);
+         !allSourceNodesHaveChildren(&srcLevelIter->levelNodes)) {
+    bfQuadtreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
-  assert(allSourceNodesHaveChildren(&srcLevelIter.levelNodes));
+  assert(allSourceNodesHaveChildren(&srcLevelIter->levelNodes));
 
   /* TODO: step the source level iterator until:
    * - the rank estimate between the first target node and each source
    *   node is smaller than corresponding the number of points */
 
   while (currentSrcDepth > currentTgtDepth &&
-         !allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes)) {
-    bfQuadtreeLevelIterNext(&srcLevelIter);
+         !allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes)) {
+    bfQuadtreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
-  assert(allRankEstimatesAreOK(tgtNode, K, &srcLevelIter.levelNodes));
 
-  /* get number of factors in the butterfly factorization */
-  BfSize numFactors = currentSrcDepth - currentTgtDepth + 2;
+  /* get number of factors in the butterfly factorization... if we
+   * can't butterfly this matrix, return 0 to signal this */
+  BfSize numFactors =
+    allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes) ?
+      currentSrcDepth - currentTgtDepth + 2 : 0;
+
+  END_ERROR_HANDLING() {
+    bfFreeQuadtreeLevelIter(srcLevelIter);
+    bfFreeQuadtreeLevelIter(tgtLevelIter);
+  }
+
+  return numFactors;
+}
+
+BfMatProduct *
+bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
+               BfQuadtreeNode const *tgtNode, BfReal K,
+               BfQuadtreeLevelIter *srcLevelIter,
+               BfQuadtreeLevelIter *tgtLevelIter,
+               BfSize numFactors)
+{
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *prevMatBlock = NULL;
+  BfMatBlockCoo *matBlockCoo = NULL;
+  BfMatBlockDiag *matBlockDiag = NULL;
 
   /* allocate space for the butterfly factors
    *
@@ -539,31 +579,27 @@ bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
   if (factor == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfMatBlock *prevMatBlock;
-  BfMatBlockCoo *matBlockCoo;
-  BfMatBlockDiag *matBlockDiag;
-
   /* make the first factor in the butterfly factorization: this is the
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
   matBlockDiag = makeFirstFactor(
-    K, tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+    K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
   factor[0] = bfMatBlockDiagGetMatPtr(matBlockDiag);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
     /* go up a level on the source tree */
-    bfQuadtreeLevelIterNext(&srcLevelIter);
+    bfQuadtreeLevelIterNext(srcLevelIter);
 
     /* make the next factor */
     prevMatBlock = (BfMatBlock *)factor[i - 1];
     matBlockCoo = makeFactor(
-      prevMatBlock, K, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+      prevMatBlock, K, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
     factor[i] = bfMatBlockCooGetMatPtr(matBlockCoo);
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
-    bfQuadtreeLevelIterNext(&tgtLevelIter);
+    bfQuadtreeLevelIterNext(tgtLevelIter);
   }
 
   /* make the last factor in the butterfly factorization: this is the
@@ -571,7 +607,7 @@ bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
    * point due to the charges on the final source circle */
   prevMatBlock = (BfMatBlock *)factor[numFactors - 2];
   matBlockDiag = makeLastFactor(
-    prevMatBlock, K, tree, &srcLevelIter.levelNodes, &tgtLevelIter.levelNodes);
+    prevMatBlock, K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
   factor[numFactors - 1] = bfMatBlockDiagGetMatPtr(matBlockDiag);
   HANDLE_ERROR();
 
@@ -583,9 +619,6 @@ bfFacMakeSingleLevelHelm2(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
   END_ERROR_HANDLING() {
     assert(false); // TODO: need to think carefully about how to do this
   }
-
-  bfFreeQuadtreeLevelIter(&srcLevelIter);
-  bfFreeQuadtreeLevelIter(&tgtLevelIter);
 
   return prod;
 }

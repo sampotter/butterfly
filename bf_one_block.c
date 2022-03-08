@@ -84,13 +84,16 @@ int main(int argc, char const *argv[]) {
   /* compute a butterfly factorization of the selected source and
    * target nodes */
 
-  factorization = bfFacMakeSingleLevelHelm2(&tree, srcNode, tgtNode, K);
-  HANDLE_ERROR();
-  printf("computed kernel matrix's butterfly factorization\n");
-
-  numFactors = bfMatProductNumFactors(factorization);
+  BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
+  numFactors = bfFacHelm2Prepare(
+    &tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
   if (numFactors == 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  factorization = bfFacHelm2Make(
+    &tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter, numFactors);
+  HANDLE_ERROR();
+  printf("computed kernel matrix's butterfly factorization\n");
 
   /* write factors to disk */
 

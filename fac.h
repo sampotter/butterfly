@@ -3,7 +3,16 @@
 #include "mat_product.h"
 #include "quadtree.h"
 
-BfMatProduct *bfFacMakeSingleLevelHelm2(BfQuadtree const *tree,
-                                        BfQuadtreeNode const *srcNode,
-                                        BfQuadtreeNode const *tgtNode,
-                                        BfReal K);
+BfSize
+bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
+                  BfQuadtreeNode const *tgtNode, BfReal K,
+                  BfQuadtreeLevelIter *srcLevelIter,
+                  BfQuadtreeLevelIter *tgtLevelIter);
+
+BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree,
+                             BfQuadtreeNode const *srcNode,
+                             BfQuadtreeNode const *tgtNode,
+                             BfReal K,
+                             BfQuadtreeLevelIter *srcLevelIter,
+                             BfQuadtreeLevelIter *tgtLevelIter,
+                             BfSize numFactors);
