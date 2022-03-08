@@ -4,12 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "blas.h"
 #include "error.h"
 #include "error_macros.h"
 #include "mat_diag_real.h"
-
-#include <cblas_openblas.h>
-#include <lapacke.h>
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseComplex const *mat) {
   BfMat const *super = bfMatDenseComplexGetMatConstPtr(mat);

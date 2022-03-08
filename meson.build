@@ -9,9 +9,18 @@ project(
 add_global_arguments('-DBF_DEBUG', language : 'c')
 add_global_arguments('-DBF_DOUBLE', language : 'c')
 
+host_system = host_machine.system()
+if host_system == 'linux'
+  add_global_arguments('-DBF_LINUX', language : 'c')
+elif host_system == 'darwin'
+  add_global_arguments('-DBF_DARWIN', language : 'c')
+else
+  error('unsupported platform:', host_system)
+endif
+
 cc = meson.get_compiler('c')
 
-cblas_dep = dependency('openblas')
+cblas_dep = cc.find_library('openblas', required : true)
 gsl_dep = dependency('gsl')
 m_dep = cc.find_library('m', required : false)
 
