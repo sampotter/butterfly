@@ -33,6 +33,7 @@ butterfly_lib_src = [
   'mat.c',
   'mat_block.c',
   'mat_block_coo.c',
+  'mat_block_dense.c',
   'mat_block_diag.c',
   'mat_dense_complex.c',
   'mat_diag_real.c',

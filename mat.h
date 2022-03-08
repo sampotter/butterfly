@@ -24,6 +24,7 @@ typedef enum BfMatTypes {
 typedef struct BfMat BfMat;
 typedef struct BfMatBlock BfMatBlock;
 typedef struct BfMatBlockCoo BfMatBlockCoo;
+typedef struct BfMatBlockDense BfMatBlockDense;
 typedef struct BfMatBlockDiag BfMatBlockDiag;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDiagReal BfMatDiagReal;
