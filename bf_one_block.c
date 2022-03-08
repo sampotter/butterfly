@@ -168,7 +168,7 @@ int main(int argc, char const *argv[]) {
       sprintf(filename, "srcPtsOrig%lu.bin", j);
       bfSavePoints2(srcChildPts, filename);
 
-      if (i != numFactors - 1) {
+      if (i > 0) {
         sprintf(filename, "srcPtsEquiv%lu.bin", j);
         bfSavePoints2(srcPts, filename);
       }

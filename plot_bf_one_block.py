@@ -166,8 +166,10 @@ factors = []
 
 frame = 0
 
-paths = glob('factor*')
-for factorNum, path in enumerate(paths):
+paths = sorted(glob('factor*'))
+for path in paths[::-1]:
+    factorNum = int(path[6:])
+
     print(f'loading {path}')
 
     Qprev = Qs[-1]
@@ -201,7 +203,7 @@ for factorNum, path in enumerate(paths):
         block = np.fromfile(f'{path}/block{k}.bin', dtype=np.complex128)
         block = block.reshape(i1 - i0, j1 - j0)
 
-        if path != paths[-1]:
+        if path != paths[0]:
             srcPtsOrig = np.fromfile(f'{path}/srcPtsOrig{k}.bin', dtype=np.float64)
             srcPtsOrig = srcPtsOrig.reshape(-1, 2)
 
@@ -224,12 +226,12 @@ for factorNum, path in enumerate(paths):
 
         frame += 1
 
-    factors.append(factor)
+    factors = [factor] + factors
     Qs.append(factor@Qprev)
 
 Z_butterfly = factors[0]
 for i in range(1, len(factors)):
-    Z_butterfly = factors[i]@Z_butterfly
+    Z_butterfly = Z_butterfly@factors[i]
 
 ########################################################################
 # stats
