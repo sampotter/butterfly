@@ -30,6 +30,10 @@ void bfMatProductInit(BfMatProduct *prod) {
     bfPtrArrayDeinit(&prod->factorArr);
 }
 
+BfMat *bfMatProductGetMatPtr(BfMatProduct *mat) {
+  return &mat->super;
+}
+
 void bfMatProductDeinit(BfMatProduct *prod) {
   for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
     BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);

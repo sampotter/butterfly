@@ -38,8 +38,9 @@ BfComplex
 bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K)
 {
   BfReal r = bfPoint2Dist(srcPt, tgtPt);
-  BfReal arg = K*r;
-  return (I*bf_j0(arg) - bf_y0(arg))/4;
+  return r == 0 ?
+    NAN :
+    (I*bf_j0(K*r) - bf_y0(K*r))/4;
 }
 
 BfMatDenseComplex *

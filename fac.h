@@ -16,3 +16,5 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree,
                              BfQuadtreeLevelIter *srcLevelIter,
                              BfQuadtreeLevelIter *tgtLevelIter,
                              BfSize numFactors);
+
+BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K);

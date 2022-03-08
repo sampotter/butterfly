@@ -44,6 +44,23 @@ BfMat *bfMatBlockDenseGetMatPtr(BfMatBlockDense *mat) {
   return &mat->super.super;
 }
 
+void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
+                             BfMat *block) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numBlockRows = mat->super.super.numRows;
+  if (i >= numBlockRows)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSize numBlockCols = mat->super.super.numCols;
+  if (j >= numBlockCols)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  mat->super.block[numBlockCols*i + j] = block;
+
+  END_ERROR_HANDLING() {}
+}
+
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat) {
   (void)mat;
   assert(false);

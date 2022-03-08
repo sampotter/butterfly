@@ -10,6 +10,8 @@ BfMatBlockDense *bfMatBlockDenseNew();
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
                          BfSize numBlockCols);
 BfMat *bfMatBlockDenseGetMatPtr(BfMatBlockDense *mat);
+void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
+                             BfMat *block);
 
 /* BfMat interface */
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat);

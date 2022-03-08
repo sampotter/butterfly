@@ -2,12 +2,15 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "error_macros.h"
 #include "helm2.h"
 #include "mat_block.h"
 #include "mat_block_coo.h"
+#include "mat_block_dense.h"
 #include "mat_block_diag.h"
+#include "mat_product.h"
 #include "util.h"
 
 static BfSize
@@ -621,4 +624,147 @@ bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
   }
 
   return prod;
+}
+
+/* Return the child nodes of `node` in a `BfPtrArray`. */
+static BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
+  BfPtrArray childNodes;
+  bfInitPtrArray(&childNodes, 4);
+  for (BfSize i = 0; i < 4; ++i)
+    if (node->child[i])
+      bfPtrArrayAppend(&childNodes, node->child[i]);
+  return childNodes;
+}
+
+static void facHelm2MakeMultilevelRec(BfQuadtree const *tree, BfReal K,
+                                      BfPtrArray const *srcNodes,
+                                      BfPtrArray const *tgtNodes,
+                                      BfSize level,
+                                      BfMatBlockDense *blockMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPtrArray srcChildNodes;
+  BfPtrArray tgtChildNodes;
+
+  for (BfSize i = 0; i < bfPtrArraySize(tgtNodes); ++i) {
+    BfQuadtreeNode *tgtNode = bfPtrArrayGet(tgtNodes, i);
+
+    for (BfSize j = 0; j < bfPtrArraySize(srcNodes); ++j) {
+      BfQuadtreeNode *srcNode = bfPtrArrayGet(srcNodes, j);
+
+      bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
+
+      printf("level = %lu, i = %lu, j = %lu", level, i, j);
+
+      BfSize numRows = tgtNode->offset[4] - tgtNode->offset[0];
+      BfSize numCols = srcNode->offset[4] - srcNode->offset[0];
+
+      BfMat *mat = NULL;
+
+      if (numRows*numCols < 128*128) {
+        printf(", fewer than 128^2 elements, making dense matrix...");
+
+        BfPoints2 srcPts, tgtPts;
+        bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
+        bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
+        BfMatDenseComplex *Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
+        mat = bfMatDenseComplexGetMatPtr(Z);
+        puts(" done");
+        HANDLE_ERROR();
+      }
+      else if (separated) {
+        printf(", separated: making %lux%lu BF...", numRows, numCols);
+
+        BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
+        BfSize numFactors = bfFacHelm2Prepare(tree, srcNode, tgtNode, K,
+                                              &srcLevelIter, &tgtLevelIter);
+        if (numFactors == 0) {
+          printf(" FAILED, making dense matrix...");
+
+          BfPoints2 srcPts, tgtPts;
+          bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
+          bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
+          BfMatDenseComplex *Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
+          mat = bfMatDenseComplexGetMatPtr(Z);
+          puts(" done");
+          HANDLE_ERROR();
+        }
+        else {
+          BfMatProduct *factorization = bfFacHelm2Make(
+            tree,srcNode,tgtNode,K,&srcLevelIter,&tgtLevelIter,numFactors);
+          HANDLE_ERROR();
+          mat = bfMatProductGetMatPtr(factorization);
+          printf(" success\n");
+        }
+        HANDLE_ERROR();
+      }
+      else {
+        printf(", not separated: make BFs on next level \n");
+
+        srcChildNodes = getChildrenAsPtrArray(srcNode);
+        HANDLE_ERROR();
+
+        tgtChildNodes = getChildrenAsPtrArray(tgtNode);
+        HANDLE_ERROR();
+
+        BfMatBlockDense *childBlockMat = bfMatBlockDenseNew();
+        HANDLE_ERROR();
+
+        BfSize numBlockRows = bfPtrArraySize(&tgtChildNodes);
+        BfSize numBlockCols = bfPtrArraySize(&srcChildNodes);
+        bfMatBlockDenseInit(childBlockMat, numBlockRows, numBlockCols);
+        HANDLE_ERROR();
+
+        facHelm2MakeMultilevelRec(
+          tree, K, &srcChildNodes, &tgtChildNodes, level + 1, childBlockMat);
+        HANDLE_ERROR();
+
+        mat = bfMatBlockDenseGetMatPtr(childBlockMat);
+
+        bfFreePtrArray(&srcChildNodes);
+        bfFreePtrArray(&tgtChildNodes);
+      }
+
+      /* set the current block now that we've computed it */
+      bfMatBlockDenseSetBlock(blockMat, i, j, mat);
+      HANDLE_ERROR();
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    bfFreePtrArray(&srcChildNodes);
+    bfFreePtrArray(&tgtChildNodes);
+  }
+}
+
+BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Use an in-order quadtree level iterator to enumerate the pairs of
+   * nodes which we'll make butterfly factorizations for */
+  BfQuadtreeLevelIter levelIter = bfInitQuadtreeLevelIter(
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tree->root);
+  HANDLE_ERROR();
+
+  /* Skip to level 2 of quadtree */
+  bfQuadtreeLevelIterNext(&levelIter);
+  bfQuadtreeLevelIterNext(&levelIter);
+  HANDLE_ERROR();
+
+  BfPtrArray const *levelNodes = &levelIter.levelNodes;
+  BfSize numNodes = bfPtrArraySize(levelNodes);
+
+  BfMatBlockDense *mat = bfMatBlockDenseNew();
+  bfMatBlockDenseInit(mat, numNodes, numNodes);
+
+  /* Build the multilevel butterfly factorization */
+  facHelm2MakeMultilevelRec(tree, K, levelNodes, levelNodes, 2, mat);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfMatBlockDenseDeinitAndDelete(&mat);
+
+  bfFreeQuadtreeLevelIter(&levelIter);
+
+  return mat;
 }
