@@ -5,6 +5,8 @@
 #include "mat_block_dense.h"
 #include "quadtree.h"
 
+
+
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
     printf("usage: %s <points.bin>\n", argv[0]);
@@ -26,6 +28,7 @@ int main(int argc, char const *argv[]) {
   BfReal K = 3000;
 
   BfMatBlockDense *mat = bfFacHelm2MakeMultilevel(&tree, K);
+  (void)mat;
 
   END_ERROR_HANDLING() {}
 
