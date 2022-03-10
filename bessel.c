@@ -194,49 +194,35 @@ BfReal bf_y0(BfReal x) {
   assert(false); // TODO: throw error
 }
 
+static BfComplex _H0_small_arg(BfReal x) {
+  BfReal two_over_pi = 2.0/BF_PI;
+  BfReal z = 0.125*x*x - 1.0;
+  BfReal j0 = x < 2.0*BF_SQRT_EPS ? 1.0 : bfChebStdEval(&bj0_cs, z);
+  BfReal c = bfChebStdEval(&by0_cs, z);
+  BfReal y0 = two_over_pi*(-BF_LN2 + log(x))*j0 + 0.375 + c;
+  return j0 + I*y0;
+}
+
+static BfComplex _H0_large_arg(BfReal x) {
+  BfReal z  = 32.0/(x*x) - 1.0;
+  BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
+  BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
+  BfReal cp = cos_pi4_plus_eps(x, c2/x);
+  BfReal sp = sin_pi4_plus_eps(x, c2/x);
+  BfReal sqrtx = sqrt(x);
+  BfReal ampl  = (0.75 + c1) / sqrtx;
+  BfReal j0 = ampl * cp;
+  BfReal y0 = ampl * sp;
+  return j0 + I*y0;
+}
+
 BfComplex bf_H0(BfReal x) {
   assert(x > 0);
-
-  BfReal two_over_pi = 2.0/BF_PI;
-  BfReal xmax = 1.0/BF_EPS;
-  BfReal j0, y0;
-
-  if (x <= 4.0) {
-    /* compute j0 */
-    j0 = x < 2.0*BF_SQRT_EPS ? 1.0 : bfChebStdEval(&bj0_cs, 0.125*x*x - 1.0);
-
-    /* compute y0 */
-    BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
-    y0 = two_over_pi*(-BF_LN2 + log(x))*j0 + 0.375 + c;
-  } else if (x < xmax) {
-    /* compute j0 */
-    {
-
-      BfReal z = 32.0/(x*x) - 1.0;
-      BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
-      BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
-      BfReal cp = cos_pi4_plus_eps(x, ct/x);
-      BfReal sqrtx = sqrt(x);
-      BfReal ampl  = (0.75 + ca) / sqrtx;
-      j0 = ampl * cp;
-    }
-    /* compute y0 */
-    {
-      /* Leading behaviour of phase is x, which is exact,
-       * so the error is bounded.
-       */
-      BfReal z  = 32.0/(x*x) - 1.0;
-      BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
-      BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
-      BfReal sp = sin_pi4_plus_eps(x, c2/x);
-      BfReal sqrtx = sqrt(x);
-      BfReal ampl  = (0.75 + c1) / sqrtx;
-      y0 = ampl * sp;
-    }
-  } else {
+  if (x <= 4.0)
+    return _H0_small_arg(x);
+  else if (x < 1.0/BF_EPS)
+    return _H0_large_arg(x);
+  else
     // UNDERFLOW_ERROR(result);
     assert(false); // TODO: throw error
-  }
-
-  return j0 + I*y0;
 }
