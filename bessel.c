@@ -195,5 +195,53 @@ BfReal bf_y0(BfReal x) {
 }
 
 BfComplex bf_H0(BfReal x) {
-  return bf_j0(x) + I*bf_y0(x);
+  assert(x > 0);
+
+  BfReal j0, y0;
+
+  /* compute j0 */
+
+  {
+    if (x < 2.0*BF_SQRT_EPS)
+      j0 = 1.0;
+
+    if (x <= 4.0)
+      j0 = bfChebStdEval(&bj0_cs, 0.125*x*x - 1.0);
+
+    BfReal z = 32.0/(x*x) - 1.0;
+    BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
+    BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
+    BfReal cp = cos_pi4_plus_eps(x, ct/x);
+    BfReal sqrtx = sqrt(x);
+    BfReal ampl  = (0.75 + ca) / sqrtx;
+    j0 = ampl * cp;
+  }
+
+  /* compute y0 */
+
+  {
+    BfReal two_over_pi = 2.0/BF_PI;
+    BfReal xmax        = 1.0/BF_EPS;
+
+    if (x < 4.0) {
+      BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
+      y0 = two_over_pi*(-BF_LN2 + log(x))*j0 + 0.375 + c;
+    } else if (x < xmax) {
+      /* Leading behaviour of phase is x, which is exact,
+       * so the error is bounded.
+       */
+      BfReal z  = 32.0/(x*x) - 1.0;
+      BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
+      BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
+      BfReal sp = sin_pi4_plus_eps(x, c2/x);
+      BfReal sqrtx = sqrt(x);
+      BfReal ampl  = (0.75 + c1) / sqrtx;
+      y0 = ampl * sp;
+    } else {
+      // UNDERFLOW_ERROR(result);
+      assert(false); // TODO: throw error
+    }
+  }
+
+  return j0 + I*y0;
 }
