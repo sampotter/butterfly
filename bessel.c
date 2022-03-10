@@ -126,7 +126,7 @@ static BfReal cos_pi4_plus_eps(BfReal y, BfReal eps) {
     seps = sin(eps);
     ceps = cos(eps);
   }
-  return (ceps * s - seps * d)/ BF_SQRT2;
+  return (ceps * s - seps * d)/BF_SQRT2;
 }
 
 static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
@@ -144,7 +144,27 @@ static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
     seps = sin(eps);
     ceps = cos(eps);
   }
-  return (ceps * d + seps * s)/ BF_SQRT2;
+  return (ceps * d + seps * s)/BF_SQRT2;
+}
+
+static void
+_cos_sin_pi4_plus_eps(BfReal y, BfReal eps, BfReal *cp, BfReal *sp) {
+  BfReal sy = sin(y);
+  BfReal cy = cos(y);
+  BfReal s = sy + cy;
+  BfReal d = sy - cy;
+  BfReal seps;
+  BfReal ceps;
+  if (fabs(eps) < BF_ROOT5_EPS) {
+    BfReal e2 = eps*eps;
+    seps = eps * (1.0 - e2/6.0 * (1.0 - e2/20.0));
+    ceps = 1.0 - e2/2.0 * (1.0 - e2/12.0);
+  } else {
+    seps = sin(eps);
+    ceps = cos(eps);
+  }
+  *cp = (ceps * s - seps * d)/BF_SQRT2;
+  *sp = (ceps * d + seps * s)/BF_SQRT2;
 }
 
 BfReal bf_j0(BfReal x) {
@@ -207,8 +227,7 @@ static BfComplex _H0_large_arg(BfReal x) {
   BfReal z  = 32.0/(x*x) - 1.0;
   BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
   BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
-  BfReal cp = cos_pi4_plus_eps(x, c2/x);
-  BfReal sp = sin_pi4_plus_eps(x, c2/x);
+  BfReal cp, sp; _cos_sin_pi4_plus_eps(x, c2/x, &cp, &sp);
   BfReal sqrtx = sqrt(x);
   BfReal ampl  = (0.75 + c1) / sqrtx;
   BfReal j0 = ampl * cp;
