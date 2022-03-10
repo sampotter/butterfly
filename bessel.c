@@ -139,12 +139,12 @@ BfReal bf_j0(BfReal x) {
     return bfChebStdEval(&bj0_cs, 0.125*y*y - 1.0);
 
   BfReal z = 32.0/(y*y) - 1.0;
-  BfReal ca_val = bfChebStdEval(&_amp_phase_bm0_cs, z);
-  BfReal ct_val = bfChebStdEval(&_amp_phase_bth0_cs, z);
-  BfReal cp_val = cos_pi4_plus_eps(y, ct_val/y);
+  BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
+  BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
+  BfReal cp = cos_pi4_plus_eps(y, ct/y);
   BfReal sqrty = sqrt(y);
-  BfReal ampl  = (0.75 + ca_val) / sqrty;
-  return ampl * cp_val;
+  BfReal ampl  = (0.75 + ca) / sqrty;
+  return ampl * cp;
 }
 
 static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
@@ -173,8 +173,8 @@ BfReal bf_y0(BfReal x) {
 
   if(x < 4.0) {
     BfReal J0 = bf_j0(x);
-    BfReal c_val = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
-    return two_over_pi*(-BF_LN2 + log(x))*J0 + 0.375 + c_val;
+    BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
+    return two_over_pi*(-BF_LN2 + log(x))*J0 + 0.375 + c;
   }
 
   if(x < xmax) {
@@ -182,12 +182,12 @@ BfReal bf_y0(BfReal x) {
      * so the error is bounded.
      */
     BfReal z  = 32.0/(x*x) - 1.0;
-    BfReal c1_val = bfChebStdEval(&_amp_phase_bm0_cs, z);
-    BfReal c2_val = bfChebStdEval(&_amp_phase_bth0_cs, z);
-    BfReal sp_val = sin_pi4_plus_eps(x, c2_val/x);
+    BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
+    BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
+    BfReal sp = sin_pi4_plus_eps(x, c2/x);
     BfReal sqrtx = sqrt(x);
-    BfReal ampl  = (0.75 + c1_val) / sqrtx;
-    return ampl * sp_val;
+    BfReal ampl  = (0.75 + c1) / sqrtx;
+    return ampl * sp;
   }
 
   // UNDERFLOW_ERROR(result);
