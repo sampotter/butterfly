@@ -129,24 +129,6 @@ static BfReal cos_pi4_plus_eps(BfReal y, BfReal eps) {
   return (ceps * s - seps * d)/ BF_SQRT2;
 }
 
-BfReal bf_j0(BfReal x) {
-  BfReal y = fabs(x);
-
-  if (y < 2.0*BF_SQRT_EPS)
-    return 1.0;
-
-  if (y <= 4.0)
-    return bfChebStdEval(&bj0_cs, 0.125*y*y - 1.0);
-
-  BfReal z = 32.0/(y*y) - 1.0;
-  BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
-  BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
-  BfReal cp = cos_pi4_plus_eps(y, ct/y);
-  BfReal sqrty = sqrt(y);
-  BfReal ampl  = (0.75 + ca) / sqrty;
-  return ampl * cp;
-}
-
 static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
   BfReal sy = sin(y);
   BfReal cy = cos(y);
@@ -163,6 +145,24 @@ static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
     ceps = cos(eps);
   }
   return (ceps * d + seps * s)/ BF_SQRT2;
+}
+
+BfReal bf_j0(BfReal x) {
+  BfReal y = fabs(x);
+
+  if (y < 2.0*BF_SQRT_EPS)
+    return 1.0;
+
+  if (y <= 4.0)
+    return bfChebStdEval(&bj0_cs, 0.125*y*y - 1.0);
+
+  BfReal z = 32.0/(y*y) - 1.0;
+  BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
+  BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
+  BfReal cp = cos_pi4_plus_eps(y, ct/y);
+  BfReal sqrty = sqrt(y);
+  BfReal ampl  = (0.75 + ca) / sqrty;
+  return ampl * cp;
 }
 
 BfReal bf_y0(BfReal x) {
