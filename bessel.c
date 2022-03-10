@@ -117,7 +117,7 @@ static BfReal cos_pi4_plus_eps(BfReal y, BfReal eps) {
   BfReal d = sy - cy;
   BfReal seps;
   BfReal ceps;
-  if(fabs(eps) < BF_ROOT5_EPS) {
+  if (fabs(eps) < BF_ROOT5_EPS) {
     BfReal e2 = eps*eps;
     seps = eps * (1.0 - e2/6.0 * (1.0 - e2/20.0));
     ceps = 1.0 - e2/2.0 * (1.0 - e2/12.0);
@@ -136,7 +136,7 @@ static BfReal sin_pi4_plus_eps(BfReal y, BfReal eps) {
   BfReal d = sy - cy;
   BfReal seps;
   BfReal ceps;
-  if(fabs(eps) < BF_ROOT5_EPS) {
+  if (fabs(eps) < BF_ROOT5_EPS) {
     BfReal e2 = eps*eps;
     seps = eps * (1.0 - e2/6.0 * (1.0 - e2/20.0));
     ceps = 1.0 - e2/2.0 * (1.0 - e2/12.0);
@@ -171,13 +171,13 @@ BfReal bf_y0(BfReal x) {
 
   assert(x > 0);
 
-  if(x < 4.0) {
+  if (x < 4.0) {
     BfReal J0 = bf_j0(x);
     BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
     return two_over_pi*(-BF_LN2 + log(x))*J0 + 0.375 + c;
   }
 
-  if(x < xmax) {
+  if (x < xmax) {
     /* Leading behaviour of phase is x, which is exact,
      * so the error is bounded.
      */
