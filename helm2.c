@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <math.h>
 
+#include "bessel.h"
 #include "const.h"
 #include "error_macros.h"
-#include "util_math.h"
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,

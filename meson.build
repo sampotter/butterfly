@@ -25,6 +25,7 @@ gsl_dep = dependency('gsl')
 m_dep = cc.find_library('m', required : false)
 
 butterfly_lib_src = [
+  'bessel.c',
   'dtype.c',
   'error.c',
   'fac.c',
@@ -43,7 +44,6 @@ butterfly_lib_src = [
   'rand.c',
   'splitmix64.c',
   'util.c',
-  'util_math.c',
   'vec.c',
   'xoshiro256plus.c',
 ]
