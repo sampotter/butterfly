@@ -193,3 +193,7 @@ BfReal bf_y0(BfReal x) {
   // UNDERFLOW_ERROR(result);
   assert(false); // TODO: throw error
 }
+
+BfComplex bf_H0(BfReal x) {
+  return bf_j0(x) + I*bf_y0(x);
+}
