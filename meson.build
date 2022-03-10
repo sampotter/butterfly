@@ -26,6 +26,7 @@ m_dep = cc.find_library('m', required : false)
 
 butterfly_lib_src = [
   'bessel.c',
+  'cheb.c',
   'dtype.c',
   'error.c',
   'fac.c',

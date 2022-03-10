@@ -4,33 +4,8 @@
 #include <math.h>
 #include <stdbool.h>
 
+#include "cheb.h"
 #include "const.h"
-
-typedef struct {
-  BfReal * c;   /* coefficients                */
-  int order;    /* order of expansion          */
-  BfReal a;     /* lower interval point        */
-  BfReal b;     /* upper interval point        */
-  int order_sp; /* effective single precision order */
-} cheb_series;
-
-static BfReal cheb_eval(const cheb_series * cs, BfReal x) {
-  BfReal d  = 0.0;
-  BfReal dd = 0.0;
-
-  BfReal y  = (2.0*x - cs->a - cs->b) / (cs->b - cs->a);
-  BfReal y2 = 2.0 * y;
-
-  for (int j = cs->order; j >= 1; j--) {
-    BfReal temp = d;
-    d = y2*d - dd + cs->c[j];
-    dd = temp;
-  }
-
-  d = y*d - dd + 0.5 * cs->c[0];
-
-  return d;
-}
 
 static BfReal bj0_data[13] = {
    0.100254161968939137,
@@ -48,7 +23,14 @@ static BfReal bj0_data[13] = {
    0.0000000000000000074,
 };
 
-static cheb_series bj0_cs = {bj0_data, 12, -1, 1, 9};
+static BfCheb bj0_cs = {
+  .c = bj0_data,
+  .order = 12,
+
+  /* [a, b] = [-1, 1] */
+  .a_plus_b = 0,
+  .b_minus_a = 2,
+};
 
 static BfReal by0_data[13] = {
   -0.011277839392865573,
@@ -66,7 +48,14 @@ static BfReal by0_data[13] = {
   -0.000000000000000011
 };
 
-static cheb_series by0_cs = {by0_data, 12, -1, 1, 8};
+static BfCheb by0_cs = {
+  .c = by0_data,
+  .order = 12,
+
+  /* [a, b] = [-1, 1] */
+  .a_plus_b = 0,
+  .b_minus_a = 2
+};
 
 static BfReal bm0_data[21] = {
    0.09284961637381644,
@@ -92,7 +81,14 @@ static BfReal bm0_data[21] = {
    0.00000000000000004
 };
 
-static const cheb_series _amp_phase_bm0_cs = {bm0_data, 20, -1, 1, 10};
+static const BfCheb _amp_phase_bm0_cs = {
+  .c = bm0_data,
+  .order = 20,
+
+  /* [a, b] = [-1, 1] */
+  .a_plus_b = 0,
+  .b_minus_a = 2
+};
 
 static BfReal bth0_data[24] = {
   -0.24639163774300119,
@@ -121,7 +117,14 @@ static BfReal bth0_data[24] = {
    0.000000000000000036
 };
 
-static const cheb_series _amp_phase_bth0_cs = {bth0_data, 23, -1, 1, 12};
+static const BfCheb _amp_phase_bth0_cs = {
+  .c = bth0_data,
+  .order = 23,
+
+  /* [a, b] = [-1, 1] */
+  .a_plus_b = 0,
+  .b_minus_a = 2
+};
 
 static BfReal cos_pi4_plus_eps(BfReal y, BfReal eps) {
   BfReal sy = sin(y);
@@ -149,11 +152,11 @@ BfReal bf_j0(BfReal x) {
     return 1.0;
 
   if (y <= 4.0)
-    return cheb_eval(&bj0_cs, 0.125*y*y - 1.0);
+    return bfChebEval(&bj0_cs, 0.125*y*y - 1.0);
 
   BfReal z = 32.0/(y*y) - 1.0;
-  BfReal ca_val = cheb_eval(&_amp_phase_bm0_cs, z);
-  BfReal ct_val = cheb_eval(&_amp_phase_bth0_cs, z);
+  BfReal ca_val = bfChebEval(&_amp_phase_bm0_cs, z);
+  BfReal ct_val = bfChebEval(&_amp_phase_bth0_cs, z);
   BfReal cp_val = cos_pi4_plus_eps(y, ct_val/y);
   BfReal sqrty = sqrt(y);
   BfReal ampl  = (0.75 + ca_val) / sqrty;
@@ -186,7 +189,7 @@ BfReal bf_y0(BfReal x) {
 
   if(x < 4.0) {
     BfReal J0 = bf_j0(x);
-    BfReal c_val = cheb_eval(&by0_cs, 0.125*x*x-1.0);
+    BfReal c_val = bfChebEval(&by0_cs, 0.125*x*x-1.0);
     return two_over_pi*(-BF_LN2 + log(x))*J0 + 0.375 + c_val;
   }
 
@@ -195,8 +198,8 @@ BfReal bf_y0(BfReal x) {
      * so the error is bounded.
      */
     BfReal z  = 32.0/(x*x) - 1.0;
-    BfReal c1_val = cheb_eval(&_amp_phase_bm0_cs, z);
-    BfReal c2_val = cheb_eval(&_amp_phase_bth0_cs, z);
+    BfReal c1_val = bfChebEval(&_amp_phase_bm0_cs, z);
+    BfReal c2_val = bfChebEval(&_amp_phase_bth0_cs, z);
     BfReal sp_val = sin_pi4_plus_eps(x, c2_val/x);
     BfReal sqrtx = sqrt(x);
     BfReal ampl  = (0.75 + c1_val) / sqrtx;
