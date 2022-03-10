@@ -1,5 +1,20 @@
 #include "cheb.h"
 
+BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
+  BfReal d  = 0.0;
+  BfReal dd = 0.0;
+
+  for (int j = cheb->order; j >= 1; j--) {
+    BfReal temp = d;
+    d = 2*x*d - dd + cheb->c[j];
+    dd = temp;
+  }
+
+  d = x*d - dd + 0.5 * cheb->c[0];
+
+  return d;
+}
+
 BfReal bfChebEval(BfCheb const *cheb, BfReal x) {
   BfReal d  = 0.0;
   BfReal dd = 0.0;
