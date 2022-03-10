@@ -197,6 +197,8 @@ BfReal bf_y0(BfReal x) {
 BfComplex bf_H0(BfReal x) {
   assert(x > 0);
 
+  BfReal two_over_pi = 2.0/BF_PI;
+  BfReal xmax = 1.0/BF_EPS;
   BfReal j0, y0;
 
   /* compute j0 */
@@ -220,9 +222,6 @@ BfComplex bf_H0(BfReal x) {
   /* compute y0 */
 
   {
-    BfReal two_over_pi = 2.0/BF_PI;
-    BfReal xmax        = 1.0/BF_EPS;
-
     if (x <= 4.0) {
       BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
       y0 = two_over_pi*(-BF_LN2 + log(x))*j0 + 0.375 + c;
