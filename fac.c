@@ -501,6 +501,8 @@ bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
 {
   BEGIN_ERROR_HANDLING();
 
+  BfSize numFactors = 0;
+
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
   *srcLevelIter = bfInitQuadtreeLevelIter(
@@ -550,8 +552,7 @@ bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
 
   /* get number of factors in the butterfly factorization... if we
    * can't butterfly this matrix, return 0 to signal this */
-  BfSize numFactors =
-    allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes) ?
+  numFactors = allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes) ?
       currentSrcDepth - currentTgtDepth + 2 : 0;
 
   END_ERROR_HANDLING() {
