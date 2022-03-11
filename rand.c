@@ -31,7 +31,7 @@ void bfSeed(BfSize seed) {
   xoshiro256plus_seed(seeds);
 }
 
-void bfUniform(BfSize n, BfReal *x) {
+void bfRealUniform(BfSize n, BfReal *x) {
   for (BfSize i = 0; i < n; ++i) {
     uint64_t r = xoshiro256plus_next();
 
@@ -41,10 +41,10 @@ void bfUniform(BfSize n, BfReal *x) {
   }
 }
 
-void bfRandn(BfSize n, BfReal *x) {
+void bfRealRandn(BfSize n, BfReal *x) {
   /* fill the first 2*floor(n/2) entries of x with uniform deviates
    * from [0, 1] */
-  bfUniform(2*(n/2), x);
+  bfRealUniform(2*(n/2), x);
 
   /* use Box-Muller to compute 2*(n/2) independent N(0, 1) deviates */
   BfReal mag, theta;
@@ -58,7 +58,11 @@ void bfRandn(BfSize n, BfReal *x) {
   /* if x has an odd length, sample N(0, 1) one more time */
   if (n % 2 == 1) {
     BfReal u[2];
-    bfUniform(2, u);
+    bfRealUniform(2, u);
     x[n - 1] = sqrt(-2*log(u[0]))*cos(BF_TWO_PI*u[1]);
   }
+}
+
+void bfComplexRandn(BfSize n, BfComplex *x) {
+  bfRealRandn(2*n, (BfReal *)x);
 }

@@ -187,7 +187,7 @@ int main(int argc, char const *argv[]) {
   /* test multiplication */
 
   BfComplex q[3];
-  bfRandn(6, (BfReal *)q);
+  bfComplexRandn(3, q);
 
   BfMatDenseComplex *Q = bfMatDenseComplexNew();
   bfMatDenseComplexInit(Q, srcPts.size, 1);

@@ -3,5 +3,8 @@
 #include "def.h"
 
 void bfSeed(BfSize seed);
-void bfUniform(BfSize n, BfReal *x);
-void bfRandn(BfSize n, BfReal *x);
+
+void bfRealUniform(BfSize n, BfReal *x);
+void bfRealRandn(BfSize n, BfReal *x);
+
+void bfComplexRandn(BfSize n, BfComplex *x);
