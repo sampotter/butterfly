@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "bessel.h"
 #include "const.h"
@@ -35,9 +36,7 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
 }
 
 BfComplex
-bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K)
-{
-  BfReal r = bfPoint2Dist(srcPt, tgtPt);
+bfHelm2GetKernelValue(BfReal r, BfReal K) {
   return r == 0 ? NAN : I*bf_H0(K*r)/4;
 }
 
@@ -49,26 +48,39 @@ bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts, BfReal 
   BfSize m = tgtPts->size; /* number of rows */
   BfSize n = srcPts->size; /* number of columns */
 
+  /* length m*n array of pairwise dists in row major order */
+  BfReal *r = malloc(m*n*sizeof(BfReal));
+  if (r == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  bfPoints2PairwiseDists(tgtPts, srcPts, r);
+
+  {
+    BfSize k = 0;
+    for (BfSize i = 0; i < m; ++i)
+      for (BfSize j = 0; j < n; ++j)
+        assert(r[k++] == bfPoint2Dist(tgtPts->data[i], srcPts->data[j]));
+  }
+
   BfMatDenseComplex *kernelMat = bfMatDenseComplexNew();
   HANDLE_ERROR();
 
   bfMatDenseComplexInit(kernelMat, m, n);
   HANDLE_ERROR();
 
-  BfPoint2 *srcPt = srcPts->data;
-  BfPoint2 *tgtPt = tgtPts->data;
-
   BfComplex *value = kernelMat->data;
 
+  BfSize k = 0;
   for (BfSize i = 0; i < m; ++i) {
     for (BfSize j = 0; j < n; ++j) {
-      *value = bfHelm2GetKernelValue(srcPt[j], tgtPt[i], K);
-      ++value;
+      value[k] = bfHelm2GetKernelValue(r[k], K);
+      ++k;
     }
   }
 
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDelete(&kernelMat);
+
+  free(r);
 
   return kernelMat;
 }

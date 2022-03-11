@@ -5,7 +5,7 @@
 #include "geom.h"
 #include "mat_dense_complex.h"
 
-BfComplex bfHelm2GetKernelValue(BfPoint2 const srcPt, BfPoint2 const tgtPt, BfReal K);
+BfComplex bfHelm2GetKernelValue(BfReal r, BfReal K);
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,

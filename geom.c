@@ -8,6 +8,19 @@
 #include "error.h"
 #include "error_macros.h"
 
+void bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y, BfReal *r) {
+  /* Try to expose some opportunities for vectorization here */
+  BfSize m = X->size, n = Y->size;
+  BfSize k = 0;
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal const *x = &X->data[i][0];
+    for (BfSize j = 0; j < n; ++j) {
+      BfReal const *y = &Y->data[j][0];
+      r[k++] = hypot(y[0] - x[0], y[1] - x[1]);
+    }
+  }
+}
+
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point) {
   return bbox->min[0] <= point[0] && point[0] <= bbox->max[0]
       && bbox->min[1] <= point[1] && point[1] <= bbox->max[1];
