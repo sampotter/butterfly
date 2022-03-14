@@ -3,9 +3,9 @@
 #include "error_macros.h"
 #include "fac.h"
 #include "mat_block_dense.h"
+#include "mat_dense_complex.h"
 #include "quadtree.h"
-
-
+#include "rand.h"
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -23,15 +23,24 @@ int main(int argc, char const *argv[]) {
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
   HANDLE_ERROR();
-  puts("built quadtree");
+  printf("built quadtree\n");
 
   BfReal K = 3000;
 
-  BfMatBlockDense *mat = bfFacHelm2MakeMultilevel(&tree, K);
-  (void)mat;
+  BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
+  printf("built HODBF matrix\n");
+
+  BfMatDenseComplex *x = bfMatDenseComplexNew();
+  bfMatDenseComplexInit(x, points.size, 1);
+  bfComplexRandn(points.size, x->data);
+
+  BfMat *y = bfMatMul(bfMatBlockDenseGetMatPtr(A), bfMatDenseComplexGetMatPtr(x));
+  printf("multiplied with random vector\n");
 
   END_ERROR_HANDLING() {}
 
+  bfMatDeinitAndDelete(&y);
+  bfMatDenseComplexDeinitAndDelete(&x);
   // bfMatBlockDenseDeinitAndDelete(&mat);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);

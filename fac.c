@@ -735,24 +735,29 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
                                        BfMatBlockDense *blockMat) {
   BEGIN_ERROR_HANDLING();
 
+  BfMatBlock *super = &blockMat->super;
+  BfMat *mat = NULL;
+
+  super->rowOffset[0] = 0;
+  super->colOffset[0] = 0;
+
   for (BfSize i = 0; i < bfPtrArraySize(tgtNodes); ++i) {
     BfQuadtreeNode *tgtNode = bfPtrArrayGet(tgtNodes, i);
+    BfSize numRows = bfQuadtreeNodeNumPoints(tgtNode);
 
     for (BfSize j = 0; j < bfPtrArraySize(srcNodes); ++j) {
       BfQuadtreeNode *srcNode = bfPtrArrayGet(srcNodes, j);
-
-      bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
-
-      BfSize numRows = bfQuadtreeNodeNumPoints(tgtNode);
       BfSize numCols = bfQuadtreeNodeNumPoints(srcNode);
 
-      BfMat *mat = NULL;
+      bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
 
       if (numRows*numCols < MAX_DENSE_MATRIX_SIZE)
         mat = facHelm2MakeMultilevel_dense(tree, K, srcNode, tgtNode);
       else if (separated)
         mat = facHelm2MakeMultilevel_separated(tree, K, srcNode, tgtNode);
       else
+        /* TODO: we really need to consolidate _rec and _diag (also,
+         * "_diag" is a total misnomer) */
         mat = facHelm2MakeMultilevel_diag(tree, K, srcNode, tgtNode, level);
 
       if (mat == NULL)
@@ -761,7 +766,15 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
       /* set the current block now that we've computed it */
       bfMatBlockDenseSetBlock(blockMat, i, j, mat);
       HANDLE_ERROR();
+
+      /* update the column block offset if we're making our first pass
+       * through a row of blocks */
+      if (i == 0)
+        super->colOffset[j + 1] = super->colOffset[j] + numCols;
     }
+
+    /* update the row block offset */
+    super->rowOffset[i + 1] = super->rowOffset[i] + numRows;
   }
 
   END_ERROR_HANDLING() {}
