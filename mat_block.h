@@ -17,6 +17,11 @@ struct BfMatBlock {
    * block can vary. */
   BfMat **block;
 
+  /* TODO: add the following sizes here, and store the real shape of
+   * the matrix in BfMat. */
+  // BfSize numRowBlocks;
+  // BfSize numColBlocks;
+
   /* Array of `numBlockRows + 1` entries containing the offset in rows
    * of each block row in the matrix (i.e., `block[i]` starts on row
    * `rowOffset[rowInd[i]]`). The final entry,
@@ -38,6 +43,10 @@ void bfMatBlockInit(BfMatBlock *mat,
 BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i);
 BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j);
 BfSize bfMatBlockNumBlocks(BfMatBlock const *mat);
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat);
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat);
+BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i);
+BfSize bfMatBlockFindColBlock(BfMatBlock const *mat, BfSize i);
 
 /* BfMat interface: */
 void bfMatBlockDeinit(BfMatBlock *mat);

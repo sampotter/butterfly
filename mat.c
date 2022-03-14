@@ -10,6 +10,10 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
 #endif
 }
 
+BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  return mat->vtbl->zerosLike(mat, numRows, numCols);
+}
+
 void bfMatDeinit(BfMat *mat) {
   mat->vtbl->deinit(mat);
 
@@ -47,16 +51,28 @@ bool bfMatIsTransposed(BfMat const *mat) {
 }
 
 BfSize bfMatGetNumRows(BfMat const *mat) {
-  return bfMatIsTransposed(mat) ? mat->numCols : mat->numRows;
+  return mat->vtbl->getNumRows(mat);
 }
 
 BfSize bfMatGetNumCols(BfMat const *mat) {
-  return bfMatIsTransposed(mat) ? mat->numRows : mat->numCols;
+  return mat->vtbl->getNumCols(mat);
+}
+
+BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  return mat->vtbl->getRowRange(mat, i0, i1);
+}
+
+BfMat *bfMatGetColRange(BfMat *mat, BfSize i0, BfSize i1) {
+  return mat->vtbl->getColRange(mat, i0, i1);
 }
 
 BfMat *bfMatConjTrans(BfMat *mat) {
   mat->props ^= (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ);
   return mat;
+}
+
+void bfMatAddInplace(BfMat *lhs, BfMat const *rhs) {
+  lhs->vtbl->addInplace(lhs, rhs);
 }
 
 BfMat *bfMatMul(BfMat const *lhs, BfMat const *rhs) {

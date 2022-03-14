@@ -9,6 +9,8 @@
 #include "error_macros.h"
 #include "mat_diag_real.h"
 
+BF_DEFINE_MAT_VTABLE(MatDenseComplex);
+
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseComplex const *mat) {
   BfMat const *super = bfMatDenseComplexGetMatConstPtr(mat);
 
@@ -24,17 +26,6 @@ static BfSize getLeadingDimension(BfMatDenseComplex const *mat) {
   return mat->rowStride;
 }
 
-static BfMatVtable matDenseComplexVtbl = {
-  .deinit = (__typeof__(&bfMatDeinit))bfMatDenseComplexDeinit,
-  .delete = (__typeof__(&bfMatDelete))bfMatDenseComplexDelete,
-  .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bfMatDenseComplexDeinitAndDelete,
-  .getType = (__typeof__(&bfMatGetType))bfMatDenseComplexGetType,
-  .numBytes = (__typeof__(&bfMatNumBytes))bfMatDenseComplexNumBytes,
-  .save = (__typeof__(&bfMatSave))bfMatDenseComplexSave,
-  .mul = (__typeof__(&bfMatMul))bfMatDenseComplexMul,
-  .lstSq = (__typeof__(&bfMatLstSq))bfMatDenseComplexLstSq
-};
-
 BfMatDenseComplex *bfMatDenseComplexNew() {
   BEGIN_ERROR_HANDLING();
 
@@ -47,11 +38,31 @@ BfMatDenseComplex *bfMatDenseComplexNew() {
   return mat;
 }
 
+BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *zeros = NULL;
+
+  zeros = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(zeros, numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numRows*numCols; ++i)
+    zeros->data[i++] = 0;
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDelete(&zeros);
+
+  return zeros;
+}
+
 void bfMatDenseComplexInit(BfMatDenseComplex *mat,
                            BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &matDenseComplexVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &matVtbl, numRows, numCols);
   HANDLE_ERROR();
 
   mat->rowStride = numCols;
@@ -63,6 +74,27 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
 
   END_ERROR_HANDLING()
     bfMatDeinit(&mat->super);
+}
+
+BfMat *bfMatDenseComplexZerosLike(BfMatDenseComplex const *mat,
+                                  BfSize numRows, BfSize numCols) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *zeros = NULL;
+
+  if (numRows == BF_SIZE_BAD_VALUE)
+    numRows = bfMatDenseComplexGetNumRows(mat);
+
+  if (numCols == BF_SIZE_BAD_VALUE)
+    numCols = bfMatDenseComplexGetNumCols(mat);
+
+  zeros = bfMatDenseComplexZeros(numRows, numCols);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDelete(&zeros);
+
+  return bfMatDenseComplexGetMatPtr(zeros);
 }
 
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat) {
@@ -132,6 +164,14 @@ void bfMatDenseComplexSave(BfMatDenseComplex const *mat, char const *path) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+BfSize bfMatDenseComplexGetNumRows(BfMatDenseComplex const *mat) {
+  return mat->super.numRows;
+}
+
+BfSize bfMatDenseComplexGetNumCols(BfMatDenseComplex const *mat) {
+  return mat->super.numCols;
 }
 
 BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *mat) {
@@ -212,6 +252,39 @@ bfMatDenseComplexGetRowRange(BfMatDenseComplex *mat, BfSize i0, BfSize i1) {
     bfMatDenseComplexDeinitAndDelete(&submat);
 
   return submat;
+}
+
+void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,
+                                             BfMatDenseComplex const *op2) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatDenseComplexGetNumRows(op1);
+  if (numRows != bfMatDenseComplexGetNumRows(op2))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseComplexGetNumCols(op1);
+  if (numCols != bfMatDenseComplexGetNumCols(op2))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  for (BfSize i = 0; i < numRows*numCols; ++i)
+    op1->data[i] += op2->data[i];
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfMatDenseComplexAddInplace(BfMatDenseComplex *op1, BfMat const *op2) {
+  BEGIN_ERROR_HANDLING();
+
+  switch (bfMatGetType(op2)) {
+  case BF_MAT_TYPE_DENSE_COMPLEX:
+    bfMatDenseComplexDenseComplexAddInplace(
+      op1, bfMatDenseComplexFromMatConstPtr(op2));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  END_ERROR_HANDLING() {}
 }
 
 BfMat *bfMatDenseComplexMul(BfMatDenseComplex const *op1, BfMat const *op2) {

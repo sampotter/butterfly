@@ -30,15 +30,39 @@ typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDiagReal BfMatDiagReal;
 
 typedef struct BfMatVtable {
+  BfMat *(*zerosLike)(BfMat const *, BfSize, BfSize);
   void (*deinit)(BfMat *);
   void (*delete)(BfMat **);
   void (*deinitAndDelete)(BfMat **);
   BfMatType (*getType)(BfMat const *);
   BfSize (*numBytes)(BfMat const *);
   void (*save)(BfMat const *, char const *);
+  BfSize (*getNumRows)(BfMat const *);
+  BfSize (*getNumCols)(BfMat const *);
+  BfMat *(*getRowRange)(BfMat *, BfSize, BfSize);
+  BfMat *(*getColRange)(BfMat *, BfSize, BfSize);
+  void (*addInplace)(BfMat *, BfMat const *);
   BfMat *(*mul)(BfMat const *, BfMat const *);
   BfMat *(*lstSq)(BfMat const *, BfMat const *);
 } BfMatVtable;
+
+#define BF_DEFINE_MAT_VTABLE(Subtype)                               \
+  static BfMatVtable matVtbl = {                                        \
+    .zerosLike = (__typeof__(&bfMatZerosLike))bf##Subtype##ZerosLike,   \
+    .deinit = (__typeof__(&bfMatDeinit))bf##Subtype##Deinit,            \
+    .delete = (__typeof__(&bfMatDelete))bf##Subtype##Delete,            \
+    .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bf##Subtype##DeinitAndDelete, \
+    .getType = (__typeof__(&bfMatGetType))bf##Subtype##GetType,         \
+    .numBytes = (__typeof__(&bfMatNumBytes))bf##Subtype##NumBytes,      \
+    .save = (__typeof__(&bfMatSave))bf##Subtype##Save,                  \
+    .getNumRows = (__typeof__(&bfMatGetNumRows))bf##Subtype##GetNumRows, \
+    .getNumCols = (__typeof__(&bfMatGetNumCols))bf##Subtype##GetNumCols, \
+    .getRowRange = (__typeof__(&bfMatGetRowRange))bf##Subtype##GetRowRange, \
+    .getColRange = (__typeof__(&bfMatGetColRange))bf##Subtype##GetColRange, \
+    .addInplace = (__typeof__(&bfMatAddInplace))bf##Subtype##AddInplace, \
+    .mul = (__typeof__(&bfMatMul))bf##Subtype##Mul,                     \
+    .lstSq = (__typeof__(&bfMatLstSq))bf##Subtype##LstSq                \
+  };
 
 typedef enum BfMatProps {
   BF_MAT_PROPS_NONE = 0,
@@ -59,17 +83,21 @@ struct BfMat {
 };
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
+bool bfMatIsTransposed(BfMat const *mat);
+BfMat *bfMatConjTrans(BfMat *mat);
+
+/* BfMat interface: */
+BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);
 void bfMatDelete(BfMat **mat);
 void bfMatDeinitAndDelete(BfMat **mat);
 BfMatType bfMatGetType(BfMat const *mat);
 BfSize bfMatNumBytes(BfMat const *mat);
 void bfMatSave(BfMat const *mat, char const *path);
-bool bfMatIsTransposed(BfMat const *mat);
 BfSize bfMatGetNumRows(BfMat const *mat);
 BfSize bfMatGetNumCols(BfMat const *mat);
-BfMat *bfMatConjTrans(BfMat *mat);
 BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
 BfMat *bfMatGetColRange(BfMat *mat, BfSize j0, BfSize j1);
+void bfMatAddInplace(BfMat *lhs, BfMat const *rhs);
 BfMat *bfMatMul(BfMat const *lhs, BfMat const *rhs);
 BfMat *bfMatLstSq(BfMat const *lhs, BfMat const *rhs);

@@ -49,6 +49,23 @@ BfSize bfMatBlockNumBlocks(BfMatBlock const *mat) {
   return mat->vtbl->numBlocks(mat);
 }
 
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat) {
+  return mat->super.numRows;
+}
+
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat) {
+  return mat->super.numCols;
+}
+
+BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i0) {
+  BfSize p = 0;
+  while (p < mat->super.numRows && mat->rowOffset[p] < i0)
+    ++p;
+  return mat->rowOffset[p] <= i0 && i0 < mat->rowOffset[p + 1] ?
+    p :
+    BF_SIZE_BAD_VALUE;
+}
+
 void bfMatBlockDeinit(BfMatBlock *mat) {
   bfMatDeinit(&mat->super);
 
