@@ -35,6 +35,10 @@ BfMat *bfMatBlockDenseGetMatPtr(BfMatBlockDense *mat) {
   return &mat->super.super;
 }
 
+BfMat const *bfMatBlockDenseGetMatConstPtr(BfMatBlockDense const *mat) {
+  return &mat->super.super;
+}
+
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
   BEGIN_ERROR_HANDLING();
 
@@ -125,11 +129,17 @@ void bfMatBlockDenseSave(BfMatBlockDense const *mat, char const *path) {
 }
 
 BfSize bfMatBlockDenseGetNumRows(BfMatBlockDense const *mat) {
-  return mat->super.rowOffset[mat->super.super.numRows];
+  BfMat const *super = bfMatBlockDenseGetMatConstPtr(mat);
+  return bfMatIsTransposed(super) ?
+    mat->super.colOffset[super->numCols] :
+    mat->super.rowOffset[super->numRows];
 }
 
 BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *mat) {
-  return mat->super.colOffset[mat->super.super.numCols];
+  BfMat const *super = bfMatBlockDenseGetMatConstPtr(mat);
+  return bfMatIsTransposed(super) ?
+    mat->super.rowOffset[super->numRows] :
+    mat->super.colOffset[super->numCols];
 }
 
 BfMatBlockDense *bfMatBlockDenseGetRowRange(BfMatBlockDense *mat, BfSize i0, BfSize i1) {

@@ -167,11 +167,13 @@ void bfMatDenseComplexSave(BfMatDenseComplex const *mat, char const *path) {
 }
 
 BfSize bfMatDenseComplexGetNumRows(BfMatDenseComplex const *mat) {
-  return mat->super.numRows;
+  BfMat const *super = bfMatDenseComplexGetMatConstPtr(mat);
+  return bfMatIsTransposed(super) ? mat->super.numCols : mat->super.numRows;
 }
 
 BfSize bfMatDenseComplexGetNumCols(BfMatDenseComplex const *mat) {
-  return mat->super.numCols;
+  BfMat const *super = bfMatDenseComplexGetMatConstPtr(mat);
+  return bfMatIsTransposed(super) ? mat->super.numRows : mat->super.numCols;
 }
 
 BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *mat) {
