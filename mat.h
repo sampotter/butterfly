@@ -12,6 +12,7 @@ typedef enum BfMatTypes {
   BF_MAT_TYPE_BLOCK_COO,
   BF_MAT_TYPE_BLOCK_DENSE,
   BF_MAT_TYPE_BLOCK_DIAG,
+  BF_MAT_TYPE_PRODUCT,
   BF_MAT_TYPE_COUNT
 } BfMatType;
 
@@ -63,6 +64,22 @@ typedef struct BfMatVtable {
     .mul = (__typeof__(&bfMatMul))bf##Subtype##Mul,                     \
     .lstSq = (__typeof__(&bfMatLstSq))bf##Subtype##LstSq                \
   };
+
+#define BF_DECLARE_INTERFACE_MAT(Subtype)                               \
+  BfMat *bf##Subtype##ZerosLike(Bf##Subtype const *, BfSize, BfSize);   \
+  void bf##Subtype##Deinit(Bf##Subtype *);                              \
+  void bf##Subtype##Delete(Bf##Subtype **);                             \
+  void bf##Subtype##DeinitAndDelete(Bf##Subtype **);                    \
+  BfMatType bf##Subtype##GetType(Bf##Subtype const *);                  \
+  BfSize bf##Subtype##NumBytes(Bf##Subtype const *);                    \
+  void bf##Subtype##Save(Bf##Subtype const *, char const *);            \
+  BfSize bf##Subtype##GetNumRows(Bf##Subtype const *);                  \
+  BfSize bf##Subtype##GetNumCols(Bf##Subtype const *);                  \
+  BfMat *bf##Subtype##GetRowRange(Bf##Subtype *, BfSize, BfSize);       \
+  BfMat *bf##Subtype##GetColRange(Bf##Subtype *, BfSize, BfSize);       \
+  void bf##Subtype##AddInplace(Bf##Subtype *, BfMat const *);          \
+  BfMat *bf##Subtype##Mul(Bf##Subtype const *, BfMat const *);          \
+  BfMat *bf##Subtype##LstSq(Bf##Subtype const *, BfMat const *);
 
 typedef enum BfMatProps {
   BF_MAT_PROPS_NONE = 0,

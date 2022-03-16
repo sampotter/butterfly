@@ -6,6 +6,8 @@
 #include "error.h"
 #include "error_macros.h"
 
+BF_DEFINE_MAT_VTABLE(MatProduct);
+
 BfMatProduct *bfMatProductNew() {
   BEGIN_ERROR_HANDLING();
 
@@ -18,20 +20,33 @@ BfMatProduct *bfMatProductNew() {
   return prod;
 }
 
-void bfMatProductInit(BfMatProduct *prod) {
+void bfMatProductInit(BfMatProduct *mat) {
   BEGIN_ERROR_HANDLING();
 
-  prod->factorArr = bfGetUninitializedPtrArray();
+  /* We don't store the number of rows or columns in `mat->super`
+   * since we always look up the number of rows and columns from the
+   * leftmost and rightmost factors at runtime. */
+  bfMatInit(&mat->super, &matVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
 
-  bfInitPtrArray(&prod->factorArr, /* capacity: */ 4);
+  mat->factorArr = bfGetUninitializedPtrArray();
+
+  bfInitPtrArray(&mat->factorArr, /* capacity: */ 4);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfPtrArrayDeinit(&prod->factorArr);
+    bfPtrArrayDeinit(&mat->factorArr);
 }
 
 BfMat *bfMatProductGetMatPtr(BfMatProduct *mat) {
   return &mat->super;
+}
+
+BfMat *bfMatProductZerosLike(BfMatProduct const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat;
+  (void)numRows;
+  (void)numCols;
+  assert(false);
+  return NULL;
 }
 
 void bfMatProductDeinit(BfMatProduct *prod) {
@@ -51,6 +66,89 @@ void bfMatProductDelete(BfMatProduct **prod) {
 void bfMatProductDeinitAndDelete(BfMatProduct **prod) {
   bfMatProductDeinit(*prod);
   bfMatProductDelete(prod);
+}
+
+BfMatType bfMatProductGetType(BfMatProduct const *mat) {
+  return BF_MAT_TYPE_PRODUCT;
+}
+
+BfSize bfMatProductNumBytes(BfMatProduct const *mat) {
+  (void)mat;
+  assert(false);
+  return BF_SIZE_BAD_VALUE;
+}
+
+void bfMatProductSave(BfMatProduct const *mat, char const *path) {
+  (void)mat;
+  (void)path;
+  assert(false);
+}
+
+BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *factor = NULL;
+  BfSize numRows = BF_SIZE_BAD_VALUE;
+
+  factor = bfMatProductGetFactor((BfMatProduct *)mat, 0);
+  HANDLE_ERROR();
+
+  numRows = bfMatGetNumRows(factor);
+
+  END_ERROR_HANDLING() {}
+
+  return numRows;
+}
+
+BfMat *bfMatProductGetRowRange(BfMatProduct *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMat *bfMatProductGetColRange(BfMatProduct *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)mat);
+  BfMat const *factor = NULL;
+  BfSize numCols = BF_SIZE_BAD_VALUE;
+
+  factor = bfMatProductGetFactor((BfMatProduct *)mat, numFactors - 1);
+  HANDLE_ERROR();
+
+  numCols = bfMatGetNumCols(factor);
+
+  END_ERROR_HANDLING() {}
+
+  return numCols;
+}
+
+void bfMatProductAddInplace(BfMatProduct *, BfMat const *) {
+  assert(false);
+}
+
+BfMat *bfMatProductMul(BfMatProduct const *op1, BfMat const *op2) {
+  /* TODO: add error handling... */
+  BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)op1);
+  BfMat *factor = NULL, *result = (BfMat *)op2, *prev = NULL;
+  BfSize i = numFactors - 1;
+  factor = bfMatProductGetFactor((BfMatProduct *)op1, i);
+  prev = bfMatMul(factor, op2);
+  while (i > 0) {
+    factor = bfMatProductGetFactor((BfMatProduct *)op1, --i);
+    result = bfMatMul(factor, prev);
+    free(prev);
+  }
+  return result;
+}
+
+BfMat *bfMatProductLstSq(BfMatProduct const *, BfMat const *) {
+  assert(false);
+  return NULL;
 }
 
 BfSize bfMatProductNumFactors(BfMatProduct *prod) {
