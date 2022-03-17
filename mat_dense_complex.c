@@ -76,8 +76,34 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
     bfMatDeinit(&mat->super);
 }
 
-BfMat *bfMatDenseComplexZerosLike(BfMatDenseComplex const *mat,
-                                  BfSize numRows, BfSize numCols) {
+BfMatDenseComplex *
+bfMatDenseComplexEmptyLike(BfMatDenseComplex const *mat,
+                           BfSize numRows, BfSize numCols) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *result = NULL;
+
+  if (numRows == BF_SIZE_BAD_VALUE)
+    numRows = bfMatDenseComplexGetNumRows(mat);
+
+  if (numCols == BF_SIZE_BAD_VALUE)
+    numCols = bfMatDenseComplexGetNumCols(mat);
+
+  result = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(result, numRows, numCols);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDelete(&result);
+
+  return result;
+}
+
+BfMatDenseComplex *
+bfMatDenseComplexZerosLike(BfMatDenseComplex const *mat,
+                           BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
   BfMatDenseComplex *zeros = NULL;
@@ -94,7 +120,7 @@ BfMat *bfMatDenseComplexZerosLike(BfMatDenseComplex const *mat,
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDelete(&zeros);
 
-  return bfMatDenseComplexGetMatPtr(zeros);
+  return zeros;
 }
 
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat) {
@@ -203,6 +229,46 @@ BfMat const *bfMatDenseComplexGetMatConstPtr(BfMatDenseComplex const *mat) {
   return &mat->super;
 }
 
+BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat) {
+  return bfMatIsTransposed(bfMatDenseComplexGetMatConstPtr(mat)) ?
+    mat->colStride :
+    mat->rowStride;
+}
+
+BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat) {
+  return bfMatIsTransposed(bfMatDenseComplexGetMatConstPtr(mat)) ?
+    mat->rowStride :
+    mat->colStride;
+}
+
+void bfMatDenseComplexCopy(BfMatDenseComplex *dst,
+                           BfMatDenseComplex const *src) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize dstRows = bfMatDenseComplexGetNumRows(dst);
+  if (dstRows != bfMatDenseComplexGetNumRows(src))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize dstCols = bfMatDenseComplexGetNumCols(dst);
+  if (dstCols != bfMatDenseComplexGetNumCols(src))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize dstRowStride = bfMatDenseComplexGetRowStride(dst);
+  BfSize dstColStride = bfMatDenseComplexGetColStride(dst);
+
+  BfSize srcRowStride = bfMatDenseComplexGetRowStride(src);
+  BfSize srcColStride = bfMatDenseComplexGetColStride(src);
+
+  for (BfSize i = 0; i < dstRows; ++i) {
+    BfComplex *dstData = dst->data + i*dstRowStride;
+    BfComplex const *srcData = src->data + i*srcRowStride;
+    for (BfSize j = 0; j < dstCols; ++j)
+      *(dstData + j*dstColStride) = *(srcData + j*srcColStride);
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
 BfMatDenseComplex *
 bfMatDenseComplexGetColRange(BfMatDenseComplex *mat, BfSize j0, BfSize j1) {
   BfMat *super = bfMatDenseComplexGetMatPtr(mat);
@@ -254,6 +320,26 @@ bfMatDenseComplexGetRowRange(BfMatDenseComplex *mat, BfSize i0, BfSize i1) {
     bfMatDenseComplexDeinitAndDelete(&submat);
 
   return submat;
+}
+
+void
+bfMatDenseComplexSetRowRange(BfMatDenseComplex *mat,
+                             BfSize i0, BfSize i1, BfMat const *rows) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *matRows = bfMatDenseComplexGetRowRange(mat, i0, i1);
+  HANDLE_ERROR();
+
+  switch (bfMatGetType(rows)) {
+  case BF_MAT_TYPE_DENSE_COMPLEX:
+    bfMatDenseComplexCopy(matRows, bfMatDenseComplexFromMatConstPtr(rows));
+    HANDLE_ERROR();
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  END_ERROR_HANDLING() {}
 }
 
 void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,

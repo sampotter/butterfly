@@ -10,6 +10,10 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
 #endif
 }
 
+BfMat *bfMatEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  return mat->vtbl->emptyLike(mat, numRows, numCols);
+}
+
 BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
   return mat->vtbl->zerosLike(mat, numRows, numCols);
 }
@@ -64,6 +68,10 @@ BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
 
 BfMat *bfMatGetColRange(BfMat *mat, BfSize i0, BfSize i1) {
   return mat->vtbl->getColRange(mat, i0, i1);
+}
+
+void bfMatSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows) {
+  mat->vtbl->setRowRange(mat, i0, i1, rows);
 }
 
 BfMat *bfMatConjTrans(BfMat *mat) {

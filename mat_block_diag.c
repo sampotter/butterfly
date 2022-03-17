@@ -6,16 +6,7 @@
 #include "error.h"
 #include "error_macros.h"
 
-static BfMatVtable matVtbl = {
-  .deinit = (__typeof__(&bfMatDeinit))bfMatBlockDiagDeinit,
-  .delete = (__typeof__(&bfMatDelete))bfMatBlockDiagDelete,
-  .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bfMatBlockDiagDeinitAndDelete,
-  .getType = (__typeof__(&bfMatGetType))bfMatBlockDiagGetType,
-  .numBytes = (__typeof__(&bfMatNumBytes))bfMatBlockDiagNumBytes,
-  .save = (__typeof__(&bfMatSave))bfMatBlockDiagSave,
-  .mul = (__typeof__(&bfMatMul))bfMatBlockDiagMul,
-  .lstSq = (__typeof__(&bfMatLstSq))bfMatBlockDiagLstSq
-};
+BF_DEFINE_MAT_VTABLE(MatBlockDiag);
 
 static BfMatBlockVtable matBlockVtbl = {
   .numBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockDiagNumBlocks
@@ -48,6 +39,20 @@ BfMat *bfMatBlockDiagGetMatPtr(BfMatBlockDiag *mat) {
   return &mat->super.super;
 }
 
+BfMat const *bfMatBlockDiagGetMatConstPtr(BfMatBlockDiag const *mat) {
+  return &mat->super.super;
+}
+
+BfMatBlockDiag *bfMatBlockDiagEmptyLike(BfMatBlockDiag const *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMatBlockDiag *bfMatBlockDiagZerosLike(BfMatBlockDiag const *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat) {
   bfMatBlockDeinit(&mat->super);
 }
@@ -78,11 +83,77 @@ void bfMatBlockDiagSave(BfMatBlockDiag const *mat, char const *path) {
   assert(false);
 }
 
-BfMat *bfMatBlockDiagMul(BfMatBlockDiag const *op1, BfMat const *op2) {
-  (void)op1;
-  (void)op2;
+BfSize bfMatBlockDiagGetNumRows(BfMatBlockDiag const *mat) {
+  BfSize numRows = 0;
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(mat);
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    BfMat const *block = bfMatBlockDiagGetBlock(mat, i, i);
+    numRows += bfMatGetNumRows(block);
+  }
+  return numRows;
+}
+
+BfSize bfMatBlockDiagGetNumCols(BfMatBlockDiag const *mat) {
+  BfSize numCols = 0;
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(mat);
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    BfMat const *block = bfMatBlockDiagGetBlock(mat, i, i);
+    numCols += bfMatGetNumCols(block);
+  }
+  return numCols;
+}
+
+BfMatBlockDiag *bfMatBlockDiagGetRowRange(BfMatBlockDiag *, BfSize, BfSize) {
   assert(false);
   return NULL;
+}
+
+BfMatBlockDiag *bfMatBlockDiagGetColRange(BfMatBlockDiag *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+void bfMatBlockDiagSetRowRange(BfMatBlockDiag *, BfSize, BfSize, BfMat const *) {
+  assert(false);
+}
+
+void bfMatBlockDiagAddInplace(BfMatBlockDiag *, BfMat const *) {
+  assert(false);
+}
+
+BfMat *bfMatBlockDiagMul(BfMatBlockDiag const *op1, BfMat const *op2) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatGetNumRows(bfMatBlockDiagGetMatConstPtr(op1));
+  BfSize numCols = bfMatGetNumCols(op2);
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(op1);
+
+  BfMat *result = NULL;
+  BfMat *block = NULL;
+  BfMat *op2Rows = NULL;
+  BfMat *resultRows = NULL;
+
+  result = bfMatEmptyLike(op2, numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0, i0, i1, j0, j1; i < numBlocks; ++i) {
+    i0 = op1->super.rowOffset[i];
+    i1 = op1->super.rowOffset[i + 1];
+    j0 = op1->super.colOffset[i];
+    j1 = op1->super.colOffset[i + 1];
+
+    block = op1->super.block[i];
+    op2Rows = bfMatGetRowRange((BfMat *)op2, j0, j1);
+    resultRows = bfMatMul(block, op2Rows);
+    bfMatSetRowRange(result, i0, i1, resultRows);
+
+    bfMatDeinitAndDelete(&resultRows);
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDeinitAndDelete(&result);
+
+  return result;
 }
 
 BfMat *bfMatBlockDiagLstSq(BfMatBlockDiag const *op1, BfMat const *op2) {
@@ -96,4 +167,27 @@ BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *mat) {
   BfSize m = mat->super.super.numRows;
   BfSize n = mat->super.super.numCols;
   return m < n ? m : n;
+}
+
+BfMat const *
+bfMatBlockDiagGetBlock(BfMatBlockDiag const *mat, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *block = NULL;
+
+  if (i >= bfMatBlockGetNumRowBlocks(&mat->super))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (j >= bfMatBlockGetNumColBlocks(&mat->super))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (i != j)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  block = mat->super.block[i];
+
+  END_ERROR_HANDLING()
+    block = NULL;
+
+  return block;
 }

@@ -91,17 +91,20 @@ void bfMatBlockDenseDeinitAndDelete(BfMatBlockDense **mat) {
   bfMatBlockDenseDelete(mat);
 }
 
-BfMat *bfMatBlockDenseZerosLike(BfMatBlockDense *mat, BfSize numRows, BfSize numCols) {
-  (void)mat;
+BfMatBlockDense *bfMatBlockDenseEmptyLike(BfMatBlockDense const *, BfSize, BfSize) {
   assert(false);
 }
 
-BfMatType bfMatBlockDenseGetType(BfMatBlockDense *mat) {
+BfMatBlockDense *bfMatBlockDenseZerosLike(BfMatBlockDense const *, BfSize, BfSize) {
+  assert(false);
+}
+
+BfMatType bfMatBlockDenseGetType(BfMatBlockDense const *mat) {
   (void)mat;
   return BF_MAT_TYPE_BLOCK_DENSE;
 }
 
-BfSize bfMatBlockDenseNumBytes(BfMatBlockDense *mat) {
+BfSize bfMatBlockDenseNumBytes(BfMatBlockDense const *mat) {
   BfSize num_bytes = 0;
 
   /* memory occupied by mat itself */
@@ -193,17 +196,16 @@ BfMatBlockDense *bfMatBlockDenseGetRowRange(BfMatBlockDense *mat, BfSize i0, BfS
   return view;
 }
 
-BfMatBlockDense *bfMatBlockDenseGetColRange(BfMatBlockDense *mat, BfSize j0, BfSize j1) {
-  (void)mat;
-  (void)j0;
-  (void)j1;
+BfMatBlockDense *bfMatBlockDenseGetColRange(BfMatBlockDense *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
 
-void *bfMatBlockDenseAddInplace(BfMatBlockDense *op1, BfMat *op2) {
-  (void)op1;
-  (void)op2;
+void bfMatBlockDenseSetRowRange(BfMatBlockDense *, BfSize, BfSize, BfMat const *) {
+  assert(false);
+}
+
+void bfMatBlockDenseAddInplace(BfMatBlockDense *, BfMat const *) {
   assert(false);
 }
 

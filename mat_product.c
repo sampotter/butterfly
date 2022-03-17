@@ -41,14 +41,16 @@ BfMat *bfMatProductGetMatPtr(BfMatProduct *mat) {
   return &mat->super;
 }
 
-BfMat *bfMatProductZerosLike(BfMatProduct const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat;
-  (void)numRows;
-  (void)numCols;
 BfMat const *bfMatProductGetMatConstPtr(BfMatProduct const *mat) {
   return &mat->super;
 }
 
+BfMatProduct *bfMatProductEmptyLike(BfMatProduct const *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMatProduct *bfMatProductZerosLike(BfMatProduct const *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
@@ -91,6 +93,9 @@ void bfMatProductSave(BfMatProduct const *mat, char const *path) {
 BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
   BEGIN_ERROR_HANDLING();
 
+  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
   BfMat const *factor = NULL;
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
@@ -104,18 +109,11 @@ BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
   return numRows;
 }
 
-BfMat *bfMatProductGetRowRange(BfMatProduct *, BfSize, BfSize) {
-  assert(false);
-  return NULL;
-}
-
-BfMat *bfMatProductGetColRange(BfMatProduct *, BfSize, BfSize) {
-  assert(false);
-  return NULL;
-}
-
 BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
   BEGIN_ERROR_HANDLING();
+
+  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)mat);
   BfMat const *factor = NULL;
@@ -129,6 +127,20 @@ BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
   END_ERROR_HANDLING() {}
 
   return numCols;
+}
+
+BfMatProduct *bfMatProductGetRowRange(BfMatProduct *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMatProduct *bfMatProductGetColRange(BfMatProduct *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+void bfMatProductSetRowRange(BfMatProduct *, BfSize, BfSize, BfMat const *) {
+  assert(false);
 }
 
 void bfMatProductAddInplace(BfMatProduct *, BfMat const *) {

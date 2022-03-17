@@ -6,19 +6,13 @@ struct BfMatBlockDiag {
   BfMatBlock super;
 };
 
+BF_DECLARE_INTERFACE_MAT(MatBlockDiag);
+
 BfMatBlockDiag *bfMatBlockDiagNew();
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
 BfMat *bfMatBlockDiagGetMatPtr(BfMatBlockDiag *mat);
-
-/* BfMat interface: */
-void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
-void bfMatBlockDiagDelete(BfMatBlockDiag **mat);
-void bfMatBlockDiagDeinitAndDelete(BfMatBlockDiag **mat);
-BfMatType bfMatBlockDiagGetType(BfMatBlockDiag const *mat);
-BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *mat);
-void bfMatBlockDiagSave(BfMatBlockDiag const *mat, char const *path);
-BfMat *bfMatBlockDiagMul(BfMatBlockDiag const *op1, BfMat const *op2);
-BfMat *bfMatBlockDiagLstSq(BfMatBlockDiag const *op1, BfMat const *op2);
+BfMat const *bfMatBlockDiagGetMatConstPtr(BfMatBlockDiag const *mat);
 
 /* BfMatBlock interface: */
 BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *mat);
+BfMat const *bfMatBlockDiagGetBlock(BfMatBlockDiag const *mat, BfSize i, BfSize j);

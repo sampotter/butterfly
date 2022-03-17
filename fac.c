@@ -648,7 +648,6 @@ facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K,
 
   BfPoints2 srcPts, tgtPts;
   BfMatDenseComplex *Z = NULL;
-  BfMat *mat = NULL;
 
   bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
   bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
@@ -656,12 +655,10 @@ facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K,
   Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
   HANDLE_ERROR();
 
-  mat = bfMatDenseComplexGetMatPtr(Z);
-
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDelete(&Z);
 
-  return mat;
+  return bfMatDenseComplexGetMatPtr(Z);
 }
 
 static
@@ -696,8 +693,6 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
                             BfSize level) {
   BEGIN_ERROR_HANDLING();
 
-  BfMat *mat = NULL;
-
   BfPtrArray srcChildNodes, tgtChildNodes;
 
   srcChildNodes = getChildrenAsPtrArray(srcNode);
@@ -718,14 +713,12 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
     tree, K, &srcChildNodes, &tgtChildNodes, level + 1, childBlockMat);
   HANDLE_ERROR();
 
-  mat = bfMatBlockDenseGetMatPtr(childBlockMat);
-
   END_ERROR_HANDLING() {}
 
   bfFreePtrArray(&srcChildNodes);
   bfFreePtrArray(&tgtChildNodes);
 
-  return mat;
+  return bfMatBlockDenseGetMatPtr(childBlockMat);
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
