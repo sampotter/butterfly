@@ -6,6 +6,7 @@
 #include "mat_dense_complex.h"
 #include "quadtree.h"
 #include "rand.h"
+#include "util.h"
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -15,27 +16,29 @@ int main(int argc, char const *argv[]) {
 
   BEGIN_ERROR_HANDLING();
 
+  bfToc();
+
   BfPoints2 points;
   bfReadPoints2FromFile(argv[1], &points);
   HANDLE_ERROR();
-  printf("read points from %s\n", argv[1]);
+  printf("read points from %s [%0.2fs]\n", argv[1], bfToc());
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
   HANDLE_ERROR();
-  printf("built quadtree\n");
+  printf("built quadtree [%0.2fs]\n", bfToc());
 
   BfReal K = 3000;
 
   BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
-  printf("built HODBF matrix\n");
+  printf("built HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMatDenseComplex *x = bfMatDenseComplexNew();
   bfMatDenseComplexInit(x, points.size, 1);
   bfComplexRandn(points.size, x->data);
 
   BfMat *y = bfMatMul(bfMatBlockDenseGetMatPtr(A), bfMatDenseComplexGetMatPtr(x));
-  printf("multiplied with random vector\n");
+  printf("multiplied with random vector [%0.2fs]\n", bfToc());
 
   END_ERROR_HANDLING() {}
 
