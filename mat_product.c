@@ -157,7 +157,8 @@ BfMat *bfMatProductMul(BfMatProduct const *op1, BfMat const *op2) {
   while (i > 0) {
     factor = bfMatProductGetFactor((BfMatProduct *)op1, --i);
     result = bfMatMul(factor, prev);
-    free(prev);
+    bfMatDeinitAndDelete(&prev);
+    prev = result;
   }
   return result;
 }
