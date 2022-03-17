@@ -1,16 +1,66 @@
+#include <assert.h>
 #include <stdio.h>
 
 #include "error_macros.h"
 #include "fac.h"
+#include "helm2.h"
+#include "mat_block_coo.h"
 #include "mat_block_dense.h"
+#include "mat_block_diag.h"
 #include "mat_dense_complex.h"
 #include "quadtree.h"
 #include "rand.h"
 #include "util.h"
 
+void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
+  BfMatType matType = bfMatGetType(mat);
+
+  if (matType == BF_MAT_TYPE_BLOCK_COO) {
+    BfMatBlockCoo const *sub = (BfMatBlockCoo const *)mat;
+    BfSize numBlocks = bfMatBlockCooNumBlocks(sub);
+    for (BfSize k = 0; k < numBlocks; ++k) {
+      BfMat const *block = sub->super.block[k];
+      BfSize di = sub->super.rowOffset[sub->rowInd[k]];
+      BfSize dj = sub->super.colOffset[sub->colInd[k]];
+      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
+    }
+  }
+
+  else if (matType == BF_MAT_TYPE_BLOCK_DENSE) {
+    BfMatBlockDense const *sub = (BfMatBlockDense const *)mat;
+    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(&sub->super);
+    BfSize numColBlocks = bfMatBlockGetNumColBlocks(&sub->super);
+    for (BfSize k = 0; k < numRowBlocks; ++k) {
+      for (BfSize l = 0; l < numColBlocks; ++l) {
+        BfMat const *block = sub->super.block[k*numColBlocks + l];
+        BfSize di = sub->super.rowOffset[k];
+        BfSize dj = sub->super.colOffset[l];
+        printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
+      }
+    }
+  }
+
+  else if (matType == BF_MAT_TYPE_BLOCK_DIAG) {
+    BfMatBlockDiag const *sub = (BfMatBlockDiag const *)mat;
+    BfSize numBlocks = bfMatBlockDiagNumBlocks(sub);
+    for (BfSize k = 0; k < numBlocks; ++k) {
+      BfMat const *block = sub->super.block[k];
+      BfSize di = sub->super.rowOffset[k];
+      BfSize dj = sub->super.colOffset[k];
+      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
+    }
+  }
+
+  else {
+    BfSize i1 = i0 + bfMatGetNumRows(mat);
+    BfSize j1 = j0 + bfMatGetNumCols(mat);
+    fprintf(fp, "%lu %lu %lu %lu %lu %d\n", level, i0, i1, j0, j1, matType);
+  }
+}
+
 int main(int argc, char const *argv[]) {
-  if (argc != 2) {
-    printf("usage: %s <points.bin>\n", argv[0]);
+  if (argc != 3) {
+    printf("usage: %s <points.bin> <blocks.txt>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -30,21 +80,35 @@ int main(int argc, char const *argv[]) {
 
   BfReal K = 3000;
 
+  BfMatDenseComplex *A_true = bfGetHelm2KernelMatrix(&points, &points, K);
+  printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
+
   BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
-  printf("built HODBF matrix [%0.2fs]\n", bfToc());
+  printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMatDenseComplex *x = bfMatDenseComplexNew();
   bfMatDenseComplexInit(x, points.size, 1);
   bfComplexRandn(points.size, x->data);
+  printf("set up random RHS [%0.2fs]\n", bfToc());
+
+  BfMat *y_true = bfMatMul(bfMatDenseComplexGetMatPtr(A_true), bfMatDenseComplexGetMatPtr(x));
+  printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
 
   BfMat *y = bfMatMul(bfMatBlockDenseGetMatPtr(A), bfMatDenseComplexGetMatPtr(x));
-  printf("multiplied with random vector [%0.2fs]\n", bfToc());
+  printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
+
+  FILE *fp = fopen(argv[2], "w");
+  printBlocks(bfMatBlockDenseGetMatConstPtr(A), fp, 0, 0, 2);
+  fclose(fp);
+  printf("wrote blocks to %s [%0.2fs]\n", argv[2], bfToc());
 
   END_ERROR_HANDLING() {}
 
   bfMatDeinitAndDelete(&y);
+  bfMatDeinitAndDelete(&y_true);
   bfMatDenseComplexDeinitAndDelete(&x);
   // bfMatBlockDenseDeinitAndDelete(&mat);
+  bfMatDenseComplexDeinitAndDelete(&A_true);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);
 }
