@@ -45,6 +45,10 @@ BfMat *bfMatProductZerosLike(BfMatProduct const *mat, BfSize numRows, BfSize num
   (void)mat;
   (void)numRows;
   (void)numCols;
+BfMat const *bfMatProductGetMatConstPtr(BfMatProduct const *mat) {
+  return &mat->super;
+}
+
   assert(false);
   return NULL;
 }
