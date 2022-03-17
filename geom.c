@@ -8,9 +8,22 @@
 #include "error.h"
 #include "error_macros.h"
 
-void bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y, BfReal *r) {
-  /* Try to expose some opportunities for vectorization here */
+/* Compute all pairwise distances between the point sets `X` and
+ * `Y`. If `|X| == m` and `|Y| == n`, then the result is a length
+ * `m*n` array of `BfReal`s where the `m*i + j` element is the
+ * distance between `X[i]` and `Y[j]`.
+ *
+ * It is the responsibility of the caller to free the returned
+ * array. */
+BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
+  BEGIN_ERROR_HANDLING();
+
   BfSize m = X->size, n = Y->size;
+
+  BfReal *r = malloc(m*n*sizeof(BfReal));
+  if (r == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
   BfSize k = 0;
   for (BfSize i = 0; i < m; ++i) {
     BfReal const *x = &X->data[i][0];
@@ -19,6 +32,10 @@ void bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y, BfReal *r) {
       r[k++] = hypot(y[0] - x[0], y[1] - x[1]);
     }
   }
+
+  END_ERROR_HANDLING() {}
+
+  return r;
 }
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point) {

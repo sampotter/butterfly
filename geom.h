@@ -17,7 +17,7 @@ typedef struct BfCircle2 {
   BfPoint2 center;
 } BfCircle2;
 
-void bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y, BfReal *r);
+BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y);
 
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point);
 bool bfBbox2ContainsPoints(BfBbox2 const *bbox, BfPoints2 const *points);

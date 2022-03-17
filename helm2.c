@@ -50,17 +50,8 @@ bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts, BfReal 
   BfReal *r = NULL;
 
   /* length m*n array of pairwise dists in row major order */
-  r = malloc(m*n*sizeof(BfReal));
-  if (r == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  bfPoints2PairwiseDists(tgtPts, srcPts, r);
-
-  {
-    BfSize k = 0;
-    for (BfSize i = 0; i < m; ++i)
-      for (BfSize j = 0; j < n; ++j)
-        assert(r[k++] == bfPoint2Dist(tgtPts->data[i], srcPts->data[j]));
-  }
+  r = bfPoints2PairwiseDists(tgtPts, srcPts);
+  HANDLE_ERROR();
 
   BfMatDenseComplex *kernelMat = bfMatDenseComplexNew();
   HANDLE_ERROR();
