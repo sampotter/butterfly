@@ -16,20 +16,12 @@ struct BfMatBlockCoo {
   BfSize *colInd;
 };
 
+BF_DECLARE_INTERFACE_MAT(MatBlockCoo);
+
 BfMatBlockCoo *bfMatBlockCooNew();
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
                        BfSize numBlockCols, BfSize numBlocks);
 BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat);
-
-/* BfMat interface */
-void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
-void bfMatBlockCooDelete(BfMatBlockCoo **mat);
-void bfMatBlockCooDeinitAndDelete(BfMatBlockCoo **mat);
-BfMatType bfMatBlockCooGetType(BfMatBlockCoo *mat);
-BfSize bfMatBlockCooNumBytes(BfMatBlockCoo *mat);
-void bfMatBlockCooSave(BfMatBlockCoo const *mat, char const *path);
-BfMat *bfMatBlockCooMul(BfMatBlockCoo const *op1, BfMat const *op2);
-BfMat *bfMatBlockCooLstSq(BfMatBlockCoo const *lhs, BfMat const *rhs);
 
 /* BfMatBlock interface */
 BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *mat);

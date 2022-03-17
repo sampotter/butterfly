@@ -6,16 +6,7 @@
 #include "error.h"
 #include "error_macros.h"
 
-static BfMatVtable matVtbl = {
-  .deinit = (__typeof__(&bfMatDeinit))bfMatBlockCooDeinit,
-  .delete = (__typeof__(&bfMatDelete))bfMatBlockCooDelete,
-  .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bfMatBlockCooDeinitAndDelete,
-  .getType = (__typeof__(&bfMatGetType))bfMatBlockCooGetType,
-  .numBytes = (__typeof__(&bfMatNumBytes))bfMatBlockCooNumBytes,
-  .save = (__typeof__(&bfMatSave))bfMatBlockCooSave,
-  .mul = (__typeof__(&bfMatMul))bfMatBlockCooMul,
-  .lstSq = (__typeof__(&bfMatLstSq))bfMatBlockCooLstSq
-};
+BF_DEFINE_MAT_VTABLE(MatBlockCoo);
 
 static BfMatBlockVtable matBlockVtbl = {
   .numBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockCooNumBlocks
@@ -62,6 +53,20 @@ BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat) {
   return &mat->super.super;
 }
 
+BfMat const *bfMatBlockCooGetMatConstPtr(BfMatBlockCoo const *mat) {
+  return &mat->super.super;
+}
+
+BfMatBlockCoo *bfMatBlockCooEmptyLike(BfMatBlockCoo const *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMatBlockCoo *bfMatBlockCooZerosLike(BfMatBlockCoo const *, BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
   (void)mat;
   assert(false);
@@ -77,12 +82,12 @@ void bfMatBlockCooDeinitAndDelete(BfMatBlockCoo **mat) {
   bfMatBlockCooDelete(mat);
 }
 
-BfMatType bfMatBlockCooGetType(BfMatBlockCoo *mat) {
+BfMatType bfMatBlockCooGetType(BfMatBlockCoo const *mat) {
   (void)mat;
   return BF_MAT_TYPE_BLOCK_COO;
 }
 
-BfSize bfMatBlockCooNumBytes(BfMatBlockCoo *mat) {
+BfSize bfMatBlockCooNumBytes(BfMatBlockCoo const *mat) {
   BfSize num_bytes = 0;
 
   /* memory occupied by mat itself */
@@ -102,27 +107,87 @@ BfSize bfMatBlockCooNumBytes(BfMatBlockCoo *mat) {
   return num_bytes;
 }
 
-void bfMatBlockCooSave(BfMatBlockCoo const *mat, char const *path) {
-  (void)mat;
-  (void)path;
+void bfMatBlockCooSave(BfMatBlockCoo const *, char const *) {
+  assert(false);
+}
+
+BfSize bfMatBlockCooGetNumRows(BfMatBlockCoo const *mat) {
+  BfMatBlock const *super = &mat->super;
+  return bfMatIsTransposed(&super->super) ?
+    super->colOffset[bfMatBlockGetNumColBlocks(super)] :
+    super->rowOffset[bfMatBlockGetNumRowBlocks(super)];
+}
+
+BfSize bfMatBlockCooGetNumCols(BfMatBlockCoo const *mat) {
+  BfMatBlock const *super = &mat->super;
+  return bfMatIsTransposed(&super->super) ?
+    super->rowOffset[bfMatBlockGetNumRowBlocks(super)] :
+    super->colOffset[bfMatBlockGetNumColBlocks(super)];
+}
+
+BfMatBlockCoo *bfMatBlockCooGetRowRange(BfMatBlockCoo *,
+                                        BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+BfMatBlockCoo *bfMatBlockCooGetColRange(BfMatBlockCoo *,
+                                        BfSize, BfSize) {
+  assert(false);
+  return NULL;
+}
+
+void bfMatBlockCooSetRowRange(BfMatBlockCoo *, BfSize, BfSize, BfMat const *) {
+  assert(false);
+}
+
+void bfMatBlockCooAddInplace(BfMatBlockCoo *, BfMat const *) {
   assert(false);
 }
 
 BfMat *bfMatBlockCooMul(BfMatBlockCoo const *op1, BfMat const *op2) {
-  (void)op1;
-  (void)op2;
-  assert(false);
-  return NULL;
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatGetNumRows(bfMatBlockCooGetMatConstPtr(op1));
+  BfSize numCols = bfMatGetNumCols(op2);
+  BfSize numBlocks = bfMatBlockCooNumBlocks(op1);
+
+  BfMat *result = NULL;
+  BfMat *block = NULL;
+  BfMat *op2Rows = NULL;
+  BfMat *tmp = NULL;
+  BfMat *resultRows = NULL;
+
+  result = bfMatZerosLike(op2, numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0, i0, i1, j0, j1; k < numBlocks; ++k) {
+    i0 = op1->super.rowOffset[op1->rowInd[k]];
+    i1 = op1->super.rowOffset[op1->rowInd[k] + 1];
+    j0 = op1->super.colOffset[op1->colInd[k]];
+    j1 = op1->super.colOffset[op1->colInd[k] + 1];
+
+    block = op1->super.block[k];
+    op2Rows = bfMatGetRowRange((BfMat *)op2, j0, j1);
+    tmp = bfMatMul(block, op2Rows);
+    resultRows = bfMatGetRowRange(result, i0, i1);
+    bfMatAddInplace(resultRows, tmp);
+
+    bfMatDeinitAndDelete(&tmp);
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDeinitAndDelete(&result);
+
+  return result;
+
 }
 
-BfMat *bfMatBlockCooLstSq(BfMatBlockCoo const *lhs, BfMat const *rhs) {
-  (void)lhs;
-  (void)rhs;
+BfMat *bfMatBlockCooLstSq(BfMatBlockCoo const *, BfMat const *) {
+  /* TODO: not sure whether this should be implemented or not... see:
+   * https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse */
   assert(false);
   return NULL;
-
-  // TODO: not sure whether this should be implemented or not... see:
-  //   https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse
 }
 
 BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *mat) {
