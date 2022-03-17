@@ -84,23 +84,17 @@ void bfMatBlockDiagSave(BfMatBlockDiag const *mat, char const *path) {
 }
 
 BfSize bfMatBlockDiagGetNumRows(BfMatBlockDiag const *mat) {
-  BfSize numRows = 0;
-  BfSize numBlocks = bfMatBlockDiagNumBlocks(mat);
-  for (BfSize i = 0; i < numBlocks; ++i) {
-    BfMat const *block = bfMatBlockDiagGetBlock(mat, i, i);
-    numRows += bfMatGetNumRows(block);
-  }
-  return numRows;
+  BfMatBlock const *super = &mat->super;
+  return bfMatIsTransposed(&super->super) ?
+    super->colOffset[bfMatBlockGetNumColBlocks(super)] :
+    super->rowOffset[bfMatBlockGetNumRowBlocks(super)];
 }
 
 BfSize bfMatBlockDiagGetNumCols(BfMatBlockDiag const *mat) {
-  BfSize numCols = 0;
-  BfSize numBlocks = bfMatBlockDiagNumBlocks(mat);
-  for (BfSize i = 0; i < numBlocks; ++i) {
-    BfMat const *block = bfMatBlockDiagGetBlock(mat, i, i);
-    numCols += bfMatGetNumCols(block);
-  }
-  return numCols;
+  BfMatBlock const *super = &mat->super;
+  return bfMatIsTransposed(&super->super) ?
+    super->rowOffset[bfMatBlockGetNumRowBlocks(super)] :
+    super->colOffset[bfMatBlockGetNumColBlocks(super)];
 }
 
 BfMatBlockDiag *bfMatBlockDiagGetRowRange(BfMatBlockDiag *, BfSize, BfSize) {
