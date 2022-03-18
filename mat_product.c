@@ -93,11 +93,11 @@ void bfMatProductSave(BfMatProduct const *mat, char const *path) {
 BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
   BEGIN_ERROR_HANDLING();
 
-  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
-
   BfMat const *factor = NULL;
   BfSize numRows = BF_SIZE_BAD_VALUE;
+
+  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   factor = bfMatProductGetFactor((BfMatProduct *)mat, 0);
   HANDLE_ERROR();
@@ -112,12 +112,13 @@ BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
 BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
   BEGIN_ERROR_HANDLING();
 
+  BfMat const *factor = NULL;
+  BfSize numCols = BF_SIZE_BAD_VALUE;
+
   if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)mat);
-  BfMat const *factor = NULL;
-  BfSize numCols = BF_SIZE_BAD_VALUE;
 
   factor = bfMatProductGetFactor((BfMatProduct *)mat, numFactors - 1);
   HANDLE_ERROR();
