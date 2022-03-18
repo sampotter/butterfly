@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include <openblas/cblas.h>
+
 #include "error_macros.h"
 #include "fac.h"
 #include "helm2.h"
@@ -63,6 +65,9 @@ int main(int argc, char const *argv[]) {
     printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
+
+  /* Do these comparisons on a single thread for now. */
+  openblas_set_num_threads(1);
 
   BEGIN_ERROR_HANDLING();
 

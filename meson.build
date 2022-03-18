@@ -21,7 +21,6 @@ endif
 cc = meson.get_compiler('c')
 
 cblas_dep = cc.find_library('openblas', required : true)
-gsl_dep = dependency('gsl')
 m_dep = cc.find_library('m', required : false)
 
 butterfly_lib_src = [
@@ -52,8 +51,19 @@ butterfly_lib_src = [
 butterfly_lib = library(
   'butterfly',
   butterfly_lib_src,
-  dependencies : [cblas_dep, gsl_dep, m_dep]
+  dependencies : [cblas_dep, m_dep]
 )
 
-executable('bf_one_block', 'bf_one_block.c', link_with : butterfly_lib)
-executable('bf_all_blocks', 'bf_all_blocks.c', link_with : butterfly_lib)
+executable(
+  'bf_one_block',
+  'bf_one_block.c',
+  dependencies : cblas_dep,
+  link_with : butterfly_lib
+)
+
+executable(
+  'bf_all_blocks',
+  'bf_all_blocks.c',
+  dependencies : cblas_dep,
+  link_with : butterfly_lib
+)
