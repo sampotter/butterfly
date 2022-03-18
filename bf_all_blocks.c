@@ -59,26 +59,30 @@ void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
 }
 
 int main(int argc, char const *argv[]) {
-  if (argc != 3) {
-    printf("usage: %s <points.bin> <blocks.txt>\n", argv[0]);
+  if (argc != 4) {
+    printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   BEGIN_ERROR_HANDLING();
 
+  char const *K_str = argv[1];
+  char const *points_path_str = argv[2];
+  char const *blocks_path_str = argv[3];
+
   bfToc();
 
   BfPoints2 points;
-  bfReadPoints2FromFile(argv[1], &points);
+  bfReadPoints2FromFile(points_path_str, &points);
   HANDLE_ERROR();
-  printf("read points from %s [%0.2fs]\n", argv[1], bfToc());
+  printf("read points from %s [%0.2fs]\n", points_path_str, bfToc());
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
-  BfReal K = 3000;
+  BfReal K = atoi(K_str);
 
   BfMatDenseComplex *A_true = bfGetHelm2KernelMatrix(&points, &points, K);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
@@ -97,10 +101,10 @@ int main(int argc, char const *argv[]) {
   BfMat *y = bfMatMul(bfMatBlockDenseGetMatPtr(A), bfMatDenseComplexGetMatPtr(x));
   printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
 
-  FILE *fp = fopen(argv[2], "w");
+  FILE *fp = fopen(blocks_path_str, "w");
   printBlocks(bfMatBlockDenseGetMatConstPtr(A), fp, 0, 0, 2);
   fclose(fp);
-  printf("wrote blocks to %s [%0.2fs]\n", argv[2], bfToc());
+  printf("wrote blocks to %s [%0.2fs]\n", blocks_path_str, bfToc());
 
   END_ERROR_HANDLING() {}
 
