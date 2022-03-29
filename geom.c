@@ -214,3 +214,47 @@ void bfSavePoints2(BfPoints2 const *points, char const *path) {
 
   fclose(fp);
 }
+
+BfVectors2 bfGetUninitializedVectors2() {
+  return (BfVectors2) {.data = NULL, .size = 0};
+}
+
+void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
+  if (numVectors == 0) {
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+    return;
+  }
+
+  vectors->size = numVectors;
+
+  vectors->data = malloc(numVectors*sizeof(BfVector2));
+  if (vectors->data == NULL)
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+}
+
+void bfFreeVectors2(BfVectors2 *vectors) {
+  free(vectors->data);
+}
+
+void bfGetVectorsByIndex(BfVectors2 const *vectors,
+                        BfSize numInds, BfSize const *inds,
+                        BfVectors2 *indexedVectors)
+{
+  BEGIN_ERROR_HANDLING();
+
+  bfInitEmptyVectors2(indexedVectors, numInds);
+  HANDLE_ERROR();
+
+  BfVector2 const *vector = (BfVector2 const *)vectors->data;
+  BfVector2 *indexedVector = indexedVectors->data;
+
+  for (BfSize i = 0, j; i < numInds; ++i) {
+    j = inds[i];
+    indexedVector[i][0] = vector[j][0];
+    indexedVector[i][1] = vector[j][1];
+  }
+
+  END_ERROR_HANDLING() {
+    bfFreeVectors2(indexedVectors);
+  }
+}

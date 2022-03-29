@@ -8,6 +8,11 @@ typedef struct BfPoints2 {
   BfSize size;
 } BfPoints2;
 
+typedef struct BfVectors2 {
+  BfVector2 *data;
+  BfSize size;
+} BfVectors2;
+
 typedef struct BfBbox2 {
   BfPoint2 min, max;
 } BfBbox2;
@@ -40,3 +45,10 @@ void bfGetPointsByIndex(BfPoints2 const *points,
                                 BfPoints2 *indexedPoints);
 void bfPrintPoints2(BfPoints2 const *points);
 void bfSavePoints2(BfPoints2 const *points, char const *path);
+
+BfVectors2 bfGetUninitializedVectors2();
+void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors);
+void bfFreeVectors2(BfVectors2 *vectors);
+void bfGetVectorsByIndex(BfVectors2 const *vectors,
+                        BfSize numInds, BfSize const *inds,
+                        BfVectors2 *indexedVectors);
