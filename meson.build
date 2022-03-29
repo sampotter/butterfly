@@ -21,6 +21,7 @@ endif
 cc = meson.get_compiler('c')
 
 cblas_dep = cc.find_library('openblas', required : true)
+gsl_dep = cc.find_library('gsl', required : true)
 m_dep = cc.find_library('m', required : false)
 
 butterfly_lib_src = [
@@ -51,7 +52,7 @@ butterfly_lib_src = [
 butterfly_lib = library(
   'butterfly',
   butterfly_lib_src,
-  dependencies : [cblas_dep, m_dep]
+  dependencies : [cblas_dep, gsl_dep, m_dep]
 )
 
 executable(

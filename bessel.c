@@ -245,3 +245,18 @@ BfComplex bf_H0(BfReal x) {
     // UNDERFLOW_ERROR(result);
     assert(false); // TODO: throw error
 }
+
+/* TODO: pull in GSL code so we can create opportunities for
+ * vectorization here, as well... */
+
+BfReal bf_j1(BfReal x) {
+  return gsl_sf_bessel_J1(x);
+}
+
+BfReal bf_y1(BfReal x) {
+  return gsl_sf_bessel_Y1(x);
+}
+
+BfComplex bf_H1(BfReal x) {
+  return bf_j1(x) + I*bf_y1(x);
+}
