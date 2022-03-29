@@ -694,6 +694,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   BEGIN_ERROR_HANDLING();
 
   BfPtrArray srcChildNodes, tgtChildNodes;
+  BfMatBlockDense *childBlockMat = NULL;
 
   srcChildNodes = getChildrenAsPtrArray(srcNode);
   HANDLE_ERROR();
@@ -701,7 +702,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   tgtChildNodes = getChildrenAsPtrArray(tgtNode);
   HANDLE_ERROR();
 
-  BfMatBlockDense *childBlockMat = bfMatBlockDenseNew();
+  childBlockMat = bfMatBlockDenseNew();
   HANDLE_ERROR();
 
   BfSize numBlockRows = bfPtrArraySize(&tgtChildNodes);
