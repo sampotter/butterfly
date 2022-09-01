@@ -4,7 +4,7 @@
 
 ## Compilation
 
-Use Meson to compile this library:
+Use [Meson](https://mesonbuild.com/) to compile this library:
 ```
 meson setup builddir
 cd builddir
