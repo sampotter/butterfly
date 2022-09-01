@@ -68,3 +68,10 @@ executable(
   dependencies : cblas_dep,
   link_with : butterfly_lib
 )
+
+executable(
+  'helm2_bie_ellipse_kapur_rokhlin',
+  'examples/helm2_bie_ellipse_kapur_rokhlin.c',
+  dependencies : cblas_dep,
+  link_with : butterfly_lib
+)

@@ -60,6 +60,25 @@ void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
   }
 }
 
+static BfMatBlockCoo *unravel(BfMatBlockDense *A) {
+//   BEGIN_ERROR_HANDLING();
+
+  BfMatBlockCoo *coo = bfMatBlockCooNew();
+
+  for (size_t i = 0; i < bfMatBlockGetNumRowBlocks(&A->super); ++i) {
+    for (size_t j = 0; j < bfMatBlockGetNumColBlocks(&A->super); ++j) {
+      BfMat const *block = bfMatBlockDenseGetBlock(A, i, j);
+      BfMatType matType = bfMatGetType(block);
+      printf("%lu, %lu: %d\n", i, j, matType);
+    }
+  }
+
+//   END_ERROR_HANDLING()
+//     bfMatBlockCooDeinitAndDelete(&coo);
+
+  return coo;
+}
+
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
     printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
@@ -94,6 +113,9 @@ int main(int argc, char const *argv[]) {
 
   BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
+
+  BfMatBlockCoo *A_unravelled = unravel(A);
+  (void)A_unravelled;
 
   BfMatDenseComplex *x = bfMatDenseComplexNew();
   bfMatDenseComplexInit(x, points.size, 1);

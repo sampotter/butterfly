@@ -4,6 +4,8 @@
 #include "error.h"
 #include "geom.h"
 #include "mat_dense_complex.h"
+#include "quadrature.h"
+#include "quadtree.h"
 
 BfComplex bfHelm2GetKernelValue(BfReal r, BfReal K);
 
