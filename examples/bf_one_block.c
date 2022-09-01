@@ -37,6 +37,9 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   puts("built quadtree");
 
+  bfQuadtreeSaveBoxesToTextFile(&tree, "quadtree.txt");
+  puts("saved quadtree boxes to quadtree.txt");
+
   BfReal K = 3000;
 
   bfSeed(1234);

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <bf/error_macros.h>
@@ -249,6 +250,27 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   END_ERROR_HANDLING() {
     bfFreeQuadtree(tree);
   }
+}
+
+void saveBoxesToTextFileRec(BfQuadtreeNode const *node, FILE *fp) {
+  BfReal xmin = node->bbox.min[0];
+  BfReal xmax = node->bbox.max[0];
+  BfReal ymin = node->bbox.min[1];
+  BfReal ymax = node->bbox.max[1];
+
+  fprintf(fp, "%g %g %g %g\n", xmin, xmax, ymin, ymax);
+
+  for (BfSize i = 0; i < 4; ++i)
+    if (node->child[i])
+      saveBoxesToTextFileRec(node->child[i], fp);
+}
+
+void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path) {
+  FILE *fp = fopen(path, "w");
+
+  saveBoxesToTextFileRec(tree->root, fp);
+
+  fclose(fp);
 }
 
 static void recFreeQuadtreeNode(BfQuadtreeNode *node) {

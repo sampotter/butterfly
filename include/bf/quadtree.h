@@ -78,6 +78,8 @@ struct BfQuadtree {
 void
 bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
 
+void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);
+
 void bfFreeQuadtree(BfQuadtree *tree);
 
 void
