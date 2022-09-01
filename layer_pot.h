@@ -1,0 +1,7 @@
+#pragma once
+
+typedef enum BfLayerPotentials {
+  BF_LAYER_POTENTIAL_SINGLE,
+  BF_LAYER_POTENTIAL_PV_DOUBLE,
+  BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE
+} BfLayerPotential;
