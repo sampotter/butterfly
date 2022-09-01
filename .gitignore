@@ -10,4 +10,6 @@ GPATH
 GRTAGS
 GTAGS
 __pycache__
+builddir
+compile_commands.json
 vgcore.*
