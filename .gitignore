@@ -4,6 +4,8 @@
 *.png
 *.txt
 *~
+.#*
+.cache
 GPATH
 GRTAGS
 GTAGS
