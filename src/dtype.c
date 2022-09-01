@@ -1,8 +1,8 @@
-#include "dtype.h"
+#include <bf/dtype.h>
 
 #include <assert.h>
 
-#include "mat.h"
+#include <bf/mat.h>
 
 BfSize bfDtypeSize(enum BfDtypes dtype) {
   static BfSize size[] = {

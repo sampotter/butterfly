@@ -1,11 +1,11 @@
-#include "mat_block.h"
+#include <bf/mat_block.h>
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "error.h"
-#include "error_macros.h"
-#include "util.h"
+#include <bf/error.h>
+#include <bf/error_macros.h>
+#include <bf/util.h>
 
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,

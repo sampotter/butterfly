@@ -1,10 +1,10 @@
-#include "mat_block_coo.h"
+#include <bf/mat_block_coo.h>
 
 #include <assert.h>
 #include <stdlib.h>
 
-#include "error.h"
-#include "error_macros.h"
+#include <bf/error.h>
+#include <bf/error_macros.h>
 
 BF_DEFINE_MAT_VTABLE(MatBlockCoo);
 

@@ -1,11 +1,11 @@
-#include "quadtree.h"
+#include <bf/quadtree.h>
 
 #include <assert.h>
 #include <math.h>
 #include <string.h>
 
-#include "error_macros.h"
-#include "ptr_array.h"
+#include <bf/error_macros.h>
+#include <bf/ptr_array.h>
 
 #define SWAP(x, y) do {                         \
     __typeof__(x) tmp = x;                      \

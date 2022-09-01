@@ -1,9 +1,9 @@
-#include "rand.h"
+#include <bf/rand.h>
 
 #include <math.h>
 #include <stdint.h>
 
-#include "const.h"
+#include <bf/const.h>
 
 /* Declaration of PRNGs. Implementations are in xoshiro256plus.c and
  * splitmix64.c. These PRNGs come from https://prng.di.unimi.it/ and

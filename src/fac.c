@@ -1,17 +1,17 @@
-#include "fac.h"
+#include <bf/fac.h>
 
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
-#include "error_macros.h"
-#include "helm2.h"
-#include "mat_block.h"
-#include "mat_block_coo.h"
-#include "mat_block_dense.h"
-#include "mat_block_diag.h"
-#include "mat_product.h"
-#include "util.h"
+#include <bf/error_macros.h>
+#include <bf/helm2.h>
+#include <bf/mat_block.h>
+#include <bf/mat_block_coo.h>
+#include <bf/mat_block_dense.h>
+#include <bf/mat_block_diag.h>
+#include <bf/mat_product.h>
+#include <bf/util.h>
 
 #define MAX_DENSE_MATRIX_SIZE 16384 // == 128*128
 

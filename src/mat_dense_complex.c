@@ -1,13 +1,13 @@
-#include "mat_dense_complex.h"
+#include <bf/mat_dense_complex.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "blas.h"
-#include "error.h"
-#include "error_macros.h"
-#include "mat_diag_real.h"
+#include <bf/blas.h>
+#include <bf/error.h>
+#include <bf/error_macros.h>
+#include <bf/mat_diag_real.h>
 
 BF_DEFINE_MAT_VTABLE(MatDenseComplex);
 

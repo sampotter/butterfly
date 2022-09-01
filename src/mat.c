@@ -1,4 +1,4 @@
-#include "mat.h"
+#include <bf/mat.h>
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
   mat->vtbl = vtbl;

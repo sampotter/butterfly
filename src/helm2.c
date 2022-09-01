@@ -1,12 +1,12 @@
-#include "helm2.h"
+#include <bf/helm2.h>
 
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
-#include "bessel.h"
-#include "const.h"
-#include "error_macros.h"
+#include <bf/bessel.h>
+#include <bf/const.h>
+#include <bf/error_macros.h>
 
 BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
                                    BfCircle2 const *circ2,

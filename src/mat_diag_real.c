@@ -1,11 +1,11 @@
-#include "mat_diag_real.h"
+#include <bf/mat_diag_real.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "error.h"
-#include "error_macros.h"
+#include <bf/error.h>
+#include <bf/error_macros.h>
 
 static BfMatVtable matDiagRealVtbl = {
   .deinit = (__typeof__(&bfMatDeinit))bfMatDiagRealDeinit,

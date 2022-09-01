@@ -3,16 +3,16 @@
 
 #include <openblas/cblas.h>
 
-#include "error_macros.h"
-#include "fac.h"
-#include "helm2.h"
-#include "mat_block_coo.h"
-#include "mat_block_dense.h"
-#include "mat_block_diag.h"
-#include "mat_dense_complex.h"
-#include "quadtree.h"
-#include "rand.h"
-#include "util.h"
+#include <bf/error_macros.h>
+#include <bf/fac.h>
+#include <bf/helm2.h>
+#include <bf/mat_block_coo.h>
+#include <bf/mat_block_dense.h>
+#include <bf/mat_block_diag.h>
+#include <bf/mat_dense_complex.h>
+#include <bf/quadtree.h>
+#include <bf/rand.h>
+#include <bf/util.h>
 
 void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
   BfMatType matType = bfMatGetType(mat);
@@ -84,9 +84,6 @@ int main(int argc, char const *argv[]) {
     printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-
-  /* Do these comparisons on a single thread for now. */
-  openblas_set_num_threads(1);
 
   BEGIN_ERROR_HANDLING();
 

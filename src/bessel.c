@@ -1,11 +1,11 @@
-#include "bessel.h"
+#include <bf/bessel.h>
 
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
 
-#include "cheb.h"
-#include "const.h"
+#include <bf/cheb.h>
+#include <bf/const.h>
 
 static BfReal bj0_data[13] = {
    0.100254161968939137,

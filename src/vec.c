@@ -1,4 +1,4 @@
-#include "vec.h"
+#include <bf/vec.h>
 
 #include <assert.h>
 #include <math.h>

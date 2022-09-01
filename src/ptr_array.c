@@ -1,10 +1,10 @@
-#include "ptr_array.h"
+#include <bf/ptr_array.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "error_macros.h"
+#include <bf/error_macros.h>
 
 BfPtrArray bfGetUninitializedPtrArray() {
   return (BfPtrArray) {

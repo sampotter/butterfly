@@ -1,12 +1,12 @@
-#include "geom.h"
+#include <bf/geom.h>
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "const.h"
-#include "error.h"
-#include "error_macros.h"
+#include <bf/const.h>
+#include <bf/error.h>
+#include <bf/error_macros.h>
 
 /* Compute all pairwise distances between the point sets `X` and
  * `Y`. If `|X| == m` and `|Y| == n`, then the result is a length

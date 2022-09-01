@@ -1,4 +1,4 @@
-#include "cheb.h"
+#include <bf/cheb.h>
 
 BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
   BfReal d  = 0.0;

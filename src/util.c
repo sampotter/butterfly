@@ -1,4 +1,4 @@
-#include "util.h"
+#include <bf/util.h>
 
 #include <time.h>
 
