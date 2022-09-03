@@ -34,6 +34,7 @@ butterfly_lib_src = [
   'src/mat_dense_complex.c',
   'src/mat_diag_real.c',
   'src/mat_product.c',
+  'src/mat_types.c',
   'src/ptr_array.c',
   'src/quadtree.c',
   'src/rand.c',
