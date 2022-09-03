@@ -16,31 +16,31 @@ cc = meson.get_compiler('c')
 
 cblas_dep = cc.find_library('openblas', required : true)
 gsl_dep = cc.find_library('gsl', required : true)
-m_dep = cc.find_library('m', required : false)
+m_dep = meson.get_compiler('c').find_library('m', required : false)
 
 butterfly_lib_src = [
-  './src/bessel.c',
-  './src/cheb.c',
-  './src/dtype.c',
-  './src/error.c',
-  './src/fac.c',
-  './src/geom.c',
-  './src/helm2.c',
-  './src/mat.c',
-  './src/mat_block.c',
-  './src/mat_block_coo.c',
-  './src/mat_block_dense.c',
-  './src/mat_block_diag.c',
-  './src/mat_dense_complex.c',
-  './src/mat_diag_real.c',
-  './src/mat_product.c',
-  './src/ptr_array.c',
-  './src/quadtree.c',
-  './src/rand.c',
-  './src/splitmix64.c',
-  './src/util.c',
-  './src/vec.c',
-  './src/xoshiro256plus.c',
+  'src/bessel.c',
+  'src/cheb.c',
+  'src/dtype.c',
+  'src/error.c',
+  'src/fac.c',
+  'src/geom.c',
+  'src/helm2.c',
+  'src/mat.c',
+  'src/mat_block.c',
+  'src/mat_block_coo.c',
+  'src/mat_block_dense.c',
+  'src/mat_block_diag.c',
+  'src/mat_dense_complex.c',
+  'src/mat_diag_real.c',
+  'src/mat_product.c',
+  'src/ptr_array.c',
+  'src/quadtree.c',
+  'src/rand.c',
+  'src/splitmix64.c',
+  'src/util.c',
+  'src/vec.c',
+  'src/xoshiro256plus.c',
 ]
 
 butterfly_inc = include_directories('include')
