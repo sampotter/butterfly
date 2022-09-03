@@ -163,7 +163,6 @@ BfMatDenseComplex const *bfMatDenseComplexFromMatConstPtr(BfMat const *mat) {
 }
 
 BfMatType bfMatDenseComplexGetType(BfMatDenseComplex const *mat) {
-  (void)mat;
   return BF_MAT_TYPE_DENSE_COMPLEX;
 }
 
