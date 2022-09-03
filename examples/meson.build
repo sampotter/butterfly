@@ -17,6 +17,7 @@ python_scripts = [
   'make_test_data.py',
   'plot_bf_one_block.py',
   'plot_blocks.py',
+  'plot_points_and_quadtree.py',
   'scratch.py',
   'test.py',
   'util.py',
