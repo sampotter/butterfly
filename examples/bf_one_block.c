@@ -114,12 +114,11 @@ int main(int argc, char const *argv[]) {
   for (BfSize i = 0; i < numFactors; ++i) {
     factor = bfMatProductGetFactor(factorization, i);
 
-    // TODO: do this cast with a function w/ error handling
-    BfMatBlock *matBlock = (BfMatBlock *)factor;
-
     BfMatType matType = bfMatGetType(factor);
-    BfSize numBlockRows = bfMatGetNumRows(factor);
-    BfSize numBlockCols = bfMatGetNumCols(factor);
+
+    BfMatBlock *matBlock = bfMatToMatBlock(factor);
+    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+    BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
     BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
 
     char path[1024];
@@ -128,8 +127,8 @@ int main(int argc, char const *argv[]) {
     chdir(path);
 
     FILE *fp = fopen("info.txt", "w");
-    fprintf(fp, "numBlockRows %lu\n", numBlockRows);
-    fprintf(fp, "numBlockCols %lu\n", numBlockCols);
+    fprintf(fp, "numBlockRows %lu\n", numRowBlocks);
+    fprintf(fp, "numBlockCols %lu\n", numColBlocks);
     fprintf(fp, "numBlocks %lu\n", numBlocks);
     fclose(fp);
 
@@ -154,11 +153,11 @@ int main(int argc, char const *argv[]) {
     fclose(fp);
 
     fp = fopen("rowOffset.bin", "w");
-    fwrite(matBlock->rowOffset, sizeof(BfSize), numBlockRows + 1, fp);
+    fwrite(matBlock->rowOffset, sizeof(BfSize), numRowBlocks + 1, fp);
     fclose(fp);
 
     fp = fopen("colOffset.bin", "w");
-    fwrite(matBlock->colOffset, sizeof(BfSize), numBlockCols + 1, fp);
+    fwrite(matBlock->colOffset, sizeof(BfSize), numColBlocks + 1, fp);
     fclose(fp);
 
     for (BfSize j = 0; j < numBlocks; ++j) {
@@ -217,7 +216,6 @@ int main(int argc, char const *argv[]) {
   }
 
   bfMatDenseComplexDeinitAndDelete(&Q);
-  // bfFreeFac(numFactors, &factor);
   bfMatDenseComplexDeinitAndDelete(&Z_gt);
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);
