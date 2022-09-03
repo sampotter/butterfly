@@ -104,6 +104,11 @@ BfMatType bfMatBlockDenseGetType(BfMatBlockDense const *mat) {
   return BF_MAT_TYPE_BLOCK_DENSE;
 }
 
+bool bfMatBlockDenseInstanceOf(BfMatBlockDense const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatBlockDenseGetMatConstPtr(mat);
+  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+}
+
 BfSize bfMatBlockDenseNumBytes(BfMatBlockDense const *mat) {
   BfSize num_bytes = 0;
 

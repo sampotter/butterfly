@@ -87,6 +87,11 @@ BfMatType bfMatBlockCooGetType(BfMatBlockCoo const *mat) {
   return BF_MAT_TYPE_BLOCK_COO;
 }
 
+bool bfMatBlockCooInstanceOf(BfMatBlockCoo const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatBlockCooGetMatConstPtr(mat);
+  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+}
+
 BfSize bfMatBlockCooNumBytes(BfMatBlockCoo const *mat) {
   BfSize num_bytes = 0;
 

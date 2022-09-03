@@ -71,6 +71,11 @@ BfMatType bfMatBlockDiagGetType(BfMatBlockDiag const *mat) {
   return BF_MAT_TYPE_BLOCK_DIAG;
 }
 
+bool bfMatBlockDiagInstanceOf(BfMatBlockDiag const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatBlockDiagGetMatConstPtr(mat);
+  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+}
+
 BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *mat) {
   (void)mat;
   assert(false);

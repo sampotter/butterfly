@@ -167,6 +167,11 @@ BfMatType bfMatDenseComplexGetType(BfMatDenseComplex const *mat) {
   return BF_MAT_TYPE_DENSE_COMPLEX;
 }
 
+bool bfMatDenseComplexInstanceOf(BfMatDenseComplex const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatDenseComplexGetMatConstPtr(mat);
+  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+}
+
 BfSize bfMatDenseComplexNumBytes(BfMatDenseComplex const *mat) {
   (void)mat;
   assert(false);

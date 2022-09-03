@@ -42,6 +42,10 @@ enum BfMatTypes bfMatGetType(BfMat const *mat) {
   return mat->vtbl->getType(mat);
 }
 
+bool bfMatInstanceOf(BfMat const *mat, BfMatType matType) {
+  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
+}
+
 BfSize bfMatNumBytes(BfMat const *mat) {
   return mat->vtbl->numBytes(mat);
 }

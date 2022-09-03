@@ -78,6 +78,11 @@ BfMatType bfMatProductGetType(BfMatProduct const *mat) {
   return BF_MAT_TYPE_PRODUCT;
 }
 
+bool bfMatProductInstanceOf(BfMatProduct const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatProductGetMatConstPtr(mat);
+  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+}
+
 BfSize bfMatProductNumBytes(BfMatProduct const *mat) {
   (void)mat;
   assert(false);

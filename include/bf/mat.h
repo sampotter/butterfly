@@ -38,6 +38,7 @@ typedef struct BfMatVtable {
   void (*delete)(BfMat **);
   void (*deinitAndDelete)(BfMat **);
   BfMatType (*getType)(BfMat const *);
+  bool (*instanceOf)(BfMat const *, BfMatType);
   BfSize (*numBytes)(BfMat const *);
   void (*save)(BfMat const *, char const *);
   BfSize (*getNumRows)(BfMat const *);
@@ -58,6 +59,7 @@ typedef struct BfMatVtable {
     .delete = (__typeof__(&bfMatDelete))bf##Subtype##Delete,            \
     .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bf##Subtype##DeinitAndDelete, \
     .getType = (__typeof__(&bfMatGetType))bf##Subtype##GetType,         \
+    .instanceOf = (__typeof__(&bfMatInstanceOf))bf##Subtype##InstanceOf, \
     .numBytes = (__typeof__(&bfMatNumBytes))bf##Subtype##NumBytes,      \
     .save = (__typeof__(&bfMatSave))bf##Subtype##Save,                  \
     .getNumRows = (__typeof__(&bfMatGetNumRows))bf##Subtype##GetNumRows, \
@@ -77,6 +79,7 @@ typedef struct BfMatVtable {
   void bf##Subtype##Delete(Bf##Subtype **);                             \
   void bf##Subtype##DeinitAndDelete(Bf##Subtype **);                    \
   BfMatType bf##Subtype##GetType(Bf##Subtype const *);                  \
+  bool bf##Subtype##InstanceOf(Bf##Subtype const *, BfMatType);         \
   BfSize bf##Subtype##NumBytes(Bf##Subtype const *);                    \
   void bf##Subtype##Save(Bf##Subtype const *, char const *);            \
   BfSize bf##Subtype##GetNumRows(Bf##Subtype const *);                  \
@@ -117,6 +120,7 @@ void bfMatDeinit(BfMat *mat);
 void bfMatDelete(BfMat **mat);
 void bfMatDeinitAndDelete(BfMat **mat);
 BfMatType bfMatGetType(BfMat const *mat);
+bool bfMatInstanceOf(BfMat const *mat, BfMatType matType);
 
 BfSize bfMatNumBytes(BfMat const *mat);
 void bfMatSave(BfMat const *mat, char const *path);
