@@ -7,6 +7,21 @@
 #include <bf/error_macros.h>
 #include <bf/util.h>
 
+BfMatBlock *bfMatToMatBlock(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = NULL;
+
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  matBlock = (BfMatBlock *)mat;
+
+  END_ERROR_HANDLING() {}
+
+  return matBlock;
+}
+
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols)

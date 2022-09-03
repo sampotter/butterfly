@@ -37,6 +37,8 @@ struct BfMatBlock {
   BfSize *colOffset;
 };
 
+BfMatBlock *bfMatToMatBlock(BfMat *mat);
+
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
