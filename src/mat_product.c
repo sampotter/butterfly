@@ -45,6 +45,10 @@ BfMat const *bfMatProductGetMatConstPtr(BfMatProduct const *mat) {
   return &mat->super;
 }
 
+void bfMatProductDelete(BfMatProduct **mat) {
+  bfMatProductDeinitAndDealloc(mat);
+}
+
 BfMatProduct *bfMatProductEmptyLike(BfMatProduct const *, BfSize, BfSize) {
   assert(false);
   return NULL;
@@ -58,20 +62,20 @@ BfMatProduct *bfMatProductZerosLike(BfMatProduct const *, BfSize, BfSize) {
 void bfMatProductDeinit(BfMatProduct *prod) {
   for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
     BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
-    bfMatDeinitAndDelete(&mat);
+    bfMatDelete(&mat);
   }
 
   bfPtrArrayDeinit(&prod->factorArr);
 }
 
-void bfMatProductDelete(BfMatProduct **prod) {
+void bfMatProductDealloc(BfMatProduct **prod) {
   free(*prod);
   *prod = NULL;
 }
 
-void bfMatProductDeinitAndDelete(BfMatProduct **prod) {
+void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
   bfMatProductDeinit(*prod);
-  bfMatProductDelete(prod);
+  bfMatProductDealloc(prod);
 }
 
 BfMatType bfMatProductGetType(BfMatProduct const *mat) {
@@ -163,7 +167,7 @@ BfMat *bfMatProductMul(BfMatProduct const *op1, BfMat const *op2) {
   while (i > 0) {
     factor = bfMatProductGetFactor((BfMatProduct *)op1, --i);
     result = bfMatMul(factor, prev);
-    bfMatDeinitAndDelete(&prev);
+    bfMatDelete(&prev);
     prev = result;
   }
   return result;

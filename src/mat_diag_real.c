@@ -8,9 +8,6 @@
 #include <bf/error_macros.h>
 
 static BfMatVtable matDiagRealVtbl = {
-  .deinit = (__typeof__(&bfMatDeinit))bfMatDiagRealDeinit,
-  .delete = (__typeof__(&bfMatDelete))bfMatDiagRealDelete,
-  .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bfMatDiagRealDeinitAndDelete,
   .getType = (__typeof__(&bfMatGetType))bfMatDiagRealGetType,
   .numBytes = (__typeof__(&bfMatNumBytes))bfMatDiagRealNumBytes,
   .save = (__typeof__(&bfMatSave))bfMatDiagRealSave,
@@ -74,14 +71,14 @@ void bfMatDiagRealDeinit(BfMatDiagReal *mat) {
   mat->data = NULL;
 }
 
-void bfMatDiagRealDelete(BfMatDiagReal **mat) {
+void bfMatDiagRealDealloc(BfMatDiagReal **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatDiagRealDeinitAndDelete(BfMatDiagReal **mat) {
+void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat) {
   bfMatDiagRealDeinit(*mat);
-  bfMatDiagRealDelete(mat);
+  bfMatDiagRealDealloc(mat);
 }
 
 BfMat *bfMatDiagRealGetMatPtr(BfMatDiagReal *mat) {
@@ -133,7 +130,7 @@ bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
   submat->data += i0;
 
   END_ERROR_HANDLING()
-    bfMatDiagRealDeinitAndDelete(&submat);
+    bfMatDiagRealDeinitAndDealloc(&submat);
 
   return submat;
 }
@@ -174,7 +171,7 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
   memset(resultPtr, 0x0, (m - k)*n*sizeof(BfComplex));
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&result);
+    bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
 }

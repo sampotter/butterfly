@@ -57,6 +57,10 @@ BfMat const *bfMatBlockCooGetMatConstPtr(BfMatBlockCoo const *mat) {
   return &mat->super.super;
 }
 
+void bfMatBlockCooDelete(BfMatBlockCoo **mat) {
+  bfMatBlockCooDeinitAndDealloc(mat);
+}
+
 BfMatBlockCoo *bfMatBlockCooEmptyLike(BfMatBlockCoo const *, BfSize, BfSize) {
   assert(false);
   return NULL;
@@ -72,14 +76,14 @@ void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
   assert(false);
 }
 
-void bfMatBlockCooDelete(BfMatBlockCoo **mat) {
+void bfMatBlockCooDealloc(BfMatBlockCoo **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatBlockCooDeinitAndDelete(BfMatBlockCoo **mat) {
+void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat) {
   bfMatBlockCooDeinit(*mat);
-  bfMatBlockCooDelete(mat);
+  bfMatBlockCooDealloc(mat);
 }
 
 BfMatType bfMatBlockCooGetType(BfMatBlockCoo const *mat) {
@@ -178,11 +182,11 @@ BfMat *bfMatBlockCooMul(BfMatBlockCoo const *op1, BfMat const *op2) {
     resultRows = bfMatGetRowRange(result, i0, i1);
     bfMatAddInplace(resultRows, tmp);
 
-    bfMatDeinitAndDelete(&tmp);
+    bfMatDelete(&tmp);
   }
 
   END_ERROR_HANDLING()
-    bfMatDeinitAndDelete(&result);
+    bfMatDelete(&result);
 
   return result;
 

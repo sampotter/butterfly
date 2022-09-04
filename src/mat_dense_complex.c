@@ -53,7 +53,7 @@ BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
     zeros->data[i++] = 0;
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&zeros);
+    bfMatDenseComplexDeinitAndDealloc(&zeros);
 
   return zeros;
 }
@@ -76,6 +76,10 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
     bfMatDeinit(&mat->super);
 }
 
+void bfMatDenseComplexDelete(BfMatDenseComplex **mat) {
+  bfMatDenseComplexDeinitAndDealloc(mat);
+}
+
 BfMatDenseComplex *
 bfMatDenseComplexEmptyLike(BfMatDenseComplex const *mat,
                            BfSize numRows, BfSize numCols) {
@@ -96,7 +100,7 @@ bfMatDenseComplexEmptyLike(BfMatDenseComplex const *mat,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&result);
+    bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
 }
@@ -118,7 +122,7 @@ bfMatDenseComplexZerosLike(BfMatDenseComplex const *mat,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&zeros);
+    bfMatDenseComplexDeinitAndDealloc(&zeros);
 
   return zeros;
 }
@@ -130,14 +134,14 @@ void bfMatDenseComplexDeinit(BfMatDenseComplex *mat) {
   mat->data = NULL;
 }
 
-void bfMatDenseComplexDelete(BfMatDenseComplex **mat) {
+void bfMatDenseComplexDealloc(BfMatDenseComplex **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatDenseComplexDeinitAndDelete(BfMatDenseComplex **mat) {
+void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat) {
   bfMatDenseComplexDeinit(*mat);
-  bfMatDenseComplexDelete(mat);
+  bfMatDenseComplexDealloc(mat);
 }
 
 BfMatDenseComplex *bfMatDenseComplexFromMatPtr(BfMat *mat) {
@@ -295,7 +299,7 @@ bfMatDenseComplexGetColRange(BfMatDenseComplex *mat, BfSize j0, BfSize j1) {
   submat->data += submat->colStride*j0;
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&submat);
+    bfMatDenseComplexDeinitAndDealloc(&submat);
 
   return submat;
 }
@@ -321,7 +325,7 @@ bfMatDenseComplexGetRowRange(BfMatDenseComplex *mat, BfSize i0, BfSize i1) {
   submat->data += submat ->rowStride*i0;
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&submat);
+    bfMatDenseComplexDeinitAndDealloc(&submat);
 
   return submat;
 }
@@ -395,7 +399,7 @@ BfMat *bfMatDenseComplexMul(BfMatDenseComplex const *op1, BfMat const *op2) {
   }
 
   END_ERROR_HANDLING()
-    bfMatDeinitAndDelete(&result);
+    bfMatDelete(&result);
 
   return result;
 }
@@ -457,7 +461,7 @@ bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
 
   END_ERROR_HANDLING() {
     if (result != NULL)
-      bfMatDenseComplexDeinitAndDelete(&result);
+      bfMatDenseComplexDeinitAndDealloc(&result);
   }
 
   return result;
@@ -479,7 +483,7 @@ BfMat *bfMatDenseComplexLstSq(BfMatDenseComplex const *lhs, BfMat const *rhs) {
   }
 
   END_ERROR_HANDLING()
-    bfMatDeinitAndDelete(&result);
+    bfMatDelete(&result);
 
   return result;
 }
@@ -548,18 +552,18 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&result);
+    bfMatDenseComplexDeinitAndDealloc(&result);
 
-  bfMatDenseComplexDeinitAndDelete(&U);
-  bfMatDiagRealDeinitAndDelete(&S);
-  bfMatDenseComplexDeinitAndDelete(&VH);
+  bfMatDenseComplexDeinitAndDealloc(&U);
+  bfMatDiagRealDeinitAndDealloc(&S);
+  bfMatDenseComplexDeinitAndDealloc(&VH);
 
-  bfMatDenseComplexDeinitAndDelete(&UkH);
-  bfMatDiagRealDeinitAndDelete(&Sk);
-  bfMatDenseComplexDeinitAndDelete(&Vk);
+  bfMatDenseComplexDeinitAndDealloc(&UkH);
+  bfMatDiagRealDeinitAndDealloc(&Sk);
+  bfMatDenseComplexDeinitAndDealloc(&Vk);
 
-  bfMatDenseComplexDeinitAndDelete(&tmp1);
-  bfMatDenseComplexDeinitAndDelete(&tmp2);
+  bfMatDenseComplexDeinitAndDealloc(&tmp1);
+  bfMatDenseComplexDeinitAndDealloc(&tmp2);
 
   return result;
 }

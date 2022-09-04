@@ -128,11 +128,11 @@ int main(int argc, char const *argv[]) {
 
   END_ERROR_HANDLING() {}
 
-  bfMatDeinitAndDelete(&y);
-  bfMatDeinitAndDelete(&y_true);
-  bfMatDenseComplexDeinitAndDelete(&x);
-  // bfMatBlockDenseDeinitAndDelete(&mat);
-  bfMatDenseComplexDeinitAndDelete(&A_true);
+  bfMatDelete(&y);
+  bfMatDelete(&y_true);
+  bfMatDenseComplexDeinitAndDealloc(&x);
+  bfMatBlockDenseDeinitAndDealloc(&A);
+  bfMatDenseComplexDeinitAndDealloc(&A_true);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);
 }

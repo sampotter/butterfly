@@ -215,8 +215,8 @@ int main(int argc, char const *argv[]) {
     puts("error!");
   }
 
-  bfMatDenseComplexDeinitAndDelete(&Q);
-  bfMatDenseComplexDeinitAndDelete(&Z_gt);
+  bfMatDenseComplexDeinitAndDealloc(&Q);
+  bfMatDenseComplexDeinitAndDealloc(&Z_gt);
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);
   bfFreeQuadtree(&tree);

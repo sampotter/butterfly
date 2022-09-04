@@ -14,6 +14,9 @@ BF_DECLARE_INTERFACE_MAT(MatDenseComplex);
 BfMatDenseComplex *bfMatDenseComplexNew();
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
+void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
+void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
+void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
 BfMatDenseComplex *bfMatDenseComplexFromMatPtr(BfMat *mat);
 BfMatDenseComplex const *bfMatDenseComplexFromMatConstPtr(BfMat const *mat);
 BfMat *bfMatDenseComplexGetMatPtr(BfMatDenseComplex *mat);
@@ -29,3 +32,4 @@ bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
 BfMatDenseComplex *
 bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
                                    BfMatDenseComplex const *rhs);
+bool bfMatDenseComplexIsFinite(BfMatDenseComplex const *mat);

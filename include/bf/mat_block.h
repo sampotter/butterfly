@@ -42,6 +42,9 @@ BfMatBlock *bfMatToMatBlock(BfMat *mat);
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
+void bfMatBlockDeinit(BfMatBlock *mat);
+void bfMatBlockDealloc(BfMatBlock **mat);
+void bfMatBlockDeinitAndDealloc(BfMatBlock **mat);
 BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i);
 BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j);
 BfSize bfMatBlockNumBlocks(BfMatBlock const *mat);
@@ -51,9 +54,6 @@ BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i);
 BfSize bfMatBlockFindColBlock(BfMatBlock const *mat, BfSize i);
 
 /* BfMat interface: */
-void bfMatBlockDeinit(BfMatBlock *mat);
-void bfMatBlockDelete(BfMatBlock **mat);
-void bfMatBlockDeinitAndDelete(BfMatBlock **mat);
 BfMatType bfMatBlockGetType(BfMatBlock *mat);
 BfSize bfMatBlockNumBytes(BfMatBlock *mat);
 void bfMatBlockSave(BfMatBlock const *mat, char const *path);

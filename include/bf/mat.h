@@ -19,11 +19,9 @@ typedef struct BfMatDiagReal BfMatDiagReal;
 typedef struct BfMatProduct BfMatProduct;
 
 typedef struct BfMatVtable {
+  void (*delete)(BfMat **);
   BfMat *(*emptyLike)(BfMat const *, BfSize, BfSize);
   BfMat *(*zerosLike)(BfMat const *, BfSize, BfSize);
-  void (*deinit)(BfMat *);
-  void (*delete)(BfMat **);
-  void (*deinitAndDelete)(BfMat **);
   BfMatType (*getType)(BfMat const *);
   bool (*instanceOf)(BfMat const *, BfMatType);
   BfSize (*numBytes)(BfMat const *);
@@ -40,11 +38,9 @@ typedef struct BfMatVtable {
 
 #define BF_DEFINE_MAT_VTABLE(Subtype)                                   \
   static BfMatVtable matVtbl = {                                        \
+    .delete = (__typeof__(&bfMatDelete))bf##Subtype##Delete,            \
     .emptyLike = (__typeof__(&bfMatEmptyLike))bf##Subtype##EmptyLike,   \
     .zerosLike = (__typeof__(&bfMatZerosLike))bf##Subtype##ZerosLike,   \
-    .deinit = (__typeof__(&bfMatDeinit))bf##Subtype##Deinit,            \
-    .delete = (__typeof__(&bfMatDelete))bf##Subtype##Delete,            \
-    .deinitAndDelete = (__typeof__(&bfMatDeinitAndDelete))bf##Subtype##DeinitAndDelete, \
     .getType = (__typeof__(&bfMatGetType))bf##Subtype##GetType,         \
     .instanceOf = (__typeof__(&bfMatInstanceOf))bf##Subtype##InstanceOf, \
     .numBytes = (__typeof__(&bfMatNumBytes))bf##Subtype##NumBytes,      \
@@ -60,11 +56,9 @@ typedef struct BfMatVtable {
   };
 
 #define BF_DECLARE_INTERFACE_MAT(Subtype)                               \
+  void bf##Subtype##Delete(Bf##Subtype **);                             \
   Bf##Subtype *bf##Subtype##EmptyLike(Bf##Subtype const *, BfSize, BfSize); \
   Bf##Subtype *bf##Subtype##ZerosLike(Bf##Subtype const *, BfSize, BfSize); \
-  void bf##Subtype##Deinit(Bf##Subtype *);                              \
-  void bf##Subtype##Delete(Bf##Subtype **);                             \
-  void bf##Subtype##DeinitAndDelete(Bf##Subtype **);                    \
   BfMatType bf##Subtype##GetType(Bf##Subtype const *);                  \
   bool bf##Subtype##InstanceOf(Bf##Subtype const *, BfMatType);         \
   BfSize bf##Subtype##NumBytes(Bf##Subtype const *);                    \
@@ -101,11 +95,12 @@ bool bfMatIsTransposed(BfMat const *mat);
 BfMat *bfMatConjTrans(BfMat *mat);
 
 /* BfMat interface: */
+void bfMatDelete(BfMat **);
 BfMat *bfMatEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);
-void bfMatDelete(BfMat **mat);
-void bfMatDeinitAndDelete(BfMat **mat);
+void bfMatDealloc(BfMat **mat);
+void bfMatDeinitAndDealloc(BfMat **mat);
 BfMatType bfMatGetType(BfMat const *mat);
 bool bfMatInstanceOf(BfMat const *mat, BfMatType matType);
 

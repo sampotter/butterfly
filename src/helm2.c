@@ -68,7 +68,7 @@ bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts, BfReal 
   }
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&kernelMat);
+    bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
   free(r);
 
@@ -97,11 +97,11 @@ bfHelm2GetShiftMatrix(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
 
   END_ERROR_HANDLING() {
     bfMatDenseComplexDeinit(Z_shift);
-    bfMatDenseComplexDelete(&Z_shift);
+    bfMatDenseComplexDealloc(&Z_shift);
   }
 
-  bfMatDenseComplexDeinitAndDelete(&Z_orig);
-  bfMatDenseComplexDeinitAndDelete(&Z_equiv);
+  bfMatDenseComplexDeinitAndDealloc(&Z_orig);
+  bfMatDenseComplexDeinitAndDealloc(&Z_equiv);
 
   return Z_shift;
 }

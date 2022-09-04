@@ -77,18 +77,21 @@ void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
 }
 
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat) {
-  (void)mat;
-  assert(false);
+  bfMatBlockDeinit(&mat->super);
 }
 
-void bfMatBlockDenseDelete(BfMatBlockDense **mat) {
+void bfMatBlockDenseDealloc(BfMatBlockDense **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatBlockDenseDeinitAndDelete(BfMatBlockDense **mat) {
+void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
   bfMatBlockDenseDeinit(*mat);
-  bfMatBlockDenseDelete(mat);
+  bfMatBlockDenseDealloc(mat);
+}
+
+void bfMatBlockDenseDelete(BfMatBlockDense **mat) {
+  bfMatBlockDenseDeinitAndDealloc(mat);
 }
 
 BfMatBlockDense *bfMatBlockDenseEmptyLike(BfMatBlockDense const *, BfSize, BfSize) {
@@ -243,12 +246,12 @@ BfMat *bfMatBlockDenseMul(BfMatBlockDense const *op1, BfMat const *op2) {
       block = bfMatBlockDenseGetBlock((BfMatBlockDense *)op1, i, j);
       tmp = bfMatMul(block, op2Rows);
       bfMatAddInplace(resultRows, tmp);
-      bfMatDeinitAndDelete(&tmp);
+      bfMatDelete(&tmp);
     }
   }
 
   END_ERROR_HANDLING()
-    bfMatDeinitAndDelete(&result);
+    bfMatDelete(&result);
 
   return result;
 }

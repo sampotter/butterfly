@@ -43,6 +43,10 @@ BfMat const *bfMatBlockDiagGetMatConstPtr(BfMatBlockDiag const *mat) {
   return &mat->super.super;
 }
 
+void bfMatBlockDiagDelete(BfMatBlockDiag **mat) {
+  bfMatBlockDiagDeinitAndDealloc(mat);
+}
+
 BfMatBlockDiag *bfMatBlockDiagEmptyLike(BfMatBlockDiag const *, BfSize, BfSize) {
   assert(false);
   return NULL;
@@ -57,14 +61,14 @@ void bfMatBlockDiagDeinit(BfMatBlockDiag *mat) {
   bfMatBlockDeinit(&mat->super);
 }
 
-void bfMatBlockDiagDelete(BfMatBlockDiag **mat) {
+void bfMatBlockDiagDealloc(BfMatBlockDiag **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatBlockDiagDeinitAndDelete(BfMatBlockDiag **mat) {
+void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat) {
   bfMatBlockDiagDeinit(*mat);
-  bfMatBlockDiagDelete(mat);
+  bfMatBlockDiagDealloc(mat);
 }
 
 BfMatType bfMatBlockDiagGetType(BfMatBlockDiag const *mat) {
@@ -146,11 +150,11 @@ BfMat *bfMatBlockDiagMul(BfMatBlockDiag const *op1, BfMat const *op2) {
     resultRows = bfMatMul(block, op2Rows);
     bfMatSetRowRange(result, i0, i1, resultRows);
 
-    bfMatDeinitAndDelete(&resultRows);
+    bfMatDelete(&resultRows);
   }
 
   END_ERROR_HANDLING()
-    bfMatDeinitAndDelete(&result);
+    bfMatDelete(&result);
 
   return result;
 }

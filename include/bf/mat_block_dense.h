@@ -11,6 +11,9 @@ BF_DECLARE_INTERFACE_MAT(MatBlockDense);
 BfMatBlockDense *bfMatBlockDenseNew();
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
                          BfSize numBlockCols);
+void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
+void bfMatBlockDenseDealloc(BfMatBlockDense **mat);
+void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat);
 BfMat *bfMatBlockDenseGetMatPtr(BfMatBlockDense *mat);
 BfMat const *bfMatBlockDenseGetMatConstPtr(BfMatBlockDense const *mat);
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j);

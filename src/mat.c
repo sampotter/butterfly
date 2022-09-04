@@ -10,6 +10,10 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
 #endif
 }
 
+void bfMatDelete(BfMat **mat) {
+  (*mat)->vtbl->delete(mat);
+}
+
 BfMat *bfMatEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
   return mat->vtbl->emptyLike(mat, numRows, numCols);
 }
@@ -19,8 +23,6 @@ BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
 }
 
 void bfMatDeinit(BfMat *mat) {
-  mat->vtbl->deinit(mat);
-
 #if BF_DEBUG
   mat->vtbl = NULL;
   mat->props = BF_MAT_PROPS_NONE;
@@ -28,14 +30,6 @@ void bfMatDeinit(BfMat *mat) {
   mat->numCols = BF_SIZE_BAD_VALUE;
   mat->aux = NULL;
 #endif
-}
-
-void bfMatDelete(BfMat **mat) {
-  (*mat)->vtbl->delete(mat);
-}
-
-void bfMatDeinitAndDelete(BfMat **mat) {
-  (*mat)->vtbl->deinitAndDelete(mat);
 }
 
 enum BfMatTypes bfMatGetType(BfMat const *mat) {

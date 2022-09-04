@@ -84,24 +84,24 @@ BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i0) {
 void bfMatBlockDeinit(BfMatBlock *mat) {
   bfMatDeinit(&mat->super);
 
-  mat->vtbl = NULL;
-
   free(mat->block);
-  mat->block = NULL;
-
   free(mat->rowOffset);
-  mat->rowOffset = NULL;
-
   free(mat->colOffset);
+
+#if BF_DEBUG
+  mat->vtbl = NULL;
+  mat->block = NULL;
+  mat->rowOffset = NULL;
   mat->colOffset = NULL;
+#endif
 }
 
-void bfMatBlockDelete(BfMatBlock **mat) {
+void bfMatBlockDealloc(BfMatBlock **mat) {
   free(*mat);
   *mat = NULL;
 }
 
-void bfMatBlockDeinitAndDelete(BfMatBlock **mat) {
+void bfMatBlockDeinitAndDealloc(BfMatBlock **mat) {
   bfMatBlockDeinit(*mat);
-  bfMatBlockDelete(mat);
+  bfMatBlockDealloc(mat);
 }

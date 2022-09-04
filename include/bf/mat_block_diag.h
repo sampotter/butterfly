@@ -10,6 +10,9 @@ BF_DECLARE_INTERFACE_MAT(MatBlockDiag);
 
 BfMatBlockDiag *bfMatBlockDiagNew();
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
+void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
+void bfMatBlockDiagDealloc(BfMatBlockDiag **mat);
+void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat);
 BfMat *bfMatBlockDiagGetMatPtr(BfMatBlockDiag *mat);
 BfMat const *bfMatBlockDiagGetMatConstPtr(BfMatBlockDiag const *mat);
 

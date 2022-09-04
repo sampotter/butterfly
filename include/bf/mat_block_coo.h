@@ -21,6 +21,9 @@ BF_DECLARE_INTERFACE_MAT(MatBlockCoo);
 BfMatBlockCoo *bfMatBlockCooNew();
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
                        BfSize numBlockCols, BfSize numBlocks);
+void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
+void bfMatBlockCooDealloc(BfMatBlockCoo **mat);
+void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat);
 BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat);
 
 /* BfMatBlock interface */

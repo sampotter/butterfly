@@ -126,7 +126,7 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
-    bfMatBlockDiagDeinitAndDelete(&mat);
+    bfMatBlockDiagDeinitAndDealloc(&mat);
   }
 
   /* finish initializing row and column offsets */
@@ -347,7 +347,7 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
     bfFreePoints2(&srcChildPts);
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtChildPts);
-    bfMatBlockCooDeinitAndDelete(&mat);
+    bfMatBlockCooDeinitAndDealloc(&mat);
   }
 
   return mat;
@@ -441,7 +441,7 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
   END_ERROR_HANDLING() {
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
-    bfMatBlockDiagDeinitAndDelete(&mat);
+    bfMatBlockDiagDeinitAndDealloc(&mat);
   }
 
   return mat;
@@ -656,7 +656,7 @@ facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDelete(&Z);
+    bfMatDenseComplexDeinitAndDealloc(&Z);
 
   return bfMatDenseComplexGetMatPtr(Z);
 }
@@ -799,7 +799,7 @@ BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatBlockDenseDeinitAndDelete(&mat);
+    bfMatBlockDenseDeinitAndDealloc(&mat);
 
   bfFreeQuadtreeLevelIter(&levelIter);
 
