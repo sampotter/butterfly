@@ -8,6 +8,8 @@ struct BfMatDiagReal {
   BfReal *data;
 };
 
+BF_DECLARE_INTERFACE_MAT(MatDiagReal);
+
 BfMatDiagReal *bfMatDiagRealNew();
 BfMatDiagReal *bfMatDiagRealNewView(BfMatDiagReal *mat);
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols);

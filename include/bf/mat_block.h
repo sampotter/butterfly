@@ -39,6 +39,8 @@ struct BfMatBlock {
 
 BfMatBlock *bfMatToMatBlock(BfMat *mat);
 
+BF_DECLARE_INTERFACE_MAT(MatBlock);
+
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
@@ -52,10 +54,3 @@ BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat);
 BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat);
 BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i);
 BfSize bfMatBlockFindColBlock(BfMatBlock const *mat, BfSize i);
-
-/* BfMat interface: */
-BfMatType bfMatBlockGetType(BfMatBlock *mat);
-BfSize bfMatBlockNumBytes(BfMatBlock *mat);
-void bfMatBlockSave(BfMatBlock const *mat, char const *path);
-BfMat *bfMatBlockMul(BfMatBlock const *op1, BfMat const *op2);
-BfMat *bfMatBlockLstSq(BfMatBlock const *lhs, BfMat const *rhs);
