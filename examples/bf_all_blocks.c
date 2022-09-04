@@ -61,8 +61,6 @@ void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
 }
 
 static BfMatBlockCoo *unravel(BfMatBlockDense *A) {
-//   BEGIN_ERROR_HANDLING();
-
   BfMatBlockCoo *coo = bfMatBlockCooNew();
 
   for (size_t i = 0; i < bfMatBlockGetNumRowBlocks(&A->super); ++i) {
@@ -72,9 +70,6 @@ static BfMatBlockCoo *unravel(BfMatBlockDense *A) {
       printf("%lu, %lu: %d\n", i, j, matType);
     }
   }
-
-//   END_ERROR_HANDLING()
-//     bfMatBlockCooDeinitAndDelete(&coo);
 
   return coo;
 }
