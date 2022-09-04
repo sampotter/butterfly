@@ -15,10 +15,6 @@
 #include <bf/rand.h>
 #include <bf/util.h>
 
-/* TODO: should make this functionality a part of the library... need
- * some mappers for the hierarchical matrix tree... also need to wrap
- * up the hierarchical matrix as a separate ADT to make the interface
- * clearer */
 void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
   BfMatType matType = bfMatGetType(mat);
 
