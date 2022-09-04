@@ -1,6 +1,7 @@
 #include <bf/mat_dense_complex.h>
 
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -616,4 +617,16 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
 
   free(dataCopy);
   free(superb);
+}
+
+bool bfMatDenseComplexIsFinite(BfMatDenseComplex const *mat) {
+  for (BfSize i = 0; i < mat->super.numRows; ++i) {
+    BfComplex *rowPtr = mat->data + i*mat->rowStride;
+    for (BfSize j = 0; j < mat->super.numCols; ++j) {
+      BfComplex elt = *(rowPtr + j*mat->colStride);
+      if (!isfinite(creal(elt)) || !isfinite(cimag(elt)))
+        return false;
+    }
+  }
+  return true;
 }

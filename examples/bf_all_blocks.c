@@ -103,6 +103,8 @@ int main(int argc, char const *argv[]) {
   BfMatDenseComplex *A_true = bfGetHelm2KernelMatrix(&points, &points, K);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 
+  assert(bfMatDenseComplexIsFinite(A_true));
+
   BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
@@ -114,6 +116,8 @@ int main(int argc, char const *argv[]) {
   bfSeed(0);
   bfComplexRandn(points.size, x->data);
   printf("set up random RHS [%0.2fs]\n", bfToc());
+
+  assert(bfMatDenseComplexIsFinite(x));
 
   BfMat *y_true = bfMatMul(bfMatDenseComplexGetMatPtr(A_true), bfMatDenseComplexGetMatPtr(x));
   printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
