@@ -62,7 +62,7 @@ bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts, BfReal 
   BfSize k = 0;
   for (BfSize i = 0; i < m; ++i) {
     for (BfSize j = 0; j < n; ++j) {
-      kernelMat->data[k] = r[k] == 0 ? NAN : I*bf_H0(K*r[k])/4;
+      kernelMat->data[k] = r[k] == 0 ? 0 : I*bf_H0(K*r[k])/4;
       ++k;
     }
   }
