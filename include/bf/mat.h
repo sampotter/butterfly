@@ -18,6 +18,14 @@ typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDiagReal BfMatDiagReal;
 typedef struct BfMatProduct BfMatProduct;
 
+typedef enum BfMatProps {
+  BF_MAT_PROPS_NONE = 0,
+  BF_MAT_PROPS_VIEW = 1 << 0,
+  BF_MAT_PROPS_TRANS = 1 << 1,
+  BF_MAT_PROPS_CONJ = 1 << 2,
+  BF_MAT_PROPS_ORTHO = 1 << 3
+} BfMatProps;
+
 typedef struct BfMatVtable {
   void (*delete)(BfMat **);
   BfMat *(*emptyLike)(BfMat const *, BfSize, BfSize);
@@ -71,14 +79,6 @@ typedef struct BfMatVtable {
   void bf##Subtype##AddInplace(Bf##Subtype *, BfMat const *);           \
   BfMat *bf##Subtype##Mul(Bf##Subtype const *, BfMat const *);          \
   BfMat *bf##Subtype##LstSq(Bf##Subtype const *, BfMat const *);
-
-typedef enum BfMatProps {
-  BF_MAT_PROPS_NONE = 0,
-  BF_MAT_PROPS_VIEW = 1 << 0,
-  BF_MAT_PROPS_TRANS = 1 << 1,
-  BF_MAT_PROPS_CONJ = 1 << 2,
-  BF_MAT_PROPS_ORTHO = 1 << 3
-} BfMatProps;
 
 struct BfMat {
   BfMatVtable *vtbl;
