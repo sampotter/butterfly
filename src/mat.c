@@ -11,15 +11,15 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
 }
 
 void bfMatDelete(BfMat **mat) {
-  (*mat)->vtbl->delete(mat);
+  (*mat)->vtbl->Delete(mat);
 }
 
 BfMat *bfMatEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  return mat->vtbl->emptyLike(mat, numRows, numCols);
+  return mat->vtbl->EmptyLike(mat, numRows, numCols);
 }
 
 BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  return mat->vtbl->zerosLike(mat, numRows, numCols);
+  return mat->vtbl->ZerosLike(mat, numRows, numCols);
 }
 
 void bfMatDeinit(BfMat *mat) {
@@ -33,7 +33,7 @@ void bfMatDeinit(BfMat *mat) {
 }
 
 enum BfMatTypes bfMatGetType(BfMat const *mat) {
-  return mat->vtbl->getType(mat);
+  return mat->vtbl->GetType(mat);
 }
 
 bool bfMatInstanceOf(BfMat const *mat, BfMatType matType) {
@@ -41,11 +41,11 @@ bool bfMatInstanceOf(BfMat const *mat, BfMatType matType) {
 }
 
 BfSize bfMatNumBytes(BfMat const *mat) {
-  return mat->vtbl->numBytes(mat);
+  return mat->vtbl->NumBytes(mat);
 }
 
 void bfMatSave(BfMat const *mat, char const *path) {
-  mat->vtbl->save(mat, path);
+  mat->vtbl->Save(mat, path);
 }
 
 bool bfMatIsTransposed(BfMat const *mat) {
@@ -53,23 +53,23 @@ bool bfMatIsTransposed(BfMat const *mat) {
 }
 
 BfSize bfMatGetNumRows(BfMat const *mat) {
-  return mat->vtbl->getNumRows(mat);
+  return mat->vtbl->GetNumRows(mat);
 }
 
 BfSize bfMatGetNumCols(BfMat const *mat) {
-  return mat->vtbl->getNumCols(mat);
+  return mat->vtbl->GetNumCols(mat);
 }
 
 BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
-  return mat->vtbl->getRowRange(mat, i0, i1);
+  return mat->vtbl->GetRowRange(mat, i0, i1);
 }
 
 BfMat *bfMatGetColRange(BfMat *mat, BfSize i0, BfSize i1) {
-  return mat->vtbl->getColRange(mat, i0, i1);
+  return mat->vtbl->GetColRange(mat, i0, i1);
 }
 
 void bfMatSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows) {
-  mat->vtbl->setRowRange(mat, i0, i1, rows);
+  mat->vtbl->SetRowRange(mat, i0, i1, rows);
 }
 
 BfMat *bfMatConjTrans(BfMat *mat) {
@@ -78,13 +78,13 @@ BfMat *bfMatConjTrans(BfMat *mat) {
 }
 
 void bfMatAddInplace(BfMat *lhs, BfMat const *rhs) {
-  lhs->vtbl->addInplace(lhs, rhs);
+  lhs->vtbl->AddInplace(lhs, rhs);
 }
 
 BfMat *bfMatMul(BfMat const *lhs, BfMat const *rhs) {
-  return lhs->vtbl->mul(lhs, rhs);
+  return lhs->vtbl->Mul(lhs, rhs);
 }
 
 BfMat *bfMatLstSq(BfMat const *lhs, BfMat const *rhs) {
-  return lhs->vtbl->lstSq(lhs, rhs);
+  return lhs->vtbl->LstSq(lhs, rhs);
 }

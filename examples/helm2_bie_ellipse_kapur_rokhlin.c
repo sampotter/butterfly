@@ -121,14 +121,14 @@ int main(int argc, char const *argv[]) {
   bfComplexRandn(points.size, x->data);
   printf("set up random RHS [%0.2fs]\n", bfToc());
 
-  BfMat *y_true = bfMatMul(bfMatDenseComplexGetMatPtr(A_true), bfMatDenseComplexGetMatPtr(x));
+  BfMat *y_true = bfMatMul(bfMatDenseComplexToMat(A_true), bfMatDenseComplexToMat(x));
   printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
 
-  BfMat *y = bfMatMul(bfMatBlockDenseGetMatPtr(A), bfMatDenseComplexGetMatPtr(x));
+  BfMat *y = bfMatMul(bfMatBlockDenseToMat(A), bfMatDenseComplexToMat(x));
   printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
 
   FILE *fp = fopen(blocks_path_str, "w");
-  printBlocks(bfMatBlockDenseGetMatConstPtr(A), fp, 0, 0, 2);
+  printBlocks(bfMatBlockDenseConstToMatConst(A), fp, 0, 0, 2);
   fclose(fp);
   printf("wrote blocks to %s [%0.2fs]\n", blocks_path_str, bfToc());
 

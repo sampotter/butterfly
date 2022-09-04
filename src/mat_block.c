@@ -7,19 +7,26 @@
 #include <bf/error_macros.h>
 #include <bf/util.h>
 
+BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock) {
+  return &matBlock->super;
+}
+
 BfMatBlock *bfMatToMatBlock(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK)) {
+    bfSetError(BF_ERROR_RUNTIME_ERROR);
+    return NULL;
+  } else {
+    return (BfMatBlock *)mat;
+  }
+}
 
-  BfMatBlock *matBlock = NULL;
-
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK))
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  matBlock = (BfMatBlock *)mat;
-
-  END_ERROR_HANDLING() {}
-
-  return matBlock;
+BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat) {
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK)) {
+    bfSetError(BF_ERROR_RUNTIME_ERROR);
+    return NULL;
+  } else {
+    return (BfMatBlock const *)mat;
+  }
 }
 
 void bfMatBlockInit(BfMatBlock *mat,
@@ -52,6 +59,10 @@ void bfMatBlockInit(BfMatBlock *mat,
     bfMatBlockDeinit(mat);
 }
 
+void bfMatBlockDelete(BfMat **mat) {
+  bfMatBlockDeinitAndDealloc((BfMatBlock **)mat);
+}
+
 BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i) {
   return mat->rowOffset[i + 1] - mat->rowOffset[i];
 }
@@ -61,7 +72,7 @@ BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j) {
 }
 
 BfSize bfMatBlockNumBlocks(BfMatBlock const *mat) {
-  return mat->vtbl->numBlocks(mat);
+  return mat->vtbl->NumBlocks(mat);
 }
 
 BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat) {

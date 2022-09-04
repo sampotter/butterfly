@@ -16,7 +16,21 @@ struct BfMatBlockCoo {
   BfSize *colInd;
 };
 
-BF_DECLARE_INTERFACE_MAT(MatBlockCoo);
+#define INTERFACE BF_INTERFACE_Mat
+BF_DECLARE_INTERFACE(MatBlockCoo);
+#undef INTERFACE
+
+#define INTERFACE BF_INTERFACE_MatBlock
+BF_DECLARE_INTERFACE(MatBlockCoo);
+#undef INTERFACE
+
+/* Upcasting: */
+BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo);
+BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo);
+
+/* Downcasting: */
+BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat);
+BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock);
 
 BfMatBlockCoo *bfMatBlockCooNew();
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
@@ -24,7 +38,3 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat);
 void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat);
-BfMat *bfMatBlockCooGetMatPtr(BfMatBlockCoo *mat);
-
-/* BfMatBlock interface */
-BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *mat);

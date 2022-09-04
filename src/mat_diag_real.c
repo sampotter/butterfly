@@ -7,13 +7,17 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
-static BfMatVtable matDiagRealVtbl = {
-  .getType = (__typeof__(&bfMatGetType))bfMatDiagRealGetType,
-  .numBytes = (__typeof__(&bfMatNumBytes))bfMatDiagRealNumBytes,
-  .save = (__typeof__(&bfMatSave))bfMatDiagRealSave,
-  .mul = NULL, // (__typeof__(&bfMatMul))bfMatDiagRealMul,
-  .lstSq = NULL, // (__typeof__(&bfMatLstSq))bfMatDiagRealLstSq
-};
+#define INTERFACE BF_INTERFACE_Mat
+BF_DEFINE_VTABLE(Mat, MatDiagReal);
+#undef INTERFACE
+
+BfMat *bfMatDiagRealToMat(BfMatDiagReal *mat) {
+  return &mat->super;
+}
+
+BfMat const *bfMatDiagRealConstToMatConst(BfMatDiagReal const *mat) {
+  return &mat->super;
+}
 
 BfMatDiagReal *bfMatDiagRealNew() {
   BEGIN_ERROR_HANDLING();
@@ -36,7 +40,7 @@ BfMatDiagReal *bfMatDiagRealNewView(BfMatDiagReal *mat) {
 
   *view = *mat;
 
-  bfMatDiagRealGetMatPtr(view)->props |= BF_MAT_PROPS_VIEW;
+  bfMatDiagRealToMat(view)->props |= BF_MAT_PROPS_VIEW;
 
   END_ERROR_HANDLING() {
     free(view);
@@ -49,7 +53,7 @@ BfMatDiagReal *bfMatDiagRealNewView(BfMatDiagReal *mat) {
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &matDiagRealVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
   HANDLE_ERROR();
 
   mat->numElts = numRows < numCols ? numRows : numCols;
@@ -81,37 +85,12 @@ void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat) {
   bfMatDiagRealDealloc(mat);
 }
 
-BfMat *bfMatDiagRealGetMatPtr(BfMatDiagReal *mat) {
-  return &mat->super;
-}
-
-BfMat const *bfMatDiagRealGetMatConstPtr(BfMatDiagReal const *mat) {
-  return &mat->super;
-}
-
-BfMatType bfMatDiagRealGetType(BfMatDiagReal const *mat) {
-  (void)mat;
-  return BF_MAT_TYPE_DIAG_REAL;
-}
-
-BfSize bfMatDiagRealNumBytes(BfMatDiagReal const *mat) {
-  (void)mat;
-  assert(false);
-  return BF_SIZE_BAD_VALUE;
-}
-
-void bfMatDiagRealSave(BfMatDiagReal const *mat, char const *path) {
-  (void)mat;
-  (void)path;
-  assert(false);
-}
-
 BfMatDiagReal *
 bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
   assert(i0 < i1);
   assert(i1 <= mat->numElts);
 
-  BfMat *super = bfMatDiagRealGetMatPtr(mat);
+  BfMat *super = bfMatDiagRealToMat(mat);
   assert(!bfMatIsTransposed(super)); // TODO: implement
 
   BEGIN_ERROR_HANDLING();
@@ -141,8 +120,8 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
 {
   BEGIN_ERROR_HANDLING();
 
-  BfMat const *lhsSuper = bfMatDiagRealGetMatConstPtr(lhs);
-  BfMat const *rhsSuper = bfMatDenseComplexGetMatConstPtr(rhs);
+  BfMat const *lhsSuper = bfMatDiagRealConstToMatConst(lhs);
+  BfMat const *rhsSuper = bfMatDenseComplexConstToMatConst(rhs);
 
   BfSize k = rhsSuper->numRows;
   if (k != lhsSuper->numRows)
@@ -174,4 +153,68 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
+}
+
+/* Interface: Mat */
+
+void bfMatDiagRealDelete(BfMat **mat) {
+  bfMatDiagRealDeinitAndDealloc((BfMatDiagReal **)mat);
+}
+
+BfMat *bfMatDiagRealEmptyLike(BfMat const *, BfSize, BfSize) {
+  assert(false);
+}
+
+BfMat *bfMatDiagRealZerosLike(BfMat const *, BfSize, BfSize) {
+  assert(false);
+}
+
+BfMatType bfMatDiagRealGetType(BfMat const *mat) {
+  (void)mat;
+  return BF_MAT_TYPE_DIAG_REAL;
+}
+
+bool bfMatDiagRealInstanceOf(BfMat const *mat, BfMatType matType) {
+  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
+}
+
+BfSize bfMatDiagRealNumBytes(BfMat const *mat) {
+  (void)mat;
+  assert(false);
+  return BF_SIZE_BAD_VALUE;
+}
+
+void bfMatDiagRealSave(BfMat const *mat, char const *path) {
+  (void)mat;
+  (void)path;
+  assert(false);
+}
+
+BfSize bfMatDiagRealGetNumRows(BfMat const *mat) { assert(false); }
+
+BfSize bfMatDiagRealGetNumCols(BfMat const *mat) { assert(false); }
+
+BfMat *bfMatDiagRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  assert(false);
+}
+
+BfMat *bfMatDiagRealGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  assert(false);
+}
+
+void bfMatDiagRealSetRowRange(BfMat *mat, BfSize i0, BfSize i1,
+                              BfMat const *otherMat) {
+  assert(false);
+}
+
+void bfMatDiagRealAddInplace(BfMat *mat, BfMat const *otherMat) {
+  assert(false);
+}
+
+BfMat *bfMatDiagRealMul(BfMat const *mat, BfMat const *otherMat) {
+  assert(false);
+}
+
+BfMat *bfMatDiagRealLstSq(BfMat const *mat, BfMat const *otherMat) {
+  assert(false);
 }

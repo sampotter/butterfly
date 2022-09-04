@@ -8,7 +8,9 @@ typedef struct BfMatProduct {
   BfPtrArray factorArr;
 } BfMatProduct;
 
-BF_DECLARE_INTERFACE_MAT(MatProduct);
+#define INTERFACE BF_INTERFACE_Mat
+BF_DECLARE_INTERFACE(MatProduct);
+#undef INTERFACE
 
 BfMatProduct *bfMatProductNew();
 void bfMatProductInit(BfMatProduct *prod);

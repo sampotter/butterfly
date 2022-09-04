@@ -9,7 +9,17 @@ struct BfMatDenseComplex {
   BfComplex *data;
 };
 
-BF_DECLARE_INTERFACE_MAT(MatDenseComplex);
+#define INTERFACE BF_INTERFACE_Mat
+BF_DECLARE_INTERFACE(MatDenseComplex);
+#undef INTERFACE
+
+/* Upcasting: */
+BfMat *bfMatDenseComplexToMat(BfMatDenseComplex *matDenseComplex);
+BfMat const *bfMatDenseComplexConstToMatConst(BfMatDenseComplex const *matDenseComplex);
+
+/* Downcasting: */
+BfMatDenseComplex *bfMatToMatDenseComplex(BfMat *mat);
+BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat);
 
 BfMatDenseComplex *bfMatDenseComplexNew();
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
@@ -17,13 +27,9 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCol
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
-BfMatDenseComplex *bfMatDenseComplexFromMatPtr(BfMat *mat);
-BfMatDenseComplex const *bfMatDenseComplexFromMatConstPtr(BfMat const *mat);
-BfMat *bfMatDenseComplexGetMatPtr(BfMatDenseComplex *mat);
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat);
 BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat);
 void bfMatDenseComplexCopy(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
-BfMat const *bfMatDenseComplexGetMatConstPtr(BfMatDenseComplex const *mat);
 void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
                           BfMatDiagReal *S, BfMatDenseComplex *VH);
 BfMatDenseComplex *

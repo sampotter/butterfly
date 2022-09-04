@@ -6,7 +6,9 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
-BF_DEFINE_MAT_VTABLE(MatProduct);
+#define INTERFACE BF_INTERFACE_Mat
+BF_DEFINE_VTABLE(Mat, MatProduct);
+#undef INTERFACE
 
 BfMatProduct *bfMatProductNew() {
   BEGIN_ERROR_HANDLING();
@@ -26,7 +28,7 @@ void bfMatProductInit(BfMatProduct *mat) {
   /* We don't store the number of rows or columns in `mat->super`
    * since we always look up the number of rows and columns from the
    * leftmost and rightmost factors at runtime. */
-  bfMatInit(&mat->super, &matVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
+  bfMatInit(&mat->super, &MatVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
 
   mat->factorArr = bfGetUninitializedPtrArray();
 
@@ -45,16 +47,16 @@ BfMat const *bfMatProductGetMatConstPtr(BfMatProduct const *mat) {
   return &mat->super;
 }
 
-void bfMatProductDelete(BfMatProduct **mat) {
-  bfMatProductDeinitAndDealloc(mat);
+void bfMatProductDelete(BfMat **mat) {
+  bfMatProductDeinitAndDealloc((BfMatProduct **)mat);
 }
 
-BfMatProduct *bfMatProductEmptyLike(BfMatProduct const *, BfSize, BfSize) {
+BfMat *bfMatProductEmptyLike(BfMat const *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
 
-BfMatProduct *bfMatProductZerosLike(BfMatProduct const *, BfSize, BfSize) {
+BfMat *bfMatProductZerosLike(BfMat const *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
@@ -78,34 +80,34 @@ void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
   bfMatProductDealloc(prod);
 }
 
-BfMatType bfMatProductGetType(BfMatProduct const *mat) {
+BfMatType bfMatProductGetType(BfMat const *mat) {
   return BF_MAT_TYPE_PRODUCT;
 }
 
-bool bfMatProductInstanceOf(BfMatProduct const *mat, BfMatType matType) {
-  BfMat const *parent = bfMatProductGetMatConstPtr(mat);
+bool bfMatProductInstanceOf(BfMat const *mat, BfMatType matType) {
+  BfMat const *parent = bfMatProductGetMatConstPtr((BfMatProduct const *)mat);
   return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
 }
 
-BfSize bfMatProductNumBytes(BfMatProduct const *mat) {
+BfSize bfMatProductNumBytes(BfMat const *mat) {
   (void)mat;
   assert(false);
   return BF_SIZE_BAD_VALUE;
 }
 
-void bfMatProductSave(BfMatProduct const *mat, char const *path) {
+void bfMatProductSave(BfMat const *mat, char const *path) {
   (void)mat;
   (void)path;
   assert(false);
 }
 
-BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
+BfSize bfMatProductGetNumRows(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
   BfMat const *factor = NULL;
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
-  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
+  if (bfMatIsTransposed(mat))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   factor = bfMatProductGetFactor((BfMatProduct *)mat, 0);
@@ -118,13 +120,13 @@ BfSize bfMatProductGetNumRows(BfMatProduct const *mat) {
   return numRows;
 }
 
-BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
+BfSize bfMatProductGetNumCols(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
   BfMat const *factor = NULL;
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
-  if (bfMatIsTransposed(bfMatProductGetMatConstPtr(mat)))
+  if (bfMatIsTransposed(mat))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)mat);
@@ -139,25 +141,25 @@ BfSize bfMatProductGetNumCols(BfMatProduct const *mat) {
   return numCols;
 }
 
-BfMatProduct *bfMatProductGetRowRange(BfMatProduct *, BfSize, BfSize) {
+BfMat *bfMatProductGetRowRange(BfMat *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
 
-BfMatProduct *bfMatProductGetColRange(BfMatProduct *, BfSize, BfSize) {
+BfMat *bfMatProductGetColRange(BfMat *, BfSize, BfSize) {
   assert(false);
   return NULL;
 }
 
-void bfMatProductSetRowRange(BfMatProduct *, BfSize, BfSize, BfMat const *) {
+void bfMatProductSetRowRange(BfMat *, BfSize, BfSize, BfMat const *) {
   assert(false);
 }
 
-void bfMatProductAddInplace(BfMatProduct *, BfMat const *) {
+void bfMatProductAddInplace(BfMat *, BfMat const *) {
   assert(false);
 }
 
-BfMat *bfMatProductMul(BfMatProduct const *op1, BfMat const *op2) {
+BfMat *bfMatProductMul(BfMat const *op1, BfMat const *op2) {
   /* TODO: add error handling... */
   BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)op1);
   BfMat *factor = NULL, *result = (BfMat *)op2, *prev = NULL;
@@ -173,7 +175,7 @@ BfMat *bfMatProductMul(BfMatProduct const *op1, BfMat const *op2) {
   return result;
 }
 
-BfMat *bfMatProductLstSq(BfMatProduct const *, BfMat const *) {
+BfMat *bfMatProductLstSq(BfMat const *, BfMat const *) {
   assert(false);
   return NULL;
 }

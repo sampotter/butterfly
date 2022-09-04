@@ -6,16 +6,22 @@ struct BfMatBlockDiag {
   BfMatBlock super;
 };
 
-BF_DECLARE_INTERFACE_MAT(MatBlockDiag);
+#define INTERFACE BF_INTERFACE_Mat
+BF_DECLARE_INTERFACE(MatBlockDiag);
+#undef INTERFACE
+
+#define INTERFACE BF_INTERFACE_MatBlock
+BF_DECLARE_INTERFACE(MatBlockDiag);
+#undef INTERFACE
+
+/* Upcasting: */
+BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag);
+
+/* Downcasting: */
+BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
 
 BfMatBlockDiag *bfMatBlockDiagNew();
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
 void bfMatBlockDiagDealloc(BfMatBlockDiag **mat);
 void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat);
-BfMat *bfMatBlockDiagGetMatPtr(BfMatBlockDiag *mat);
-BfMat const *bfMatBlockDiagGetMatConstPtr(BfMatBlockDiag const *mat);
-
-/* BfMatBlock interface: */
-BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *mat);
-BfMat const *bfMatBlockDiagGetBlock(BfMatBlockDiag const *mat, BfSize i, BfSize j);

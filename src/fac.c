@@ -99,7 +99,7 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
     HANDLE_ERROR();
 
     /* compute the shift matrix and store it in the current block */
-    mat->super.block[i] = bfMatDenseComplexGetMatPtr(
+    mat->super.block[i] = bfMatDenseComplexToMat(
       bfHelm2GetShiftMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
     HANDLE_ERROR();
 
@@ -590,7 +590,7 @@ bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
    * the first level of source circles */
   matBlockDiag = makeFirstFactor(
     K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-  factor[0] = bfMatBlockDiagGetMatPtr(matBlockDiag);
+  factor[0] = bfMatBlockDiagToMat(matBlockDiag);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
@@ -601,7 +601,7 @@ bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
     prevMatBlock = (BfMatBlock *)factor[i - 1];
     matBlockCoo = makeFactor(
       prevMatBlock, K, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-    factor[i] = bfMatBlockCooGetMatPtr(matBlockCoo);
+    factor[i] = bfMatBlockCooToMat(matBlockCoo);
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
@@ -614,7 +614,7 @@ bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
   prevMatBlock = (BfMatBlock *)factor[numFactors - 2];
   matBlockDiag = makeLastFactor(
     prevMatBlock, K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-  factor[numFactors - 1] = bfMatBlockDiagGetMatPtr(matBlockDiag);
+  factor[numFactors - 1] = bfMatBlockDiagToMat(matBlockDiag);
   HANDLE_ERROR();
 
   BfMatProduct *prod = bfMatProductNew();
@@ -658,7 +658,7 @@ facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K,
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&Z);
 
-  return bfMatDenseComplexGetMatPtr(Z);
+  return bfMatDenseComplexToMat(Z);
 }
 
 static
@@ -719,7 +719,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   bfFreePtrArray(&srcChildNodes);
   bfFreePtrArray(&tgtChildNodes);
 
-  return bfMatBlockDenseGetMatPtr(childBlockMat);
+  return bfMatBlockDenseToMat(childBlockMat);
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
