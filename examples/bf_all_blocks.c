@@ -111,6 +111,7 @@ int main(int argc, char const *argv[]) {
 
   BfMatDenseComplex *x = bfMatDenseComplexNew();
   bfMatDenseComplexInit(x, points.size, 1);
+  bfSeed(0);
   bfComplexRandn(points.size, x->data);
   printf("set up random RHS [%0.2fs]\n", bfToc());
 
