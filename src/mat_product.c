@@ -7,7 +7,7 @@
 #include <bf/error_macros.h>
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatProduct);
+BF_DEFINE_VTABLE(Mat, MatProduct)
 #undef INTERFACE
 
 BfMatProduct *bfMatProductNew() {
@@ -51,12 +51,18 @@ void bfMatProductDelete(BfMat **mat) {
   bfMatProductDeinitAndDealloc((BfMatProduct **)mat);
 }
 
-BfMat *bfMatProductEmptyLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatProductEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat;
+  (void)numRows;
+  (void)numCols;
   assert(false);
   return NULL;
 }
 
-BfMat *bfMatProductZerosLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatProductZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat;
+  (void)numRows;
+  (void)numCols;
   assert(false);
   return NULL;
 }
@@ -81,6 +87,7 @@ void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
 }
 
 BfMatType bfMatProductGetType(BfMat const *mat) {
+  (void)mat;
   return BF_MAT_TYPE_PRODUCT;
 }
 
@@ -141,21 +148,25 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
   return numCols;
 }
 
-BfMat *bfMatProductGetRowRange(BfMat *, BfSize, BfSize) {
+BfMat *bfMatProductGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  (void)mat; (void)i0; (void)i1;
   assert(false);
   return NULL;
 }
 
-BfMat *bfMatProductGetColRange(BfMat *, BfSize, BfSize) {
+BfMat *bfMatProductGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  (void)mat; (void)j0; (void)j1;
   assert(false);
   return NULL;
 }
 
-void bfMatProductSetRowRange(BfMat *, BfSize, BfSize, BfMat const *) {
+void bfMatProductSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
+  (void)mat; (void)i0; (void)i1; (void)otherMat;
   assert(false);
 }
 
-void bfMatProductAddInplace(BfMat *, BfMat const *) {
+void bfMatProductAddInplace(BfMat *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
 }
 
@@ -175,7 +186,8 @@ BfMat *bfMatProductMul(BfMat const *op1, BfMat const *op2) {
   return result;
 }
 
-BfMat *bfMatProductLstSq(BfMat const *, BfMat const *) {
+BfMat *bfMatProductLstSq(BfMat const *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
   return NULL;
 }

@@ -11,7 +11,7 @@
 #include <bf/mat_diag_real.h>
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatDenseComplex);
+BF_DEFINE_VTABLE(Mat, MatDenseComplex)
 #undef INTERFACE
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseComplex const *mat) {
@@ -169,6 +169,7 @@ void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat) {
 }
 
 BfMatType bfMatDenseComplexGetType(BfMat const *mat) {
+  (void)mat;
   return BF_MAT_TYPE_DENSE_COMPLEX;
 }
 

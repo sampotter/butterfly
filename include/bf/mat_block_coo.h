@@ -17,11 +17,11 @@ struct BfMatBlockCoo {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockCoo);
+BF_DECLARE_INTERFACE(MatBlockCoo)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockCoo);
+BF_DECLARE_INTERFACE(MatBlockCoo)
 #undef INTERFACE
 
 /* Upcasting: */

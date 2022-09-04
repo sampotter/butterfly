@@ -8,7 +8,7 @@
 #include <bf/error_macros.h>
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatDiagReal);
+BF_DEFINE_VTABLE(Mat, MatDiagReal)
 #undef INTERFACE
 
 BfMat *bfMatDiagRealToMat(BfMatDiagReal *mat) {
@@ -161,11 +161,13 @@ void bfMatDiagRealDelete(BfMat **mat) {
   bfMatDiagRealDeinitAndDealloc((BfMatDiagReal **)mat);
 }
 
-BfMat *bfMatDiagRealEmptyLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatDiagRealEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
 }
 
-BfMat *bfMatDiagRealZerosLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatDiagRealZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
 }
 
@@ -190,31 +192,42 @@ void bfMatDiagRealSave(BfMat const *mat, char const *path) {
   assert(false);
 }
 
-BfSize bfMatDiagRealGetNumRows(BfMat const *mat) { assert(false); }
+BfSize bfMatDiagRealGetNumRows(BfMat const *mat) {
+  (void)mat;
+  assert(false);
+}
 
-BfSize bfMatDiagRealGetNumCols(BfMat const *mat) { assert(false); }
+BfSize bfMatDiagRealGetNumCols(BfMat const *mat) {
+  (void)mat;
+  assert(false);
+}
 
 BfMat *bfMatDiagRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  (void)mat; (void)i0; (void)i1;
   assert(false);
 }
 
 BfMat *bfMatDiagRealGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  (void)mat; (void)j0; (void)j1;
   assert(false);
 }
 
-void bfMatDiagRealSetRowRange(BfMat *mat, BfSize i0, BfSize i1,
-                              BfMat const *otherMat) {
+void bfMatDiagRealSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
+  (void)mat; (void)i0; (void)i1; (void)otherMat;
   assert(false);
 }
 
 void bfMatDiagRealAddInplace(BfMat *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
 }
 
 BfMat *bfMatDiagRealMul(BfMat const *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
 }
 
 BfMat *bfMatDiagRealLstSq(BfMat const *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
 }

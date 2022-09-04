@@ -7,11 +7,11 @@ struct BfMatBlockDiag {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockDiag);
+BF_DECLARE_INTERFACE(MatBlockDiag)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockDiag);
+BF_DECLARE_INTERFACE(MatBlockDiag)
 #undef INTERFACE
 
 /* Upcasting: */

@@ -4,15 +4,13 @@
 #include "quadtree.h"
 
 BfSize
-bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
-                  BfQuadtreeNode const *tgtNode, BfReal K,
+bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
+                  BfQuadtreeNode const *tgtNode,
+                  BfReal K,
                   BfQuadtreeLevelIter *srcLevelIter,
                   BfQuadtreeLevelIter *tgtLevelIter);
 
-BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree,
-                             BfQuadtreeNode const *srcNode,
-                             BfQuadtreeNode const *tgtNode,
-                             BfReal K,
+BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
                              BfQuadtreeLevelIter *srcLevelIter,
                              BfQuadtreeLevelIter *tgtLevelIter,
                              BfSize numFactors);

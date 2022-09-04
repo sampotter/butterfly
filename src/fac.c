@@ -494,8 +494,9 @@ allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
  * matrix is butterfliable is very crude at the moment, and may result
  * in false negatives.) */
 BfSize
-bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
-                  BfQuadtreeNode const *tgtNode, BfReal K,
+bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
+                  BfQuadtreeNode const *tgtNode,
+                  BfReal K,
                   BfQuadtreeLevelIter *srcLevelIter,
                   BfQuadtreeLevelIter *tgtLevelIter)
 {
@@ -564,8 +565,7 @@ bfFacHelm2Prepare(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
 }
 
 BfMatProduct *
-bfFacHelm2Make(BfQuadtree const *tree, BfQuadtreeNode const *srcNode,
-               BfQuadtreeNode const *tgtNode, BfReal K,
+bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
                BfQuadtreeLevelIter *srcLevelIter,
                BfQuadtreeLevelIter *tgtLevelIter,
                BfSize numFactors)
@@ -668,13 +668,13 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
                                  BfQuadtreeNode const *tgtNode) {
   BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
   BfSize numFactors = bfFacHelm2Prepare(
-    tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
+    srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
 
   if (numFactors == 0)
     return facHelm2MakeMultilevel_dense(tree, K, srcNode, tgtNode);
 
   BfMatProduct *factorization = bfFacHelm2Make(
-    tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter, numFactors);
+    tree, K, &srcLevelIter, &tgtLevelIter, numFactors);
 
   return bfMatProductGetMatPtr(factorization);
 }

@@ -82,7 +82,7 @@ int main(int argc, char const *argv[]) {
 
   printf("computed groundtruth subblock of kernel matrix\n");
 
-  bfMatDenseComplexSave(Z_gt, "Z_gt.bin");
+  bfMatDenseComplexSave(bfMatDenseComplexToMat(Z_gt), "Z_gt.bin");
   HANDLE_ERROR();
   printf("wrote Z_gt.bin\n");
 
@@ -91,12 +91,12 @@ int main(int argc, char const *argv[]) {
 
   BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
   numFactors = bfFacHelm2Prepare(
-    &tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
+    srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
   if (numFactors == 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   factorization = bfFacHelm2Make(
-    &tree, srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter, numFactors);
+    &tree, K, &srcLevelIter, &tgtLevelIter, numFactors);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 

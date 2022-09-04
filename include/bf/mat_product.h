@@ -9,7 +9,7 @@ typedef struct BfMatProduct {
 } BfMatProduct;
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatProduct);
+BF_DECLARE_INTERFACE(MatProduct)
 #undef INTERFACE
 
 BfMatProduct *bfMatProductNew();

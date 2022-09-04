@@ -18,37 +18,38 @@ void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
   BfMatType matType = bfMatGetType(mat);
 
   if (matType == BF_MAT_TYPE_BLOCK_COO) {
-    BfMatBlockCoo const *sub = (BfMatBlockCoo const *)mat;
-    BfSize numBlocks = bfMatBlockCooNumBlocks(sub);
+    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+    BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
+    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
     for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = sub->super.block[k];
-      BfSize di = sub->super.rowOffset[sub->rowInd[k]];
-      BfSize dj = sub->super.colOffset[sub->colInd[k]];
+      BfMat const *block = matBlock->block[k];
+      BfSize di = matBlock->rowOffset[matBlockCoo->rowInd[k]];
+      BfSize dj = matBlock->colOffset[matBlockCoo->colInd[k]];
       printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
     }
   }
 
   else if (matType == BF_MAT_TYPE_BLOCK_DENSE) {
-    BfMatBlockDense const *sub = (BfMatBlockDense const *)mat;
-    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(&sub->super);
-    BfSize numColBlocks = bfMatBlockGetNumColBlocks(&sub->super);
+    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+    BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
     for (BfSize k = 0; k < numRowBlocks; ++k) {
       for (BfSize l = 0; l < numColBlocks; ++l) {
-        BfMat const *block = sub->super.block[k*numColBlocks + l];
-        BfSize di = sub->super.rowOffset[k];
-        BfSize dj = sub->super.colOffset[l];
+        BfMat const *block = matBlock->block[k*numColBlocks + l];
+        BfSize di = matBlock->rowOffset[k];
+        BfSize dj = matBlock->colOffset[l];
         printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
       }
     }
   }
 
   else if (matType == BF_MAT_TYPE_BLOCK_DIAG) {
-    BfMatBlockDiag const *sub = (BfMatBlockDiag const *)mat;
-    BfSize numBlocks = bfMatBlockDiagNumBlocks(sub);
+    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
     for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = sub->super.block[k];
-      BfSize di = sub->super.rowOffset[k];
-      BfSize dj = sub->super.colOffset[k];
+      BfMat const *block = matBlock->block[k];
+      BfSize di = matBlock->rowOffset[k];
+      BfSize dj = matBlock->colOffset[k];
       printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
     }
   }

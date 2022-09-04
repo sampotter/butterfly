@@ -10,8 +10,8 @@
   _(Type, Subtype, BfSize, GetNumBlockCols, BfMatBlock const *, BfSize)
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE_STRUCT(MatBlock);
-BF_DECLARE_INTERFACE(MatBlock);
+BF_DEFINE_VTABLE_STRUCT(MatBlock)
+BF_DECLARE_INTERFACE(MatBlock)
 #undef INTERFACE
 
 /* An abstract block matrix type. Shouldn't be instantiated
@@ -46,11 +46,11 @@ struct BfMatBlock {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlock);
+BF_DECLARE_INTERFACE(MatBlock)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlock);
+BF_DECLARE_INTERFACE(MatBlock)
 #undef INTERFACE
 
 /* Upcasting: */

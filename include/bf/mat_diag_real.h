@@ -9,7 +9,7 @@ struct BfMatDiagReal {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatDiagReal);
+BF_DECLARE_INTERFACE(MatDiagReal)
 #undef INTERFACE
 
 /* Upcasting: */

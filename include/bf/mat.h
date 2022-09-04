@@ -45,7 +45,7 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfMat *,   LstSq,       BfMat const *, BfMat const *)
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE_STRUCT(Mat);
+BF_DEFINE_VTABLE_STRUCT(Mat)
 #undef INTERFACE
 
 struct BfMat {
@@ -59,7 +59,7 @@ struct BfMat {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(Mat);
+BF_DECLARE_INTERFACE(Mat)
 #undef INTERFACE
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);

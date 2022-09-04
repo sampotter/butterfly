@@ -10,7 +10,7 @@ struct BfMatDenseComplex {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatDenseComplex);
+BF_DECLARE_INTERFACE(MatDenseComplex)
 #undef INTERFACE
 
 /* Upcasting: */

@@ -7,11 +7,11 @@
 #include <bf/error_macros.h>
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatBlockDense);
+BF_DEFINE_VTABLE(Mat, MatBlockDense)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE(MatBlock, MatBlockDense);
+BF_DEFINE_VTABLE(MatBlock, MatBlockDense)
 #undef INTERFACE
 
 BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense) {
@@ -105,11 +105,13 @@ void bfMatBlockDenseDelete(BfMat **mat) {
   bfMatBlockDenseDeinitAndDealloc((BfMatBlockDense **)mat);
 }
 
-BfMat *bfMatBlockDenseEmptyLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatBlockDenseEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
 }
 
-BfMat *bfMatBlockDenseZerosLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatBlockDenseZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
 }
 
@@ -219,15 +221,18 @@ BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
 }
 
 BfMat *bfMatBlockDenseGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  (void)mat; (void)j0; (void)j1;
   assert(false);
   return NULL;
 }
 
-void bfMatBlockDenseSetRowRange(BfMat *, BfSize, BfSize, BfMat const *) {
+void bfMatBlockDenseSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
+  (void)mat; (void)i0; (void)i1; (void)otherMat;
   assert(false);
 }
 
-void bfMatBlockDenseAddInplace(BfMat *, BfMat const *) {
+void bfMatBlockDenseAddInplace(BfMat *mat, BfMat const *otherMat) {
+  (void)mat; (void)otherMat;
   assert(false);
 }
 
@@ -287,14 +292,22 @@ BfSize bfMatBlockDenseNumBlocks(BfMatBlock const *matBlock) {
   return mat->numRows*mat->numCols;
 }
 
-BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlock const *) { assert(false); }
-
-BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlock const *) { assert(false); }
-
-BfSize bfMatBlockDenseGetNumBlockRows(BfMatBlock const *, BfSize) {
+BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlock const *matBlock) {
+  (void)matBlock;
   assert(false);
 }
 
-BfSize bfMatBlockDenseGetNumBlockCols(BfMatBlock const *, BfSize) {
+BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlock const *matBlock) {
+  (void)matBlock;
+  assert(false);
+}
+
+BfSize bfMatBlockDenseGetNumBlockRows(BfMatBlock const *matBlock, BfSize i) {
+  (void)matBlock; (void)i;
+  assert(false);
+}
+
+BfSize bfMatBlockDenseGetNumBlockCols(BfMatBlock const *matBlock, BfSize j) {
+  (void)matBlock; (void)j;
   assert(false);
 }

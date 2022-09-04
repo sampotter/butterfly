@@ -7,11 +7,11 @@
 #include <bf/error_macros.h>
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatBlockCoo);
+BF_DEFINE_VTABLE(Mat, MatBlockCoo)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE(MatBlock, MatBlockCoo);
+BF_DEFINE_VTABLE(MatBlock, MatBlockCoo)
 #undef INTERFACE
 
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo) {
@@ -76,12 +76,14 @@ void bfMatBlockCooDelete(BfMat **mat) {
   bfMatBlockCooDeinitAndDealloc((BfMatBlockCoo **)mat);
 }
 
-BfMat *bfMatBlockCooEmptyLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatBlockCooEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
   return NULL;
 }
 
-BfMat *bfMatBlockCooZerosLike(BfMat const *, BfSize, BfSize) {
+BfMat *bfMatBlockCooZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
+  (void)mat; (void)numRows; (void)numCols;
   assert(false);
   return NULL;
 }
@@ -102,6 +104,7 @@ void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat) {
 }
 
 BfMatType bfMatBlockCooGetType(BfMat const *mat) {
+  (void)mat;
   return BF_MAT_TYPE_BLOCK_COO;
 }
 
@@ -132,7 +135,8 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
   return num_bytes;
 }
 
-void bfMatBlockCooSave(BfMat const *, char const *) {
+void bfMatBlockCooSave(BfMat const *mat, char const *path) {
+  (void)mat; (void)path;
   assert(false);
 }
 
@@ -150,21 +154,26 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
 
-BfMat *bfMatBlockCooGetRowRange(BfMat *, BfSize, BfSize) {
+BfMat *bfMatBlockCooGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  (void)mat; (void)i0; (void)i1;
   assert(false);
   return NULL;
 }
 
-BfMat *bfMatBlockCooGetColRange(BfMat *, BfSize, BfSize) {
+BfMat *bfMatBlockCooGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  (void)mat; (void)j0; (void)j1;
   assert(false);
   return NULL;
 }
 
-void bfMatBlockCooSetRowRange(BfMat *, BfSize, BfSize, BfMat const *) {
+void bfMatBlockCooSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
+  (void)mat; (void)i0; (void)i1; (void)otherMat;
   assert(false);
 }
 
-void bfMatBlockCooAddInplace(BfMat *, BfMat const *) {
+void bfMatBlockCooAddInplace(BfMat *mat, BfMat const *otherMat) {
+  (void)mat;
+  (void)otherMat;
   assert(false);
 }
 
@@ -209,9 +218,10 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
 }
 
-BfMat *bfMatBlockCooLstSq(BfMat const *, BfMat const *) {
+BfMat *bfMatBlockCooLstSq(BfMat const *mat, BfMat const *otherMat) {
   /* TODO: not sure whether this should be implemented or not... see:
    * https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse */
+  (void)mat; (void)otherMat;
   assert(false);
   return NULL;
 }
@@ -220,14 +230,24 @@ BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
   return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
 }
 
-BfSize bfMatBlockCooGetNumRowBlocks(BfMatBlock const *) { assert(false); }
-
-BfSize bfMatBlockCooGetNumColBlocks(BfMatBlock const *) { assert(false); }
-
-BfSize bfMatBlockCooGetNumBlockRows(BfMatBlock const *, BfSize) {
+BfSize bfMatBlockCooGetNumRowBlocks(BfMatBlock const *matBlock) {
+  (void)matBlock;
   assert(false);
 }
 
-BfSize bfMatBlockCooGetNumBlockCols(BfMatBlock const *, BfSize) {
+BfSize bfMatBlockCooGetNumColBlocks(BfMatBlock const *matBlock) {
+  (void)matBlock;
+  assert(false);
+}
+
+BfSize bfMatBlockCooGetNumBlockRows(BfMatBlock const *matBlock, BfSize i) {
+  (void)matBlock;
+  (void)i;
+  assert(false);
+}
+
+BfSize bfMatBlockCooGetNumBlockCols(BfMatBlock const *matBlock, BfSize j) {
+  (void)matBlock;
+  (void)j;
   assert(false);
 }

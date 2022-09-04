@@ -3,7 +3,7 @@
 #define BF_DEFINE_VTABLE_STRUCT_impl(Type, _2, X)   \
   typedef struct Bf##Type##Vtable {                 \
     INTERFACE(Type, _1, X)                          \
-  } Bf##Type##Vtable
+  } Bf##Type##Vtable;
 #define BF_EMIT_VTABLE_STRUCT_ENTRY(_1, _2, ReturnType, FuncName, ...)  \
   ReturnType (*FuncName)(__VA_ARGS__);
 #define BF_DEFINE_VTABLE_STRUCT(Type)                               \
@@ -12,7 +12,7 @@
 #define BF_DEFINE_VTABLE_impl(Type, Subtype, _)    \
   static Bf##Type##Vtable Type##Vtbl = {           \
     INTERFACE(Type, Subtype, _)                    \
-  }
+  };
 #define BF_EMIT_VTABLE_ENTRY(Type, Subtype, _3, FuncName, ...)          \
   .FuncName = (__typeof__(&bf##Type##FuncName))bf##Subtype##FuncName,
 #define BF_DEFINE_VTABLE(Type, Subtype) \

@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdbool.h>
 
+#include <gsl/gsl_sf_bessel.h>
+
 #include <bf/cheb.h>
 #include <bf/const.h>
 

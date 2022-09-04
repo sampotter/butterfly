@@ -7,11 +7,11 @@ struct BfMatBlockDense {
 };
 
 #define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockDense);
+BF_DECLARE_INTERFACE(MatBlockDense)
 #undef INTERFACE
 
 #define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockDense);
+BF_DECLARE_INTERFACE(MatBlockDense)
 #undef INTERFACE
 
 /* Upcasting: */
