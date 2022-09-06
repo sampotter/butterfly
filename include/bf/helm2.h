@@ -18,5 +18,5 @@ bfGetHelm2KernelMatrix(BfPoints2 const *srcPts, BfPoints2 const *tgtPts,
                        BfReal K);
 
 BfMatDenseComplex *
-bfHelm2GetShiftMatrix(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
+bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig, BfPoints2 const *srcPtsEquiv,
                       BfPoints2 const *tgtPts, BfReal K);

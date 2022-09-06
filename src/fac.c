@@ -100,7 +100,7 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
 
     /* compute the shift matrix and store it in the current block */
     mat->super.block[i] = bfMatDenseComplexToMat(
-      bfHelm2GetShiftMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
+      bfHelm2GetReexpansionMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
     HANDLE_ERROR();
 
     /* continue initializing the row and column offsets */
@@ -322,7 +322,7 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
 
       /* compute the shift matrix for this configuration of circles */
       mat->super.block[blockIndex] =
-        (BfMat *)bfHelm2GetShiftMatrix(&srcChildPts, &srcPts, &tgtChildPts, K);
+        (BfMat *)bfHelm2GetReexpansionMatrix(&srcChildPts, &srcPts, &tgtChildPts, K);
       HANDLE_ERROR();
 
       /* if we're debugging, store this block's points---free them
