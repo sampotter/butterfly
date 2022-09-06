@@ -1,8 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <openblas/cblas.h>
-
 #include <bf/error_macros.h>
 #include <bf/fac.h>
 #include <bf/helm2.h>
@@ -13,67 +11,6 @@
 #include <bf/quadtree.h>
 #include <bf/rand.h>
 #include <bf/util.h>
-
-void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
-  BfMatType matType = bfMatGetType(mat);
-
-  if (matType == BF_MAT_TYPE_BLOCK_COO) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
-    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
-    for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = matBlock->block[k];
-      BfSize di = matBlock->rowOffset[matBlockCoo->rowInd[k]];
-      BfSize dj = matBlock->colOffset[matBlockCoo->colInd[k]];
-      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-    }
-  }
-
-  else if (matType == BF_MAT_TYPE_BLOCK_DENSE) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
-    BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
-    for (BfSize k = 0; k < numRowBlocks; ++k) {
-      for (BfSize l = 0; l < numColBlocks; ++l) {
-        BfMat const *block = matBlock->block[k*numColBlocks + l];
-        BfSize di = matBlock->rowOffset[k];
-        BfSize dj = matBlock->colOffset[l];
-        printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-      }
-    }
-  }
-
-  else if (matType == BF_MAT_TYPE_BLOCK_DIAG) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
-    for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = matBlock->block[k];
-      BfSize di = matBlock->rowOffset[k];
-      BfSize dj = matBlock->colOffset[k];
-      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-    }
-  }
-
-  else {
-    BfSize i1 = i0 + bfMatGetNumRows(mat);
-    BfSize j1 = j0 + bfMatGetNumCols(mat);
-    fprintf(fp, "%lu %lu %lu %lu %lu %d\n", level, i0, i1, j0, j1, matType);
-  }
-}
-
-static BfMatBlockCoo *unravel(BfMatBlockDense *A) {
-  BfMatBlockCoo *coo = bfMatBlockCooNew();
-
-  for (size_t i = 0; i < bfMatBlockGetNumRowBlocks(&A->super); ++i) {
-    for (size_t j = 0; j < bfMatBlockGetNumColBlocks(&A->super); ++j) {
-      BfMat const *block = bfMatBlockDenseGetBlock(A, i, j);
-      BfMatType matType = bfMatGetType(block);
-      printf("%lu, %lu: %d\n", i, j, matType);
-    }
-  }
-
-  return coo;
-}
 
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
@@ -109,9 +46,6 @@ int main(int argc, char const *argv[]) {
   BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
-  BfMatBlockCoo *A_unravelled = unravel(A);
-  (void)A_unravelled;
-
   BfMatDenseComplex *x = bfMatDenseComplexNew();
   bfMatDenseComplexInit(x, points.size, 1);
   bfSeed(0);
@@ -127,7 +61,7 @@ int main(int argc, char const *argv[]) {
   printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
 
   FILE *fp = fopen(blocks_path_str, "w");
-  printBlocks(bfMatBlockDenseConstToMatConst(A), fp, 0, 0, 2);
+  bfPrintBlocks(bfMatBlockDenseConstToMatConst(A), 2, fp);
   fclose(fp);
   printf("wrote blocks to %s [%0.2fs]\n", blocks_path_str, bfToc());
 
