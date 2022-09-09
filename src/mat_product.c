@@ -10,81 +10,14 @@
 BF_DEFINE_VTABLE(Mat, MatProduct)
 #undef INTERFACE
 
-BfMatProduct *bfMatProductNew() {
-  BEGIN_ERROR_HANDLING();
-
-  BfMatProduct *prod = malloc(sizeof(BfMatProduct));
-  if (prod == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  END_ERROR_HANDLING() {}
-
-  return prod;
-}
-
-void bfMatProductInit(BfMatProduct *mat) {
-  BEGIN_ERROR_HANDLING();
-
-  /* We don't store the number of rows or columns in `mat->super`
-   * since we always look up the number of rows and columns from the
-   * leftmost and rightmost factors at runtime. */
-  bfMatInit(&mat->super, &MatVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
-
-  mat->factorArr = bfGetUninitializedPtrArray();
-
-  bfInitPtrArray(&mat->factorArr, /* capacity: */ 4);
-  HANDLE_ERROR();
-
-  END_ERROR_HANDLING()
-    bfPtrArrayDeinit(&mat->factorArr);
-}
-
-BfMat *bfMatProductGetMatPtr(BfMatProduct *mat) {
-  return &mat->super;
-}
-
-BfMat const *bfMatProductGetMatConstPtr(BfMatProduct const *mat) {
-  return &mat->super;
-}
+BF_STUB(BfMat *, MatProductGetView, BfMat *)
 
 void bfMatProductDelete(BfMat **mat) {
   bfMatProductDeinitAndDealloc((BfMatProduct **)mat);
 }
 
-BfMat *bfMatProductEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat;
-  (void)numRows;
-  (void)numCols;
-  assert(false);
-  return NULL;
-}
-
-BfMat *bfMatProductZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat;
-  (void)numRows;
-  (void)numCols;
-  assert(false);
-  return NULL;
-}
-
-void bfMatProductDeinit(BfMatProduct *prod) {
-  for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
-    BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
-    bfMatDelete(&mat);
-  }
-
-  bfPtrArrayDeinit(&prod->factorArr);
-}
-
-void bfMatProductDealloc(BfMatProduct **prod) {
-  free(*prod);
-  *prod = NULL;
-}
-
-void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
-  bfMatProductDeinit(*prod);
-  bfMatProductDealloc(prod);
-}
+BF_STUB(BfMat *, MatProductEmptyLike, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatProductZerosLike, BfMat const *, BfSize, BfSize)
 
 BfMatType bfMatProductGetType(BfMat const *mat) {
   (void)mat;
@@ -92,21 +25,12 @@ BfMatType bfMatProductGetType(BfMat const *mat) {
 }
 
 bool bfMatProductInstanceOf(BfMat const *mat, BfMatType matType) {
-  BfMat const *parent = bfMatProductGetMatConstPtr((BfMatProduct const *)mat);
-  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
 }
 
-BfSize bfMatProductNumBytes(BfMat const *mat) {
-  (void)mat;
-  assert(false);
-  return BF_SIZE_BAD_VALUE;
-}
-
-void bfMatProductSave(BfMat const *mat, char const *path) {
-  (void)mat;
-  (void)path;
-  assert(false);
-}
+BF_STUB(BfSize, MatProductNumBytes, BfMat const *)
+BF_STUB(void, MatProductSave, BfMat const *, char const *)
+BF_STUB(void, MatProductPrint, FILE *, BfMat const *)
 
 BfSize bfMatProductGetNumRows(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -148,27 +72,14 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
   return numCols;
 }
 
-BfMat *bfMatProductGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
-  (void)mat; (void)i0; (void)i1;
-  assert(false);
-  return NULL;
-}
-
-BfMat *bfMatProductGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
-  (void)mat; (void)j0; (void)j1;
-  assert(false);
-  return NULL;
-}
-
-void bfMatProductSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
-  (void)mat; (void)i0; (void)i1; (void)otherMat;
-  assert(false);
-}
-
-void bfMatProductAddInplace(BfMat *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
-}
+BF_STUB(BfMat *, MatProductGetRowRange, BfMat *, BfSize, BfSize)
+BF_STUB(BfMat *, MatProductGetColRange, BfMat *, BfSize, BfSize)
+BF_STUB(void, MatProductSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
+BF_STUB(BfMat *, MatProductRowDists, BfMat const *, BfMat const *)
+BF_STUB(void, MatProductScaleCols, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatProductSumCols, BfMat const *)
+BF_STUB(void, MatProductAddInplace, BfMat *, BfMat const *)
+BF_STUB(void, MatProductAddDiag, BfMat *, BfMat const *)
 
 BfMat *bfMatProductMul(BfMat const *op1, BfMat const *op2) {
   /* TODO: add error handling... */
@@ -186,10 +97,64 @@ BfMat *bfMatProductMul(BfMat const *op1, BfMat const *op2) {
   return result;
 }
 
-BfMat *bfMatProductLstSq(BfMat const *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
-  return NULL;
+BF_STUB(void, MatProductMulInplace, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatProductSolve, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatProductLstSq, BfMat const *, BfMat const *)
+
+/* Upcasting: */
+
+BfMat *bfMatProductToMat(BfMatProduct *matProduct) {
+  return &matProduct->super;
+}
+
+/* Implementation: MatProduct */
+
+BfMatProduct *bfMatProductNew() {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct *prod = malloc(sizeof(BfMatProduct));
+  if (prod == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  END_ERROR_HANDLING() {}
+
+  return prod;
+}
+
+void bfMatProductInit(BfMatProduct *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  /* We don't store the number of rows or columns in `mat->super`
+   * since we always look up the number of rows and columns from the
+   * leftmost and rightmost factors at runtime. */
+  bfMatInit(&mat->super, &MatVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
+
+  mat->factorArr = bfGetUninitializedPtrArray();
+
+  bfInitPtrArray(&mat->factorArr, /* capacity: */ 4);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfPtrArrayDeinit(&mat->factorArr);
+}
+
+void bfMatProductDeinit(BfMatProduct *prod) {
+  for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
+    BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
+    bfMatDelete(&mat);
+  }
+
+  bfPtrArrayDeinit(&prod->factorArr);
+}
+
+void bfMatProductDealloc(BfMatProduct **prod) {
+  free(*prod);
+  *prod = NULL;
+}
+
+void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
+  bfMatProductDeinit(*prod);
+  bfMatProductDealloc(prod);
 }
 
 BfSize bfMatProductNumFactors(BfMatProduct *prod) {

@@ -14,106 +14,16 @@ BF_DEFINE_VTABLE(Mat, MatBlockDense)
 BF_DEFINE_VTABLE(MatBlock, MatBlockDense)
 #undef INTERFACE
 
-BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense) {
-  return &matBlockDense->super.super;
-}
+/** Interface: Mat */
 
-BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense) {
-  return &matBlockDense->super.super;
-}
-
-BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK_DENSE)) {
-    bfSetError(BF_ERROR_TYPE_ERROR);
-    return NULL;
-  } else {
-    return (BfMatBlockDense const *)mat;
-  }
-}
-
-BfMatBlockDense *bfMatBlockDenseNew() {
-  return malloc(sizeof(BfMatBlockDense));
-}
-
-void bfMatBlockDenseInit(BfMatBlockDense *mat,
-                         BfSize numBlockRows, BfSize numBlockCols) {
-  BEGIN_ERROR_HANDLING();
-
-  BfSize numBlocks = numBlockRows*numBlockCols;
-
-  bfMatBlockInit(&mat->super,
-                 &MatVtbl, &MatBlockVtbl,
-                 numBlocks, numBlockRows, numBlockCols);
-  HANDLE_ERROR();
-
-  END_ERROR_HANDLING()
-    bfMatBlockDeinit(&mat->super);
-}
-
-BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
-
-  BfMat *block = NULL;
-
-  BfSize numBlockRows = mat->super.super.numRows;
-  if (i >= numBlockRows)
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  BfSize numBlockCols = mat->super.super.numCols;
-  if (j >= numBlockCols)
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  block = mat->super.block[numBlockCols*i + j];
-
-  END_ERROR_HANDLING() {}
-
-  return block;
-}
-
-void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
-                             BfMat *block) {
-  BEGIN_ERROR_HANDLING();
-
-  BfSize numBlockRows = mat->super.super.numRows;
-  if (i >= numBlockRows)
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  BfSize numBlockCols = mat->super.super.numCols;
-  if (j >= numBlockCols)
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  mat->super.block[numBlockCols*i + j] = block;
-
-  END_ERROR_HANDLING() {}
-}
-
-void bfMatBlockDenseDeinit(BfMatBlockDense *mat) {
-  bfMatBlockDeinit(&mat->super);
-}
-
-void bfMatBlockDenseDealloc(BfMatBlockDense **mat) {
-  free(*mat);
-  *mat = NULL;
-}
-
-void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
-  bfMatBlockDenseDeinit(*mat);
-  bfMatBlockDenseDealloc(mat);
-}
+BF_STUB(BfMat *, MatBlockDenseGetView, BfMat *)
 
 void bfMatBlockDenseDelete(BfMat **mat) {
   bfMatBlockDenseDeinitAndDealloc((BfMatBlockDense **)mat);
 }
 
-BfMat *bfMatBlockDenseEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-}
-
-BfMat *bfMatBlockDenseZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-}
+BF_STUB(BfMat *, MatBlockDenseEmptyLike, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockDenseZerosLike, BfMat const *, BfSize, BfSize)
 
 BfMatType bfMatBlockDenseGetType(BfMat const *mat) {
   (void)mat;
@@ -147,11 +57,8 @@ BfSize bfMatBlockDenseNumBytes(BfMat const *mat) {
   return num_bytes;
 }
 
-void bfMatBlockDenseSave(BfMat const *mat, char const *path) {
-  (void)mat;
-  (void)path;
-  assert(false);
-}
+BF_STUB(void, MatBlockDenseSave, BfMat const *, char const *)
+BF_STUB(void, MatBlockDensePrint, FILE *, BfMat const *)
 
 BfSize bfMatBlockDenseGetNumRows(BfMat const *mat) {
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
@@ -220,21 +127,7 @@ BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   return bfMatBlockDenseToMat(view);
 }
 
-BfMat *bfMatBlockDenseGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
-  (void)mat; (void)j0; (void)j1;
-  assert(false);
-  return NULL;
-}
-
-void bfMatBlockDenseSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
-  (void)mat; (void)i0; (void)i1; (void)otherMat;
-  assert(false);
-}
-
-void bfMatBlockDenseAddInplace(BfMat *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
-}
+BF_STUB(BfMat *, MatBlockDenseGetColRange, BfMat *, BfSize, BfSize)
 
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
@@ -277,37 +170,117 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
   return result;
 }
 
-BfMat *bfMatBlockDenseLstSq(BfMat const *lhs, BfMat const *rhs) {
-  (void)lhs;
-  (void)rhs;
-  assert(false);
-  return NULL;
+BF_STUB(void, MatBlockDenseSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
+BF_STUB(BfMat *, MatBlockDenseRowDists, BfMat const *, BfMat const *)
+BF_STUB(void, MatBlockDenseScaleCols, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDenseSumCols, BfMat const *)
+BF_STUB(void, MatBlockDenseAddInplace, BfMat *, BfMat const *)
+BF_STUB(void, MatBlockDenseAddDiag, BfMat *, BfMat const *)
+BF_STUB(void, MatBlockDenseMulInplace, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDenseSolve, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDenseLstSq, BfMat const *, BfMat const *)
 
-  // TODO: not sure whether this should be implemented or not... see:
-  //   https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse
-}
+/** Interface: MatBlock */
 
 BfSize bfMatBlockDenseNumBlocks(BfMatBlock const *matBlock) {
   BfMat const *mat = bfMatBlockConstToMatConst(matBlock);
   return mat->numRows*mat->numCols;
 }
 
-BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlock const *matBlock) {
-  (void)matBlock;
-  assert(false);
+BF_STUB(BfSize, MatBlockDenseGetNumRowBlocks, BfMatBlock const *)
+BF_STUB(BfSize, MatBlockDenseGetNumColBlocks, BfMatBlock const *)
+BF_STUB(BfSize, MatBlockDenseGetNumBlockRows, BfMatBlock const *, BfSize)
+BF_STUB(BfSize, MatBlockDenseGetNumBlockCols, BfMatBlock const *, BfSize)
+
+/** Upcasting: */
+
+BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense) {
+  return &matBlockDense->super.super;
 }
 
-BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlock const *matBlock) {
-  (void)matBlock;
-  assert(false);
+BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense) {
+  return &matBlockDense->super.super;
 }
 
-BfSize bfMatBlockDenseGetNumBlockRows(BfMatBlock const *matBlock, BfSize i) {
-  (void)matBlock; (void)i;
-  assert(false);
+/** Downcasting: */
+
+BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat) {
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK_DENSE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatBlockDense const *)mat;
+  }
 }
 
-BfSize bfMatBlockDenseGetNumBlockCols(BfMatBlock const *matBlock, BfSize j) {
-  (void)matBlock; (void)j;
-  assert(false);
+/** Implementation: */
+
+BfMatBlockDense *bfMatBlockDenseNew() {
+  return malloc(sizeof(BfMatBlockDense));
+}
+
+void bfMatBlockDenseInit(BfMatBlockDense *mat,
+                         BfSize numBlockRows, BfSize numBlockCols) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numBlocks = numBlockRows*numBlockCols;
+
+  bfMatBlockInit(&mat->super,
+                 &MatVtbl, &MatBlockVtbl,
+                 numBlocks, numBlockRows, numBlockCols);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfMatBlockDeinit(&mat->super);
+}
+
+void bfMatBlockDenseDeinit(BfMatBlockDense *mat) {
+  bfMatBlockDeinit(&mat->super);
+}
+
+void bfMatBlockDenseDealloc(BfMatBlockDense **mat) {
+  free(*mat);
+  *mat = NULL;
+}
+
+void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
+  bfMatBlockDenseDeinit(*mat);
+  bfMatBlockDenseDealloc(mat);
+}
+
+BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *block = NULL;
+
+  BfSize numBlockRows = mat->super.super.numRows;
+  if (i >= numBlockRows)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSize numBlockCols = mat->super.super.numCols;
+  if (j >= numBlockCols)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  block = mat->super.block[numBlockCols*i + j];
+
+  END_ERROR_HANDLING() {}
+
+  return block;
+}
+
+void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
+                             BfMat *block) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numBlockRows = mat->super.super.numRows;
+  if (i >= numBlockRows)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSize numBlockCols = mat->super.super.numCols;
+  if (j >= numBlockCols)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  mat->super.block[numBlockCols*i + j] = block;
+
+  END_ERROR_HANDLING() {}
 }

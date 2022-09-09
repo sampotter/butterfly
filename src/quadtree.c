@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <bf/circle.h>
 #include <bf/error_macros.h>
+#include <bf/points.h>
 #include <bf/ptr_array.h>
 
 #define SWAP(x, y) do {                         \
@@ -250,6 +252,16 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   END_ERROR_HANDLING() {
     bfFreeQuadtree(tree);
   }
+}
+
+void bfInitQuadtreeFromMat(BfQuadtree *tree, BfMat const *mat) {
+  BfPoints2 const *points = bfPoints2ConstViewFromMat(mat);
+  if (points == NULL) {
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+    return;
+  }
+
+  bfInitQuadtreeFromPoints(tree, points);
 }
 
 void saveBoxesToTextFileRec(BfQuadtreeNode const *node, FILE *fp) {

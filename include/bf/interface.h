@@ -24,3 +24,11 @@
   ReturnType bf##Subtype##FuncName(__VA_ARGS__);
 #define BF_DECLARE_INTERFACE(Subtype) \
   BF_DECLARE_INTERFACE_impl(Subtype, BF_EMIT_INTERFACE_ENTRY)
+
+#define BF_STUB(ReturnType, FuncName, ...)                  \
+  _Pragma("GCC diagnostic push")                            \
+  _Pragma("GCC diagnostic ignored \"-Wpedantic\"")  \
+  ReturnType bf##FuncName(__VA_ARGS__) {                    \
+    assert(false);                                          \
+  }                                                         \
+  _Pragma("GCC diagnostic pop")

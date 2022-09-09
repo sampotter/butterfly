@@ -12,8 +12,9 @@
 #include <bf/mat_block.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_dense_complex.h>
-#include <bf/rand.h>
+#include <bf/points.h>
 #include <bf/quadtree.h>
+#include <bf/rand.h>
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {

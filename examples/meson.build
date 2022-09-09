@@ -1,7 +1,7 @@
 examples = [
   'bf_one_block',
   'bf_all_blocks',
-  'helm2_bie_ellipse_kapur_rokhlin'
+  'helm2_bie'
 ]
 
 foreach example : examples

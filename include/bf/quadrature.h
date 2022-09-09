@@ -1,6 +1,9 @@
 #pragma once
 
+#include <bf/mat.h>
+
 typedef enum BfQuadratures {
   BF_QUADRATURE_KAPUR_ROKHLIN,
-  BF_QUADRATURE_PULSE_BASIS
 } BfQuadrature;
+
+void bf_apply_KR_correction(BfMat *mat, BfSize order);

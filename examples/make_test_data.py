@@ -12,5 +12,16 @@ num_points = int(sys.argv[1])
 theta = np.linspace(0, 2*np.pi, num_points, endpoint=False)
 
 points = np.array([np.cos(theta), np.sin(theta)]).T
+normals = points
+weights = theta[1] - theta[0]
+sources = np.array([[0, 0]])
 
-points.tofile('circle_with_%d_points.bin' % theta.size)
+targets_r = 5
+targets_theta = np.linspace(0, 2*np.pi, 2**6, endpoint=False)
+targets = targets_r*np.array([np.cos(targets_theta), np.sin(targets_theta)]).T
+
+points.tofile(f'circle{num_points}_points.bin')
+normals.tofile(f'circle{num_points}_normals.bin')
+weights.tofile(f'circle{num_points}_weights.bin')
+sources.tofile(f'circle{num_points}_sources.bin')
+targets.tofile(f'circle{num_points}_targets.bin')

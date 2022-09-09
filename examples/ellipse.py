@@ -6,8 +6,8 @@ import scipy.special
 
 plt.ion()
 
-MAKE_DEBUG_PLOTS = False
-MAKE_FIELD_PLOT = False
+MAKE_DEBUG_PLOTS = True
+MAKE_FIELD_PLOT = True
 
 order = 10
 n = 800
@@ -85,7 +85,6 @@ wKR = {2: [1.825748064736159e0,
             2.053584266072635e1,
             -2.166984103403823e0]}
 
-w = wKR[order]
 
 # set up system matrix
 A = np.zeros((n, n), dtype=np.complex128)
@@ -94,9 +93,14 @@ for i, j in it.product(range(n), repeat=2):
         A[i, j] = 1/2
     else:
         A[i, j] = N[i]@gradG(Q[i], Q[j], k)*h*dsdt[j]
-        p = abs(i - j)
-        if p <= order:
-            A[i, j] *= 1 + w[p - 1]
+
+# apply KR correction
+w = wKR[order]
+for i in range(n):
+    for p in range(order):
+        di = p + 1
+        A[i, (i + di) % n] *= 1 + w[p]
+        A[i, (i - di) % n] *= 1 + w[p]
 
 # compute righthand side
 rhs = scipy.linalg.solve(A, lhs)
@@ -168,8 +172,8 @@ if MAKE_FIELD_PLOT:
     plt.scatter(*Perr.T, s=10, c='k', marker='x', zorder=2)
     plt.subplot(1, 3, 2)
     plt.imshow(np.real(F_exact), extent=extent, vmin=vmin, vmax=vmax, cmap=cmap)
-    plt.scatter(*Perr.T, s=10, c='k', marker='x', zorder=2)
     plt.colorbar()
+    plt.scatter(*Perr.T, s=10, c='k', marker='x', zorder=2)
     plt.subplot(1, 3, 3)
     plt.imshow(np.log10(np.maximum(1e-16, error)), extent=extent,
                cmap=cc.cm.rainbow, zorder=1)

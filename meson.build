@@ -19,12 +19,13 @@ gsl_dep = cc.find_library('gsl', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 
 butterfly_lib_src = [
+  'src/bbox.c',
   'src/bessel.c',
   'src/cheb.c',
+  'src/circle.c',
   'src/dtype.c',
   'src/error.c',
   'src/fac.c',
-  'src/geom.c',
   'src/helm2.c',
   'src/mat.c',
   'src/mat_block.c',
@@ -32,15 +33,20 @@ butterfly_lib_src = [
   'src/mat_block_dense.c',
   'src/mat_block_diag.c',
   'src/mat_dense_complex.c',
+  'src/mat_dense_real.c',
   'src/mat_diag_real.c',
   'src/mat_product.c',
   'src/mat_types.c',
+  'src/mat_util.c',
+  'src/points.c',
   'src/ptr_array.c',
+  'src/quadrature.c',
   'src/quadtree.c',
   'src/rand.c',
   'src/splitmix64.c',
   'src/util.c',
   'src/vec.c',
+  'src/vectors.c',
   'src/xoshiro256plus.c',
 ]
 

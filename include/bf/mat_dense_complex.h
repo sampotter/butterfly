@@ -22,11 +22,12 @@ BfMatDenseComplex *bfMatToMatDenseComplex(BfMat *mat);
 BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat);
 
 BfMatDenseComplex *bfMatDenseComplexNew();
-BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
+BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
+BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat);
 BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat);
 void bfMatDenseComplexCopy(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
@@ -39,3 +40,6 @@ BfMatDenseComplex *
 bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
                                    BfMatDenseComplex const *rhs);
 bool bfMatDenseComplexIsFinite(BfMatDenseComplex const *mat);
+
+void bf_zmat_add_diag(BfMatDenseComplex *mat, BfReal value);
+BfMatDenseComplex *bf_zmat_solve(BfMatDenseComplex *A, BfMatDenseComplex *B);

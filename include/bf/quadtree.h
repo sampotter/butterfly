@@ -2,9 +2,8 @@
 
 #include <stdlib.h>
 
-#include "def.h"
+#include "bbox.h"
 #include "error.h"
-#include "geom.h"
 #include "mat.h"
 #include "ptr_array.h"
 #include "tree.h"
@@ -75,8 +74,9 @@ struct BfQuadtree {
   BfQuadtreeNode *root;
 };
 
-void
-bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
+void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
+
+void bfInitQuadtreeFromMat(BfQuadtree *tree, BfMat const *mat);
 
 void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);
 

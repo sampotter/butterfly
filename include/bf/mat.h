@@ -1,6 +1,9 @@
 #pragma once
 
+#include <stdio.h>
+
 #include "def.h"
+#include "dtype.h"
 #include "interface.h"
 #include "mat_types.h"
 
@@ -16,6 +19,7 @@ typedef struct BfMatBlockCoo BfMatBlockCoo;
 typedef struct BfMatBlockDense BfMatBlockDense;
 typedef struct BfMatBlockDiag BfMatBlockDiag;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
+typedef struct BfMatDenseReal BfMatDenseReal;
 typedef struct BfMatDiagReal BfMatDiagReal;
 typedef struct BfMatProduct BfMatProduct;
 
@@ -28,6 +32,7 @@ typedef enum BfMatProps {
 } BfMatProps;
 
 #define BF_INTERFACE_Mat(Type, Subtype, _)                                \
+  _(Type, Subtype, BfMat *,   GetView,     BfMat *)                       \
   _(Type, Subtype, void,      Delete,      BfMat **)                      \
   _(Type, Subtype, BfMat *,   EmptyLike,   BfMat const *, BfSize, BfSize) \
   _(Type, Subtype, BfMat *,   ZerosLike,   BfMat const *, BfSize, BfSize) \
@@ -35,13 +40,20 @@ typedef enum BfMatProps {
   _(Type, Subtype, bool,      InstanceOf,  BfMat const *, BfMatType)      \
   _(Type, Subtype, BfSize,    NumBytes,    BfMat const *)                 \
   _(Type, Subtype, void,      Save,        BfMat const *, char const *)   \
+  _(Type, Subtype, void,      Print,       FILE *, BfMat const *)         \
   _(Type, Subtype, BfSize,    GetNumRows,  BfMat const *)                 \
   _(Type, Subtype, BfSize,    GetNumCols,  BfMat const *)                 \
   _(Type, Subtype, BfMat *,   GetRowRange, BfMat *, BfSize, BfSize)       \
   _(Type, Subtype, BfMat *,   GetColRange, BfMat *, BfSize, BfSize)       \
   _(Type, Subtype, void,      SetRowRange, BfMat *, BfSize, BfSize, BfMat const *) \
+  _(Type, Subtype, BfMat *,   RowDists,    BfMat const *, BfMat const *)  \
+  _(Type, Subtype, void,      ScaleCols,   BfMat *, BfMat const *)        \
+  _(Type, Subtype, BfMat *,   SumCols,     BfMat const *)                 \
   _(Type, Subtype, void,      AddInplace,  BfMat *, BfMat const *)        \
+  _(Type, Subtype, void,      AddDiag,     BfMat *, BfMat const *)        \
   _(Type, Subtype, BfMat *,   Mul,         BfMat const *, BfMat const *)  \
+  _(Type, Subtype, void,      MulInplace,  BfMat *, BfMat const *)        \
+  _(Type, Subtype, BfMat *,   Solve,       BfMat const *, BfMat const *)  \
   _(Type, Subtype, BfMat *,   LstSq,       BfMat const *, BfMat const *)
 
 #define INTERFACE BF_INTERFACE_Mat
@@ -64,5 +76,6 @@ BF_DECLARE_INTERFACE(Mat)
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);
+BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype dtype);
 bool bfMatIsTransposed(BfMat const *mat);
 BfMat *bfMatConjTrans(BfMat *mat);

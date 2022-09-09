@@ -1,3 +1,4 @@
+#include "bf/geom.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -6,136 +7,99 @@
 #include <bf/error_macros.h>
 #include <bf/fac.h>
 #include <bf/helm2.h>
+#include <bf/layer_pot.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/mat_util.h>
+#include <bf/points.h>
 #include <bf/quadrature.h>
 #include <bf/quadtree.h>
 #include <bf/rand.h>
 #include <bf/util.h>
-
-void printBlocks(BfMat const *mat,FILE *fp,BfSize i0,BfSize j0,BfSize level) {
-  BfMatType matType = bfMatGetType(mat);
-
-  if (matType == BF_MAT_TYPE_BLOCK_COO) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
-    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
-    for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = matBlock->block[k];
-      BfSize di = matBlock->rowOffset[matBlockCoo->rowInd[k]];
-      BfSize dj = matBlock->colOffset[matBlockCoo->colInd[k]];
-      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-    }
-  }
-
-  else if (matType == BF_MAT_TYPE_BLOCK_DENSE) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
-    BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
-    for (BfSize k = 0; k < numRowBlocks; ++k) {
-      for (BfSize l = 0; l < numColBlocks; ++l) {
-        BfMat const *block = matBlock->block[k*numColBlocks + l];
-        BfSize di = matBlock->rowOffset[k];
-        BfSize dj = matBlock->colOffset[l];
-        printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-      }
-    }
-  }
-
-  else if (matType == BF_MAT_TYPE_BLOCK_DIAG) {
-    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
-    for (BfSize k = 0; k < numBlocks; ++k) {
-      BfMat const *block = matBlock->block[k];
-      BfSize di = matBlock->rowOffset[k];
-      BfSize dj = matBlock->colOffset[k];
-      printBlocks(block, fp, i0 + di, j0 + dj, level + 1);
-    }
-  }
-
-  else {
-    BfSize i1 = i0 + bfMatGetNumRows(mat);
-    BfSize j1 = j0 + bfMatGetNumCols(mat);
-    fprintf(fp, "%lu %lu %lu %lu %lu %d\n", level, i0, i1, j0, j1, matType);
-  }
-}
+#include <bf/vectors.h>
 
 int main(int argc, char const *argv[]) {
-  if (argc != 4) {
-    printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
+  if (argc != 8) {
+    printf("usage: %s <K> <points.bin> <normals.bin> <weights.bin> "
+           "<sources.bin> <targets.bin> <blocks.txt>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   BEGIN_ERROR_HANDLING();
 
-  char const *K_str = argv[1];
-  char const *points_path_str = argv[2];
-  char const *blocks_path_str = argv[3];
+  BfReal K = atoi(argv[0]);
 
-  bfToc();
-
-  BfPoints2 points;
-  bfReadPoints2FromFile(points_path_str, &points);
+  BfMat *X = bfMatFromFile(argv[2], -1, 2, BF_DTYPE_REAL);
   HANDLE_ERROR();
-  printf("read points from %s [%0.2fs]\n", points_path_str, bfToc());
 
+  BfMat *N = bfMatFromFile(argv[3], -1, 2, BF_DTYPE_REAL);
+  HANDLE_ERROR();
+
+  BfMat *w = bfMatFromFile(argv[4], -1, 1, BF_DTYPE_REAL);
+  HANDLE_ERROR();
+
+  BfMat *Xsrc = bfMatFromFile(argv[5], -1, 2, BF_DTYPE_REAL);
+  HANDLE_ERROR();
+
+  BfMat *Xtgt = bfMatFromFile(argv[6], -1, 2, BF_DTYPE_REAL);
+  HANDLE_ERROR();
+
+  /** Make sure everything is compatibly sized */
+
+  BfSize n = bfMatGetNumRows(X);
+
+  /** Convert matrices to points */
+
+  BfPoints2 const *X_points = bfPoints2ConstViewFromMat(X);
+  BfPoints2 const *X_source_points = bfPoints2ConstViewFromMat(Xsrc);
+  BfPoints2 const *X_target_points = bfPoints2ConstViewFromMat(Xtgt);
+  BfVectors2 const *N_vectors = bfVectors2ConstViewFromMat(N);
+
+  /* Build a quadtree on the points sampling the boundary */
+  bfToc();
   BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, &points);
+  bfInitQuadtreeFromMat(&tree, X);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
-  BfReal K = atoi(K_str);
+  /** Discretize Helmholtz BIE with Neumann BCs using Kapur-Rokhlin
+   *  quadrature. */
 
-  // TODO: modifications to make:
-  // - need Sp matrix
-  //   + need to check that it works with a priori rank estimate
-  // - A_true -> Nystrom system matrix using Kapur-Rokhlin quadrature
-  // - A -> butterfly-factorized Nystrom matrix
-  // - "well-separated condition" -> "well-separated" +
-  //                                 boxes *don't* contain corrected nodes
-  //                                 (they must only belong to dense near-field blocks
-  //                                  or diagonal blocks!)
-  // - need to write a function that will compute the Nystrom system matrix
-  //   + then just use that instead of bfGetHelm2KernelMatrix when we bottom out
-  // - bfFacHelm2MakeMultilevel needs to be modified
-  // - set up ellipse problem as before
-  // - compute LU factorization of A_true and solve
-  // - use GMRES to solve using A_true
-  // - use GMRES to solve using A
-  // - need to make sure I'm permuting and unpermuting before and
-  //   after multiplying...
+  /* Set up the LHS of the problem */
+  BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
+  HANDLE_ERROR();
 
-  BfMatDenseComplex *A_true = bfGetHelm2KernelMatrix(&points, &points, K);
-  printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
+  /* Evaluate the normal derivative of the SLP on the boundary (i.e.,
+   * compute S_k') */
+  BfMat *A_dense = bf_hh2_get_dGdN(X_points, X_points, K, N_vectors);
+  HANDLE_ERROR();
 
-  BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
-  printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
+  /* Scale the columns by the discretization weights */
+  bfMatScaleCols(A_dense, w);
 
-  BfMatDenseComplex *x = bfMatDenseComplexNew();
-  bfMatDenseComplexInit(x, points.size, 1);
-  bfComplexRandn(points.size, x->data);
-  printf("set up random RHS [%0.2fs]\n", bfToc());
+  /* Apply the KR quadrature correction to the system matrix */
+  bf_apply_KR_correction(A_dense, 6);
 
-  BfMat *y_true = bfMatMul(bfMatDenseComplexToMat(A_true), bfMatDenseComplexToMat(x));
-  printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
+  /* Perturb by one-half the identity to get a second-kind IE */
+  BfMat *oneHalfEye = bfEye(n, n, BF_DTYPE_COMPLEX);
+  bfMatAddInplace(A_dense, oneHalfEye);
 
-  BfMat *y = bfMatMul(bfMatBlockDenseToMat(A), bfMatDenseComplexToMat(x));
-  printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
+  /* Solve the discretized BIE */
+  BfMat *sigma = bfMatSolve(A_dense, phi_in);
 
-  FILE *fp = fopen(blocks_path_str, "w");
-  printBlocks(bfMatBlockDenseConstToMatConst(A), fp, 0, 0, 2);
-  fclose(fp);
-  printf("wrote blocks to %s [%0.2fs]\n", blocks_path_str, bfToc());
+  BfMat *G_eval = bfMatDenseComplexToMat(bfGetHelm2KernelMatrix(X_points, X_target_points, K));
+
+  bfMatScaleCols(G_eval, w);
+
+  BfMat *phi_dense = bfMatMul(G_eval, sigma);
+
+  BfMat *phi_exact = bfMatDenseComplexToMat(bfGetHelm2KernelMatrix(X_source_points, X_target_points, K));
+
+  BfMat *error_l2_dense = bfMatRowDists(phi_dense, phi_exact);
+
+  bfMatPrint(stdout, error_l2_dense);
 
   END_ERROR_HANDLING() {}
-
-  bfMatDelete(&y);
-  bfMatDelete(&y_true);
-  bfMatDenseComplexDeinitAndDealloc(&x);
-  // bfMatBlockDenseDeinitAndDealloc(&mat);
-  bfMatDenseComplexDeinitAndDealloc(&A_true);
-  bfFreeQuadtree(&tree);
-  bfFreePoints2(&points);
 }

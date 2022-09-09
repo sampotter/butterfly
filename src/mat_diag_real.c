@@ -11,6 +11,65 @@
 BF_DEFINE_VTABLE(Mat, MatDiagReal)
 #undef INTERFACE
 
+/* Interface: Mat */
+
+BfMat *bfMatDiagRealGetView(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDiagReal *view = malloc(sizeof(BfMatDiagReal));
+  if (view == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfMatDiagReal *matDiagReal = bfMatToMatDiagReal(mat);
+
+  *view = *matDiagReal;
+
+  bfMatDiagRealToMat(view)->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    free(view);
+    view = NULL;
+  }
+
+  return bfMatDiagRealToMat(view);
+}
+
+void bfMatDiagRealDelete(BfMat **mat) {
+  bfMatDiagRealDeinitAndDealloc((BfMatDiagReal **)mat);
+}
+
+BF_STUB(BfMat *, MatDiagRealEmptyLike, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatDiagRealZerosLike, BfMat const *, BfSize, BfSize)
+
+BfMatType bfMatDiagRealGetType(BfMat const *mat) {
+  (void)mat;
+  return BF_MAT_TYPE_DIAG_REAL;
+}
+
+bool bfMatDiagRealInstanceOf(BfMat const *mat, BfMatType matType) {
+  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
+}
+
+BF_STUB(BfSize, MatDiagRealNumBytes, BfMat const *)
+BF_STUB(void, MatDiagRealSave, BfMat const *, char const *)
+BF_STUB(void, MatDiagRealPrint, FILE *, BfMat const *)
+BF_STUB(BfSize, MatDiagRealGetNumRows, BfMat const *)
+BF_STUB(BfSize, MatDiagRealGetNumCols, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealGetRowRange, BfMat *, BfSize, BfSize)
+BF_STUB(BfMat *, MatDiagRealGetColRange, BfMat *, BfSize, BfSize)
+BF_STUB(void, MatDiagRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealRowDists, BfMat const *, BfMat const *)
+BF_STUB(void, MatDiagRealScaleCols, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealSumCols, BfMat const *)
+BF_STUB(void, MatDiagRealAddInplace, BfMat *, BfMat const *)
+BF_STUB(void, MatDiagRealAddDiag, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealMul, BfMat const *, BfMat const *)
+BF_STUB(void, MatDiagRealMulInplace, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealSolve, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealLstSq, BfMat const *, BfMat const *)
+
+/* Upcasting: */
+
 BfMat *bfMatDiagRealToMat(BfMatDiagReal *mat) {
   return &mat->super;
 }
@@ -18,6 +77,19 @@ BfMat *bfMatDiagRealToMat(BfMatDiagReal *mat) {
 BfMat const *bfMatDiagRealConstToMatConst(BfMatDiagReal const *mat) {
   return &mat->super;
 }
+
+/* Downcasting: */
+
+BfMatDiagReal *bfMatToMatDiagReal(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_DIAG_REAL)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatDiagReal *)mat;
+  }
+}
+
+/* Implementation: MatDiagReal */
 
 BfMatDiagReal *bfMatDiagRealNew() {
   BEGIN_ERROR_HANDLING();
@@ -31,23 +103,21 @@ BfMatDiagReal *bfMatDiagRealNew() {
   return mat;
 }
 
-BfMatDiagReal *bfMatDiagRealNewView(BfMatDiagReal *mat) {
+BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDiagReal *view = malloc(sizeof(BfMatDiagReal));
-  if (view == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  BfMatDiagReal *mat = bfMatDiagRealNew();
+  HANDLE_ERROR();
 
-  *view = *mat;
+  bfMatDiagRealInit(mat, numRows, numCols);
+  HANDLE_ERROR();
 
-  bfMatDiagRealToMat(view)->props |= BF_MAT_PROPS_VIEW;
+  bfMatDiagRealSetConstant(mat, 1);
 
-  END_ERROR_HANDLING() {
-    free(view);
-    view = NULL;
-  }
+  END_ERROR_HANDLING()
+    mat = NULL;
 
-  return view;
+  return mat;
 }
 
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
@@ -85,6 +155,11 @@ void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat) {
   bfMatDiagRealDealloc(mat);
 }
 
+void bfMatDiagRealSetConstant(BfMatDiagReal *mat, BfReal value) {
+  for (BfSize i = 0; i < mat->numElts; ++i)
+    mat->data[i] = value;
+}
+
 BfMatDiagReal *
 bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
   assert(i0 < i1);
@@ -95,23 +170,23 @@ bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
 
   BEGIN_ERROR_HANDLING();
 
-  BfMatDiagReal *submat = bfMatDiagRealNewView(mat);
+  BfMatDiagReal *matView = (BfMatDiagReal *)mat;
   HANDLE_ERROR();
 
-  submat->numElts = i1 - i0;
+  matView->numElts = i1 - i0;
 
-  if (submat->numElts == mat->numElts)
-    return submat;
+  if (matView->numElts == mat->numElts)
+    return matView;
 
-  submat->super.numRows = submat->numElts;
-  submat->super.numCols = submat->numElts;
+  matView->super.numRows = matView->numElts;
+  matView->super.numCols = matView->numElts;
 
-  submat->data += i0;
+  matView->data += i0;
 
   END_ERROR_HANDLING()
-    bfMatDiagRealDeinitAndDealloc(&submat);
+    bfMatDiagRealDeinitAndDealloc(&matView);
 
-  return submat;
+  return matView;
 }
 
 BfMatDenseComplex *
@@ -153,81 +228,4 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
-}
-
-/* Interface: Mat */
-
-void bfMatDiagRealDelete(BfMat **mat) {
-  bfMatDiagRealDeinitAndDealloc((BfMatDiagReal **)mat);
-}
-
-BfMat *bfMatDiagRealEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-}
-
-BfMat *bfMatDiagRealZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-}
-
-BfMatType bfMatDiagRealGetType(BfMat const *mat) {
-  (void)mat;
-  return BF_MAT_TYPE_DIAG_REAL;
-}
-
-bool bfMatDiagRealInstanceOf(BfMat const *mat, BfMatType matType) {
-  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
-}
-
-BfSize bfMatDiagRealNumBytes(BfMat const *mat) {
-  (void)mat;
-  assert(false);
-  return BF_SIZE_BAD_VALUE;
-}
-
-void bfMatDiagRealSave(BfMat const *mat, char const *path) {
-  (void)mat;
-  (void)path;
-  assert(false);
-}
-
-BfSize bfMatDiagRealGetNumRows(BfMat const *mat) {
-  (void)mat;
-  assert(false);
-}
-
-BfSize bfMatDiagRealGetNumCols(BfMat const *mat) {
-  (void)mat;
-  assert(false);
-}
-
-BfMat *bfMatDiagRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
-  (void)mat; (void)i0; (void)i1;
-  assert(false);
-}
-
-BfMat *bfMatDiagRealGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
-  (void)mat; (void)j0; (void)j1;
-  assert(false);
-}
-
-void bfMatDiagRealSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
-  (void)mat; (void)i0; (void)i1; (void)otherMat;
-  assert(false);
-}
-
-void bfMatDiagRealAddInplace(BfMat *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
-}
-
-BfMat *bfMatDiagRealMul(BfMat const *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
-}
-
-BfMat *bfMatDiagRealLstSq(BfMat const *mat, BfMat const *otherMat) {
-  (void)mat; (void)otherMat;
-  assert(false);
 }

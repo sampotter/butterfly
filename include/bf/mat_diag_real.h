@@ -16,12 +16,16 @@ BF_DECLARE_INTERFACE(MatDiagReal)
 BfMat *bfMatDiagRealToMat(BfMatDiagReal *mat);
 BfMat const *bfMatDiagRealConstToMatConst(BfMatDiagReal const *mat);
 
+/* Downcasting: */
+BfMatDiagReal *bfMatToMatDiagReal(BfMat *mat);
+
 BfMatDiagReal *bfMatDiagRealNew();
-BfMatDiagReal *bfMatDiagRealNewView(BfMatDiagReal *mat);
+BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols);
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols);
 void bfMatDiagRealDeinit(BfMatDiagReal *mat);
 void bfMatDiagRealDealloc(BfMatDiagReal **mat);
 void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat);
+void bfMatDiagRealSetConstant(BfMatDiagReal *mat, BfReal value);
 BfMatDiagReal *bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1);
 BfMatDenseComplex *bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
                                                   BfMatDenseComplex const *rhs);

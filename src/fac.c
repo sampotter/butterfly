@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include <bf/circle.h>
 #include <bf/error_macros.h>
 #include <bf/helm2.h>
 #include <bf/mat_block.h>
@@ -11,6 +12,7 @@
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_product.h>
+#include <bf/points.h>
 #include <bf/util.h>
 
 #define MAX_DENSE_MATRIX_SIZE 16384 // == 128*128
@@ -676,7 +678,7 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
   BfMatProduct *factorization = bfFacHelm2Make(
     tree, K, &srcLevelIter, &tgtLevelIter, numFactors);
 
-  return bfMatProductGetMatPtr(factorization);
+  return bfMatProductToMat(factorization);
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,

@@ -3,12 +3,12 @@
 #include "def.h"
 #include "error.h"
 
-enum BfDtypes {
+typedef enum BfDtypes {
   BF_DTYPE_VOID,
   BF_DTYPE_REAL,
   BF_DTYPE_COMPLEX,
   BF_DTYPE_MAT
-};
+} BfDtype;
 
 BfSize bfDtypeSize(enum BfDtypes dtype);
 
