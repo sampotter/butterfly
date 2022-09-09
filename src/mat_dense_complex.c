@@ -9,7 +9,9 @@
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_dense_real.h>
 #include <bf/mat_diag_real.h>
+#include <bf/vec.h>
 
 /** Static functions: */
 
@@ -191,30 +193,50 @@ void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const 
 }
 
 BF_STUB(BfMat *, MatDenseComplexRowDists, BfMat const *, BfMat const *)
-BF_STUB(void, MatDenseComplexScaleCols, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDenseComplexSumCols, BfMat const *)
 
-static void bfMatDenseComplexDenseComplexAddInplace(
-  BfMatDenseComplex *op1, BfMatDenseComplex const *op2)
-{
+BfMat *bfMatDenseComplexColDists(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
 
-  BfMat *mat = bfMatDenseComplexToMat(op1);
-  BfMat const *otherMat = bfMatDenseComplexConstToMatConst(op2);
+  BfMatDenseComplex const *matDenseComplex = bfMatConstToMatDenseComplexConst(mat);
+  HANDLE_ERROR();
 
-  BfSize numRows = bfMatDenseComplexGetNumRows(mat);
-  if (numRows != bfMatDenseComplexGetNumRows(otherMat))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  BfMat *result = NULL;
 
-  BfSize numCols = bfMatDenseComplexGetNumCols(mat);
-  if (numCols != bfMatDenseComplexGetNumCols(otherMat))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  switch (bfMatGetType(otherMat)) {
+  case BF_MAT_TYPE_DENSE_COMPLEX:
+    result = bfMatDenseRealToMat(
+      bfMatDenseComplexDenseComplexColDists(
+        matDenseComplex, bfMatConstToMatDenseComplexConst(otherMat)));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
 
-  for (BfSize i = 0; i < numRows*numCols; ++i)
-    op1->data[i] += op2->data[i];
+  END_ERROR_HANDLING()
+    result = NULL;
+
+  return result;
+}
+
+void bfMatDenseComplexScaleCols(BfMat *mat, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *matDenseComplex = bfMatToMatDenseComplex(mat);
+  HANDLE_ERROR();
+
+  switch (bfMatGetType(otherMat)) {
+  case BF_MAT_TYPE_DENSE_REAL:
+    bfMatDenseComplexDenseRealScaleCols(
+      matDenseComplex, bfMatConstToMatDenseRealConst(otherMat));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
 
   END_ERROR_HANDLING() {}
 }
+
+BF_STUB(BfMat *, MatDenseComplexSumCols, BfMat const *)
 
 void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
@@ -225,6 +247,10 @@ void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
   case BF_MAT_TYPE_DENSE_COMPLEX:
     bfMatDenseComplexDenseComplexAddInplace(
       matDenseComplex, bfMatConstToMatDenseComplexConst(otherMat));
+    break;
+  case BF_MAT_TYPE_DIAG_REAL:
+    bfMatDenseComplexDiagRealAddInplace(
+      matDenseComplex, bfMatConstToMatDiagRealConst(otherMat));
     break;
   default:
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -240,7 +266,7 @@ BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2) {
 
   BfMatDenseComplex const *matDenseComplex = bfMatConstToMatDenseComplexConst(op1);
 
-  BfMat *result;
+  BfMat *result = NULL;
 
   switch (bfMatGetType(op2)) {
   case BF_MAT_TYPE_DENSE_COMPLEX:
@@ -258,71 +284,29 @@ BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2) {
   return result;
 }
 
-BfMatDenseComplex *
-bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
-                                 BfMatDenseComplex const *op2)
-{
+BF_STUB(void, MatDenseComplexMulInplace, BfMat *, BfMat const *)
+
+BfMat *bfMatDenseComplexSolve(BfMat const *A, BfMat const *B) {
   BEGIN_ERROR_HANDLING();
 
-  enum CBLAS_TRANSPOSE transa = getCblasTranspose(op1);
-  enum CBLAS_TRANSPOSE transb = getCblasTranspose(op2);
+  BfMatDenseComplex const *matDenseComplexA = bfMatConstToMatDenseComplexConst(A);
+  BfMat *result = NULL;
 
-  BfMat const *super1 = bfMatDenseComplexConstToMatConst(op1);
-  BfMat const *super2 = bfMatDenseComplexConstToMatConst(op2);
-
-  BfMatDenseComplex *result = NULL;
-
-  BfSize k = bfMatGetNumCols(super1);
-  if (k != bfMatGetNumRows(super2))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  result = bfMatDenseComplexNew();
-  HANDLE_ERROR();
-
-  BfSize m = bfMatGetNumRows(super1);
-  BfSize n = bfMatGetNumCols(super2);
-  bfMatDenseComplexInit(result, m, n);
-  HANDLE_ERROR();
-
-  BfComplex alpha = 1, beta = 0;
-
-  BfSize lda = getLeadingDimension(op1);
-  BfSize ldb = getLeadingDimension(op2);
-  BfSize ldc = getLeadingDimension(result);
-
-  assert(m > 0 && n > 0 && k > 0);
-
-  if (transa == CblasNoTrans) {
-    assert(lda >= k);
-  } else {
-    assert(transa == CblasTrans || transa == CblasConjTrans);
-    assert(lda >= m);
+  switch (bfMatGetType(B)) {
+  case BF_MAT_TYPE_DENSE_COMPLEX:
+    result = bfMatDenseComplexToMat(
+      bfMatDenseComplexDenseComplexSolve(
+        matDenseComplexA, bfMatConstToMatDenseComplexConst(B)));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  if (transb == CblasNoTrans) {
-    assert(ldb >= n);
-  } else {
-    assert(transb == CblasTrans || transb == CblasConjTrans);
-    assert(ldb >= k);
-  }
-
-  assert(ldc >= n);
-
-  cblas_zgemm(CblasRowMajor, transa, transb, m, n, k,
-              &alpha, op1->data, lda, op2->data, ldb, &beta, result->data, ldc);
-
-  /* TODO: handle cblas errors  */
-
-  END_ERROR_HANDLING() {
-    if (result != NULL)
-      bfMatDenseComplexDeinitAndDealloc(&result);
-  }
+  END_ERROR_HANDLING()
+    bfMatDelete(&result);
 
   return result;
 }
-
-BF_STUB(void, MatDenseComplexMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDenseComplexSolve, BfMat const *, BfMat const *)
 
 BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs) {
   BEGIN_ERROR_HANDLING();
@@ -345,89 +329,6 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs) {
     bfMatDelete(&result);
 
   return result;
-}
-
-BfMatDenseComplex *
-bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
-                                   BfMatDenseComplex const *rhs)
-{
-  BfMat const *lhsSuper = bfMatDenseComplexConstToMatConst(lhs);
-  assert(!bfMatIsTransposed(lhsSuper));
-
-  BfSize m = lhsSuper->numRows;
-  BfSize n = lhsSuper->numCols;
-  BfSize p = m < n ? m : n;
-
-  BEGIN_ERROR_HANDLING();
-
-  /* compute SVD of A */
-
-  BfMatDenseComplex *U = bfMatDenseComplexNew();
-  bfMatDenseComplexInit(U, m, p);
-
-  BfMatDiagReal *S = bfMatDiagRealNew();
-  bfMatDiagRealInit(S, p, p);
-
-  BfMatDenseComplex *VH = bfMatDenseComplexNew();
-  bfMatDenseComplexInit(VH, p, n);
-
-  bfMatDenseComplexSvd(lhs, U, S, VH);
-  HANDLE_ERROR();
-
-  /* compute tolerance and compute number of terms to
-   * retain in pseudoinverse */
-
-  BfReal const atol = BF_EPS_MACH;
-  BfReal const rtol = (m > n ? m : n)*BF_EPS_MACH;
-
-  BfReal const *sigma = S->data;
-
-  BfReal tol = rtol*sigma[0] + atol;
-
-  BfSize k;
-  for (k = 0; k < p; ++k)
-    if (sigma[k] < tol)
-      break;
-
-  /* TODO: the casting below got kind of out of hand... clean it up */
-
-  /* get subblocks of truncated SVD */
-
-  BfMat *UkH = bfMatDenseComplexGetColRange(bfMatDenseComplexToMat(U), 0, k);
-  bfMatConjTrans(UkH);
-
-  BfMatDiagReal *Sk = bfMatDiagRealGetDiagBlock(S, 0, k);
-
-  BfMat *Vk = bfMatGetRowRange(bfMatDenseComplexToMat(VH), 0, k);
-  bfMatConjTrans(Vk);
-
-  /* solve least squares problem */
-
-  BfMat *tmp1 = bfMatMul(UkH, bfMatDenseComplexConstToMatConst(rhs));
-  HANDLE_ERROR();
-
-  BfMat *tmp2 = bfMatDenseComplexToMat(
-    bfMatDiagRealDenseComplexSolve(Sk, bfMatToMatDenseComplex(tmp1)));
-  HANDLE_ERROR();
-
-  BfMat *result = bfMatMul(Vk, tmp2);
-  HANDLE_ERROR();
-
-  END_ERROR_HANDLING()
-    bfMatDenseComplexDelete(&result);
-
-  bfMatDenseComplexDeinitAndDealloc(&U);
-  bfMatDiagRealDeinitAndDealloc(&S);
-  bfMatDenseComplexDeinitAndDealloc(&VH);
-
-  bfMatDenseComplexDelete(&UkH);
-  bfMatDiagRealDeinitAndDealloc(&Sk);
-  bfMatDenseComplexDelete(&Vk);
-
-  bfMatDelete(&tmp1);
-  bfMatDelete(&tmp2);
-
-  return bfMatToMatDenseComplex(result);
 }
 
 BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *matDenseComplex) {
@@ -542,6 +443,246 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
   free(superb);
 }
 
+BfMatDenseReal *bfMatDenseComplexDenseComplexColDists(
+  BfMatDenseComplex const *matDenseComplex,
+  BfMatDenseComplex const *otherMatDenseComplex)
+{
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseReal *result = NULL;
+
+  BfMat const *mat = bfMatDenseComplexConstToMatConst(matDenseComplex);
+  BfMat const *otherMat = bfMatDenseComplexConstToMatConst(otherMatDenseComplex);
+
+  BfSize numRows = bfMatDenseComplexGetNumRows(mat);
+  if (numRows != bfMatDenseComplexGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseComplexGetNumCols(mat);
+  if (numCols != bfMatDenseComplexGetNumCols(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  result = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(result, 1, numCols);
+  HANDLE_ERROR();
+
+  BfComplex const *colPtr, *otherColPtr;
+  BfReal *resultPtr = result->data;
+
+  for (BfSize j = 0; j < numCols; ++j) {
+    colPtr = matDenseComplex->data + j*matDenseComplex->colStride;
+    otherColPtr = otherMatDenseComplex->data + j*otherMatDenseComplex->colStride;
+
+    BfReal sum = 0;
+    for (BfSize i = 0; i < numRows; ++i) {
+      BfComplex diff = *otherColPtr - *colPtr;
+      sum += diff*conj(diff);
+      colPtr += matDenseComplex->rowStride;
+      otherColPtr += otherMatDenseComplex->rowStride;
+    }
+    sum = sqrt(sum);
+
+    *resultPtr++ = sum;
+  }
+
+  END_ERROR_HANDLING()
+    result = NULL;
+
+  return result;
+}
+
+void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,
+                                             BfMatDenseComplex const *op2)
+{
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatDenseComplexToMat(op1);
+  BfMat const *otherMat = bfMatDenseComplexConstToMatConst(op2);
+
+  BfSize numRows = bfMatDenseComplexGetNumRows(mat);
+  if (numRows != bfMatDenseComplexGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseComplexGetNumCols(mat);
+  if (numCols != bfMatDenseComplexGetNumCols(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  for (BfSize i = 0; i < numRows*numCols; ++i)
+    op1->data[i] += op2->data[i];
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfMatDenseComplexDiagRealAddInplace(BfMatDenseComplex *op1,
+                                         BfMatDiagReal const *op2) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatDenseComplexToMat(op1);
+  BfMat const *otherMat = bfMatDiagRealConstToMatConst(op2);
+
+  BfSize numRows = bfMatDenseComplexGetNumRows(mat);
+  if (numRows != bfMatDenseComplexGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseComplexGetNumCols(mat);
+  if (numCols != bfMatDenseComplexGetNumCols(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize stride = op1->rowStride + op1->colStride;
+  for (BfSize i = 0; i < op2->numElts; ++i)
+    *(op1->data + i*stride) += op2->data[i];
+
+  END_ERROR_HANDLING() {}
+}
+
+BfMatDenseComplex *
+bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
+                                 BfMatDenseComplex const *op2)
+{
+  BEGIN_ERROR_HANDLING();
+
+  enum CBLAS_TRANSPOSE transa = getCblasTranspose(op1);
+  enum CBLAS_TRANSPOSE transb = getCblasTranspose(op2);
+
+  BfMat const *super1 = bfMatDenseComplexConstToMatConst(op1);
+  BfMat const *super2 = bfMatDenseComplexConstToMatConst(op2);
+
+  BfMatDenseComplex *result = NULL;
+
+  BfSize k = bfMatGetNumCols(super1);
+  if (k != bfMatGetNumRows(super2))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  result = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(super1);
+  BfSize n = bfMatGetNumCols(super2);
+  bfMatDenseComplexInit(result, m, n);
+  HANDLE_ERROR();
+
+  BfComplex alpha = 1, beta = 0;
+
+  BfSize lda = getLeadingDimension(op1);
+  BfSize ldb = getLeadingDimension(op2);
+  BfSize ldc = getLeadingDimension(result);
+
+  assert(m > 0 && n > 0 && k > 0);
+
+  if (transa == CblasNoTrans) {
+    assert(lda >= k);
+  } else {
+    assert(transa == CblasTrans || transa == CblasConjTrans);
+    assert(lda >= m);
+  }
+
+  if (transb == CblasNoTrans) {
+    assert(ldb >= n);
+  } else {
+    assert(transb == CblasTrans || transb == CblasConjTrans);
+    assert(ldb >= k);
+  }
+
+  assert(ldc >= n);
+
+  cblas_zgemm(CblasRowMajor, transa, transb, m, n, k,
+              &alpha, op1->data, lda, op2->data, ldb, &beta, result->data, ldc);
+
+  /* TODO: handle cblas errors  */
+
+  END_ERROR_HANDLING() {
+    if (result != NULL)
+      bfMatDenseComplexDeinitAndDealloc(&result);
+  }
+
+  return result;
+}
+
+BfMatDenseComplex *
+bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
+                                   BfMatDenseComplex const *rhs)
+{
+  BfMat const *lhsSuper = bfMatDenseComplexConstToMatConst(lhs);
+  assert(!bfMatIsTransposed(lhsSuper));
+
+  BfSize m = lhsSuper->numRows;
+  BfSize n = lhsSuper->numCols;
+  BfSize p = m < n ? m : n;
+
+  BEGIN_ERROR_HANDLING();
+
+  /* compute SVD of A */
+
+  BfMatDenseComplex *U = bfMatDenseComplexNew();
+  bfMatDenseComplexInit(U, m, p);
+
+  BfMatDiagReal *S = bfMatDiagRealNew();
+  bfMatDiagRealInit(S, p, p);
+
+  BfMatDenseComplex *VH = bfMatDenseComplexNew();
+  bfMatDenseComplexInit(VH, p, n);
+
+  bfMatDenseComplexSvd(lhs, U, S, VH);
+  HANDLE_ERROR();
+
+  /* compute tolerance and compute number of terms to
+   * retain in pseudoinverse */
+
+  BfReal const atol = BF_EPS_MACH;
+  BfReal const rtol = (m > n ? m : n)*BF_EPS_MACH;
+
+  BfReal const *sigma = S->data;
+
+  BfReal tol = rtol*sigma[0] + atol;
+
+  BfSize k;
+  for (k = 0; k < p; ++k)
+    if (sigma[k] < tol)
+      break;
+
+  /* TODO: the casting below got kind of out of hand... clean it up */
+
+  /* get subblocks of truncated SVD */
+
+  BfMat *UkH = bfMatDenseComplexGetColRange(bfMatDenseComplexToMat(U), 0, k);
+  bfMatConjTrans(UkH);
+
+  BfMatDiagReal *Sk = bfMatDiagRealGetDiagBlock(S, 0, k);
+
+  BfMat *Vk = bfMatGetRowRange(bfMatDenseComplexToMat(VH), 0, k);
+  bfMatConjTrans(Vk);
+
+  /* solve least squares problem */
+
+  BfMat *tmp1 = bfMatMul(UkH, bfMatDenseComplexConstToMatConst(rhs));
+  HANDLE_ERROR();
+
+  BfMat *tmp2 = bfMatDenseComplexToMat(
+    bfMatDiagRealDenseComplexSolve(Sk, bfMatToMatDenseComplex(tmp1)));
+  HANDLE_ERROR();
+
+  BfMat *result = bfMatMul(Vk, tmp2);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDelete(&result);
+
+  bfMatDenseComplexDeinitAndDealloc(&U);
+  bfMatDiagRealDeinitAndDealloc(&S);
+  bfMatDenseComplexDeinitAndDealloc(&VH);
+
+  bfMatDenseComplexDelete(&UkH);
+  bfMatDiagRealDeinitAndDealloc(&Sk);
+  bfMatDenseComplexDelete(&Vk);
+
+  bfMatDelete(&tmp1);
+  bfMatDelete(&tmp2);
+
+  return bfMatToMatDenseComplex(result);
+}
+
 bool bfMatDenseComplexIsFinite(BfMatDenseComplex const *mat) {
   for (BfSize i = 0; i < mat->super.numRows; ++i) {
     BfComplex *rowPtr = mat->data + i*mat->rowStride;
@@ -562,7 +703,9 @@ void bf_zmat_add_diag(BfMatDenseComplex *mat, BfReal value) {
     *(mat->data + i*mat->rowStride + i*mat->colStride) += value;
 }
 
-BfMatDenseComplex *bf_zmat_solve(BfMatDenseComplex *A, BfMatDenseComplex *B) {
+BfMatDenseComplex *
+bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A,
+                                   BfMatDenseComplex const *B) {
   BfSize m = A->super.numRows;
   if (B->super.numRows != m) {
     bfSetError(BF_ERROR_INVALID_ARGUMENTS);
@@ -581,9 +724,14 @@ BfMatDenseComplex *bf_zmat_solve(BfMatDenseComplex *A, BfMatDenseComplex *B) {
 
   int *ipiv = malloc(m*sizeof(int));
 
+  /* Create a copy of B here since X will be overwritten by LAPACK */
+  BfMatDenseComplex *X = bfMatDenseComplexNew();
+  bfMatDenseComplexInit(X, n, p);
+  bfMatDenseComplexCopy(X, B);
+
   lapack_int error = LAPACKE_zgesv(
     LAPACK_ROW_MAJOR, m, p, A->data, A->rowStride,
-    ipiv, B->data, B->rowStride);
+    ipiv, X->data, X->rowStride);
 
   if (error == LAPACK_WORK_MEMORY_ERROR)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
@@ -594,7 +742,7 @@ BfMatDenseComplex *bf_zmat_solve(BfMatDenseComplex *A, BfMatDenseComplex *B) {
   END_ERROR_HANDLING()
     free(ipiv);
 
-  return B;
+  return X;
 }
 
 /** Upcasting: */
@@ -723,4 +871,20 @@ BF_STUB(BfMat *, MatDenseComplexGetView, BfMat *)
 
 void bfMatDenseComplexDelete(BfMat **mat) {
   bfMatDenseComplexDeinitAndDealloc((BfMatDenseComplex **)mat);
+}
+
+void bfMatDenseComplexDenseRealScaleCols(BfMatDenseComplex *mat,
+                                         BfMatDenseReal const *otherMat) {
+  assert(otherMat->super.numRows == 1 || otherMat->super.numCols == 1);
+  assert(otherMat->super.numRows == mat->super.numCols ||
+         otherMat->super.numCols == mat->super.numCols);
+
+  BfReal *scaleData = otherMat->data;
+  BfSize scaleStride = otherMat->rowStride*otherMat->colStride;
+  for (BfSize i = 0; i < mat->super.numRows; ++i) {
+    BfComplex *rowData = mat->data + i*mat->rowStride;
+    for (BfSize j = 0; j < mat->super.numCols; ++j)
+      *(rowData + j*mat->colStride) *= *scaleData;
+    scaleData += scaleStride;
+  }
 }

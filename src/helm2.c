@@ -88,11 +88,16 @@ BfMat *bf_hh2_get_dGdN(BfPoints2 const *Xsrc,
   BfSize n = Xsrc->size; /* number of columns */
   BfReal *r = NULL;
 
+  BfMatDenseComplex *kernelMat = NULL;
+
+  if (K <= 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   /* length m*n array of pairwise dists in row major order */
   r = bfPoints2PairwiseDists(Xtgt, Xsrc);
   HANDLE_ERROR();
 
-  BfMatDenseComplex *kernelMat = bfMatDenseComplexNew();
+  kernelMat = bfMatDenseComplexNew();
   HANDLE_ERROR();
 
   bfMatDenseComplexInit(kernelMat, m, n);
@@ -108,7 +113,7 @@ BfMat *bf_hh2_get_dGdN(BfPoints2 const *Xsrc,
         BfReal const *xtgt = Xtgt->data[j];
         BfReal const *ntgt = Ntgt->data[j];
         BfReal dot = ntgt[0]*(xtgt[0] - xsrc[0]) + ntgt[1]*(xtgt[1] - xsrc[1]);
-        BfReal scale = (I/4)*K*bf_H1(K*r[k])/r[k];
+        BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
         kernelMat->data[k] = scale*dot;
       }
       ++k;

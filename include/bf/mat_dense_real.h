@@ -13,6 +13,7 @@ struct BfMatDenseReal {
 BF_DECLARE_INTERFACE(MatDenseReal)
 #undef INTERFACE
 
+BfMat *bfMatDenseRealToMat(BfMatDenseReal *matDenseReal);
 BfMat const *bfMatDenseRealConstToMatConst(BfMatDenseReal const *matDenseReal);
 
 BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat);

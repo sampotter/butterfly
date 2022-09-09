@@ -47,6 +47,7 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfMat *,   GetColRange, BfMat *, BfSize, BfSize)       \
   _(Type, Subtype, void,      SetRowRange, BfMat *, BfSize, BfSize, BfMat const *) \
   _(Type, Subtype, BfMat *,   RowDists,    BfMat const *, BfMat const *)  \
+  _(Type, Subtype, BfMat *,   ColDists,    BfMat const *, BfMat const *)  \
   _(Type, Subtype, void,      ScaleCols,   BfMat *, BfMat const *)        \
   _(Type, Subtype, BfMat *,   SumCols,     BfMat const *)                 \
   _(Type, Subtype, void,      AddInplace,  BfMat *, BfMat const *)        \

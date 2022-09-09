@@ -16,17 +16,56 @@ BF_STUB(BfMat *, MatDenseRealGetView, BfMat *)
 BF_STUB(void, MatDenseRealDelete, BfMat **)
 BF_STUB(BfMat *, MatDenseRealEmptyLike, BfMat const *, BfSize, BfSize)
 BF_STUB(BfMat *, MatDenseRealZerosLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMatType, MatDenseRealGetType, BfMat const *)
+
+BfMatType bfMatDenseRealGetType(BfMat const *mat) {
+  (void)mat;
+  return BF_MAT_TYPE_DENSE_REAL;
+}
+
 BF_STUB(bool, MatDenseRealInstanceOf, BfMat const *, BfMatType)
 BF_STUB(BfSize, MatDenseRealNumBytes, BfMat const *)
 BF_STUB(void, MatDenseRealSave, BfMat const *, char const *)
-BF_STUB(void, MatDenseRealPrint, FILE *, BfMat const *)
-BF_STUB(BfSize, MatDenseRealGetNumRows, BfMat const *)
-BF_STUB(BfSize, MatDenseRealGetNumCols, BfMat const *)
+
+void bfMatDenseRealPrint(FILE *fp, BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDenseReal const *matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  fprintf(fp, "[");
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *rowPtr = matDenseReal->data + i*matDenseReal->rowStride;
+    fprintf(fp, "[");
+    for (BfSize j = 0; j < numCols - 1; ++j) {
+      fprintf(fp, "%g, ", *rowPtr);
+      rowPtr += matDenseReal->colStride;
+    }
+    fprintf(fp, "%g]", *rowPtr);
+  }
+  fprintf(fp, "]\n");
+
+  END_ERROR_HANDLING() {}
+}
+
+BfSize bfMatDenseRealGetNumRows(BfMat const *mat) {
+  return bfMatIsTransposed(mat) ? mat->numCols : mat->numRows;
+}
+
+BfSize bfMatDenseRealGetNumCols(BfMat const *mat) {
+  return bfMatIsTransposed(mat) ? mat->numRows : mat->numCols;
+}
+
 BF_STUB(BfMat *, MatDenseRealGetRowRange, BfMat *, BfSize, BfSize)
 BF_STUB(BfMat *, MatDenseRealGetColRange, BfMat *, BfSize, BfSize)
 BF_STUB(void, MatDenseRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
 BF_STUB(BfMat *, MatDenseRealRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatDenseRealColDists, BfMat const *, BfMat const *)
 BF_STUB(void, MatDenseRealScaleCols, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatDenseRealSumCols, BfMat const *)
 BF_STUB(void, MatDenseRealAddInplace, BfMat *, BfMat const *)
@@ -37,6 +76,10 @@ BF_STUB(BfMat *, MatDenseRealSolve, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatDenseRealLstSq, BfMat const *, BfMat const *)
 
 /** Upcasting: */
+
+BfMat *bfMatDenseRealToMat(BfMatDenseReal *matDenseReal) {
+  return &matDenseReal->super;
+}
 
 BfMat const *bfMatDenseRealConstToMatConst(BfMatDenseReal const *matDenseReal) {
   return &matDenseReal->super;

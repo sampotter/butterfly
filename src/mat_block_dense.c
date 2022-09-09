@@ -172,6 +172,7 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
 
 BF_STUB(void, MatBlockDenseSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
 BF_STUB(BfMat *, MatBlockDenseRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDenseColDists, BfMat const *, BfMat const *)
 BF_STUB(void, MatBlockDenseScaleCols, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDenseSumCols, BfMat const *)
 BF_STUB(void, MatBlockDenseAddInplace, BfMat *, BfMat const *)

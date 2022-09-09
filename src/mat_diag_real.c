@@ -59,6 +59,7 @@ BF_STUB(BfMat *, MatDiagRealGetRowRange, BfMat *, BfSize, BfSize)
 BF_STUB(BfMat *, MatDiagRealGetColRange, BfMat *, BfSize, BfSize)
 BF_STUB(void, MatDiagRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
 BF_STUB(BfMat *, MatDiagRealRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatDiagRealColDists, BfMat const *, BfMat const *)
 BF_STUB(void, MatDiagRealScaleCols, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatDiagRealSumCols, BfMat const *)
 BF_STUB(void, MatDiagRealAddInplace, BfMat *, BfMat const *)
@@ -86,6 +87,15 @@ BfMatDiagReal *bfMatToMatDiagReal(BfMat *mat) {
     return NULL;
   } else {
     return (BfMatDiagReal *)mat;
+  }
+}
+
+BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat) {
+  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_DIAG_REAL)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatDiagReal const *)mat;
   }
 }
 

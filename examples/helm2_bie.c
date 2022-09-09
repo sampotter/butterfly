@@ -12,6 +12,7 @@
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/mat_diag_real.h>
 #include <bf/mat_util.h>
 #include <bf/points.h>
 #include <bf/quadrature.h>
@@ -29,7 +30,7 @@ int main(int argc, char const *argv[]) {
 
   BEGIN_ERROR_HANDLING();
 
-  BfReal K = atoi(argv[0]);
+  BfReal K = atoi(argv[1]);
 
   BfMat *X = bfMatFromFile(argv[2], -1, 2, BF_DTYPE_REAL);
   HANDLE_ERROR();
@@ -83,7 +84,13 @@ int main(int argc, char const *argv[]) {
   bf_apply_KR_correction(A_dense, 6);
 
   /* Perturb by one-half the identity to get a second-kind IE */
-  BfMat *oneHalfEye = bfEye(n, n, BF_DTYPE_COMPLEX);
+  BfMat *oneHalfEye;
+  {
+    BfMatDiagReal *_ = bfMatDiagRealNew();
+    bfMatDiagRealInit(_, n, n);
+    bfMatDiagRealSetConstant(_, 1./2);
+    oneHalfEye = bfMatDiagRealToMat(_);
+  }
   bfMatAddInplace(A_dense, oneHalfEye);
 
   /* Solve the discretized BIE */
@@ -97,7 +104,7 @@ int main(int argc, char const *argv[]) {
 
   BfMat *phi_exact = bfMatDenseComplexToMat(bfGetHelm2KernelMatrix(X_source_points, X_target_points, K));
 
-  BfMat *error_l2_dense = bfMatRowDists(phi_dense, phi_exact);
+  BfMat *error_l2_dense = bfMatColDists(phi_dense, phi_exact);
 
   bfMatPrint(stdout, error_l2_dense);
 

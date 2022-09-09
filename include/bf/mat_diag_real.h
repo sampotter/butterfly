@@ -18,6 +18,7 @@ BfMat const *bfMatDiagRealConstToMatConst(BfMatDiagReal const *mat);
 
 /* Downcasting: */
 BfMatDiagReal *bfMatToMatDiagReal(BfMat *mat);
+BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat);
 
 BfMatDiagReal *bfMatDiagRealNew();
 BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols);

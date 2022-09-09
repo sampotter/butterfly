@@ -163,6 +163,7 @@ BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
 
 BF_STUB(void, MatBlockCooPrint, FILE *, BfMat const *)
 BF_STUB(BfMat *, MatBlockCooRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockCooColDists, BfMat const *, BfMat const *)
 BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatBlockCooSumCols, BfMat const *)
 BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)

@@ -33,6 +33,12 @@ BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat);
 void bfMatDenseComplexCopy(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
 void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
                           BfMatDiagReal *S, BfMatDenseComplex *VH);
+BfMatDenseReal *bfMatDenseComplexDenseComplexColDists(
+  BfMatDenseComplex const *mat, BfMatDenseComplex const *otherMat);
+void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,
+                                             BfMatDenseComplex const *op2);
+void bfMatDenseComplexDiagRealAddInplace(BfMatDenseComplex *op1,
+                                         BfMatDiagReal const *op2);
 BfMatDenseComplex *
 bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
                                  BfMatDenseComplex const *op2);
@@ -42,4 +48,7 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
 bool bfMatDenseComplexIsFinite(BfMatDenseComplex const *mat);
 
 void bf_zmat_add_diag(BfMatDenseComplex *mat, BfReal value);
-BfMatDenseComplex *bf_zmat_solve(BfMatDenseComplex *A, BfMatDenseComplex *B);
+BfMatDenseComplex *bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A,
+                                                      BfMatDenseComplex const *B);
+void bfMatDenseComplexDenseRealScaleCols(BfMatDenseComplex *mat,
+                                         BfMatDenseReal const *otherMat);

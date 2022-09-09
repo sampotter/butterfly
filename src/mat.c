@@ -65,6 +65,10 @@ BfMat *bfMatRowDists(BfMat const *mat, BfMat const *otherMat) {
   return mat->vtbl->RowDists(mat, otherMat);
 }
 
+BfMat *bfMatColDists(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->ColDists(mat, otherMat);
+}
+
 void bfMatScaleCols(BfMat *mat, BfMat const *otherMat) {
   mat->vtbl->ScaleCols(mat, otherMat);
 }
