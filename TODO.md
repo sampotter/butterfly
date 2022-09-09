@@ -8,3 +8,4 @@
 6. [ ] functions in interfaces which aren't specialized should just be functions for the base type (e.g., `bfMatInstanceOf` shouldn't be in the interface... just do `bfMatInstanceOf(ToMat(...), matType)`
 7. [ ] use `_Generic` to add generic casts, such as `to_mat`
 8. [ ] should probably make quadtree uniform? see quadtree and points plots...
+9. [ ] don't use my own typedefs for `double` and `double _Complex`---simpler to reason about and paves the way for supporting single precision at the same time
