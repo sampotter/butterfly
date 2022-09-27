@@ -25,9 +25,9 @@ void bfSizeRunningSum(BfSize numSizes, BfSize *size) {
 static void printBlocksRec(BfMat const *mat,
                            BfSize level, BfSize i0, BfSize j0,
                            FILE *fp) {
-  BfMatType matType = bfMatGetType(mat);
+  BfType type = bfMatGetType(mat);
 
-  if (matType == BF_MAT_TYPE_BLOCK_COO) {
+  if (type == BF_TYPE_MAT_BLOCK_COO) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
     BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
     BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
@@ -39,7 +39,7 @@ static void printBlocksRec(BfMat const *mat,
     }
   }
 
-  else if (matType == BF_MAT_TYPE_BLOCK_DENSE) {
+  else if (type == BF_TYPE_MAT_BLOCK_DENSE) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
     BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
     BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
@@ -53,7 +53,7 @@ static void printBlocksRec(BfMat const *mat,
     }
   }
 
-  else if (matType == BF_MAT_TYPE_BLOCK_DIAG) {
+  else if (type == BF_TYPE_MAT_BLOCK_DIAG) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
     BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
     for (BfSize k = 0; k < numBlocks; ++k) {
@@ -67,7 +67,7 @@ static void printBlocksRec(BfMat const *mat,
   else {
     BfSize i1 = i0 + bfMatGetNumRows(mat);
     BfSize j1 = j0 + bfMatGetNumCols(mat);
-    fprintf(fp, "%lu %lu %lu %lu %lu %d\n", level, i0, i1, j0, j1, matType);
+    fprintf(fp, "%lu %lu %lu %lu %lu %d\n", level, i0, i1, j0, j1, type);
   }
 }
 

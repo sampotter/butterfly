@@ -26,19 +26,24 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCol
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
+void bfMatDenseComplexSet(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat);
 BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat);
-void bfMatDenseComplexCopy(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
 void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
                           BfMatDiagReal *S, BfMatDenseComplex *VH);
-BfMatDenseReal *bfMatDenseComplexDenseComplexColDists(
-  BfMatDenseComplex const *mat, BfMatDenseComplex const *otherMat);
+void bfMatDenseComplexCooComplexAddInplace(BfMatDenseComplex *op1,
+                                           BfMatCooComplex const *op2);
+void bfMatDenseComplexCooRealAddInplace(BfMatDenseComplex *op1,
+                                        BfMatCooReal const *op2);
 void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,
                                              BfMatDenseComplex const *op2);
 void bfMatDenseComplexDiagRealAddInplace(BfMatDenseComplex *op1,
                                          BfMatDiagReal const *op2);
+BfMatDenseComplex *
+bfMatDenseComplexDenseComplexSub(BfMatDenseComplex const *op1,
+                                 BfMatDenseComplex const *op2);
 BfMatDenseComplex *
 bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
                                  BfMatDenseComplex const *op2);

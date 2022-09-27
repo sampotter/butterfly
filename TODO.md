@@ -9,6 +9,7 @@
 7. [ ] use `_Generic` to add generic casts, such as `to_mat`
 8. [ ] should probably make quadtree uniform? see quadtree and points plots...
 9. [ ] don't use my own typedefs for `double` and `double _Complex`---simpler to reason about and paves the way for supporting single precision at the same time
+10. [ ] need to come up with a smarter implementation of multiple dispatch
 
 # New type names
 
@@ -30,3 +31,31 @@ and some new types:
 
 - `bf_*coo`, w/ `*` in `{s, d, c, z}` for sparse COO matrix, e.g.
 - `bf_*csr`, w/ `*` in `{s, d, c, z}` for sparse CSR matrix, e.g.
+
+# Not implementing parts of the interfaces
+
+Instead of using stubs (`BF_STUB(...)`), we should populate the
+vtables with `NULL` function pointers by default. If a delegating
+function encounters a `NULL` function pointer, it should just set the
+error code and bail. This will reduce the amount of boilerplate we
+need to write, but it will also make the intent of the code
+clearer. It will be okay for functions to simply not override parts of
+the interface. Especially since it's possible to dynamically update
+the vtable in C (as compared to C++), this is fine. There are places
+where it is better to not implement functions in the interface. For
+instance, if we want to scale the rows or columns of a matrix, we can
+actually modify the contents of the matrix, or we can pre- or
+post-multiply by a diagonal matrix. Different behaviors may be
+preferred under different circumstances.
+
+# Debug vtable wrappers and instrumentation
+
+For debugging or profiling, we may want to "wrap" a vtable. It
+shouldn't be too hard to wrap particular functions in an interface in
+order to intercept function calls. For instance, we might want to log
+every memory allocation, or every matrix multiplication.
+
+As another example, when it comes time to generate instructions for
+our "matrix algebra VM" ("Maeve"), we may just want to replace matrix
+vector product calls with functions which generate instructions and
+record them somewhere.

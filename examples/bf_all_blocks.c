@@ -4,6 +4,7 @@
 #include <bf/error_macros.h>
 #include <bf/fac.h>
 #include <bf/helm2.h>
+#include <bf/layer_pot.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
@@ -44,7 +45,7 @@ int main(int argc, char const *argv[]) {
 
   assert(bfMatDenseComplexIsFinite(A_true));
 
-  BfMatBlockDense *A = bfFacHelm2MakeMultilevel(&tree, K);
+  BfMat *A = bfFacHelm2MakeMultilevel(&tree, K, BF_LAYER_POTENTIAL_SINGLE);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMatDenseComplex *x = bfMatDenseComplexNew();
@@ -58,11 +59,11 @@ int main(int argc, char const *argv[]) {
   BfMat *y_true = bfMatMul(bfMatDenseComplexToMat(A_true), bfMatDenseComplexToMat(x));
   printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
 
-  BfMat *y = bfMatMul(bfMatBlockDenseToMat(A), bfMatDenseComplexToMat(x));
+  BfMat *y = bfMatMul(A, bfMatDenseComplexToMat(x));
   printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
 
   FILE *fp = fopen(blocks_path_str, "w");
-  bfPrintBlocks(bfMatBlockDenseConstToMatConst(A), 2, fp);
+  bfPrintBlocks(A, 2, fp);
   fclose(fp);
   printf("wrote blocks to %s [%0.2fs]\n", blocks_path_str, bfToc());
 
@@ -71,7 +72,7 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&y);
   bfMatDelete(&y_true);
   bfMatDenseComplexDeinitAndDealloc(&x);
-  bfMatBlockDenseDeinitAndDealloc(&A);
+  bfMatDelete(&A);
   bfMatDenseComplexDeinitAndDealloc(&A_true);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);

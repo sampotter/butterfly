@@ -115,7 +115,7 @@ int main(int argc, char const *argv[]) {
   for (BfSize i = 0; i < numFactors; ++i) {
     factor = bfMatProductGetFactor(factorization, i);
 
-    BfMatType matType = bfMatGetType(factor);
+    BfType type = bfMatGetType(factor);
 
     BfMatBlock *matBlock = bfMatToMatBlock(factor);
     BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
@@ -134,9 +134,9 @@ int main(int argc, char const *argv[]) {
     fclose(fp);
 
     fp = fopen("rowInd.bin", "w");
-    if (matType == BF_MAT_TYPE_BLOCK_COO)
+    if (type == BF_TYPE_MAT_BLOCK_COO)
       fwrite(((BfMatBlockCoo *)factor)->rowInd, sizeof(BfSize), numBlocks, fp);
-    else if (matType == BF_MAT_TYPE_BLOCK_DIAG)
+    else if (type == BF_TYPE_MAT_BLOCK_DIAG)
       for (BfSize j = 0; j < numBlocks; ++j)
         fwrite(&j, sizeof(BfSize), 1, fp);
     else
@@ -144,9 +144,9 @@ int main(int argc, char const *argv[]) {
     fclose(fp);
 
     fp = fopen("colInd.bin", "w");
-    if (matType == BF_MAT_TYPE_BLOCK_COO)
+    if (type == BF_TYPE_MAT_BLOCK_COO)
       fwrite(((BfMatBlockCoo *)factor)->colInd, sizeof(BfSize), numBlocks, fp);
-    else if (matType == BF_MAT_TYPE_BLOCK_DIAG)
+    else if (type == BF_TYPE_MAT_BLOCK_DIAG)
       for (BfSize j = 0; j < numBlocks; ++j)
         fwrite(&j, sizeof(BfSize), 1, fp);
     else

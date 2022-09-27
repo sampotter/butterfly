@@ -14,12 +14,16 @@ BF_DECLARE_INTERFACE(MatBlockDense)
 BF_DECLARE_INTERFACE(MatBlockDense)
 #undef INTERFACE
 
-/* Upcasting: */
+/** Upcasting: */
 BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense);
 BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense);
+BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlock);
 
-/* Downcasting: */
+/** Downcasting: */
+BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
 BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
+
+/** Implementation: */
 
 BfMatBlockDense *bfMatBlockDenseNew();
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,

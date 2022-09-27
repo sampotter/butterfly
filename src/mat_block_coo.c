@@ -14,34 +14,29 @@ BF_DEFINE_VTABLE(Mat, MatBlockCoo)
 BF_DEFINE_VTABLE(MatBlock, MatBlockCoo)
 #undef INTERFACE
 
-/* Interface: Mat */
+/** Interface: Mat */
 
+BF_STUB(BfMat *, MatBlockCooCopy, BfMat const *)
 BF_STUB(BfMat *, MatBlockCooGetView, BfMat *)
+BF_STUB(BfVec *, MatBlockCooGetRowView, BfMat *, BfSize)
+BF_STUB(BfVec *, MatBlockCooGetColView, BfMat *, BfSize)
+BF_STUB(BfVec *, MatBlockCooGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
 
 void bfMatBlockCooDelete(BfMat **mat) {
   bfMatBlockCooDeinitAndDealloc((BfMatBlockCoo **)mat);
 }
 
-BfMat *bfMatBlockCooEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-  return NULL;
-}
+BF_STUB(BfMat *, MatBlockCooEmptyLike, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockCooZerosLike, BfMat const *, BfSize, BfSize)
 
-BfMat *bfMatBlockCooZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
-  (void)mat; (void)numRows; (void)numCols;
-  assert(false);
-  return NULL;
-}
-
-BfMatType bfMatBlockCooGetType(BfMat const *mat) {
+BfType bfMatBlockCooGetType(BfMat const *mat) {
   (void)mat;
-  return BF_MAT_TYPE_BLOCK_COO;
+  return BF_TYPE_MAT_BLOCK_COO;
 }
 
-bool bfMatBlockCooInstanceOf(BfMat const *mat, BfMatType matType) {
+bool bfMatBlockCooInstanceOf(BfMat const *mat, BfType type) {
   BfMat const *parent = bfMatBlockCooConstToMatConst((BfMatBlockCoo const *)mat);
-  return bfMatTypeDerivedFrom(bfMatGetType(parent), matType);
+  return bfTypeDerivedFrom(bfMatGetType(parent), type);
 }
 
 BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
@@ -66,10 +61,8 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
   return num_bytes;
 }
 
-void bfMatBlockCooSave(BfMat const *mat, char const *path) {
-  (void)mat; (void)path;
-  assert(false);
-}
+BF_STUB(void, MatBlockCooSave, BfMat const *, char const *)
+BF_STUB(void, MatBlockCooPrint, BfMat const *, FILE *)
 
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat) {
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
@@ -85,28 +78,26 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
 
-BfMat *bfMatBlockCooGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
-  (void)mat; (void)i0; (void)i1;
-  assert(false);
-  return NULL;
-}
-
-BfMat *bfMatBlockCooGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
-  (void)mat; (void)j0; (void)j1;
-  assert(false);
-  return NULL;
-}
-
-void bfMatBlockCooSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *otherMat) {
-  (void)mat; (void)i0; (void)i1; (void)otherMat;
-  assert(false);
-}
-
-void bfMatBlockCooAddInplace(BfMat *mat, BfMat const *otherMat) {
-  (void)mat;
-  (void)otherMat;
-  assert(false);
-}
+BF_STUB(void, MatBlockCooSetRow, BfMat *, BfSize, BfVec const *)
+BF_STUB(void, MatBlockCooSetCol, BfMat *, BfSize, BfVec const *)
+BF_STUB(void, MatBlockCooSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
+BF_STUB(BfMat *, MatBlockCooGetRowRange, BfMat *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockCooGetColRange, BfMat *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockCooGetRowRangeCopy, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockCooGetColRangeCopy, BfMat const *, BfSize, BfSize)
+BF_STUB(void, MatBlockCooSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
+BF_STUB(void, MatBlockCooPermuteRows, BfMat *, BfPerm const *)
+BF_STUB(void, MatBlockCooPermuteCols, BfMat *, BfPerm const *)
+BF_STUB(BfVec *, MatBlockCooRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockCooColDists, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockCooColDots, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockCooColNorms, BfMat const *)
+BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfVec const *)
+BF_STUB(BfVec *, MatBlockCooSumCols, BfMat const *)
+BF_STUB(void, MatBlockCooAddInplace, BfMat *, BfMat const *)
+BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatBlockCooSub, BfMat const *, BfMat const *)
+BF_STUB(void, MatBlockCooSubInplace, BfMat *, BfMat const *)
 
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
   BEGIN_ERROR_HANDLING();
@@ -149,32 +140,26 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
 }
 
-BfMat *bfMatBlockCooLstSq(BfMat const *mat, BfMat const *otherMat) {
-  /* TODO: not sure whether this should be implemented or not... see:
-   * https://en.wikipedia.org/wiki/Block_matrix_pseudoinverse */
-  (void)mat; (void)otherMat;
-  assert(false);
-  return NULL;
-}
+BF_STUB(BfVec *, MatBlockCooMulVec, BfMat const *, BfVec const *)
+BF_STUB(void, MatBlockCooMulInplace, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatBlockCooSolveLU, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockCooLstSq, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
+BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
+
+/** Interface: MatBlock */
 
 BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
   return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
 }
 
-BF_STUB(void, MatBlockCooPrint, FILE *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooColDists, BfMat const *, BfMat const *)
-BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSumCols, BfMat const *)
-BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)
-BF_STUB(void, MatBlockCooMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSolve, BfMat const *, BfMat const *)
 BF_STUB(BfSize, MatBlockCooGetNumRowBlocks, BfMatBlock const *)
 BF_STUB(BfSize, MatBlockCooGetNumColBlocks, BfMatBlock const *)
 BF_STUB(BfSize, MatBlockCooGetNumBlockRows, BfMatBlock const *, BfSize)
 BF_STUB(BfSize, MatBlockCooGetNumBlockCols, BfMatBlock const *, BfSize)
 
-/* Upcasting: */
+/** Upcasting: */
 
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo) {
   return &matBlockCoo->super.super;
@@ -184,10 +169,10 @@ BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo) {
   return &matBlockCoo->super.super;
 }
 
-/* Downcasting: */
+/** Downcasting: */
 
 BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK_COO)) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_COO)) {
     bfSetError(BF_ERROR_TYPE_ERROR);
     return NULL;
   } else {
@@ -199,7 +184,7 @@ BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBloc
   return bfMatConstToMatBlockCooConst(&matBlock->super);
 }
 
-/* Implementation: MatBlock */
+/** Implementation: MatBlockCoo */
 
 BfMatBlockCoo *bfMatBlockCooNew() {
   return malloc(sizeof(BfMatBlockCoo));

@@ -2,59 +2,113 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-BfPtr bfVecGetEltPtr(BfVec *x, BfSize i) {
-  return (BfByte *)x->data + i*x->stride;
+#include <bf/error.h>
+#include <bf/error_macros.h>
+#include <bf/vec_complex.h>
+#include <bf/vec_real.h>
+
+/** Interface: Vec */
+
+BfVec *bfVecCopy(BfVec const *vec) {
+  return vec->vtbl->Copy(vec);
 }
 
-BfReal bfVecDist(BfVec const *x, BfVec const *y) {
-  assert(x->dtype == y->dtype);
-
-  BfSize n = x->size;
-  assert(n == y->size);
-
-  BfReal sum = 0;
-
-  BfByte *x_ptr = x->data, *y_ptr = y->data;
-
-  if (x->dtype == BF_DTYPE_REAL) {
-    BfReal diff = 0;
-    for (BfSize i = 0; i < n; ++i) {
-      diff = *(BfReal *)x_ptr - *(BfReal *)y_ptr;
-      sum += diff*diff;
-      x_ptr += x->stride;
-      y_ptr += y->stride;
-    }
-  }
-
-  if (x->dtype == BF_DTYPE_COMPLEX) {
-    BfComplex diff = 0;
-    for (BfSize i = 0; i < n; ++i) {
-      diff = *(BfComplex *)x_ptr - *(BfComplex *)y_ptr;
-      sum += diff*conj(diff);
-      x_ptr += x->stride;
-      y_ptr += y->stride;
-    }
-  }
-
-  return sqrt(sum);
+void bfVecDelete(BfVec **vec) {
+  (*vec)->vtbl->Delete(vec);
 }
 
-void bfVecScaleByReal(BfVec *x, BfReal scale) {
-  BfSize n = x->size;
-  BfByte *x_ptr = x->data;
+BfType bfVecGetType(BfVec const *vec) {
+  return vec->vtbl->GetType(vec);
+}
 
-  if (x->dtype == BF_DTYPE_REAL) {
-    for (BfSize i = 0; i < n; ++i) {
-      *(BfReal *)x_ptr *= scale;
-      x_ptr += x->stride;
-    }
-  }
+BfPtr bfVecGetEltPtr(BfVec *vec, BfSize i) {
+  return vec->vtbl->GetEltPtr(vec, i);
+}
 
-  if (x->dtype == BF_DTYPE_COMPLEX) {
-    for (BfSize i = 0; i < n; ++i) {
-      *(BfComplex *)x_ptr *= scale;
-      x_ptr += x->stride;
-    }
+BfVec *bfVecGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
+  return vec->vtbl->GetSubvecCopy(vec, i0, i1);
+}
+
+BfVec *bfVecGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
+  return vec->vtbl->GetSubvecView(vec, i0, i1);
+}
+
+void bfVecPrint(BfVec const *vec, FILE *fp) {
+  vec->vtbl->Print(vec, fp);
+}
+
+/* Compute the Euclidean distance between `vec` and `otherVec`. */
+BfReal bfVecDist(BfVec const *vec, BfVec const *otherVec) {
+  return vec->vtbl->Dist(vec, otherVec);
+}
+
+/* Compute the Euclidean norm of `vec`. */
+BfReal bfVecNormMax(BfVec const *vec) {
+  return vec->vtbl->NormMax(vec);
+}
+
+/* Scale each element of `vec` by `factor`. */
+void bfVecScaleByReal(BfVec *vec, BfReal factor) {
+  vec->vtbl->ScaleByReal(vec, factor);
+}
+
+/* Accumulate `otherVec` componentwise into `vec`. */
+void bfVecAddInplace(BfVec *vec, BfVec const *otherVec) {
+  vec->vtbl->AddInplace(vec, otherVec);
+}
+
+/* Compute the left matrix-vector product `mat`*`vec` inplace,
+ * overwriting `vec` with the results. */
+void bfVecMulInplace(BfVec *vec, BfMat const *mat) {
+  vec->vtbl->MulInplace(vec, mat);
+}
+
+/* Solve the system `mat`*lhs = `vec` inplace, storing the solution of
+ * the linear system in `vec`. */
+void bfVecSolveInplace(BfVec *vec, BfMat const *mat) {
+  vec->vtbl->SolveInplace(vec, mat);
+}
+
+/* Compute the reciprocal of `vec` inplace. */
+void bfVecRecipInplace(BfVec *vec) {
+  vec->vtbl->RecipInplace(vec);
+}
+
+/* Find and return the Givens rotation acting on the indices `srcInd`
+ * and `elimInd`, and eliminating `vec[elimInd]`. */
+BfMat *bfVecGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd) {
+  return vec->vtbl->GetGivensRotation(vec, srcInd, elimInd);
+}
+
+/** Implementation: Vec */
+
+void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size) {
+  vec->vtbl = vtbl;
+  vec->size = size;
+  vec->props = BF_VEC_PROPS_NONE;
+}
+
+void bfVecDeinit(BfVec *vec) {
+  vec->vtbl = NULL;
+  vec->size = BF_SIZE_BAD_VALUE;
+  vec->props = BF_VEC_PROPS_NONE;
+}
+
+BfVec *bfVecFromFile(char const *path, BfSize size, BfDtype dtype) {
+  switch (dtype) {
+  case BF_DTYPE_COMPLEX:
+    return (BfVec *)bfVecComplexFromFile(path, size);
+  case BF_DTYPE_REAL:
+    return (BfVec *)bfVecRealFromFile(path, size);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
   }
+}
+
+bool bfVecInstanceOf(BfVec const *vec, BfType type) {
+  return bfTypeDerivedFrom(bfVecGetType(vec), type);
 }

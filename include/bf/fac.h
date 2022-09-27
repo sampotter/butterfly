@@ -1,5 +1,6 @@
 #pragma once
 
+#include "layer_pot.h"
 #include "mat_product.h"
 #include "quadtree.h"
 
@@ -15,4 +16,4 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
                              BfQuadtreeLevelIter *tgtLevelIter,
                              BfSize numFactors);
 
-BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K);
+BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot);

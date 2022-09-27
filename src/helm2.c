@@ -105,13 +105,13 @@ BfMat *bf_hh2_get_dGdN(BfPoints2 const *Xsrc,
 
   BfSize k = 0;
   for (BfSize i = 0; i < m; ++i) {
-    BfReal const *xsrc = Xsrc->data[i];
+    BfReal const *xtgt = Xtgt->data[i];
+    BfReal const *ntgt = Ntgt->data[i];
     for (BfSize j = 0; j < n; ++j) {
       if (r[k] == 0) {
         kernelMat->data[k] = 0;
       } else {
-        BfReal const *xtgt = Xtgt->data[j];
-        BfReal const *ntgt = Ntgt->data[j];
+        BfReal const *xsrc = Xsrc->data[j];
         BfReal dot = ntgt[0]*(xtgt[0] - xsrc[0]) + ntgt[1]*(xtgt[1] - xsrc[1]);
         BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
         kernelMat->data[k] = scale*dot;
@@ -126,6 +126,17 @@ BfMat *bf_hh2_get_dGdN(BfPoints2 const *Xsrc,
   free(r);
 
   return bfMatDenseComplexToMat(kernelMat);
+}
+
+BfComplex bf_hh2_get_dGdN_1(BfPoint2 const xsrc, BfPoint2 const xtgt, BfReal K,
+                            BfVector2 const ntgt)
+{
+  BfReal r = bfPoint2Dist(xsrc, xtgt);
+  if (r < 1e-15)
+    return 0;
+  BfReal dot = ntgt[0]*(xtgt[0] - xsrc[0]) + ntgt[1]*(xtgt[1] - xsrc[1]);
+  BfComplex scale = (I/4)*K*bf_H1(K*r)/r;
+  return scale*dot;
 }
 
 BfMatDenseComplex *

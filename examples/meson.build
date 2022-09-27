@@ -14,7 +14,8 @@ endforeach
 
 python_scripts = [
   'ellipse.py',
-  'make_test_data.py',
+  'make_circle_test_data.py',
+  'make_ellipse_test_data.py',
   'plot_bf_one_block.py',
   'plot_blocks.py',
   'plot_points_and_quadtree.py',

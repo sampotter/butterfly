@@ -16,7 +16,11 @@ BF_DEFINE_VTABLE(MatBlock, MatBlockDiag)
 
 /** BfMat interface: */
 
+BF_STUB(BfMat *, MatBlockDiagCopy, BfMat const *)
 BF_STUB(BfMat *, MatBlockDiagGetView, BfMat *)
+BF_STUB(BfVec *, MatBlockDiagGetRowView, BfMat *, BfSize)
+BF_STUB(BfVec *, MatBlockDiagGetColView, BfMat *, BfSize)
+BF_STUB(BfVec *, MatBlockDiagGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
 
 void bfMatBlockDiagDelete(BfMat **mat) {
   bfMatBlockDiagDeinitAndDealloc((BfMatBlockDiag **)mat);
@@ -25,18 +29,18 @@ void bfMatBlockDiagDelete(BfMat **mat) {
 BF_STUB(BfMat *, MatBlockDiagEmptyLike, BfMat const *, BfSize, BfSize)
 BF_STUB(BfMat *, MatBlockDiagZerosLike, BfMat const *, BfSize, BfSize)
 
-BfMatType bfMatBlockDiagGetType(BfMat const *mat) {
+BfType bfMatBlockDiagGetType(BfMat const *mat) {
   (void)mat;
-  return BF_MAT_TYPE_BLOCK_DIAG;
+  return BF_TYPE_MAT_BLOCK_DIAG;
 }
 
-bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfMatType matType) {
-  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
+bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfType type) {
+  return bfTypeDerivedFrom(bfMatGetType(mat), type);
 }
 
 BF_STUB(BfSize, MatBlockDiagNumBytes, BfMat const *)
 BF_STUB(void, MatBlockDiagSave, BfMat const *, char const *)
-BF_STUB(void, MatBlockDiagPrint, FILE *, BfMat const *)
+BF_STUB(void, MatBlockDiagPrint, BfMat const *, FILE *)
 
 BfSize bfMatBlockDiagGetNumRows(BfMat const *mat) {
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
@@ -52,15 +56,26 @@ BfSize bfMatBlockDiagGetNumCols(BfMat const *mat) {
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
 
+BF_STUB(void, MatBlockDiagSetRow, BfMat *, BfSize, BfVec const *)
+BF_STUB(void, MatBlockDiagSetCol, BfMat *, BfSize, BfVec const *)
+BF_STUB(void, MatBlockDiagSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
 BF_STUB(BfMat *, MatBlockDiagGetRowRange, BfMat *, BfSize, BfSize)
 BF_STUB(BfMat *, MatBlockDiagGetColRange, BfMat *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockDiagGetRowRangeCopy, BfMat const *, BfSize, BfSize)
+BF_STUB(BfMat *, MatBlockDiagGetColRangeCopy, BfMat const *, BfSize, BfSize)
 BF_STUB(void, MatBlockDiagSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(BfMat *, MatBlockDiagRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockDiagColDists, BfMat const *, BfMat const *)
-BF_STUB(void, MatBlockDiagScaleCols, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockDiagSumCols, BfMat const *)
+BF_STUB(void, MatBlockDiagPermuteRows, BfMat *, BfPerm const *)
+BF_STUB(void, MatBlockDiagPermuteCols, BfMat *, BfPerm const *)
+BF_STUB(BfVec *, MatBlockDiagRowDists, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockDiagColDists, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockDiagColDots, BfMat const *, BfMat const *)
+BF_STUB(BfVec *, MatBlockDiagColNorms, BfMat const *)
+BF_STUB(void, MatBlockDiagScaleCols, BfMat *, BfVec const *)
+BF_STUB(BfVec *, MatBlockDiagSumCols, BfMat const *)
 BF_STUB(void, MatBlockDiagAddInplace, BfMat *, BfMat const *)
 BF_STUB(void, MatBlockDiagAddDiag, BfMat *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDiagSub, BfMat const *, BfMat const *)
+BF_STUB(void, MatBlockDiagSubInplace, BfMat *, BfMat const *)
 
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
   BEGIN_ERROR_HANDLING();
@@ -99,9 +114,15 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
   return result;
 }
 
+BF_STUB(BfVec *, MatBlockDiagMulVec, BfMat const *, BfVec const *)
 BF_STUB(void, MatBlockDiagMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockDiagSolve, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDiagSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDiagLstSq, BfMat const *, BfMat const *)
+BF_STUB(BfMat *, MatBlockDiagGetGivensRotation, BfVec const *, BfSize, BfSize)
+BF_STUB(bool, MatBlockDiagIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatBlockDiagBackwardSolveVec, BfMat const *, BfVec const *)
+
+/* Interface: MatBlock */
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock) {
   BfMat const *mat = bfMatBlockConstToMatConst(matBlock);
@@ -143,7 +164,7 @@ BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag) {
 }
 
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK_DIAG)) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_DIAG)) {
     bfSetError(BF_ERROR_TYPE_ERROR);
     return NULL;
   } else {

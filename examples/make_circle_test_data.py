@@ -14,7 +14,7 @@ theta = np.linspace(0, 2*np.pi, num_points, endpoint=False)
 points = np.array([np.cos(theta), np.sin(theta)]).T
 normals = points
 weights = (theta[1] - theta[0])*np.ones(num_points)
-sources = np.array([[0, 0]])
+sources = np.array([[0.2, 0.1]])
 
 targets_r = 5
 targets_theta = np.linspace(0, 2*np.pi, 2**6, endpoint=False)

@@ -12,7 +12,7 @@ BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock) {
 }
 
 BfMatBlock *bfMatToMatBlock(BfMat *mat) {
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK)) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK)) {
     bfSetError(BF_ERROR_RUNTIME_ERROR);
     return NULL;
   } else {
@@ -21,7 +21,7 @@ BfMatBlock *bfMatToMatBlock(BfMat *mat) {
 }
 
 BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_MAT_TYPE_BLOCK)) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK)) {
     bfSetError(BF_ERROR_RUNTIME_ERROR);
     return NULL;
   } else {

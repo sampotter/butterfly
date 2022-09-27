@@ -682,6 +682,7 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
+                                       BfLayerPotential layerPot,
                                        BfPtrArray const *srcNodes,
                                        BfPtrArray const *tgtNodes,
                                        BfSize level,
@@ -690,6 +691,7 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
 static
 BfMat *
 facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
+                            BfLayerPotential layerPot,
                             BfQuadtreeNode const *srcNode,
                             BfQuadtreeNode const *tgtNode,
                             BfSize level) {
@@ -712,8 +714,8 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   bfMatBlockDenseInit(childBlockMat, numBlockRows, numBlockCols);
   HANDLE_ERROR();
 
-  facHelm2MakeMultilevel_rec(
-    tree, K, &srcChildNodes, &tgtChildNodes, level + 1, childBlockMat);
+  facHelm2MakeMultilevel_rec(tree, K, layerPot, &srcChildNodes, &tgtChildNodes,
+                             level + 1, childBlockMat);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {}
@@ -725,6 +727,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
+                                       BfLayerPotential layerPot,
                                        BfPtrArray const *srcNodes,
                                        BfPtrArray const *tgtNodes,
                                        BfSize level,
@@ -754,7 +757,7 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
       else
         /* TODO: we really need to consolidate _rec and _diag (also,
          * "_diag" is a total misnomer) */
-        mat = facHelm2MakeMultilevel_diag(tree, K, srcNode, tgtNode, level);
+        mat = facHelm2MakeMultilevel_diag(tree, K, layerPot, srcNode, tgtNode, level);
 
       if (mat == NULL)
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -773,14 +776,15 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
     super->rowOffset[i + 1] = super->rowOffset[i] + numRows;
   }
 
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() { /* TODO: ... */ }
 }
 
-BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K) {
+BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K,
+                                BfLayerPotential layerPot) {
   BEGIN_ERROR_HANDLING();
 
-  /* Use an in-order quadtree level iterator to enumerate the pairs of
-   * nodes which we'll make butterfly factorizations for */
+  /* Iterate over the quadtree level by level to generate pairs of
+   * nodes to compress */
   BfQuadtreeLevelIter levelIter = bfInitQuadtreeLevelIter(
     BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tree->root);
   HANDLE_ERROR();
@@ -790,14 +794,16 @@ BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K) {
   bfQuadtreeLevelIterNext(&levelIter);
   HANDLE_ERROR();
 
+  /* Get the nodes at the current level along with their count */
   BfPtrArray const *levelNodes = &levelIter.levelNodes;
   BfSize numNodes = bfPtrArraySize(levelNodes);
 
+  /* Create a new dense block matrix to store the HODBF matrix */
   BfMatBlockDense *mat = bfMatBlockDenseNew();
   bfMatBlockDenseInit(mat, numNodes, numNodes);
 
   /* Build the multilevel butterfly factorization */
-  facHelm2MakeMultilevel_rec(tree, K, levelNodes, levelNodes, 2, mat);
+  facHelm2MakeMultilevel_rec(tree, K, layerPot, levelNodes, levelNodes, 2, mat);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
@@ -805,5 +811,5 @@ BfMatBlockDense *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K) {
 
   bfFreeQuadtreeLevelIter(&levelIter);
 
-  return mat;
+  return bfMatBlockDenseToMat(mat);
 }

@@ -210,11 +210,8 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   // initialize permutation to identity
-  tree->perm = malloc(numPoints*sizeof(BfSize));
-  if (tree->perm == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  for (BfSize i = 0; i < numPoints; ++i)
-    tree->perm[i] = i;
+  tree->perm = bfPermIdentity(numPoints);
+  HANDLE_ERROR();
 
   tree->root = malloc(sizeof(BfQuadtreeNode));
   if (tree->root == NULL)
@@ -246,7 +243,7 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   tree->root->split[1] = (bbox.min[1] + bbox.max[1])/2;
 
   recInitQuadtreeNode(tree->root, tree->points, bbox,
-                      0, numPoints, tree->perm, 0);
+                      0, numPoints, tree->perm.index, 0);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -296,7 +293,7 @@ static void recFreeQuadtreeNode(BfQuadtreeNode *node) {
 void bfFreeQuadtree(BfQuadtree *tree) {
   recFreeQuadtreeNode(tree->root);
 
-  free(tree->perm);
+  bfPermDeinit(&tree->perm);
 }
 
 void
@@ -403,7 +400,7 @@ bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
   /* determine the number of points containined by `node` and find the
    * offset into `tree->perm` */
   BfSize numInds = node->offset[4] - node->offset[0];
-  BfSize const *inds = &tree->perm[node->offset[0]];
+  BfSize const *inds = &tree->perm.index[node->offset[0]];
 
   bfGetPointsByIndex(tree->points, numInds, inds, points);
   HANDLE_ERROR();

@@ -1,12 +1,34 @@
 #include <bf/mat.h>
 
+#include <assert.h>
+#include <math.h>
+#include <stdlib.h>
+
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_dense_real.h>
 
+/** Interface: Mat */
+
+BfMat *bfMatCopy(BfMat const *mat) {
+  return mat->vtbl->Copy(mat);
+}
+
 BfMat *bfMatGetView(BfMat *mat) {
   return mat->vtbl->GetView(mat);
+}
+
+BfVec *bfMatGetRowView(BfMat *mat, BfSize i) {
+  return mat->vtbl->GetRowView(mat, i);
+}
+
+BfVec *bfMatGetColView(BfMat *mat, BfSize j) {
+  return mat->vtbl->GetColView(mat, j);
+}
+
+BfVec *bfMatGetColRangeView(BfMat *mat, BfSize i0, BfSize i1, BfSize j) {
+  return mat->vtbl->GetColRangeView(mat, i0, i1, j);
 }
 
 void bfMatDelete(BfMat **mat) {
@@ -21,12 +43,8 @@ BfMat *bfMatZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
   return mat->vtbl->ZerosLike(mat, numRows, numCols);
 }
 
-enum BfMatTypes bfMatGetType(BfMat const *mat) {
+BfType bfMatGetType(BfMat const *mat) {
   return mat->vtbl->GetType(mat);
-}
-
-bool bfMatInstanceOf(BfMat const *mat, BfMatType matType) {
-  return bfMatTypeDerivedFrom(bfMatGetType(mat), matType);
 }
 
 BfSize bfMatNumBytes(BfMat const *mat) {
@@ -37,8 +55,8 @@ void bfMatSave(BfMat const *mat, char const *path) {
   mat->vtbl->Save(mat, path);
 }
 
-void bfMatPrint(FILE *fp, BfMat const *mat) {
-  mat->vtbl->Print(fp, mat);
+void bfMatPrint(BfMat const *mat, FILE *fp) {
+  mat->vtbl->Print(mat, fp);
 }
 
 BfSize bfMatGetNumRows(BfMat const *mat) {
@@ -49,6 +67,18 @@ BfSize bfMatGetNumCols(BfMat const *mat) {
   return mat->vtbl->GetNumCols(mat);
 }
 
+void bfMatSetRow(BfMat *mat, BfSize i, BfVec const *rowVec) {
+  mat->vtbl->SetRow(mat, i, rowVec);
+}
+
+void bfMatSetCol(BfMat *mat, BfSize j, BfVec const *colVec) {
+  mat->vtbl->SetCol(mat, j, colVec);
+}
+
+void bfMatSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1, BfVec const *colVec) {
+  mat->vtbl->SetColRange(mat, j, i0, i1, colVec);
+}
+
 BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   return mat->vtbl->GetRowRange(mat, i0, i1);
 }
@@ -57,23 +87,47 @@ BfMat *bfMatGetColRange(BfMat *mat, BfSize i0, BfSize i1) {
   return mat->vtbl->GetColRange(mat, i0, i1);
 }
 
+BfMat *bfMatGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
+  return mat->vtbl->GetRowRangeCopy(mat, i0, i1);
+}
+
+BfMat *bfMatGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
+  return mat->vtbl->GetColRangeCopy(mat, j0, j1);
+}
+
 void bfMatSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows) {
   mat->vtbl->SetRowRange(mat, i0, i1, rows);
 }
 
-BfMat *bfMatRowDists(BfMat const *mat, BfMat const *otherMat) {
+void bfMatPermuteRows(BfMat *mat, BfPerm const *perm) {
+  mat->vtbl->PermuteRows(mat, perm);
+}
+
+void bfMatPermuteCols(BfMat *mat, BfPerm const *perm) {
+  mat->vtbl->PermuteCols(mat, perm);
+}
+
+BfVec *bfMatRowDists(BfMat const *mat, BfMat const *otherMat) {
   return mat->vtbl->RowDists(mat, otherMat);
 }
 
-BfMat *bfMatColDists(BfMat const *mat, BfMat const *otherMat) {
+BfVec *bfMatColDists(BfMat const *mat, BfMat const *otherMat) {
   return mat->vtbl->ColDists(mat, otherMat);
 }
 
-void bfMatScaleCols(BfMat *mat, BfMat const *otherMat) {
-  mat->vtbl->ScaleCols(mat, otherMat);
+BfVec *bfMatColDots(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->ColDots(mat, otherMat);
 }
 
-BfMat *bfMatSumCols(BfMat const *mat) {
+BfVec *bfMatColNorms(BfMat const *mat) {
+  return mat->vtbl->ColNorms(mat);
+}
+
+void bfMatScaleCols(BfMat *mat, BfVec const *vec) {
+  mat->vtbl->ScaleCols(mat, vec);
+}
+
+BfVec *bfMatSumCols(BfMat const *mat) {
   return mat->vtbl->SumCols(mat);
 }
 
@@ -85,21 +139,43 @@ void bfMatAddDiag(BfMat *mat, BfMat const *diagMat) {
   mat->vtbl->AddDiag(mat, diagMat);
 }
 
+BfMat *bfMatSub(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->Sub(mat, otherMat);
+}
+
+void bfMatSubInplace(BfMat *mat, BfMat const *otherMat) {
+  mat->vtbl->SubInplace(mat, otherMat);
+}
+
 BfMat *bfMatMul(BfMat const *lhs, BfMat const *rhs) {
   return lhs->vtbl->Mul(lhs, rhs);
+}
+
+BfVec *bfMatMulVec(BfMat const *mat, BfVec const *vec) {
+  return mat->vtbl->MulVec(mat, vec);
 }
 
 void bfMatMulInplace(BfMat *mat, BfMat const *otherMat) {
   mat->vtbl->MulInplace(mat, otherMat);
 }
 
-BfMat *bfMatSolve(BfMat const *mat, BfMat const *otherMat) {
-  return mat->vtbl->Solve(mat, otherMat);
+BfMat *bfMatSolveLU(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->SolveLU(mat, otherMat);
 }
 
 BfMat *bfMatLstSq(BfMat const *lhs, BfMat const *rhs) {
   return lhs->vtbl->LstSq(lhs, rhs);
 }
+
+bool bfMatIsUpperTri(BfMat const *mat) {
+  return mat->vtbl->IsUpperTri(mat);
+}
+
+BfVec *bfMatBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
+  return mat->vtbl->BackwardSolveVec(mat, vec);
+}
+
+/** Implementation: Mat */
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
   mat->vtbl = vtbl;
@@ -131,6 +207,10 @@ BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype d
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
   }
+}
+
+bool bfMatInstanceOf(BfMat const *mat, BfType type) {
+  return bfTypeDerivedFrom(bfMatGetType(mat), type);
 }
 
 bool bfMatIsTransposed(BfMat const *mat) {

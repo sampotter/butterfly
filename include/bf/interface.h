@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 #define BF_DEFINE_VTABLE_STRUCT_impl(Type, _2, X)   \
   typedef struct Bf##Type##Vtable {                 \
     INTERFACE(Type, _1, X)                          \

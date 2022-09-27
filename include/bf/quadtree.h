@@ -5,6 +5,7 @@
 #include "bbox.h"
 #include "error.h"
 #include "mat.h"
+#include "perm.h"
 #include "ptr_array.h"
 #include "tree.h"
 
@@ -70,7 +71,7 @@ typedef void (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
 
 struct BfQuadtree {
   BfPoints2 const *points;
-  BfSize *perm;
+  BfPerm perm;
   BfQuadtreeNode *root;
 };
 
