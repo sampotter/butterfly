@@ -47,8 +47,8 @@ plt.show()
 # now make a nicer block matrix plot
 
 type2hatch = {
-    5: '//', # BF_TYPE_MAT_DENSE_COMPLEX
-    7: 'o',  # BF_MAT_PRODUCT (i.e.: butterfly factorization)
+    7: '//', # BF_TYPE_MAT_DENSE_COMPLEX
+    11: 'o',  # BF_MAT_PRODUCT (i.e.: butterfly factorization)
 }
 
 cmap = cc.cm.gouldian
@@ -58,6 +58,8 @@ for level, i0, i1, j0, j1, type_ in zip(Level, I0, I1, J0, J1, Type):
     di, dj = i1 - i0, j1 - j0
     fc = cmap(level/(max_level + 1))
     ec = cmap((level - 0.5)/(max_level + 1))
+    if type_ not in type2hatch:
+        print(type_)
     h = type2hatch[type_]
     rect = Rectangle((j0, i0), dj, di, linewidth=1, facecolor=fc,
                      edgecolor=ec, hatch=h)
