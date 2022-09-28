@@ -839,3 +839,13 @@ bfFreeQuadtreeLevelIter(BfQuadtreeLevelIter *iter)
 
   bfSetError(BF_ERROR_INVALID_ARGUMENTS);
 }
+
+BfSize bfQuadtreeLevelIterNumPoints(BfQuadtreeLevelIter const *iter) {
+  BfPtrArray const *levelNodes = &iter->levelNodes;
+  BfSize numPoints = 0;
+  for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i) {
+    BfQuadtreeNode *node = bfPtrArrayGet(levelNodes, i);
+    numPoints += bfQuadtreeNodeNumPoints(node);
+  }
+  return numPoints;
+}

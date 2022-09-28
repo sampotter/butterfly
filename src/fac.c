@@ -450,17 +450,6 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
 }
 
 static bool
-allSourceNodesHaveChildren(BfPtrArray const *srcLevelNodes)
-{
-  for (BfSize i = 0; i < bfPtrArraySize(srcLevelNodes); ++i) {
-    BfQuadtreeNode *srcNode = bfPtrArrayGet(srcLevelNodes, i);
-    if (bfQuadtreeNodeIsLeaf(srcNode))
-      return false;
-  }
-  return true;
-}
-
-static bool
 allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
                       BfPtrArray const *srcLevelNodes)
 {
@@ -506,6 +495,9 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
 
   BfSize numFactors = 0;
 
+  BfSize numSrcNodes = bfQuadtreeNodeNumPoints(srcNode);
+  BfSize numTgtNodes = bfQuadtreeNodeNumPoints(tgtNode);
+
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
   *srcLevelIter = bfInitQuadtreeLevelIter(
@@ -517,6 +509,8 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   *tgtLevelIter = bfInitQuadtreeLevelIter(
     BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tgtNode);
   HANDLE_ERROR();
+
+  assert(bfQuadtreeLevelIterNumPoints(tgtLevelIter) == numTgtNodes);
 
   /* get the current source and target depths and make sure they're
    * compatible */
@@ -532,16 +526,13 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
     --currentSrcDepth;
   }
 
-  /* skip source levels until we reach a level where each node has children
-   *
-   * TODO: I am *NOT AT ALL* sure this is right... but it should at
-   * get me unstuck for now at least. */
-  while (currentSrcDepth > currentTgtDepth &&
-         !allSourceNodesHaveChildren(&srcLevelIter->levelNodes)) {
+  /* the quadtree can be ragged---we need to skip levels until we are
+   * on a complete level of tree */
+  while (bfQuadtreeLevelIterNumPoints(srcLevelIter) != numSrcNodes) {
     bfQuadtreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
-  assert(allSourceNodesHaveChildren(&srcLevelIter->levelNodes));
+  assert(bfQuadtreeLevelIterNumPoints(srcLevelIter) == numSrcNodes);
 
   /* TODO: step the source level iterator until:
    * - the rank estimate between the first target node and each source
