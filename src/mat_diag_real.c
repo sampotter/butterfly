@@ -226,6 +226,22 @@ void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
     bfMatDiagRealDeinit(mat);
 }
 
+void bfMatDiagRealInitView(BfMatDiagReal *mat, BfSize numRows, BfSize numCols,
+                           BfReal *data) {
+  BEGIN_ERROR_HANDLING();
+
+  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  HANDLE_ERROR();
+
+  mat->super.props |= BF_MAT_PROPS_VIEW;
+
+  mat->numElts = numRows < numCols ? numRows : numCols;
+  mat->data = data;
+
+  END_ERROR_HANDLING()
+    bfMatDiagRealDeinit(mat);
+}
+
 void bfMatDiagRealDeinit(BfMatDiagReal *mat) {
   mat->numElts = BF_SIZE_BAD_VALUE;
 
@@ -260,18 +276,13 @@ bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
 
   BEGIN_ERROR_HANDLING();
 
-  BfMatDiagReal *matView = (BfMatDiagReal *)mat;
+  BfMatDiagReal *matView = bfMatDiagRealNew();
   HANDLE_ERROR();
 
-  matView->numElts = i1 - i0;
+  BfSize numElts = i1 - i0;
+  BfReal *data = mat->data + i0;
 
-  if (matView->numElts == mat->numElts)
-    return matView;
-
-  matView->super.numRows = matView->numElts;
-  matView->super.numCols = matView->numElts;
-
-  matView->data += i0;
+  bfMatDiagRealInitView(matView, numElts, numElts, data);
 
   END_ERROR_HANDLING()
     bfMatDiagRealDeinitAndDealloc(&matView);

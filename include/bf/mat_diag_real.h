@@ -23,6 +23,7 @@ BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat);
 BfMatDiagReal *bfMatDiagRealNew();
 BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols);
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols);
+void bfMatDiagRealInitView(BfMatDiagReal *mat, BfSize numRows, BfSize numCols, BfReal *data);
 void bfMatDiagRealDeinit(BfMatDiagReal *mat);
 void bfMatDiagRealDealloc(BfMatDiagReal **mat);
 void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat);
