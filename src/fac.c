@@ -731,11 +731,14 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
   super->rowOffset[0] = 0;
   super->colOffset[0] = 0;
 
-  for (BfSize i = 0; i < bfPtrArraySize(tgtNodes); ++i) {
+  BfSize numRowBlocks = bfPtrArraySize(tgtNodes);
+  BfSize numColBlocks = bfPtrArraySize(srcNodes);
+
+  for (BfSize i = 0; i < numRowBlocks; ++i) {
     BfQuadtreeNode *tgtNode = bfPtrArrayGet(tgtNodes, i);
     BfSize numRows = bfQuadtreeNodeNumPoints(tgtNode);
 
-    for (BfSize j = 0; j < bfPtrArraySize(srcNodes); ++j) {
+    for (BfSize j = 0; j < numColBlocks; ++j) {
       BfQuadtreeNode *srcNode = bfPtrArrayGet(srcNodes, j);
       BfSize numCols = bfQuadtreeNodeNumPoints(srcNode);
 
@@ -749,6 +752,12 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
         /* TODO: we really need to consolidate _rec and _diag (also,
          * "_diag" is a total misnomer) */
         mat = facHelm2MakeMultilevel_diag(tree, K, layerPot, srcNode, tgtNode, level);
+
+      if (bfMatGetNumRows(mat) != numRows)
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+      if (bfMatGetNumCols(mat) != numCols)
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
       if (mat == NULL)
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -766,6 +775,18 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
     /* update the row block offset */
     super->rowOffset[i + 1] = super->rowOffset[i] + numRows;
   }
+
+#if BF_DEBUG
+  for (BfSize i = 0; i < numRowBlocks; ++i) {
+    BfSize m = super->rowOffset[i + 1] - super->rowOffset[i];
+    for (BfSize j = 0; j < numColBlocks; ++j) {
+      BfSize n = super->colOffset[j + 1] - super->colOffset[j];
+      BfMat *block = bfMatBlockDenseGetBlock(blockMat, i, j);
+      assert(bfMatGetNumRows(block) == m);
+      assert(bfMatGetNumCols(block) == n);
+    }
+  }
+#endif
 
   END_ERROR_HANDLING() { /* TODO: ... */ }
 }
