@@ -90,6 +90,7 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
+  /* Compute the reverse of the quadtree permutation */
   BfPerm revPerm = bfPermGetReversePerm(&tree.perm);
 
   /* Set up the LHS of the problem */
