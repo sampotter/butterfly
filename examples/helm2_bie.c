@@ -143,6 +143,12 @@ int main(int argc, char const *argv[]) {
     &tree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
+  /* Write blocks to disk: */
+  FILE *fp = fopen(argv[7], "w");
+  bfPrintBlocks(A_BF, 2, fp);
+  fclose(fp);
+  printf("wrote blocks to %s [%0.2fs]\n", argv[7], bfToc());
+
 //   /* Perturb by the KR correction */
 //   bf_apply_KR_correction_quadtree(A_BF, KR_order, &tree, K_helm2, (void *)&K_wkspc);
 
