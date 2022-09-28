@@ -253,6 +253,8 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
       j1 = matBlock->colOffset[j + 1];
       op2Rows = bfMatGetRowRange((BfMat *)otherMat, j0, j1);
       block = bfMatBlockDenseGetBlock((BfMatBlockDense *)matBlockDense, i, j);
+      assert(bfMatGetNumRows(block) == i1 - i0);
+      assert(bfMatGetNumCols(block) == j1 - j0);
       tmp = bfMatMul(block, op2Rows);
       bfMatAddInplace(resultRows, tmp);
       bfMatDelete(&tmp);
