@@ -28,5 +28,4 @@ void bfMatDiagRealDealloc(BfMatDiagReal **mat);
 void bfMatDiagRealDeinitAndDealloc(BfMatDiagReal **mat);
 void bfMatDiagRealSetConstant(BfMatDiagReal *mat, BfReal value);
 BfMatDiagReal *bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1);
-BfMatDenseComplex *bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
-                                                  BfMatDenseComplex const *rhs);
+BfMatDenseComplex *bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs, BfMatDenseComplex const *rhs);
