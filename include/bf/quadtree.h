@@ -70,8 +70,19 @@ struct BfQuadtreeNode {
 typedef void (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
 
 struct BfQuadtree {
+  /* A pointer to the point set upon which the quadtree has been
+   * built. The points in this array in the original order, and have
+   * not been permuted into the quadtree order. */
   BfPoints2 const *points;
+
+  /* The permutation from the original ordering to the quadtree
+   * ordering. For example, to put the rows of a matrix `X` which have
+   * the same ordering as `points`, call `bfMatPermuteRows(X,
+   * &perm)`. To undo this permutation, `bfPermGetReversePerm` can be
+   * used to construct the inverse permutation from the quadtree
+   * ordering back to the original ordering. */
   BfPerm perm;
+
   BfQuadtreeNode *root;
 };
 
