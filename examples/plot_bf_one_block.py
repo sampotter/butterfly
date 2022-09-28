@@ -6,9 +6,14 @@ import numpy as np
 import scipy.spatial
 import scipy.special
 
+norm = np.linalg.norm
+
 from glob import glob
 from util import complex_to_hsv
 from pathlib import Path
+
+########################################################################
+# setup
 
 SAVE_PLOTS = True
 
@@ -43,6 +48,16 @@ tgtPts = np.fromfile('tgtPts.bin', dtype=np.float64).reshape(-1, 2)
 
 sortedSrcPts = srcPts[np.argsort(srcPts[:, 1])]
 sortedTgtPts = tgtPts[np.argsort(tgtPts[:, 1])]
+
+########################################################################
+# print relative error
+
+V = np.fromfile('V.bin', dtype=np.complex128).reshape(Z_gt.shape[0])
+V_gt = np.fromfile('V_gt.bin', dtype=np.complex128).reshape(Z_gt.shape[0])
+
+rel_err = norm(V - V_gt)/norm(V)
+
+print(f'relative l2 error between V.bin and V_gt.bin: {rel_err}')
 
 ########################################################################
 # set up test problem

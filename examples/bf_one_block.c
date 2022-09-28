@@ -17,8 +17,8 @@
 #include <bf/rand.h>
 
 int main(int argc, char const *argv[]) {
-  if (argc != 2) {
-    printf("usage: %s <points.bin>\n", argv[0]);
+  if (argc != 7) {
+    printf("usage: %s <K> <src_depth> <src_index> <tgt_depth> <tgt_index> <points.bin>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -28,10 +28,12 @@ int main(int argc, char const *argv[]) {
   BfMatProduct *factorization = NULL;
   BfMat *factor = NULL;
 
+  BfReal K = atoi(argv[1]);
+
   BfPoints2 points;
-  bfReadPoints2FromFile(argv[1], &points);
+  bfReadPoints2FromFile(argv[6], &points);
   HANDLE_ERROR();
-  printf("read points from %s\n", argv[1]);
+  printf("read points from %s\n", argv[2]);
 
   BfQuadtree tree;
   bfInitQuadtreeFromPoints(&tree, &points);
@@ -41,15 +43,15 @@ int main(int argc, char const *argv[]) {
   bfQuadtreeSaveBoxesToTextFile(&tree, "quadtree.txt");
   puts("saved quadtree boxes to quadtree.txt");
 
-  BfReal K = 3000;
-
   bfSeed(1234);
 
   /* Get source and target nodes from quadtree and check that their
    * indices are OK */
 
-  BfSize src_depth = 3, srcNodeIndex = 20;
-  BfSize tgt_depth = 3, tgtNodeIndex = 16*3 + 4*3 + 2;
+  BfSize src_depth = atoi(argv[2]);
+  BfSize srcNodeIndex = atoi(argv[3]);
+  BfSize tgt_depth = atoi(argv[4]);
+  BfSize tgtNodeIndex = atoi(argv[5]);
 
   BfQuadtreeNode *srcNode;
   bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);
@@ -201,6 +203,16 @@ int main(int argc, char const *argv[]) {
     Q->data[i] = srcPts.data[i][0]*q[0] + srcPts.data[i][1]*q[1] + q[2];
 
   puts("set up test problem");
+
+  BfMat const *Z_gt_mat = bfMatDenseComplexToMat(Z_gt);
+  BfMat const *Z_mat = bfMatProductToMat(factorization);
+  BfMat const *Q_mat = bfMatDenseComplexToMat(Q);
+
+  BfMat *V_gt = bfMatMul(Z_gt_mat, Q_mat);
+  bfMatSave(V_gt, "V_gt.bin");
+
+  BfMat *V = bfMatMul(Z_mat, Q_mat);
+  bfMatSave(V, "V.bin");
 
   /* write simulation info to a text file */
 
