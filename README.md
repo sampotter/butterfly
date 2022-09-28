@@ -22,7 +22,7 @@ This library features "OpenGL-style" error handling (e.g., [see this page](https
 
 As this library is still in development, these principles are not fully realized yet, but this is the goal.
 
-See [Intel Embree](https://www.embree.org/) for another example of a library with the style of error handling.
+See [Intel Embree](https://www.embree.org/) for another example of a library with this style of error handling.
 
 ## Using Emacs lsp-mode
 
