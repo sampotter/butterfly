@@ -75,6 +75,10 @@ struct BfQuadtree {
    * not been permuted into the quadtree order. */
   BfPoints2 const *points;
 
+  /* Pointer to an array of unit normals, each associated with a point
+   * in `points`. */
+  BfVectors2 const *unitNormals;
+
   /* The permutation from the original ordering to the quadtree
    * ordering. For example, to put the rows of a matrix `X` which have
    * the same ordering as `points`, call `bfMatPermuteRows(X,
@@ -86,9 +90,7 @@ struct BfQuadtree {
   BfQuadtreeNode *root;
 };
 
-void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points);
-
-void bfInitQuadtreeFromMat(BfQuadtree *tree, BfMat const *mat);
+void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals);
 
 void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);
 
@@ -115,6 +117,8 @@ BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
 void
 bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
                         BfPoints2 *points);
+
+void bfQuadtreeNodeGetUnitNormals(BfQuadtree const *tree, BfQuadtreeNode const *node, BfVectors2 *vectors);
 
 bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
                                  BfQuadtreeNode const *node2);

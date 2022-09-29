@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -16,13 +17,43 @@
 #include <bf/quadtree.h>
 #include <bf/rand.h>
 
+void print_usage_and_exit(char const *argv0) {
+  printf("usage: %s <K> <src_depth> <src_index> <tgt_depth> <tgt_index> "
+         "<points.bin> [layerpot] [normals.bin]\n"
+         "\n"
+         "where:\n"
+         "  layerpot is one of: S, Sp, D\n"
+         "\n"
+         "NOTE: double-layer potential (D) not yet implemented\n", argv0);
+  exit(EXIT_FAILURE);
+}
+
 int main(int argc, char const *argv[]) {
-  if (argc != 7) {
-    printf("usage: %s <K> <src_depth> <src_index> <tgt_depth> <tgt_index> <points.bin>\n", argv[0]);
+  if (argc < 7)
+    print_usage_and_exit(argv[0]);
+
+  char const *layerPotStr = argc >= 8 ? argv[7] : "S";
+  if (!strcmp(layerPotStr, "Sp") && argc != 9) {
+    printf("usage: %s <K> <src_depth> <src_index> <tgt_depth> <tgt_index> "
+           "<points.bin> Sp <normals.bin>\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   BEGIN_ERROR_HANDLING();
+
+  BfLayerPotential layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
+  if (!strcmp(layerPotStr, "S")) {
+    layerPot = BF_LAYER_POTENTIAL_SINGLE;
+    printf("using single-layer potential\n");
+  } else if (!strcmp(layerPotStr, "Sp")) {
+    layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
+    printf("using PV of normal derivative of single-layer potential\n");
+  } else if (!strcmp(layerPotStr, "D")) {
+    printf("ERROR: double layer not yet implemented\n");
+    exit(EXIT_FAILURE);
+  } else {
+    print_usage_and_exit(argv[0]);
+  }
 
   BfSize numFactors = BF_SIZE_BAD_VALUE;
   BfMatProduct *factorization = NULL;
@@ -35,8 +66,16 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   printf("read points from %s\n", argv[2]);
 
+  BfVectors2 tgtNormals, *tgtNormalsPtr = NULL;
+  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+    bfReadVectors2FromFile(argv[8], &tgtNormals);
+    HANDLE_ERROR();
+    printf("read unit normals from %s\n", argv[8]);
+    tgtNormalsPtr = &tgtNormals;
+  }
+
   BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, &points);
+  bfInitQuadtreeFromPoints(&tree, &points, tgtNormalsPtr);
   HANDLE_ERROR();
   puts("built quadtree");
 
@@ -80,12 +119,24 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   puts("wrote source points to srcPts.bin");
 
-  BfMatDenseComplex *Z_gt = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
+  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+    BfVectors2 tgtNormals_;
+
+    bfQuadtreeNodeGetUnitNormals(&tree, tgtNode, &tgtNormals_);
+    HANDLE_ERROR();
+
+    bfSaveVectors2(&tgtNormals_, "tgtNormals.bin");
+    HANDLE_ERROR();
+
+    puts("wrote target unit normals to tgtNormals.bin");
+  }
+
+  BfMat *Z_gt = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, tgtNormalsPtr, K, layerPot);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");
 
-  bfMatDenseComplexSave(bfMatDenseComplexToMat(Z_gt), "Z_gt.bin");
+  bfMatDenseComplexSave(Z_gt, "Z_gt.bin");
   HANDLE_ERROR();
   printf("wrote Z_gt.bin\n");
 
@@ -99,7 +150,7 @@ int main(int argc, char const *argv[]) {
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   factorization = bfFacHelm2Make(
-    &tree, K, &srcLevelIter, &tgtLevelIter, numFactors);
+    &tree, K, layerPot, &srcLevelIter, &tgtLevelIter, numFactors);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 
@@ -170,10 +221,12 @@ int main(int argc, char const *argv[]) {
       bfMatSave(matBlock->block[j], filename);
 
 #ifdef BF_DEBUG
-      BfPoints2 *auxPts = (BfPoints2 *)matBlock->block[j]->aux;
-      BfPoints2 *srcChildPts = &auxPts[0];
-      BfPoints2 *srcPts = &auxPts[1];
-      BfPoints2 *tgtChildPts = &auxPts[2];
+      BfFacAux *facAux = matBlock->block[j]->aux;
+
+      BfPoints2 *srcChildPts = &facAux->srcPts[0];
+      BfPoints2 *srcPts = &facAux->srcPts[1];
+      BfPoints2 *tgtChildPts = &facAux->tgtPts;
+      BfVectors2 *tgtNormals = &facAux->tgtNormals;
 
       sprintf(filename, "srcPtsOrig%lu.bin", j);
       bfSavePoints2(srcChildPts, filename);
@@ -185,6 +238,11 @@ int main(int argc, char const *argv[]) {
 
       sprintf(filename, "tgtPts%lu.bin", j);
       bfSavePoints2(tgtChildPts, filename);
+
+      if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+        sprintf(filename, "tgtNormals%lu.bin", j);
+        bfSaveVectors2(tgtNormals, filename);
+      }
 #endif
     }
 
@@ -204,11 +262,10 @@ int main(int argc, char const *argv[]) {
 
   puts("set up test problem");
 
-  BfMat const *Z_gt_mat = bfMatDenseComplexToMat(Z_gt);
   BfMat const *Z_mat = bfMatProductToMat(factorization);
   BfMat const *Q_mat = bfMatDenseComplexToMat(Q);
 
-  BfMat *V_gt = bfMatMul(Z_gt_mat, Q_mat);
+  BfMat *V_gt = bfMatMul(Z_gt, Q_mat);
   bfMatSave(V_gt, "V_gt.bin");
 
   BfMat *V = bfMatMul(Z_mat, Q_mat);
@@ -217,7 +274,9 @@ int main(int argc, char const *argv[]) {
   /* write simulation info to a text file */
 
   FILE *fp = fopen("info.txt", "w");
+  fprintf(fp, "layerPot %s\n", layerPotStr);
   fprintf(fp, "numSrcPts %lu\n", srcPts.size);
+  fprintf(fp, "numTgtPts %lu\n", tgtPts.size);
   fprintf(fp, "numTgtPts %lu\n", tgtPts.size);
   fprintf(fp, "numFactors %lu\n", numFactors);
   fprintf(fp, "K %g\n", K);
@@ -229,7 +288,7 @@ int main(int argc, char const *argv[]) {
   }
 
   bfMatDenseComplexDeinitAndDealloc(&Q);
-  bfMatDenseComplexDeinitAndDealloc(&Z_gt);
+  bfMatDelete(&Z_gt);
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);
   bfFreeQuadtree(&tree);

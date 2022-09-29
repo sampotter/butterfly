@@ -9,6 +9,7 @@
 #include <bf/error_macros.h>
 #include <bf/points.h>
 #include <bf/ptr_array.h>
+#include <bf/vectors.h>
 
 #define SWAP(x, y) do {                         \
     __typeof__(x) tmp = x;                      \
@@ -198,12 +199,11 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   }
 }
 
-void
-bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
-{
+void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals) {
   BEGIN_ERROR_HANDLING();
 
   tree->points = points;
+  tree->unitNormals = unitNormals;
 
   BfSize numPoints = points->size;
   if (numPoints == 0)
@@ -249,16 +249,6 @@ bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points)
   END_ERROR_HANDLING() {
     bfFreeQuadtree(tree);
   }
-}
-
-void bfInitQuadtreeFromMat(BfQuadtree *tree, BfMat const *mat) {
-  BfPoints2 const *points = bfPoints2ConstViewFromMat(mat);
-  if (points == NULL) {
-    bfSetError(BF_ERROR_MEMORY_ERROR);
-    return;
-  }
-
-  bfInitQuadtreeFromPoints(tree, points);
 }
 
 void saveBoxesToTextFileRec(BfQuadtreeNode const *node, FILE *fp) {
@@ -405,9 +395,27 @@ bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
   bfGetPointsByIndex(tree->points, numInds, inds, points);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
-    bfFreePoints2(points);
-  }
+  END_ERROR_HANDLING() {}
+}
+
+void bfQuadtreeNodeGetUnitNormals(BfQuadtree const *tree, BfQuadtreeNode const *node, BfVectors2 *unitNormals) {
+  BEGIN_ERROR_HANDLING();
+
+  if (tree == NULL)
+    tree = bfGetQuadtreeFromNode(node);
+
+  if (tree->unitNormals == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* determine the number of points containined by `node` and find the
+   * offset into `tree->perm` */
+  BfSize numInds = node->offset[4] - node->offset[0];
+  BfSize const *inds = &tree->perm.index[node->offset[0]];
+
+  bfGetVectorsByIndex(tree->unitNormals, numInds, inds, unitNormals);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {}
 }
 
 bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,

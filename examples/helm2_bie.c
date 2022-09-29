@@ -35,7 +35,8 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
   BfReal const *xsrc = &wkspc->points->data[i][0];
   BfReal const *xtgt = &wkspc->points->data[j][0];
   BfReal const *ntgt = &wkspc->normals->data[j][0];
-  return bf_hh2_get_dGdN_1(xsrc, xtgt, wkspc->K, ntgt);
+  return bfHelm2GetKernelValue(
+    xsrc, xtgt, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
 }
 
 int main(int argc, char const *argv[]) {
@@ -86,7 +87,7 @@ int main(int argc, char const *argv[]) {
   /* Build a quadtree on the points sampling the boundary */
   bfToc();
   BfQuadtree tree;
-  bfInitQuadtreeFromMat(&tree, X);
+  bfInitQuadtreeFromPoints(&tree, X_points, N_vectors);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
@@ -94,7 +95,9 @@ int main(int argc, char const *argv[]) {
   BfPerm revPerm = bfPermGetReversePerm(&tree.perm);
 
   /* Set up the LHS of the problem */
-  BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
+  // BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
+  BfMat *phi_in = bfGetHelm2KernelMatrix(
+    X_source_points, X_points, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
   /* Permute the LHS for the butterfly factorized version of A*/
@@ -121,7 +124,8 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   /* Compute S_k' (normal derivative of single-layer potential) */
-  BfMat *A_dense = bf_hh2_get_dGdN(X_points, X_points, K, N_vectors);
+  BfMat *A_dense = bfGetHelm2KernelMatrix(
+    X_points, X_points, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
 //   /* Perturb by the KR correction */
@@ -199,11 +203,12 @@ int main(int argc, char const *argv[]) {
   /** Evaluate solution and check errors */
 
   /* Set up evaluation matrix */
-  BfMat *G_eval = bfMatDenseComplexToMat(bfGetHelm2KernelMatrix(X_points, X_target_points, K));
+  BfMat *G_eval = bfGetHelm2KernelMatrix(
+    X_points, X_target_points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
   bfMatScaleCols(G_eval, w);
 
-  BfMat *phi_exact = bfMatDenseComplexToMat(
-    bfGetHelm2KernelMatrix(X_source_points, X_target_points, K));
+  BfMat *phi_exact = bfGetHelm2KernelMatrix(
+    X_source_points, X_target_points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
   BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);

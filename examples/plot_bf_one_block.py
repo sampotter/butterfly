@@ -39,6 +39,8 @@ K = info['K'] # wavenumber
 
 M, N = info['numTgtPts'], info['numSrcPts']
 
+using_normals = info['layerPot'] != 'S'
+
 # load groundtruth kernel matrix
 Z_gt = np.fromfile('Z_gt.bin', dtype=np.complex128).reshape(M, N)
 
@@ -79,18 +81,15 @@ def getshift(srcPtsOrig, srcPtsEquiv, tgtPts):
     return np.linalg.lstsq(Z_eq, Z_or, rcond=None)[0]
 
 def getphi(srcPts, tgtPts, Q):
-    arg = K*scipy.spatial.distance_matrix(tgtPts, srcPts)
-    try:
-        phi = (1j*scipy.special.j0(arg) - scipy.special.y0(arg))@Q/4
-    except:
-        import ipdb; ipdb.set_trace()
-    return phi
+    r = scipy.spatial.distance_matrix(tgtPts, srcPts)
+    return (1j*scipy.special.j0(K*r) - scipy.special.y0(K*r))@Q/4
 
 ########################################################################
 # function for plotting the difference between original and
 # re-expanded field
 
-def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025, bbox=None):
+def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
+             bbox=None):
     if bbox is None:
         xmin, ymin = np.array([
             srcPtsOrig.min(0), srcPtsEquiv.min(0), tgtPts.min(0)
@@ -182,6 +181,9 @@ factors = []
 frame = 0
 
 paths = sorted(glob('factor*'))
+
+print(paths)
+
 for path in paths[::-1]:
     factorNum = int(path[6:])
 
@@ -218,7 +220,8 @@ for path in paths[::-1]:
         block = np.fromfile(f'{path}/block{k}.bin', dtype=np.complex128)
         block = block.reshape(i1 - i0, j1 - j0)
 
-        if path != paths[0]:
+        # Plot pointwise difference between potential fields if possible
+        if info['layerPot'] != 'Sp' and path != paths[0]:
             srcPtsOrig = np.fromfile(f'{path}/srcPtsOrig{k}.bin', dtype=np.float64)
             srcPtsOrig = srcPtsOrig.reshape(-1, 2)
 
@@ -228,7 +231,8 @@ for path in paths[::-1]:
             tgtPts = np.fromfile(f'{path}/tgtPts{k}.bin', dtype=np.float64)
             tgtPts = tgtPts.reshape(-1, 2)
 
-            fig = plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, Qprev[j0:j1], block, bbox=bbox)
+            fig = plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts,
+                           Qprev[j0:j1], block, bbox=bbox)
             if SAVE_PLOTS:
                 img_path = plots_path/f'frame{frame}_factor{factorNum}_block{k}_i{i}_j{j}.png'
                 fig.savefig(img_path)

@@ -4,6 +4,16 @@
 #include "mat_product.h"
 #include "quadtree.h"
 
+#if BF_DEBUG
+#include "points.h"
+#include "vectors.h"
+typedef struct {
+  BfPoints2 srcPts[2];
+  BfPoints2 tgtPts;
+  BfVectors2 tgtNormals;
+} BfFacAux;
+#endif
+
 BfSize
 bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
                   BfQuadtreeNode const *tgtNode,
@@ -12,6 +22,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
                   BfQuadtreeLevelIter *tgtLevelIter);
 
 BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
+                             BfLayerPotential layerPot,
                              BfQuadtreeLevelIter *srcLevelIter,
                              BfQuadtreeLevelIter *tgtLevelIter,
                              BfSize numFactors);

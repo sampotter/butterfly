@@ -3,9 +3,12 @@
 #include <math.h>
 
 #include <bf/const.h>
+#include <bf/error.h>
+#include <bf/error_macros.h>
 #include <bf/points.h>
+#include <bf/vectors.h>
 
-BfPoints2 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfSize numPoints) {
+BfPoints2 bfCircle2SamplePoints(BfCircle2 const *circ, BfSize numPoints) {
   BfPoints2 points;
   bfInitEmptyPoints2(&points, numPoints);
 
@@ -19,6 +22,32 @@ BfPoints2 bfSamplePointsOnCircle2(BfCircle2 const *circ, BfSize numPoints) {
   }
 
   return points;
+}
+
+BfVectors2 bfCircle2SampleUnitNormals(BfCircle2 const *circ, BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  (void)circ; /* Don't actually use this... just for consistency in
+               * the interface */
+
+  BfVectors2 unitNormals;
+
+  bfInitEmptyVectors2(&unitNormals, n);
+  HANDLE_ERROR();
+
+  BfReal const scale = BF_TWO_PI/n;
+
+  BfVector2 *vector = unitNormals.data;
+  for (BfSize i = 0; i < n; ++i) {
+    BfReal theta = scale*i;
+    vector[i][0] = cos(theta);
+    vector[i][1] = sin(theta);
+  }
+
+  END_ERROR_HANDLING()
+    bfFreeVectors2(&unitNormals);
+
+  return unitNormals;
 }
 
 bool bfCircle2ContainsPoint(BfCircle2 const *circ, BfPoint2 const point) {

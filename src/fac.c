@@ -37,11 +37,10 @@ getNumChildren(BfQuadtreeNode const *node) {
   return numChildren;
 }
 
-static BfMatBlockDiag *makeFirstFactor(BfReal K,
-                                       BfQuadtree const *tree,
-                                       BfPtrArray const *srcLevelNodes,
-                                       BfPtrArray const *tgtLevelNodes)
-{
+static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
+                              BfQuadtree const *tree,
+                              BfPtrArray const *srcLevelNodes,
+                              BfPtrArray const *tgtLevelNodes) {
   BEGIN_ERROR_HANDLING();
 
   /* there should only be one target node at the starting level of
@@ -76,6 +75,7 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
    * `colOffset[i + 1]` to the number of rows in each block row and
    * column */
   BfPoints2 srcPts, tgtCircPts, srcCircPts;
+  BfVectors2 tgtCircNormals;
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
     srcNode = bfPtrArrayGet(srcLevelNodes, i);
@@ -93,16 +93,19 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
     BfSize p = bfHelm2RankEstForTwoCircles(&srcCirc, &tgtCirc, K, 1, 1e-15);
 
     /* sample points on the source circle */
-    tgtCircPts = bfSamplePointsOnCircle2(&tgtCirc, p);
+    tgtCircPts = bfCircle2SamplePoints(&tgtCirc, p);
     HANDLE_ERROR();
 
     /* sample points on the target circle */
-    srcCircPts = bfSamplePointsOnCircle2(&srcCirc, p);
+    srcCircPts = bfCircle2SamplePoints(&srcCirc, p);
     HANDLE_ERROR();
 
+    /* get target circle unit normals */
+    tgtCircNormals = bfCircle2SampleUnitNormals(&tgtCirc, p);
+
     /* compute the shift matrix and store it in the current block */
-    mat->super.block[i] = bfMatDenseComplexToMat(
-      bfHelm2GetReexpansionMatrix(&srcPts, &srcCircPts, &tgtCircPts, K));
+    mat->super.block[i] = bfHelm2GetReexpansionMatrix(
+      &srcPts, &srcCircPts, &tgtCircPts, &tgtCircNormals, K, layerPot);
     HANDLE_ERROR();
 
     /* continue initializing the row and column offsets */
@@ -112,15 +115,17 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
     /* if we're debugging, store this block's points---free them
      * otherwise */
 #if BF_DEBUG
-    BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
-    auxPts[0] = srcPts;
-    auxPts[1] = srcCircPts;
-    auxPts[2] = tgtCircPts;
-    mat->super.block[i]->aux = auxPts;
+    BfFacAux *facAux = malloc(sizeof(BfFacAux));
+    facAux->srcPts[0] = srcPts;
+    facAux->srcPts[1] = srcCircPts;
+    facAux->tgtPts = tgtCircPts;
+    facAux->tgtNormals = tgtCircNormals;
+    mat->super.block[i]->aux = facAux;
 #else
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
+    bfFreeVectors2(&tgtCircNormals);
 #endif
   }
 
@@ -136,7 +141,7 @@ static BfMatBlockDiag *makeFirstFactor(BfReal K,
   bfSizeRunningSum(numBlocks + 1, mat->super.rowOffset);
   bfSizeRunningSum(numBlocks + 1, mat->super.colOffset);
 
-  return mat;
+  return bfMatBlockDiagToMat(mat);
 }
 
 static BfSize getTotalNumChildren(BfPtrArray const *levelNodes) {
@@ -200,10 +205,7 @@ static bool makeFactorIterNext(MakeFactorIter *iter) {
  *
  * ... explain how this works ...
  */
-static BfMatBlockCoo *
-makeFactor(BfMatBlock const *prevMat, BfReal K,
-           BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes)
-{
+static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes) {
   BEGIN_ERROR_HANDLING();
 
   /* neither the source nor target levels should be empty */
@@ -216,11 +218,13 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
   /* count the total number of source children on this level */
   BfSize totalNumSrcChildren = getTotalNumChildren(srcLevelNodes);
 
+  BfMatBlock const *prevMatBlock = bfMatConstToMatBlockConst(prevMat);
+
   /* compute the number of block rows and columns as well as the total
    * number of blocks from this level's layout */
   BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
   BfSize numBlockRows = totalNumTgtChildren*bfPtrArraySize(srcLevelNodes);
-  BfSize numBlockCols = prevMat->super.numRows;
+  BfSize numBlockCols = bfMatBlockGetNumRowBlocks(prevMatBlock);
 
   BfMatBlockCoo *mat = bfMatBlockCooNew();
   bfMatBlockCooInit(mat, numBlockRows, numBlockCols, numBlocks);
@@ -229,7 +233,7 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
   /* set the number of columns in each block column to equal the
    * number of rows in each block row of the previous factor  */
   for (BfSize j = 0; j < numBlockCols; ++j)
-    mat->super.colOffset[j + 1] = bfMatBlockGetNumBlockRows(prevMat, j);
+    mat->super.colOffset[j + 1] = bfMatBlockGetNumBlockRows(prevMatBlock, j);
 
   /* ... and compute their running sum to get the column offsets */
   mat->super.colOffset[0] = 0;
@@ -297,6 +301,7 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
    * butterfly factor */
 
   BfPoints2 srcChildPts, srcPts, tgtChildPts;
+  BfVectors2 tgtChildNormals;
 
   blockIndex = 0;
 
@@ -311,34 +316,39 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
       assert(numRows > 0 && numCols > 0);
 
       /* sample points on the source child circle */
-      srcChildPts = bfSamplePointsOnCircle2(&srcIter.childCirc, numCols);
+      srcChildPts = bfCircle2SamplePoints(&srcIter.childCirc, numCols);
       HANDLE_ERROR();
 
       /* sample points on the source circle */
-      srcPts = bfSamplePointsOnCircle2(&srcIter.circ, numRows);
+      srcPts = bfCircle2SamplePoints(&srcIter.circ, numRows);
       HANDLE_ERROR();
 
       /* sample points on the target child circle */
-      tgtChildPts = bfSamplePointsOnCircle2(&tgtIter.childCirc, numRows);
+      tgtChildPts = bfCircle2SamplePoints(&tgtIter.childCirc, numRows);
       HANDLE_ERROR();
 
+      /* sample unit normals on the target child circle */
+      tgtChildNormals = bfCircle2SampleUnitNormals(&tgtIter.childCirc, numRows);
+
       /* compute the shift matrix for this configuration of circles */
-      mat->super.block[blockIndex] =
-        (BfMat *)bfHelm2GetReexpansionMatrix(&srcChildPts, &srcPts, &tgtChildPts, K);
+      mat->super.block[blockIndex] = bfHelm2GetReexpansionMatrix(
+        &srcChildPts, &srcPts, &tgtChildPts, &tgtChildNormals, K, layerPot);
       HANDLE_ERROR();
 
       /* if we're debugging, store this block's points---free them
        * otherwise */
 #if BF_DEBUG
-      BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
-      auxPts[0] = srcChildPts;
-      auxPts[1] = srcPts;
-      auxPts[2] = tgtChildPts;
-      mat->super.block[blockIndex]->aux = auxPts;
+      BfFacAux *facAux = malloc(sizeof(BfFacAux));
+      facAux->srcPts[0] = srcChildPts;
+      facAux->srcPts[1] = srcPts;
+      facAux->tgtPts = tgtChildPts;
+      facAux->tgtNormals = tgtChildNormals;
+      mat->super.block[blockIndex]->aux = facAux;
 #else
       bfFreePoints2(&srcChildPts);
       bfFreePoints2(&srcPts);
       bfFreePoints2(&tgtChildPts);
+      bfFreeVectors2(&tgtChildNormals);
 #endif
 
       ++blockIndex;
@@ -352,14 +362,10 @@ makeFactor(BfMatBlock const *prevMat, BfReal K,
     bfMatBlockCooDeinitAndDealloc(&mat);
   }
 
-  return mat;
+  return bfMatBlockCooToMat(mat);
 }
 
-static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
-                                      BfQuadtree const *tree,
-                                      BfPtrArray const *srcLevelNodes,
-                                      BfPtrArray const *tgtLevelNodes)
-{
+static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfQuadtree const *tree, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes) {
   BEGIN_ERROR_HANDLING();
 
   /* the current level of the target node tree shouldn't be empty */
@@ -375,7 +381,9 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
 
   /* ... and this number of blocks should match the number of block
    *  rows of the previous factor */
-  assert(numBlocks == prevMat->super.numRows);
+  assert(numBlocks == prevMat->numRows);
+
+  BfMatBlock const *prevMatBlock = bfMatConstToMatBlockConst(prevMat);
 
   BfQuadtreeNode const *srcNode = NULL;
   BfQuadtreeNode const *tgtNode = NULL;
@@ -390,26 +398,38 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
   HANDLE_ERROR();
 
   BfPoints2 srcCircPts, tgtPts;
+  BfVectors2 tgtNormals;
+
+  /* flag to indicate whether we should fetch the unit normals at the
+   * target points for layer potential evaluation */
+  bool usingTgtNormals = layerPot != BF_LAYER_POTENTIAL_SINGLE;
 
   /* iterate over each node of the final level of the target node tree
    * and compute the matrix which will evaluate the potential at each
    * target point due to the charges on the source proxy points */
   for (BfSize i = 0; i < numBlocks; ++i) {
-    BfSize prevNumRows = bfMatBlockGetNumBlockRows(prevMat, i);
+    BfSize prevNumRows = bfMatBlockGetNumBlockRows(prevMatBlock, i);
 
     /* get the current target node */
     tgtNode = bfPtrArrayGet(tgtLevelNodes, i);
 
     /* get the proxy points on the source circle for the current
      * source block */
-    srcCircPts = bfSamplePointsOnCircle2(&srcCirc, prevNumRows);
+    srcCircPts = bfCircle2SamplePoints(&srcCirc, prevNumRows);
     HANDLE_ERROR();
 
     /* get the current set of target points */
     bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
     HANDLE_ERROR();
 
-    mat->super.block[i] = (BfMat *)bfGetHelm2KernelMatrix(&srcCircPts, &tgtPts, K);
+    /* get the current target points' unit normals */
+    if (usingTgtNormals)
+      bfQuadtreeNodeGetUnitNormals(tree, tgtNode, &tgtNormals);
+
+    BfVectors2 *tgtNormalsPtr = usingTgtNormals ? &tgtNormals : NULL;
+
+    mat->super.block[i] = bfGetHelm2KernelMatrix(
+      &srcCircPts, &tgtPts, tgtNormalsPtr, K, layerPot);
     HANDLE_ERROR();
 
     assert(mat->super.rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
@@ -421,14 +441,17 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
     /* hang onto this block's points if we're in debug mode, and free
      * them otherwise */
 #if BF_DEBUG
-    BfPoints2 *auxPts = malloc(3*sizeof(BfPoints2));
-    auxPts[0] = bfGetUninitializedPoints2();
-    auxPts[1] = srcCircPts;
-    auxPts[2] = tgtPts;
-    mat->super.block[i]->aux = auxPts;
+    BfFacAux *facAux = malloc(sizeof(BfFacAux));
+    facAux->srcPts[0] = bfGetUninitializedPoints2();
+    facAux->srcPts[1] = srcCircPts;
+    facAux->tgtPts = tgtPts;
+    facAux->tgtNormals = tgtNormals;
+    mat->super.block[i]->aux = facAux;
 #else
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
+    if (usingTgtNormals)
+      bfFreeVectors2(&tgtNormals);
 #endif
   }
 
@@ -446,7 +469,7 @@ static BfMatBlockDiag *makeLastFactor(BfMatBlock const *prevMat, BfReal K,
     bfMatBlockDiagDeinitAndDealloc(&mat);
   }
 
-  return mat;
+  return bfMatBlockDiagToMat(mat);
 }
 
 static bool
@@ -557,17 +580,8 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   return numFactors;
 }
 
-BfMatProduct *
-bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
-               BfQuadtreeLevelIter *srcLevelIter,
-               BfQuadtreeLevelIter *tgtLevelIter,
-               BfSize numFactors)
-{
+BfMatProduct * bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfQuadtreeLevelIter *srcLevelIter, BfQuadtreeLevelIter *tgtLevelIter, BfSize numFactors) {
   BEGIN_ERROR_HANDLING();
-
-  BfMatBlock *prevMatBlock = NULL;
-  BfMatBlockCoo *matBlockCoo = NULL;
-  BfMatBlockDiag *matBlockDiag = NULL;
 
   /* allocate space for the butterfly factors
    *
@@ -581,9 +595,8 @@ bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
   /* make the first factor in the butterfly factorization: this is the
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
-  matBlockDiag = makeFirstFactor(
-    K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-  factor[0] = bfMatBlockDiagToMat(matBlockDiag);
+  factor[0] = makeFirstFactor(
+    K, layerPot, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
@@ -591,10 +604,9 @@ bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
     bfQuadtreeLevelIterNext(srcLevelIter);
 
     /* make the next factor */
-    prevMatBlock = (BfMatBlock *)factor[i - 1];
-    matBlockCoo = makeFactor(
-      prevMatBlock, K, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-    factor[i] = bfMatBlockCooToMat(matBlockCoo);
+    factor[i] = makeFactor(
+      factor[i - 1], K, layerPot, &srcLevelIter->levelNodes,
+      &tgtLevelIter->levelNodes);
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
@@ -604,10 +616,9 @@ bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
   /* make the last factor in the butterfly factorization: this is the
    * evaluation factor, which computes the potential at each target
    * point due to the charges on the final source circle */
-  prevMatBlock = (BfMatBlock *)factor[numFactors - 2];
-  matBlockDiag = makeLastFactor(
-    prevMatBlock, K, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
-  factor[numFactors - 1] = bfMatBlockDiagToMat(matBlockDiag);
+  factor[numFactors - 1] = makeLastFactor(
+    factor[numFactors - 2], K, layerPot, tree, &srcLevelIter->levelNodes,
+    &tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   BfMatProduct *prod = bfMatProductNew();
@@ -632,31 +643,36 @@ static BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
   return childNodes;
 }
 
-static
-BfMat *
-facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K,
-                             BfQuadtreeNode const *srcNode,
-                             BfQuadtreeNode const *tgtNode) {
+static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode) {
   BEGIN_ERROR_HANDLING();
 
   BfPoints2 srcPts, tgtPts;
-  BfMatDenseComplex *Z = NULL;
+  BfVectors2 tgtNormals, *tgtNormalsPtr = NULL;
+  bool usingTgtNormals = layerPot != BF_LAYER_POTENTIAL_SINGLE;
+
+  BfMat *Z = NULL;
 
   bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
   bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
 
-  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, K);
+  if (usingTgtNormals) {
+    bfQuadtreeNodeGetUnitNormals(tree, tgtNode, &tgtNormals);
+    tgtNormalsPtr = &tgtNormals;
+  }
+
+  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, tgtNormalsPtr, K, layerPot);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()
-    bfMatDenseComplexDeinitAndDealloc(&Z);
+    bfMatDelete(&Z);
 
-  return bfMatDenseComplexToMat(Z);
+  return Z;
 }
 
 static
 BfMat *
 facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
+                                 BfLayerPotential layerPot,
                                  BfQuadtreeNode const *srcNode,
                                  BfQuadtreeNode const *tgtNode) {
   BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
@@ -664,10 +680,10 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
     srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
 
   if (numFactors == 0)
-    return facHelm2MakeMultilevel_dense(tree, K, srcNode, tgtNode);
+    return facHelm2MakeMultilevel_dense(tree, K, layerPot, srcNode, tgtNode);
 
   BfMatProduct *factorization = bfFacHelm2Make(
-    tree, K, &srcLevelIter, &tgtLevelIter, numFactors);
+    tree, K, layerPot, &srcLevelIter, &tgtLevelIter, numFactors);
 
   return bfMatProductToMat(factorization);
 }
@@ -745,9 +761,9 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
       bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
 
       if (numRows*numCols < MAX_DENSE_MATRIX_SIZE)
-        mat = facHelm2MakeMultilevel_dense(tree, K, srcNode, tgtNode);
+        mat = facHelm2MakeMultilevel_dense(tree, K, layerPot, srcNode, tgtNode);
       else if (separated)
-        mat = facHelm2MakeMultilevel_separated(tree, K, srcNode, tgtNode);
+        mat = facHelm2MakeMultilevel_separated(tree, K, layerPot, srcNode, tgtNode);
       else
         /* TODO: we really need to consolidate _rec and _diag (also,
          * "_diag" is a total misnomer) */

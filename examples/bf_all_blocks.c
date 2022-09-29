@@ -34,16 +34,17 @@ int main(int argc, char const *argv[]) {
   printf("read points from %s [%0.2fs]\n", points_path_str, bfToc());
 
   BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, &points);
+  bfInitQuadtreeFromPoints(&tree, &points, NULL);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
   BfReal K = atoi(K_str);
 
-  BfMatDenseComplex *A_true = bfGetHelm2KernelMatrix(&points, &points, K);
+  BfMat *A_true = bfGetHelm2KernelMatrix(
+    &points, &points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 
-  assert(bfMatDenseComplexIsFinite(A_true));
+  // assert(bfMatDenseComplexIsFinite(A_true));
 
   BfMat *A = bfFacHelm2MakeMultilevel(&tree, K, BF_LAYER_POTENTIAL_SINGLE);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
@@ -56,7 +57,7 @@ int main(int argc, char const *argv[]) {
 
   assert(bfMatDenseComplexIsFinite(x));
 
-  BfMat *y_true = bfMatMul(bfMatDenseComplexToMat(A_true), bfMatDenseComplexToMat(x));
+  BfMat *y_true = bfMatMul(A_true, bfMatDenseComplexToMat(x));
   printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
 
   BfMat *y = bfMatMul(A, bfMatDenseComplexToMat(x));
@@ -73,7 +74,7 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&y_true);
   bfMatDenseComplexDeinitAndDealloc(&x);
   bfMatDelete(&A);
-  bfMatDenseComplexDeinitAndDealloc(&A_true);
+  bfMatDelete(&A_true);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);
 }
