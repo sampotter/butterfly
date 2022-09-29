@@ -51,6 +51,42 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
     bfSetError(BF_ERROR_MEMORY_ERROR);
 }
 
+void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
+  BEGIN_ERROR_HANDLING();
+
+  /* open the file for reading */
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* get the size of the file */
+  fseek(fp, 0, SEEK_END);
+  BfSize size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  /* make sure the binary file is the right size */
+  if (size % sizeof(BfPoint2) != 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* get the number of vectors */
+  vectors->size = size/sizeof(BfPoint2);
+
+  /* allocate space for the vectors */
+  vectors->data = malloc(size);
+  if (vectors->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  /* read them in */
+  fread(vectors->data, sizeof(BfPoint2), vectors->size, fp);
+  // TODO: error-handling
+
+  END_ERROR_HANDLING() {
+    free(vectors->data);
+  }
+
+  fclose(fp);
+}
+
 void bfFreeVectors2(BfVectors2 *vectors) {
   free(vectors->data);
 }
@@ -76,4 +112,19 @@ void bfGetVectorsByIndex(BfVectors2 const *vectors,
   END_ERROR_HANDLING() {
     bfFreeVectors2(indexedVectors);
   }
+}
+
+void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(vectors->data, vectors->size, sizeof(BfPoint2), fp);
+  // TODO: error-handling
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
 }

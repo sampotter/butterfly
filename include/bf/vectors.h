@@ -12,7 +12,9 @@ BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat);
 BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal);
 BfVectors2 bfGetUninitializedVectors2();
 void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors);
+void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors);
 void bfFreeVectors2(BfVectors2 *vectors);
 void bfGetVectorsByIndex(BfVectors2 const *vectors,
                         BfSize numInds, BfSize const *inds,
                         BfVectors2 *indexedVectors);
+void bfSaveVectors2(BfVectors2 const *vectors, char const *path);
