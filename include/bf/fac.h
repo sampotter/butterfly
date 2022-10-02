@@ -10,7 +10,6 @@
 typedef struct {
   BfPoints2 srcPts[2];
   BfPoints2 tgtPts;
-  BfVectors2 tgtNormals;
 } BfFacAux;
 #endif
 

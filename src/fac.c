@@ -53,6 +53,8 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
   BfQuadtreeNode const *srcNode = NULL;
   BfQuadtreeNode const *tgtNode = NULL;
 
+  BfLayerPotential proxyLayerPot = BF_PROXY_LAYER_POT[layerPot];
+
   /* get the lone target node and its bounding circle */
   bfPtrArrayGetFirst(tgtLevelNodes, (BfPtr *)&tgtNode);
   BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
@@ -75,7 +77,6 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
    * `colOffset[i + 1]` to the number of rows in each block row and
    * column */
   BfPoints2 srcPts, tgtCircPts, srcCircPts;
-  BfVectors2 tgtCircNormals;
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
     srcNode = bfPtrArrayGet(srcLevelNodes, i);
@@ -89,7 +90,7 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
     assert(bfCircle2ContainsPoints(&srcCirc, &srcPts));
 
     /* get the rank estimate for the current pair of source and
-`     * target bounding circles */
+     * target bounding circles */
     BfSize p = bfHelm2RankEstForTwoCircles(&srcCirc, &tgtCirc, K, 1, 1e-15);
 
     /* sample points on the source circle */
@@ -100,12 +101,9 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
     srcCircPts = bfCircle2SamplePoints(&srcCirc, p);
     HANDLE_ERROR();
 
-    /* get target circle unit normals */
-    tgtCircNormals = bfCircle2SampleUnitNormals(&tgtCirc, p);
-
     /* compute the shift matrix and store it in the current block */
     mat->super.block[i] = bfHelm2GetReexpansionMatrix(
-      &srcPts, &srcCircPts, &tgtCircPts, &tgtCircNormals, K, layerPot);
+      &srcPts, &srcCircPts, &tgtCircPts, K, proxyLayerPot);
     HANDLE_ERROR();
 
     /* continue initializing the row and column offsets */
@@ -119,13 +117,11 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
     facAux->srcPts[0] = srcPts;
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtCircPts;
-    facAux->tgtNormals = tgtCircNormals;
     mat->super.block[i]->aux = facAux;
 #else
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
-    bfFreeVectors2(&tgtCircNormals);
 #endif
   }
 
@@ -211,6 +207,9 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   /* neither the source nor target levels should be empty */
   assert(!bfPtrArrayIsEmpty(srcLevelNodes));
   assert(!bfPtrArrayIsEmpty(tgtLevelNodes));
+
+  /* get the layer potential we should use for reexpansion */
+  BfLayerPotential proxyLayerPot = BF_PROXY_LAYER_POT[layerPot];
 
   /* count the total number of target children on this level */
   BfSize totalNumTgtChildren = getTotalNumChildren(tgtLevelNodes);
@@ -301,7 +300,6 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
    * butterfly factor */
 
   BfPoints2 srcChildPts, srcPts, tgtChildPts;
-  BfVectors2 tgtChildNormals;
 
   blockIndex = 0;
 
@@ -327,12 +325,9 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
       tgtChildPts = bfCircle2SamplePoints(&tgtIter.childCirc, numRows);
       HANDLE_ERROR();
 
-      /* sample unit normals on the target child circle */
-      tgtChildNormals = bfCircle2SampleUnitNormals(&tgtIter.childCirc, numRows);
-
       /* compute the shift matrix for this configuration of circles */
       mat->super.block[blockIndex] = bfHelm2GetReexpansionMatrix(
-        &srcChildPts, &srcPts, &tgtChildPts, &tgtChildNormals, K, layerPot);
+        &srcChildPts, &srcPts, &tgtChildPts, K, proxyLayerPot);
       HANDLE_ERROR();
 
       /* if we're debugging, store this block's points---free them
@@ -342,13 +337,11 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
       facAux->srcPts[0] = srcChildPts;
       facAux->srcPts[1] = srcPts;
       facAux->tgtPts = tgtChildPts;
-      facAux->tgtNormals = tgtChildNormals;
       mat->super.block[blockIndex]->aux = facAux;
 #else
       bfFreePoints2(&srcChildPts);
       bfFreePoints2(&srcPts);
       bfFreePoints2(&tgtChildPts);
-      bfFreeVectors2(&tgtChildNormals);
 #endif
 
       ++blockIndex;
@@ -445,13 +438,10 @@ static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential la
     facAux->srcPts[0] = bfGetUninitializedPoints2();
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtPts;
-    facAux->tgtNormals = tgtNormals;
     mat->super.block[i]->aux = facAux;
 #else
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
-    if (usingTgtNormals)
-      bfFreeVectors2(&tgtNormals);
 #endif
   }
 

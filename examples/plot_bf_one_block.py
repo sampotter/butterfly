@@ -28,8 +28,8 @@ for line in f.readlines():
     info[key] = value
 f.close()
 
-info['numSrcPts'] = int(info['numSrcPts'])
-info['numTgtPts'] = int(info['numTgtPts'])
+info['numSrcNodePts'] = int(info['numSrcNodePts'])
+info['numTgtNodePts'] = int(info['numTgtNodePts'])
 info['K'] = float(info['K'])
 
 for key, value in info.items():
@@ -37,19 +37,21 @@ for key, value in info.items():
 
 K = info['K'] # wavenumber
 
-M, N = info['numTgtPts'], info['numSrcPts']
-
-using_normals = info['layerPot'] != 'S'
+M, N = info['numTgtNodePts'], info['numSrcNodePts']
 
 # load groundtruth kernel matrix
 Z_gt = np.fromfile('Z_gt.bin', dtype=np.complex128).reshape(M, N)
 
 # load source and target points
-srcPts = np.fromfile('srcPts.bin', dtype=np.float64).reshape(-1, 2)
-tgtPts = np.fromfile('tgtPts.bin', dtype=np.float64).reshape(-1, 2)
+srcPts_ = np.fromfile('srcNodePts.bin', dtype=np.float64).reshape(-1, 2)
+tgtPts_ = np.fromfile('tgtNodePts.bin', dtype=np.float64).reshape(-1, 2)
 
-sortedSrcPts = srcPts[np.argsort(srcPts[:, 1])]
-sortedTgtPts = tgtPts[np.argsort(tgtPts[:, 1])]
+usingTgtNormals = info['layerPot'] in {'Sp', 'Dp'}
+if usingTgtNormals:
+    tgtNormals = np.fromfile('tgtNormals.bin', dtype=np.float64).reshape(-1, 2)
+
+sortedSrcPts = srcPts_[np.argsort(srcPts_[:, 1])]
+sortedTgtPts = tgtPts_[np.argsort(tgtPts_[:, 1])]
 
 ########################################################################
 # print relative error
@@ -65,9 +67,6 @@ print(f'relative l2 error between V.bin and V_gt.bin: {rel_err}')
 # set up test problem
 
 np.random.seed(1234)
-
-# q = np.random.randn(3) + 1j*np.random.randn(3)
-# Q = q[0] + srcPts@q[1:]
 
 Q = np.random.randn(M) + 1j*np.random.randn(M)
 
@@ -133,6 +132,8 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
     ax.scatter(*tgtPts.T, s=1, c='pink', zorder=3)
     ax.plot(*sortedSrcPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
     ax.plot(*sortedTgtPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
+    if usingTgtNormals:
+        ax.quiver(*tgtPts_.T, *tgtNormals.T)
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_aspect('equal')
@@ -144,6 +145,8 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
     ax.scatter(*tgtPts.T, s=1, c='pink', zorder=3)
     ax.plot(*sortedSrcPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
     ax.plot(*sortedTgtPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
+    if usingTgtNormals:
+        ax.quiver(*tgtPts_.T, *tgtNormals.T)
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_aspect('equal')
@@ -157,6 +160,8 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
     ax.scatter(*tgtPts.T, s=1, c='pink', zorder=3)
     ax.plot(*sortedSrcPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
     ax.plot(*sortedTgtPts.T, linewidth=1, linestyle='--', c='white', zorder=4)
+    if usingTgtNormals:
+        ax.quiver(*tgtPts_.T, *tgtNormals.T)
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_aspect('equal')
@@ -168,8 +173,8 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
 ########################################################################
 # load factors
 
-xmin, ymin = np.minimum(srcPts.min(0), tgtPts.min(0)) - 0.25
-xmax, ymax = np.maximum(srcPts.max(0), tgtPts.max(0)) + 0.25
+xmin, ymin = np.minimum(srcPts_.min(0), tgtPts_.min(0)) - 0.25
+xmax, ymax = np.maximum(srcPts_.max(0), tgtPts_.max(0)) + 0.25
 bbox = (xmin, xmax, ymin, ymax)
 
 nnz = 0 # count number of nonzero entries in the factor blocks
@@ -221,7 +226,7 @@ for path in paths[::-1]:
         block = block.reshape(i1 - i0, j1 - j0)
 
         # Plot pointwise difference between potential fields if possible
-        if info['layerPot'] != 'Sp' and path != paths[0]:
+        if path != paths[0]:
             srcPtsOrig = np.fromfile(f'{path}/srcPtsOrig{k}.bin', dtype=np.float64)
             srcPtsOrig = srcPtsOrig.reshape(-1, 2)
 

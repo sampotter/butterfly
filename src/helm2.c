@@ -192,19 +192,21 @@ BfMat *
 bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
                             BfPoints2 const *srcPtsEquiv,
                             BfPoints2 const *tgtPts,
-                            BfVectors2 const *tgtNormals,
                             BfReal K, BfLayerPotential layerPot)
 {
   BEGIN_ERROR_HANDLING();
 
+  if (layerPot != BF_LAYER_POTENTIAL_SINGLE)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
   /* compute the kernel matrix mapping charges on the original sources
    * points to potentials on the original target points */
-  BfMat *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, tgtNormals, K, layerPot);
+  BfMat *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, NULL, K, layerPot);
   HANDLE_ERROR();
 
   /* compute the kernel matrix mapping charges on the source
    * circle to potentials on the target circle */
-  BfMat *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, tgtNormals, K, layerPot);
+  BfMat *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, NULL, K, layerPot);
   HANDLE_ERROR();
 
   /* set the "shift matrix" to Z_equiv\Z_orig */

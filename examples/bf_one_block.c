@@ -103,35 +103,37 @@ int main(int argc, char const *argv[]) {
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
 
-  BfPoints2 tgtPts;
-  bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtPts);
+  BfPoints2 tgtNodePts;
+  bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtNodePts);
   HANDLE_ERROR();
 
-  bfSavePoints2(&tgtPts, "tgtPts.bin");
+  bfSavePoints2(&tgtNodePts, "tgtNodePts.bin");
   HANDLE_ERROR();
-  puts("wrote target points to tgtPts.bin");
+  puts("wrote target node points to tgtNodePts.bin");
 
-  BfPoints2 srcPts;
-  bfGetQuadtreeNodePoints(&tree, srcNode, &srcPts);
+  BfPoints2 srcNodePts;
+  bfGetQuadtreeNodePoints(&tree, srcNode, &srcNodePts);
   HANDLE_ERROR();
 
-  bfSavePoints2(&srcPts, "srcPts.bin");
+  bfSavePoints2(&srcNodePts, "srcNodePts.bin");
   HANDLE_ERROR();
-  puts("wrote source points to srcPts.bin");
+  puts("wrote source node points to srcNodePts.bin");
 
+  BfVectors2 tgtNodeNormals, *tgtNodeNormalsPtr = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
-    BfVectors2 tgtNormals_;
-
-    bfQuadtreeNodeGetUnitNormals(&tree, tgtNode, &tgtNormals_);
+    bfQuadtreeNodeGetUnitNormals(&tree, tgtNode, &tgtNodeNormals);
     HANDLE_ERROR();
 
-    bfSaveVectors2(&tgtNormals_, "tgtNormals.bin");
+    bfSaveVectors2(&tgtNodeNormals, "tgtNormals.bin");
     HANDLE_ERROR();
+
+    tgtNodeNormalsPtr = &tgtNodeNormals;
 
     puts("wrote target unit normals to tgtNormals.bin");
   }
 
-  BfMat *Z_gt = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, tgtNormalsPtr, K, layerPot);
+  BfMat *Z_gt = bfGetHelm2KernelMatrix(
+    &srcNodePts, &tgtNodePts, tgtNodeNormalsPtr, K, layerPot);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");
@@ -142,6 +144,8 @@ int main(int argc, char const *argv[]) {
 
   /* compute a butterfly factorization of the selected source and
    * target nodes */
+
+  /* TODO: wrap this up into a single function in fac */
 
   BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
   numFactors = bfFacHelm2Prepare(
@@ -226,7 +230,6 @@ int main(int argc, char const *argv[]) {
       BfPoints2 *srcChildPts = &facAux->srcPts[0];
       BfPoints2 *srcPts = &facAux->srcPts[1];
       BfPoints2 *tgtChildPts = &facAux->tgtPts;
-      BfVectors2 *tgtNormals = &facAux->tgtNormals;
 
       sprintf(filename, "srcPtsOrig%lu.bin", j);
       bfSavePoints2(srcChildPts, filename);
@@ -241,7 +244,7 @@ int main(int argc, char const *argv[]) {
 
       if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
         sprintf(filename, "tgtNormals%lu.bin", j);
-        bfSaveVectors2(tgtNormals, filename);
+        bfSaveVectors2(&tgtNormals, filename);
       }
 #endif
     }
@@ -255,10 +258,10 @@ int main(int argc, char const *argv[]) {
   bfComplexRandn(3, q);
 
   BfMatDenseComplex *Q = bfMatDenseComplexNew();
-  bfMatDenseComplexInit(Q, srcPts.size, 1);
+  bfMatDenseComplexInit(Q, srcNodePts.size, 1);
 
-  for (BfSize i = 0; i < srcPts.size; ++i)
-    Q->data[i] = srcPts.data[i][0]*q[0] + srcPts.data[i][1]*q[1] + q[2];
+  for (BfSize i = 0; i < srcNodePts.size; ++i)
+    Q->data[i] = srcNodePts.data[i][0]*q[0] + srcNodePts.data[i][1]*q[1] + q[2];
 
   puts("set up test problem");
 
@@ -275,9 +278,8 @@ int main(int argc, char const *argv[]) {
 
   FILE *fp = fopen("info.txt", "w");
   fprintf(fp, "layerPot %s\n", layerPotStr);
-  fprintf(fp, "numSrcPts %lu\n", srcPts.size);
-  fprintf(fp, "numTgtPts %lu\n", tgtPts.size);
-  fprintf(fp, "numTgtPts %lu\n", tgtPts.size);
+  fprintf(fp, "numSrcNodePts %lu\n", srcNodePts.size);
+  fprintf(fp, "numTgtNodePts %lu\n", tgtNodePts.size);
   fprintf(fp, "numFactors %lu\n", numFactors);
   fprintf(fp, "K %g\n", K);
   fclose(fp);
@@ -289,8 +291,8 @@ int main(int argc, char const *argv[]) {
 
   bfMatDenseComplexDeinitAndDealloc(&Q);
   bfMatDelete(&Z_gt);
-  bfFreePoints2(&srcPts);
-  bfFreePoints2(&tgtPts);
+  bfFreePoints2(&srcNodePts);
+  bfFreePoints2(&tgtNodePts);
   bfFreeQuadtree(&tree);
   bfFreePoints2(&points);
 }
