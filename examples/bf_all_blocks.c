@@ -16,6 +16,16 @@
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
+/* Set PERM_DENSE equal to 1 to permute A_dense instead of permuting
+ * the righthand side. This is also required if we want to compare the
+ * kernel matrices themselves. */
+#define PERM_DENSE 0
+
+/* Right multiply the butterflied kernel matrices with the identity
+ * matrix to do a comparison between groundtruth dense kernel matrix
+ * and the butterflied version. */
+#define COMPARE_KERNEL_MATRICES 0
+
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
     printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
@@ -46,16 +56,22 @@ int main(int argc, char const *argv[]) {
 
   BfPerm revPerm = bfPermGetReversePerm(&tree.perm);
 
+#if PERM_DENSE
   BfMat *pointsPermMat = bfMatCopy(pointsMat);
   bfMatPermuteRows(pointsPermMat, &revPerm);
 
   BfPoints2 const *pointsPerm = bfPoints2ConstViewFromMat(pointsPermMat);
 
   bfToc();
-
   BfMat *A_dense = bfGetHelm2KernelMatrix(
     pointsPerm, pointsPerm, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
+#else
+  bfToc();
+  BfMat *A_dense = bfGetHelm2KernelMatrix(
+    points, points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+  printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
+#endif
 
   BfMat *A_BF = bfFacHelm2MakeMultilevel(&tree, K, BF_LAYER_POTENTIAL_SINGLE);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
@@ -72,7 +88,14 @@ int main(int argc, char const *argv[]) {
   BfMat *y_dense = bfMatMul(A_dense, x);
   printf("multiplied with dense kernel matrix [%0.2fs]\n", bfToc());
 
+#if PERM_DENSE
   BfMat *y_BF = bfMatMul(A_BF, x);
+#else
+  BfMat *x_perm = bfMatCopy(x);
+  bfMatPermuteRows(x_perm, &revPerm);
+  BfMat *y_BF = bfMatMul(A_BF, x_perm);
+  bfMatPermuteRows(y_BF, &tree.perm);
+#endif
   printf("multiplied with HODBF matrix [%0.2fs]\n", bfToc());
 
   BfVec *err2 = bfMatColDists(y_dense, y_BF);
@@ -89,6 +112,10 @@ int main(int argc, char const *argv[]) {
   bfMatSave(A_dense, "A_dense.bin");
   printf("wrote dense kernel matrix to A_dense.bin [%0.2fs]\n", bfToc());
 
+#if COMPARE_KERNEL_MATRICES
+#if !PERM_DENSE
+#error "Must have PERM_DENSE == 1 if COMPARE_KERNEL_MATRICES == 1"
+#endif
   BfMat *A_BF_dense = bfMatEmptyLike(A_dense, numPoints, numPoints);
   for (BfSize j = 0; j < numPoints; ++j) {
     BfMat *ej; {
@@ -108,6 +135,7 @@ int main(int argc, char const *argv[]) {
 
   bfMatSave(A_BF_dense, "A_BF_dense.bin");
   printf("saved dense version of BF'd kernel matrix to A_BF_dense.bin [%0.2fs]\n", bfToc());
+#endif
 
   END_ERROR_HANDLING() {}
 
@@ -117,6 +145,8 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&A_BF);
   bfMatDelete(&A_dense);
   bfFreeQuadtree(&tree);
+#if PERM_DENSE
   bfMatDelete(&pointsPermMat);
+#endif
   bfMatDelete(&pointsMat);
 }
