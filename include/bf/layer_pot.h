@@ -28,3 +28,11 @@ typedef enum BfLayerPotentials {
   /* Unknown layer potential value */
   BF_LAYER_POTENTIAL_UNKNOWN
 } BfLayerPotential;
+
+/* A lookup table consisting of which layer potentials to use for
+ * reexpansion when constructing proxy sets. */
+static BfLayerPotential const BF_PROXY_LAYER_POT[BF_LAYER_POTENTIAL_COUNT] = {
+  [BF_LAYER_POTENTIAL_SINGLE] = BF_LAYER_POTENTIAL_SINGLE,
+  [BF_LAYER_POTENTIAL_PV_DOUBLE] = BF_LAYER_POTENTIAL_PV_DOUBLE,
+  [BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE] = BF_LAYER_POTENTIAL_SINGLE
+};
