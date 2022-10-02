@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <bf/error_macros.h>
 #include <bf/fac.h>
@@ -19,24 +20,55 @@
 /* Set PERM_DENSE equal to 1 to permute A_dense instead of permuting
  * the righthand side. This is also required if we want to compare the
  * kernel matrices themselves. */
-#define PERM_DENSE 0
+#define PERM_DENSE 1
 
 /* Right multiply the butterflied kernel matrices with the identity
  * matrix to do a comparison between groundtruth dense kernel matrix
  * and the butterflied version. */
-#define COMPARE_KERNEL_MATRICES 0
+#define COMPARE_KERNEL_MATRICES 1
+
+void print_usage_and_exit(char const *argv0) {
+  printf("usage: %s <K> <points.bin> <blocks.txt> [layerpot] [normals.bin]\n"
+         "\n"
+         "where:\n"
+         "  layerpot is one of: S, Sp, D\n"
+         "\n"
+         "NOTE: double-layer potential (D) not yet implemented\n", argv0);
+  exit(EXIT_FAILURE);
+}
 
 int main(int argc, char const *argv[]) {
-  if (argc != 4) {
-    printf("usage: %s <K> <points.bin> <blocks.txt>\n", argv[0]);
-    exit(EXIT_FAILURE);
-  }
-
-  BEGIN_ERROR_HANDLING();
+  if (argc < 4)
+    print_usage_and_exit(argv[0]);
 
   char const *K_str = argv[1];
   char const *points_path_str = argv[2];
   char const *blocks_path_str = argv[3];
+  char const *layerPotStr = argc >= 5 ? argv[4] : "S";
+
+  if (!strcmp(layerPotStr, "Sp") && argc != 6) {
+    printf("usage: %s <K> <points.bin> <blocks.txt> %s <normals.bin>\n",
+           argv[0], layerPotStr);
+    exit(EXIT_FAILURE);
+  }
+
+  BfLayerPotential layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
+  if (!strcmp(layerPotStr, "S")) {
+    layerPot = BF_LAYER_POTENTIAL_SINGLE;
+    printf("using single-layer potential\n");
+  } else if (!strcmp(layerPotStr, "Sp")) {
+    layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
+    printf("using PV of normal derivative of single-layer potential\n");
+  } else if (!strcmp(layerPotStr, "D")) {
+    printf("ERROR: double layer not yet implemented\n");
+    exit(EXIT_FAILURE);
+  } else {
+    print_usage_and_exit(argv[0]);
+  }
+
+  char const *normals_path_str = !strcmp(layerPotStr, "Sp") ? argv[5] : NULL;
+
+  BEGIN_ERROR_HANDLING();
 
   BfReal K = atoi(K_str);
 
@@ -48,9 +80,17 @@ int main(int argc, char const *argv[]) {
 
   BfSize numPoints = points->size;
 
+  BfVectors2 normals, *normalsPtr = NULL;
+  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+    bfReadVectors2FromFile(normals_path_str, &normals);
+    HANDLE_ERROR();
+    printf("read unit normals from %s\n", normals_path_str);
+    normalsPtr = &normals;
+  }
+
   bfToc();
   BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, points, NULL);
+  bfInitQuadtreeFromPoints(&tree, points, normalsPtr);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
@@ -62,18 +102,26 @@ int main(int argc, char const *argv[]) {
 
   BfPoints2 const *pointsPerm = bfPoints2ConstViewFromMat(pointsPermMat);
 
+  BfMat *normalsPermMat = NULL;
+  BfVectors2 const *normalsPermPtr = NULL;
+  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+    normalsPermMat = bfMatFromFile(normals_path_str, -1, 2, BF_DTYPE_REAL);
+    HANDLE_ERROR();
+    bfMatPermuteRows(normalsPermMat, &revPerm);
+    normalsPermPtr = bfVectors2ConstViewFromMat(normalsPermMat);
+  }
+
   bfToc();
   BfMat *A_dense = bfGetHelm2KernelMatrix(
-    pointsPerm, pointsPerm, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+    pointsPerm, pointsPerm, normalsPermPtr, K, layerPot);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #else
   bfToc();
-  BfMat *A_dense = bfGetHelm2KernelMatrix(
-    points, points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+  BfMat *A_dense = bfGetHelm2KernelMatrix(points, points, normalsPtr, K, layerPot);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #endif
 
-  BfMat *A_BF = bfFacHelm2MakeMultilevel(&tree, K, BF_LAYER_POTENTIAL_SINGLE);
+  BfMat *A_BF = bfFacHelm2MakeMultilevel(&tree, K, layerPot);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMat *x; {
