@@ -5,6 +5,7 @@
 #include "def.h"
 #include "dtype.h"
 #include "interface.h"
+#include "perm.h"
 #include "types.h"
 
 typedef enum BfVecProps {
@@ -28,7 +29,8 @@ typedef enum BfVecProps {
   _(Type, Subtype, void, MulInplace, BfVec *, BfMat const *)             \
   _(Type, Subtype, void, SolveInplace, BfVec *, BfMat const *)           \
   _(Type, Subtype, void, RecipInplace, BfVec *)                          \
-  _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize srcInd, BfSize)
+  _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize srcInd, BfSize) \
+  _(Type, Subtype, void, Permute, BfVec *, BfPerm const *)
 
 #define INTERFACE BF_INTERFACE_Vec
 BF_DEFINE_VTABLE_STRUCT(Vec)

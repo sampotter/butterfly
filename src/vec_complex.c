@@ -278,6 +278,8 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
   return bfMatGivensComplexToMat(givens);
 }
 
+BF_STUB(void, VecComplexPermute, BfVec *, BfPerm const *)
+
 /** Upcasting: */
 
 BfVec *bfVecComplexToVec(BfVecComplex *vecComplex) {

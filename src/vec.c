@@ -83,6 +83,11 @@ BfMat *bfVecGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd) {
   return vec->vtbl->GetGivensRotation(vec, srcInd, elimInd);
 }
 
+/* Permute the `vec` by `perm`. */
+void bfVecPermute(BfVec *vec, BfPerm const *perm) {
+  vec->vtbl->Permute(vec, perm);
+}
+
 /** Implementation: Vec */
 
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size) {

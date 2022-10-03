@@ -15,7 +15,34 @@
 BF_DEFINE_VTABLE(Vec, VecReal)
 #undef INTERFACE
 
-BF_STUB(BfVec *, VecRealCopy, BfVec const *)
+BfVec *bfVecRealCopy(BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal const *vecReal = NULL;
+  BfVecReal *copy = NULL;
+
+  vecReal = bfVecConstToVecRealConst(vec);
+  HANDLE_ERROR();
+
+  copy = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(copy, vec->size);
+  HANDLE_ERROR();
+
+  BfReal const *inPtr = vecReal->data;
+  BfReal *outPtr = copy->data;
+  for (BfSize i = 0; i < vec->size; ++i) {
+    *outPtr = *inPtr;
+    inPtr += vecReal->stride;
+    outPtr += copy->stride;
+  }
+
+  END_ERROR_HANDLING()
+    bfVecRealDeinitAndDealloc(&copy);
+
+  return bfVecRealToVec(copy);
+}
 
 void bfVecRealDelete(BfVec **mat) {
   bfVecRealDeinitAndDealloc((BfVecReal **)mat);
@@ -113,6 +140,29 @@ void bfVecRealRecipInplace(BfVec *vec) {
 }
 
 BF_STUB(BfMat *, VecRealGetGivensRotation, BfVec const *, BfSize, BfSize)
+
+void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVec *vecCopy = bfVecCopy(vec);
+  HANDLE_ERROR();
+
+  BfVecReal *vecReal = bfVecToVecReal(vec);
+  HANDLE_ERROR();
+
+  BfVecReal *vecRealCopy = bfVecToVecReal(vecCopy);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < vec->size; ++i) {
+    BfReal const *inPtr = vecRealCopy->data + i*vecRealCopy->stride;
+    BfReal *outPtr = vecReal->data + perm->index[i]*vecReal->stride;
+    *outPtr = *inPtr;
+  }
+
+  END_ERROR_HANDLING() {}
+
+  bfVecDelete(&vecCopy);
+}
 
 /** Upcasting: */
 
