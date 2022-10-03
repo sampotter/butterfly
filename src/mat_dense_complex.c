@@ -139,9 +139,10 @@ void bfMatDenseComplexScaleCols_real(BfMatDenseComplex *mat, BfVec const *vec) {
   for (BfSize i = 0; i < mat->super.numRows; ++i) {
     BfReal *vecRealData = vecReal->data;
     BfComplex *rowData = mat->data + i*mat->rowStride;
-    for (BfSize j = 0; j < mat->super.numCols; ++j)
+    for (BfSize j = 0; j < mat->super.numCols; ++j) {
       *(rowData + j*mat->colStride) *= *vecRealData;
-    vecRealData += vecReal->stride;
+      vecRealData += vecReal->stride;
+    }
   }
 
   END_ERROR_HANDLING() {}
