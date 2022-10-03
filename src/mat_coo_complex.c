@@ -229,6 +229,10 @@ BF_STUB(BfMat *, MatCooComplexLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatCooComplexIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatCooComplexBackwardSolveVec, BfMat const *, BfVec const *)
 
+bool bfMatCooComplexIsZero(BfMat const *mat) {
+  return bfMatConstToMatCooComplexConst(mat)->numElts == 0;
+}
+
 /** Upcasting: */
 
 BfMat *bfMatCooComplexToMat(BfMatCooComplex *matCooComplex) {

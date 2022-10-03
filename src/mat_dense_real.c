@@ -245,6 +245,7 @@ BF_STUB(BfMat *, MatDenseRealLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatDenseRealGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatDenseRealIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatDenseRealBackwardSolveVec, BfMat const *, BfVec const *)
+BF_STUB(bool, MatDenseRealIsZero, BfMat const *)
 
 /** Upcasting: */
 

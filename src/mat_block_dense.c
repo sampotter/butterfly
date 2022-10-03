@@ -274,6 +274,7 @@ BF_STUB(BfMat *, MatBlockDenseLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDenseGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockDenseIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatBlockDenseBackwardSolveVec, BfMat const *, BfVec const *)
+BF_STUB(bool, MatBlockDenseIsZero, BfMat const *)
 
 /** Interface: MatBlock */
 

@@ -121,6 +121,7 @@ BF_STUB(BfMat *, MatProductLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatProductGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatProductIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatProductBackwardSolveVec, BfMat const *, BfVec const *)
+BF_STUB(bool, MatProductIsZero, BfMat const *)
 
 /* Upcasting: */
 

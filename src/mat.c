@@ -175,6 +175,10 @@ BfVec *bfMatBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
   return mat->vtbl->BackwardSolveVec(mat, vec);
 }
 
+bool bfMatIsZero(BfMat const *mat) {
+  return mat->vtbl->IsZero(mat);
+}
+
 /** Implementation: Mat */
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {

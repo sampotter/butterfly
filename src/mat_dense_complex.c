@@ -1037,6 +1037,8 @@ BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
   return result;
 }
 
+BF_STUB(bool, MatDenseComplexIsZero, BfMat const *)
+
 /* Implementation: MatDenseComplex */
 
 BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *matDenseComplex) {
