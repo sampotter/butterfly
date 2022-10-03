@@ -96,9 +96,15 @@ int main(int argc, char const *argv[]) {
   bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);
   HANDLE_ERROR();
 
+  printf("source node index range (column range): [%lu, %lu)\n",
+         srcNode->offset[0], srcNode->offset[4]);
+
   BfQuadtreeNode *tgtNode;
   bfGetQuadtreeNode(&tree, tgt_depth, tgtNodeIndex, &tgtNode);
   HANDLE_ERROR();
+
+  printf("target node index range (row range): [%lu, %lu)\n",
+         tgtNode->offset[0], tgtNode->offset[4]);
 
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
