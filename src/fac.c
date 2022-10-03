@@ -211,8 +211,14 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   /* get the layer potential we should use for reexpansion */
   BfLayerPotential proxyLayerPot = BF_PROXY_LAYER_POT[layerPot];
 
+  /* count number of target nodes on this level */
+  BfSize totalNumTgtNodes = bfPtrArraySize(tgtLevelNodes);
+
   /* count the total number of target children on this level */
   BfSize totalNumTgtChildren = getTotalNumChildren(tgtLevelNodes);
+
+  /* count number of source nodes on this level */
+  BfSize totalNumSrcNodes = bfPtrArraySize(srcLevelNodes);
 
   /* count the total number of source children on this level */
   BfSize totalNumSrcChildren = getTotalNumChildren(srcLevelNodes);
@@ -222,8 +228,9 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   /* compute the number of block rows and columns as well as the total
    * number of blocks from this level's layout */
   BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
-  BfSize numBlockRows = totalNumTgtChildren*bfPtrArraySize(srcLevelNodes);
-  BfSize numBlockCols = bfMatBlockGetNumRowBlocks(prevMatBlock);
+  BfSize numBlockRows = totalNumTgtChildren*totalNumSrcNodes;
+  BfSize numBlockCols = totalNumSrcChildren*totalNumTgtNodes;
+  assert(numBlockCols == bfMatBlockGetNumRowBlocks(prevMatBlock));
 
   BfMatBlockCoo *mat = bfMatBlockCooNew();
   bfMatBlockCooInit(mat, numBlockRows, numBlockCols, numBlocks);
@@ -255,7 +262,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   do {
     /* iterate over all source child nodes */
     resetMakeFactorIter(&srcIter, srcLevelNodes);
-    j = tgtIter.nodeIndex*srcIter.numChildren;
+    j = tgtIter.nodeIndex*totalNumSrcChildren;
     do {
       i = i_offset + srcIter.nodeIndex;
       assert(i < numBlockRows);
