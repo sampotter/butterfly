@@ -14,6 +14,7 @@ typedef struct BfMatDenseReal BfMatDenseReal;
 typedef struct BfMatDiagReal BfMatDiagReal;
 typedef struct BfMatGivensComplex BfMatGivensComplex;
 typedef struct BfMatProduct BfMatProduct;
+typedef struct BfMatSum BfMatSum;
 
 typedef struct BfVec BfVec;
 typedef struct BfVecComplex BfVecComplex;
@@ -33,6 +34,7 @@ typedef enum BfTypes {
   BF_TYPE_MAT_DIAG_REAL,
   BF_TYPE_MAT_GIVENS_COMPLEX,
   BF_TYPE_MAT_PRODUCT,
+  BF_TYPE_MAT_SUM,
 
   /* Vec hierarchy */
   BF_TYPE_VEC,

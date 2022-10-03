@@ -59,6 +59,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT]         = true,
       [BF_TYPE_MAT_PRODUCT] = true
     },
+    [BF_TYPE_MAT_SUM] = {
+      [BF_TYPE_MAT]         = true,
+      [BF_TYPE_MAT_SUM] = true
+    },
     [BF_TYPE_VEC] = {
       [BF_TYPE_VEC] = true
     },
