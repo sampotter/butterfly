@@ -22,7 +22,7 @@
 #include <bf/util.h>
 #include <bf/vectors.h>
 
-// static int const KR_order = 6;
+static int const KR_order = 6;
 
 struct K_helm2_wkspc {
   BfPoints2 const *points;
@@ -102,7 +102,7 @@ int main(int argc, char const *argv[]) {
 
   /* Permute the LHS for the butterfly factorized version of A*/
   BfMat *phi_in_perm = bfMatCopy(phi_in);
-  bfMatPermuteRows(phi_in_perm, &tree.perm);
+  bfMatPermuteRows(phi_in_perm, &revPerm);
 
   /* One-half times the identity matrix---used to set up BIEs below */
 //   BfMat *oneHalfEye;
@@ -113,11 +113,11 @@ int main(int argc, char const *argv[]) {
 
   /* Workspace for evaluating Helmholtz kernel when applying KR
    * quadrature corrections */
-//   struct K_helm2_wkspc K_wkspc = {
-//     .points = X_points,
-//     .normals = N_vectors,
-//     .K = K
-//   };
+  struct K_helm2_wkspc K_wkspc = {
+    .points = X_points,
+    .normals = N_vectors,
+    .K = K
+  };
 
   /** Set up the dense system matrix */
 
@@ -128,8 +128,8 @@ int main(int argc, char const *argv[]) {
     X_points, X_points, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
-//   /* Perturb by the KR correction */
-//   bf_apply_KR_correction(A_dense, KR_order, K_helm2, (void *)&K_wkspc);
+  /* Perturb by the KR correction */
+  bf_apply_KR_correction(A_dense, KR_order, K_helm2, (void *)&K_wkspc);
 
 //   /* Scale the columns by the trapezoid rule weights */
 //   bfMatScaleCols(A_dense, w);
@@ -147,20 +147,20 @@ int main(int argc, char const *argv[]) {
     &tree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
-  /* Write blocks to disk: */
-  FILE *fp = fopen(argv[7], "w");
-  bfPrintBlocks(A_BF, 2, fp);
-  fclose(fp);
-  printf("wrote blocks to %s [%0.2fs]\n", argv[7], bfToc());
-
-//   /* Perturb by the KR correction */
-//   bf_apply_KR_correction_quadtree(A_BF, KR_order, &tree, K_helm2, (void *)&K_wkspc);
+  /* Perturb by the KR correction */
+  bf_apply_KR_correction_quadtree(A_BF, KR_order, &tree, K_helm2, (void *)&K_wkspc);
 
 //   /* Scale the columns by the trapezoid rule weights */
 //   bfMatScaleCols(A_BF, w);
 
 //   /* Perturb by one-half the identity to get a second-kind IE */
 //   bfMatAddInplace(A_BF, oneHalfEye);
+
+  /* Write blocks to disk: */
+  FILE *fp = fopen(argv[7], "w");
+  bfPrintBlocks(A_BF, 2, fp);
+  fclose(fp);
+  printf("wrote blocks to %s [%0.2fs]\n", argv[7], bfToc());
 
   /** Verify and time the matrix multiplications */
 
@@ -170,7 +170,7 @@ int main(int argc, char const *argv[]) {
 
   bfToc();
   BfMat *y_test_BF = bfMatMul(A_BF, phi_in_perm);
-  bfMatPermuteRows(y_test_BF, &revPerm);
+  bfMatPermuteRows(y_test_BF, &tree.perm);
   printf("did test butterfly MVP [%0.2fs]\n", bfToc());
 
   BfVec *err_MVP = bfMatColDists(y_test_dense, y_test_BF);

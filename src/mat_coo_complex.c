@@ -4,6 +4,8 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_dense_complex.h>
+#include <bf/vec_complex.h>
 
 /** Interface: Mat */
 
@@ -221,7 +223,69 @@ BF_STUB(void, MatCooComplexAddInplace, BfMat *, BfMat const *)
 BF_STUB(void, MatCooComplexAddDiag, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCooComplexSub, BfMat const *, BfMat const *)
 BF_STUB(void, MatCooComplexSubInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooComplexMul, BfMat const *, BfMat const *)
+
+static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCooComplex const *matCooComplex = NULL;
+  BfMatDenseComplex const *matDenseComplex = NULL;
+  BfMat *result = NULL;
+
+  BfSize m, n, p;
+
+  matCooComplex = bfMatConstToMatCooComplexConst(mat);
+  HANDLE_ERROR();
+
+  matDenseComplex = bfMatConstToMatDenseComplexConst(otherMat);
+  HANDLE_ERROR();
+
+  m = bfMatGetNumRows(mat);
+  n = bfMatGetNumCols(mat);
+  p = bfMatGetNumCols(otherMat);
+
+  if (n != bfMatGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  result = bfMatZerosLike(otherMat, m, p);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < matCooComplex->numElts; ++k) {
+    BfSize i = matCooComplex->rowInd[k];
+    BfSize j = matCooComplex->colInd[k];
+    BfComplex z = matCooComplex->value[k];
+
+    BfVec *rowVec = bfMatGetRowView(result, i);
+    BfVecComplex *rowVecComplex = bfVecToVecComplex(rowVec);
+
+    BfComplex const *inPtr = matDenseComplex->data + j*matDenseComplex->rowStride;
+    BfComplex *outPtr = rowVecComplex->data;
+
+    for (BfSize l = 0; l < p; ++l) {
+      *outPtr = *inPtr;
+      *outPtr *= z;
+      inPtr += matDenseComplex->colStride;
+      outPtr += rowVecComplex->stride;
+    }
+
+    bfVecDelete(&rowVec);
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDelete(&result);
+
+  return result;
+}
+
+BfMat *bfMatCooComplexMul(BfMat const *mat, BfMat const *otherMat) {
+  switch (bfMatGetType(otherMat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return mul_denseComplex(mat, otherMat);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
+}
+
 BF_STUB(BfVec *, MatCooComplexMulVec, BfMat const *, BfVec const *)
 BF_STUB(void, MatCooComplexMulInplace, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCooComplexSolveLU, BfMat const *, BfMat const *)

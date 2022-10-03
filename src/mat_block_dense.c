@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_sum.h>
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE(Mat, MatBlockDense)
@@ -209,11 +210,27 @@ void bfMatBlockDenseAddInplace(BfMat *mat, BfMat const *otherMat) {
     for (BfSize j_blk = 0; j_blk < n_blk; ++j_blk) {
       BfSize j0 = matBlockDense->super.colOffset[j_blk];
       BfSize j1 = matBlockDense->super.colOffset[j_blk + 1];
-      BfMat const *otherBlock = bfMatGetColRangeCopy(otherRows, j0, j1);
+      BfMat *otherBlock = bfMatGetColRangeCopy(otherRows, j0, j1);
+
+      if (bfMatIsZero(otherBlock))
+        continue;
 
       BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i_blk, j_blk);
 
-      bfMatAddInplace(block, otherBlock);
+      BfMat *newBlock = NULL;
+
+      if (bfMatInstanceOf(block, BF_TYPE_MAT_PRODUCT)) {
+        BfMatSum *matSum = bfMatSumNew();
+        bfMatSumInit(matSum);
+        bfMatSumAddTerm(matSum, block);
+        bfMatSumAddTerm(matSum, otherBlock);
+        newBlock = bfMatSumToMat(matSum);
+      }
+
+      if (newBlock == NULL)
+        bfMatAddInplace(block, otherBlock);
+      else
+        bfMatBlockDenseSetBlock(matBlockDense, i_blk, j_blk, newBlock);
     }
   }
 
