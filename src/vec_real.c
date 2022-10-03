@@ -54,7 +54,25 @@ BfType bfVecRealGetType(BfVec const *vec) {
 }
 
 BF_STUB(bool, VecRealInstanceOf, BfVec const *, BfType)
-BF_STUB(BfPtr, VecRealGetEltPtr, BfVec *, BfSize)
+
+BfPtr bfVecRealGetEltPtr(BfVec *vec, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal *vecReal = NULL;
+  BfPtr ptr = NULL;
+
+  vecReal = bfVecToVecReal(vec);
+  HANDLE_ERROR();
+
+  if (i >= vec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  ptr = vecReal->data + i*vecReal->stride;
+
+  END_ERROR_HANDLING() {}
+
+  return ptr;
+}
 
 BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();

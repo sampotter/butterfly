@@ -69,7 +69,7 @@ int main(int argc, char const *argv[]) {
   BfSize const numIter = 256;
 
   /* GMRES tolerance */
-  BfReal const tol = 1e-13;
+  BfReal const tol = 1e-10;
 
   /** Make sure everything is compatibly sized */
 
@@ -137,7 +137,7 @@ int main(int argc, char const *argv[]) {
   /* Perturb by one-half the identity to get a second-kind IE */
   bfMatAddInplace(A_dense, oneHalfEye);
 
-  printf("finished assembling dense system matrix [%0.2fs]\n", bfToc());
+  printf("assembled dense system matrix [%0.2fs]\n", bfToc());
 
   /** Set up the butterfly-factorized system matrix */
 
@@ -158,11 +158,13 @@ int main(int argc, char const *argv[]) {
   /* Perturb by one-half the identity to get a second-kind IE */
   bfMatAddInplace(A_BF, oneHalfEye);
 
+  printf("assembled BF'd system matrix [%0.2fs]\n", bfToc());
+
   /* Write blocks to disk: */
   FILE *fp = fopen(argv[7], "w");
   bfPrintBlocks(A_BF, 2, fp);
   fclose(fp);
-  printf("wrote blocks to %s [%0.2fs]\n", argv[7], bfToc());
+  printf("wrote blocks to %s\n", argv[7]);
 
   /** Verify and time the matrix multiplications */
 
@@ -185,16 +187,18 @@ int main(int argc, char const *argv[]) {
   /** Solve the system using different methods */
 
   /* Solve dense system using LU decomposition */
+  BfMat *A_dense_LU_copy = bfMatCopy(A_dense);
   bfToc();
-  BfMat *sigma_dense_LU = bfMatSolveLU(A_dense, phi_in);
-  printf("solved dense problem using Gaussian elimination [%0.2fs]\n", bfToc());
+  BfMat *sigma_dense_LU = bfMatSolveLU(A_dense_LU_copy, phi_in);
+  printf("solved using Gaussian elimination [%0.2fs]\n", bfToc());
+  bfMatDelete(&A_dense_LU_copy);
 
   /* Solve dense system using GMRES */
   bfToc();
   BfSize num_iter_dense_GMRES;
   BfMat *sigma_dense_GMRES = bfMatSolveGMRES(
     A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES);
-  printf("solved dense problem using GMRES (dense): %lu iter. [%0.2fs]\n",
+  printf("solved using GMRES (dense): %lu iter. [%0.2fs]\n",
          num_iter_dense_GMRES, bfToc());
 
   /* Solve butterfly-factorized system using GMRES */
@@ -203,7 +207,7 @@ int main(int argc, char const *argv[]) {
   BfMat *sigma_BF_GMRES = bfMatSolveGMRES(
     A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES);
   bfMatPermuteRows(sigma_BF_GMRES, &tree.perm);
-  printf("solved dense problem using GMRES (BF): %lu iter. [%0.2fs]\n",
+  printf("solved using GMRES (BF): %lu iter. [%0.2fs]\n",
          num_iter_BF_GMRES, bfToc());
 
   /** Evaluate solution and check errors */
@@ -222,13 +226,22 @@ int main(int argc, char const *argv[]) {
 
   /* Compute errors */
 
-  BfVec *error_l2_dense_LU = bfMatColDists(phi_dense_LU, phi_exact);
-  BfVec *error_l2_dense_GMRES = bfMatColDists(phi_dense_GMRES, phi_exact);
-  BfVec *error_l2_BF_GMRES = bfMatColDists(phi_BF_GMRES, phi_exact);
+  BfVec *error_l2_dense_LU_vec = bfMatColDists(phi_dense_LU, phi_exact);
+  BfReal error_l2_dense_LU = *(BfReal *)bfVecGetEltPtr(error_l2_dense_LU_vec, 0);
 
-  bfVecPrint(error_l2_dense_LU, stdout);
-  bfVecPrint(error_l2_dense_GMRES, stdout);
-  bfVecPrint(error_l2_BF_GMRES, stdout);
+  BfVec *error_l2_dense_GMRES_vec = bfMatColDists(phi_dense_GMRES, phi_exact);
+  BfReal error_l2_dense_GMRES = *(BfReal *)bfVecGetEltPtr(error_l2_dense_GMRES_vec, 0);
+
+  BfVec *error_l2_BF_GMRES_vec = bfMatColDists(phi_BF_GMRES, phi_exact);
+  BfReal error_l2_BF_GMRES = *(BfReal *)bfVecGetEltPtr(error_l2_BF_GMRES_vec, 0);
+
+  BfVec *phi_l2_norm_vec = bfMatColNorms(phi_exact);
+  BfReal phi_l2_norm = *(BfReal *)bfVecGetEltPtr(phi_l2_norm_vec, 0);
+
+  printf("rel l2 errors:\n");
+  printf("- dense LU: %g\n", error_l2_dense_LU/phi_l2_norm);
+  printf("- dense GMRES: %g\n", error_l2_dense_GMRES/phi_l2_norm);
+  printf("- BF GMRES: %g\n", error_l2_BF_GMRES/phi_l2_norm);
 
   END_ERROR_HANDLING() {}
 }
