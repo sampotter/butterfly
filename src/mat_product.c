@@ -91,7 +91,24 @@ BF_STUB(BfVec *, MatProductRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColNorms, BfMat const *)
-BF_STUB(void, MatProductScaleCols, BfMat *, BfVec const *)
+
+void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct *matProduct = bfMatToMatProduct(mat);
+  HANDLE_ERROR();
+
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+  if (numFactors == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMat *factor = bfMatProductGetFactor(matProduct, numFactors - 1);
+
+  bfMatScaleCols(factor, vec);
+
+  END_ERROR_HANDLING() {}
+}
+
 BF_STUB(BfVec *, MatProductSumCols, BfMat const *)
 BF_STUB(void, MatProductAddInplace, BfMat *, BfMat const *)
 BF_STUB(void, MatProductAddDiag, BfMat *, BfMat const *)
@@ -123,13 +140,24 @@ BF_STUB(bool, MatProductIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatProductBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatProductIsZero, BfMat const *)
 
-/* Upcasting: */
+/** Upcasting: */
 
 BfMat *bfMatProductToMat(BfMatProduct *matProduct) {
   return &matProduct->super;
 }
 
-/* Implementation: MatProduct */
+/** Downcasting: */
+
+BfMatProduct *bfMatToMatProduct(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_PRODUCT)) {
+    bfSetError(BF_ERROR_RUNTIME_ERROR);
+    return NULL;
+  } else {
+    return (BfMatProduct *)mat;
+  }
+}
+
+/** Implementation: MatProduct */
 
 BfMatProduct *bfMatProductNew() {
   BEGIN_ERROR_HANDLING();

@@ -70,7 +70,27 @@ BF_STUB(BfVec *, MatBlockDiagRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColNorms, BfMat const *)
-BF_STUB(void, MatBlockDiagScaleCols, BfMat *, BfVec const *)
+
+void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize j0 = matBlock->colOffset[k];
+    BfSize j1 = matBlock->colOffset[k + 1];
+    BfMat *block = matBlock->block[k];
+    BfVec *subvec = bfVecGetSubvecCopy(vec, j0, j1);
+    bfMatScaleCols(block, subvec);
+    bfVecDelete(&subvec);
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
 BF_STUB(BfVec *, MatBlockDiagSumCols, BfMat const *)
 BF_STUB(void, MatBlockDiagAddInplace, BfMat *, BfMat const *)
 BF_STUB(void, MatBlockDiagAddDiag, BfMat *, BfMat const *)

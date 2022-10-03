@@ -12,8 +12,9 @@ typedef struct BfMatProduct {
 BF_DECLARE_INTERFACE(MatProduct)
 #undef INTERFACE
 
-/* Upcasting: */
 BfMat *bfMatProductToMat(BfMatProduct *matProduct);
+
+BfMatProduct *bfMatToMatProduct(BfMat *mat);
 
 BfMatProduct *bfMatProductNew();
 void bfMatProductInit(BfMatProduct *prod);
