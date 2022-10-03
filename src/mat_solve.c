@@ -8,7 +8,7 @@
 #include <bf/error_macros.h>
 
 BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
-                       BfReal tol, BfSize numIter) {
+                       BfReal tol, BfSize maxNumIter, BfSize *numIter) {
   BEGIN_ERROR_HANDLING();
 
   /* Solution of the system */
@@ -23,7 +23,7 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   /* Givens rotations for solving the least squares problem */
   BfMat **J = NULL;
 
-  BfSize const m = numIter;
+  BfSize const m = maxNumIter;
 
   bool converged = false;
 
@@ -39,7 +39,7 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
       RAISE_ERROR(BF_ERROR_TYPE_ERROR);
 
   /* Make sure m is positive */
-  if (numIter == 0)
+  if (maxNumIter == 0)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* Get order of system (n) and check compatibility */
@@ -184,6 +184,9 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   }
 
   END_ERROR_HANDLING() {}
+
+  if (numIter != NULL)
+    *numIter = i;
 
   return X;
 }

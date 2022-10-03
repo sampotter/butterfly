@@ -73,7 +73,7 @@ int main(int argc, char const *argv[]) {
 
   /** Make sure everything is compatibly sized */
 
-//   BfSize n = bfMatGetNumRows(X);
+  BfSize n = bfMatGetNumRows(X);
 
   /** Convert matrices to points */
 
@@ -105,11 +105,11 @@ int main(int argc, char const *argv[]) {
   bfMatPermuteRows(phi_in_perm, &revPerm);
 
   /* One-half times the identity matrix---used to set up BIEs below */
-//   BfMat *oneHalfEye;
-//   { BfMatDiagReal *_ = bfMatDiagRealNew();
-//     bfMatDiagRealInit(_, n, n);
-//     bfMatDiagRealSetConstant(_, 1./2);
-//     oneHalfEye = bfMatDiagRealToMat(_); }
+  BfMat *oneHalfEye;
+  { BfMatDiagReal *_ = bfMatDiagRealNew();
+    bfMatDiagRealInit(_, n, n);
+    bfMatDiagRealSetConstant(_, 1./2);
+    oneHalfEye = bfMatDiagRealToMat(_); }
 
   /* Workspace for evaluating Helmholtz kernel when applying KR
    * quadrature corrections */
@@ -134,8 +134,8 @@ int main(int argc, char const *argv[]) {
   /* Scale the columns by the trapezoid rule weights */
   bfMatScaleCols(A_dense, w);
 
-//   /* Perturb by one-half the identity to get a second-kind IE */
-//   bfMatAddInplace(A_dense, oneHalfEye);
+  /* Perturb by one-half the identity to get a second-kind IE */
+  bfMatAddInplace(A_dense, oneHalfEye);
 
   printf("finished assembling dense system matrix [%0.2fs]\n", bfToc());
 
@@ -155,8 +155,8 @@ int main(int argc, char const *argv[]) {
   bfVecPermute(w_perm, &revPerm);
   bfMatScaleCols(A_BF, w_perm);
 
-//   /* Perturb by one-half the identity to get a second-kind IE */
-//   bfMatAddInplace(A_BF, oneHalfEye);
+  /* Perturb by one-half the identity to get a second-kind IE */
+  bfMatAddInplace(A_BF, oneHalfEye);
 
   /* Write blocks to disk: */
   FILE *fp = fopen(argv[7], "w");
@@ -182,8 +182,6 @@ int main(int argc, char const *argv[]) {
   bfVecDelete(&y_col_norms);
   printf("rel err in MVP: %g\n", max_rel_err_MVP);
 
-  assert(false);
-
   /** Solve the system using different methods */
 
   /* Solve dense system using LU decomposition */
@@ -193,14 +191,20 @@ int main(int argc, char const *argv[]) {
 
   /* Solve dense system using GMRES */
   bfToc();
-  BfMat *sigma_dense_GMRES = bfMatSolveGMRES(A_dense, phi_in, NULL, tol, numIter);
-  printf("solved dense problem using GMRES (dense) [%0.2fs]\n", bfToc());
+  BfSize num_iter_dense_GMRES;
+  BfMat *sigma_dense_GMRES = bfMatSolveGMRES(
+    A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES);
+  printf("solved dense problem using GMRES (dense): %lu iter. [%0.2fs]\n",
+         num_iter_dense_GMRES, bfToc());
 
   /* Solve butterfly-factorized system using GMRES */
   bfToc();
-  BfMat *sigma_BF_GMRES = bfMatSolveGMRES(A_BF, phi_in_perm, NULL, tol, numIter);
-  bfMatPermuteRows(sigma_BF_GMRES, &revPerm);
-  printf("solved dense problem using GMRES (BF) [%0.2fs]\n", bfToc());
+  BfSize num_iter_BF_GMRES;
+  BfMat *sigma_BF_GMRES = bfMatSolveGMRES(
+    A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES);
+  bfMatPermuteRows(sigma_BF_GMRES, &tree.perm);
+  printf("solved dense problem using GMRES (BF): %lu iter. [%0.2fs]\n",
+         num_iter_BF_GMRES, bfToc());
 
   /** Evaluate solution and check errors */
 
@@ -214,7 +218,7 @@ int main(int argc, char const *argv[]) {
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
   BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);
-  BfMat *phi_BF_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);
+  BfMat *phi_BF_GMRES = bfMatMul(G_eval, sigma_BF_GMRES);
 
   /* Compute errors */
 

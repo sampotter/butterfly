@@ -228,7 +228,10 @@ BF_STUB(BfMat *, MatCooRealSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatCooRealLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatCooRealIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatCooRealBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatCooRealIsZero, BfMat const *)
+
+bool bfMatCooRealIsZero(BfMat const *mat) {
+  return bfMatConstToMatCooRealConst(mat)->numElts == 0;
+}
 
 /** Upcasting: */
 
