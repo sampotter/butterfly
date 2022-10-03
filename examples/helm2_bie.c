@@ -131,8 +131,8 @@ int main(int argc, char const *argv[]) {
   /* Perturb by the KR correction */
   bf_apply_KR_correction(A_dense, KR_order, K_helm2, (void *)&K_wkspc);
 
-//   /* Scale the columns by the trapezoid rule weights */
-//   bfMatScaleCols(A_dense, w);
+  /* Scale the columns by the trapezoid rule weights */
+  bfMatScaleCols(A_dense, w);
 
 //   /* Perturb by one-half the identity to get a second-kind IE */
 //   bfMatAddInplace(A_dense, oneHalfEye);
@@ -150,8 +150,10 @@ int main(int argc, char const *argv[]) {
   /* Perturb by the KR correction */
   bf_apply_KR_correction_quadtree(A_BF, KR_order, &tree, K_helm2, (void *)&K_wkspc);
 
-//   /* Scale the columns by the trapezoid rule weights */
-//   bfMatScaleCols(A_BF, w);
+  /* Scale the columns by the trapezoid rule weights */
+  BfVec *w_perm = bfVecCopy(w);
+  bfVecPermute(w_perm, &revPerm);
+  bfMatScaleCols(A_BF, w_perm);
 
 //   /* Perturb by one-half the identity to get a second-kind IE */
 //   bfMatAddInplace(A_BF, oneHalfEye);
