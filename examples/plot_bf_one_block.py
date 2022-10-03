@@ -292,9 +292,17 @@ else:
 # plot blocks
 
 for k, Z in enumerate(factors):
+    path = Path(f'factor{k}')
+    rowOffset = np.fromfile(f'{path}/rowOffset.bin', dtype=np.uintp)
+    colOffset = np.fromfile(f'{path}/colOffset.bin', dtype=np.uintp)
     plt.figure()
     plt.imshow(complex_to_hsv(Z, rmin=0))
     plt.gca().set_aspect('equal')
+    plt.xticks(colOffset, rotation=90)
+    plt.xlim(colOffset[0], colOffset[-1])
+    plt.yticks(rowOffset)
+    plt.ylim(rowOffset[0], rowOffset[-1])
+    plt.gca().invert_yaxis()
     plt.title(f'Factor #{k}')
     if SAVE_PLOTS:
         plt.savefig(plots_path/f'factor{k}.png')
