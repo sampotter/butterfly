@@ -42,6 +42,7 @@ butterfly_lib_src = [
   'src/mat_solve.c',
   'src/mat_sum.c',
   'src/mat_util.c',
+  'src/mat_zero.c',
   'src/perm.c',
   'src/points.c',
   'src/ptr_array.c',
