@@ -16,7 +16,55 @@ BF_DEFINE_VTABLE(MatBlock, MatBlockCoo)
 
 /** Interface: Mat */
 
-BF_STUB(BfMat *, MatBlockCooCopy, BfMat const *)
+BfMat *bfMatBlockCooCopy(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = NULL;
+  BfMatBlockCoo const *matBlockCoo = NULL;
+  BfMatBlockCoo *matBlockCooCopy = NULL;
+  BfMat *blockCopy = NULL;
+
+  matBlock = bfMatConstToMatBlockConst(mat);
+  HANDLE_ERROR();
+
+  matBlockCoo = bfMatConstToMatBlockCooConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  matBlockCooCopy = bfMatBlockCooNew();
+  HANDLE_ERROR();
+
+  bfMatBlockCooInit(matBlockCooCopy, numRowBlocks, numColBlocks, numBlocks);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    matBlockCooCopy->rowInd[k] = matBlockCoo->rowInd[k];
+    matBlockCooCopy->colInd[k] = matBlockCoo->colInd[k];
+  }
+
+  for (BfSize i = 0; i <= numRowBlocks; ++i)
+    matBlockCooCopy->super.rowOffset[i] = matBlock->rowOffset[i];
+
+  for (BfSize j = 0; j <= numColBlocks; ++j)
+    matBlockCooCopy->super.colOffset[j] = matBlock->colOffset[j];
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    blockCopy = bfMatCopy(matBlock->block[k]);
+    HANDLE_ERROR();
+    matBlockCooCopy->super.block[k] = blockCopy;
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&blockCopy);
+    bfMatBlockCooDeinitAndDealloc(&matBlockCooCopy);
+  }
+
+  return bfMatBlockCooToMat(matBlockCooCopy);
+}
+
 BF_STUB(BfMat *, MatBlockCooGetView, BfMat *)
 BF_STUB(BfVec *, MatBlockCooGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockCooGetColView, BfMat *, BfSize)
