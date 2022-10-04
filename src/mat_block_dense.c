@@ -17,7 +17,47 @@ BF_DEFINE_VTABLE(MatBlock, MatBlockDense)
 
 /** Interface: Mat */
 
-BF_STUB(BfMat *, MatBlockDenseCopy, BfMat const *)
+BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = NULL;
+  BfMatBlockDense const *matBlockDense = NULL;
+  BfMatBlockDense *matBlockDenseCopy = NULL;
+  BfMat const *block;
+  BfMat *blockCopy;
+
+  matBlock = bfMatConstToMatBlockConst(mat);
+  HANDLE_ERROR();
+
+  matBlockDense = bfMatConstToMatBlockDenseConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+
+  matBlockDenseCopy = bfMatBlockDenseNew();
+  HANDLE_ERROR();
+
+  bfMatBlockDenseInit(matBlockDenseCopy, numRowBlocks, numColBlocks);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numRowBlocks; ++i) {
+    for (BfSize j = 0; j < numColBlocks; ++j) {
+      block = bfMatBlockDenseGetBlock((BfMatBlockDense *)matBlockDense, i, j);
+      blockCopy = bfMatCopy(block);
+      HANDLE_ERROR();
+      bfMatBlockDenseSetBlock(matBlockDenseCopy, i, j, blockCopy);
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&blockCopy);
+    bfMatBlockDenseDeinitAndDealloc(&matBlockDenseCopy);
+  }
+
+  return bfMatBlockDenseToMat(matBlockDenseCopy);
+}
+
 BF_STUB(BfMat *, MatBlockDenseGetView, BfMat *)
 BF_STUB(BfVec *, MatBlockDenseGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDenseGetColView, BfMat *, BfSize)
