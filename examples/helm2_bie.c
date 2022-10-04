@@ -166,6 +166,12 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   printf("wrote blocks to %s\n", argv[7]);
 
+  /** Copy the BF'd system matrix and do an MVP to verify that it was
+   * copied correctly (recursive copying logic is a bit
+   * involved---worth validating this here) */
+
+  BfMat *A_BF_lift = bfMatCopy(A_BF);
+
   /** Verify and time the matrix multiplications */
 
   bfToc();
@@ -177,12 +183,23 @@ int main(int argc, char const *argv[]) {
   bfMatPermuteRows(y_test_BF, &tree.perm);
   printf("did test butterfly MVP [%0.2fs]\n", bfToc());
 
+  bfToc();
+  BfMat *y_test_BF_copy = bfMatMul(A_BF_lift, phi_in_perm);
+  bfMatPermuteRows(y_test_BF_copy, &tree.perm);
+  printf("did test butterfly MVP (copy) [%0.2fs]\n", bfToc());
+
   BfVec *err_MVP = bfMatColDists(y_test_dense, y_test_BF);
+  BfVec *err_MVP_copy = bfMatColDists(y_test_dense, y_test_BF_copy);
   BfVec *y_col_norms = bfMatColNorms(y_test_dense);
   BfReal max_rel_err_MVP = bfVecNormMax(err_MVP)/bfVecNormMax(y_col_norms);
+  BfReal max_rel_err_MVP_copy =
+    bfVecNormMax(err_MVP_copy)/bfVecNormMax(y_col_norms);
   bfVecDelete(&err_MVP);
+  bfVecDelete(&err_MVP_copy);
   bfVecDelete(&y_col_norms);
-  printf("rel err in MVP: %g\n", max_rel_err_MVP);
+  printf("MVP rel. l2 errors:\n");
+  printf("- BF: %g\n", max_rel_err_MVP);
+  printf("- BF (copy): %g\n", max_rel_err_MVP_copy);
 
   /** Solve the system using different methods */
 
