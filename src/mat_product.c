@@ -10,7 +10,40 @@
 BF_DEFINE_VTABLE(Mat, MatProduct)
 #undef INTERFACE
 
-BF_STUB(BfMat *, MatProductCopy, BfMat const *)
+BfMat *bfMatProductCopy(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct const *matProduct = NULL;
+  BfMatProduct *matProductCopy = NULL;
+  BfMat const *factor = NULL;
+  BfMat *factorCopy = NULL;
+
+  matProduct = bfMatConstToMatProductConst(mat);
+  HANDLE_ERROR();
+
+  matProductCopy = bfMatProductNew();
+  HANDLE_ERROR();
+
+  bfMatProductInit(matProductCopy);
+  HANDLE_ERROR();
+
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+
+  for (BfSize i = 0; i < numFactors; ++i) {
+    factor = bfMatProductGetFactorConst(matProduct, i);
+    factorCopy = bfMatCopy(factor);
+    HANDLE_ERROR();
+    bfMatProductPostMultiply(matProductCopy, factorCopy);
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&factorCopy);
+    bfMatProductDeinitAndDealloc(&matProductCopy);
+  }
+
+  return bfMatProductToMat(matProductCopy);
+}
+
 BF_STUB(BfMat *, MatProductGetView, BfMat *)
 
 BF_STUB(BfVec *, MatProductGetRowView, BfMat *, BfSize)
@@ -59,15 +92,19 @@ BfSize bfMatProductGetNumRows(BfMat const *mat) {
 BfSize bfMatProductGetNumCols(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
+  BfMatProduct const *matProduct = NULL;
   BfMat const *factor = NULL;
   BfSize numCols = BF_SIZE_BAD_VALUE;
+
+  matProduct = bfMatConstToMatProductConst(mat);
+  HANDLE_ERROR();
 
   if (bfMatIsTransposed(mat))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)mat);
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
 
-  factor = bfMatProductGetFactor((BfMatProduct *)mat, numFactors - 1);
+  factor = bfMatProductGetFactorConst(matProduct, numFactors - 1);
   HANDLE_ERROR();
 
   numCols = bfMatGetNumCols(factor);
@@ -115,19 +152,42 @@ BF_STUB(void, MatProductAddDiag, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatProductSub, BfMat const *, BfMat const *)
 BF_STUB(void, MatProductSubInplace, BfMat *, BfMat const *)
 
-BfMat *bfMatProductMul(BfMat const *op1, BfMat const *op2) {
-  /* TODO: add error handling... */
-  BfSize numFactors = bfMatProductNumFactors((BfMatProduct *)op1);
-  BfMat *factor = NULL, *result = (BfMat *)op2, *prev = NULL;
+BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct const *matProduct = NULL;
+  BfMat const *factor = NULL;
+  BfMat *prev = NULL;
+  BfMat *result = NULL;
+
+  matProduct = bfMatConstToMatProductConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+
   BfSize i = numFactors - 1;
-  factor = bfMatProductGetFactor((BfMatProduct *)op1, i);
-  prev = bfMatMul(factor, op2);
+
+  factor = bfMatProductGetFactorConst(matProduct, i);
+
+  prev = bfMatMul(factor, otherMat);
+  HANDLE_ERROR();
+
   while (i > 0) {
-    factor = bfMatProductGetFactor((BfMatProduct *)op1, --i);
+    factor = bfMatProductGetFactorConst(matProduct, --i);
+
     result = bfMatMul(factor, prev);
+    HANDLE_ERROR();
+
     bfMatDelete(&prev);
+
     prev = result;
   }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&prev);
+    bfMatDelete(&result);
+  }
+
   return result;
 }
 
@@ -154,6 +214,15 @@ BfMatProduct *bfMatToMatProduct(BfMat *mat) {
     return NULL;
   } else {
     return (BfMatProduct *)mat;
+  }
+}
+
+BfMatProduct const *bfMatConstToMatProductConst(BfMat const *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_PRODUCT)) {
+    bfSetError(BF_ERROR_RUNTIME_ERROR);
+    return NULL;
+  } else {
+    return (BfMatProduct const *)mat;
   }
 }
 
@@ -207,11 +276,15 @@ void bfMatProductDeinitAndDealloc(BfMatProduct **prod) {
   bfMatProductDealloc(prod);
 }
 
-BfSize bfMatProductNumFactors(BfMatProduct *prod) {
+BfSize bfMatProductNumFactors(BfMatProduct const *prod) {
   return bfPtrArraySize(&prod->factorArr);
 }
 
 BfMat *bfMatProductGetFactor(BfMatProduct *prod, BfSize i) {
+  return bfPtrArrayGet(&prod->factorArr, i);
+}
+
+BfMat const *bfMatProductGetFactorConst(BfMatProduct const *prod, BfSize i) {
   return bfPtrArrayGet(&prod->factorArr, i);
 }
 
