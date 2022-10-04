@@ -32,5 +32,6 @@ void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
 void bfMatBlockDenseDealloc(BfMatBlockDense **mat);
 void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat);
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j);
+BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j);
 void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
                              BfMat *block);

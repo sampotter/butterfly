@@ -23,8 +23,8 @@ BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
   BfMatBlock const *matBlock = NULL;
   BfMatBlockDense const *matBlockDense = NULL;
   BfMatBlockDense *matBlockDenseCopy = NULL;
-  BfMat const *block;
-  BfMat *blockCopy;
+  BfMat const *block = NULL;
+  BfMat *blockCopy = NULL;
 
   matBlock = bfMatConstToMatBlockConst(mat);
   HANDLE_ERROR();
@@ -41,9 +41,15 @@ BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
   bfMatBlockDenseInit(matBlockDenseCopy, numRowBlocks, numColBlocks);
   HANDLE_ERROR();
 
+  for (BfSize i = 0; i <= numRowBlocks; ++i)
+    matBlockDenseCopy->super.rowOffset[i] = matBlock->rowOffset[i];
+
+  for (BfSize j = 0; j <= numColBlocks; ++j)
+    matBlockDenseCopy->super.colOffset[j] = matBlock->colOffset[j];
+
   for (BfSize i = 0; i < numRowBlocks; ++i) {
     for (BfSize j = 0; j < numColBlocks; ++j) {
-      block = bfMatBlockDenseGetBlock((BfMatBlockDense *)matBlockDense, i, j);
+      block = bfMatBlockDenseGetBlockConst(matBlockDense, i, j);
       blockCopy = bfMatCopy(block);
       HANDLE_ERROR();
       bfMatBlockDenseSetBlock(matBlockDenseCopy, i, j, blockCopy);
@@ -288,7 +294,7 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
   BfMatBlockDense const *matBlockDense = bfMatConstToMatBlockDenseConst(mat);
 
   BfSize numRows, numCols, numRowBlocks, numColBlocks;
-  BfMat *block = NULL, *op2Rows = NULL;
+  BfMat const *block = NULL, *op2Rows = NULL;
   BfMat *result = NULL, *resultRows = NULL, *tmp = NULL;
 
   numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
@@ -309,7 +315,7 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
       j0 = matBlock->colOffset[j];
       j1 = matBlock->colOffset[j + 1];
       op2Rows = bfMatGetRowRange((BfMat *)otherMat, j0, j1);
-      block = bfMatBlockDenseGetBlock((BfMatBlockDense *)matBlockDense, i, j);
+      block = bfMatBlockDenseGetBlockConst(matBlockDense, i, j);
       assert(bfMatGetNumRows(block) == i1 - i0);
       assert(bfMatGetNumCols(block) == j1 - j0);
       tmp = bfMatMul(block, op2Rows);
@@ -433,6 +439,26 @@ void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
 }
 
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *block = NULL;
+
+  BfSize numBlockRows = mat->super.super.numRows;
+  if (i >= numBlockRows)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSize numBlockCols = mat->super.super.numCols;
+  if (j >= numBlockCols)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  block = mat->super.block[numBlockCols*i + j];
+
+  END_ERROR_HANDLING() {}
+
+  return block;
+}
+
+BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
   BEGIN_ERROR_HANDLING();
 
   BfMat *block = NULL;
