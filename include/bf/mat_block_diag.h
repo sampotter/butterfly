@@ -16,6 +16,7 @@ BF_DECLARE_INTERFACE(MatBlockDiag)
 
 /* Upcasting: */
 BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag);
+BfMatBlock const *bfMatBlockDiagConstToMatBlockConst(BfMatBlockDiag const *);
 
 /* Downcasting: */
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
@@ -25,3 +26,5 @@ void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBloc
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
 void bfMatBlockDiagDealloc(BfMatBlockDiag **mat);
 void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat);
+BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfSize i);
+void bfMatBlockDiagSetBlock(BfMatBlockDiag *matBlockDiag, BfSize i, BfMat *mat);

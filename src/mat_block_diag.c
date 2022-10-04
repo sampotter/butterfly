@@ -16,7 +16,50 @@ BF_DEFINE_VTABLE(MatBlock, MatBlockDiag)
 
 /** BfMat interface: */
 
-BF_STUB(BfMat *, MatBlockDiagCopy, BfMat const *)
+BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = NULL;
+  BfMatBlockDiag const *matBlockDiag = NULL;
+  BfMatBlockDiag *matBlockDiagCopy = NULL;
+  BfMat const *block = NULL;
+  BfMat *blockCopy = NULL;
+
+  matBlock = bfMatConstToMatBlockConst(mat);
+  HANDLE_ERROR();
+
+  matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+
+  matBlockDiagCopy = bfMatBlockDiagNew();
+  HANDLE_ERROR();
+
+  bfMatBlockDiagInit(matBlockDiagCopy, numBlocks, numBlocks);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i <= numBlocks; ++i)
+    matBlockDiagCopy->super.rowOffset[i] = matBlock->rowOffset[i];
+
+  for (BfSize j = 0; j <= numBlocks; ++j)
+    matBlockDiagCopy->super.colOffset[j] = matBlock->colOffset[j];
+
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    block = bfMatBlockDiagGetBlockConst(matBlockDiag, i);
+    blockCopy = bfMatCopy(block);
+    HANDLE_ERROR();
+    bfMatBlockDiagSetBlock(matBlockDiagCopy, i, blockCopy);
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&blockCopy);
+    bfMatBlockDiagDeinitAndDealloc(&matBlockDiagCopy);
+  }
+
+  return bfMatBlockDiagToMat(matBlockDiagCopy);
+}
+
 BF_STUB(BfMat *, MatBlockDiagGetView, BfMat *)
 BF_STUB(BfVec *, MatBlockDiagGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetColView, BfMat *, BfSize)
@@ -184,6 +227,12 @@ BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag) {
   return &matBlockDiag->super.super;
 }
 
+BfMatBlock const *bfMatBlockDiagConstToMatBlockConst(BfMatBlockDiag const *matBlockDiag) {
+  return &matBlockDiag->super;
+}
+
+/** Downcasting: */
+
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_DIAG)) {
     bfSetError(BF_ERROR_TYPE_ERROR);
@@ -230,4 +279,44 @@ void bfMatBlockDiagDealloc(BfMatBlockDiag **mat) {
 void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat) {
   bfMatBlockDiagDeinit(*mat);
   bfMatBlockDiagDealloc(mat);
+}
+
+BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
+  BfMat const *block = NULL;
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  if (i >= numRowBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+  if (i >= numColBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  block = matBlockDiag->super.block[i];
+
+  END_ERROR_HANDLING()
+    block = NULL;
+
+  return block;
+}
+
+void bfMatBlockDiagSetBlock(BfMatBlockDiag *matBlockDiag, BfSize i, BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  if (i >= numRowBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+  if (i >= numColBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  matBlockDiag->super.block[i] = mat;
+
+  END_ERROR_HANDLING() {}
 }
