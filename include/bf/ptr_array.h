@@ -54,3 +54,4 @@ bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end,
 
 void
 bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
+BfPtr bfPtrArrayPopLast(BfPtrArray *arr);

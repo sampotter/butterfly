@@ -164,3 +164,9 @@ bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, void *arg)
     }
   }
 }
+
+BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
+  BfPtr ptr = arr->data[--arr->num_elts];
+  arr->data[arr->num_elts] = NULL;
+  return ptr;
+}
