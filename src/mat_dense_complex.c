@@ -1040,6 +1040,26 @@ BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
 
 BF_STUB(bool, MatDenseComplexIsZero, BfMat const *)
 
+void bfMatDenseComplexNegate(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *matDenseComplex = bfMatToMatDenseComplex(mat);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfComplex *rowPtr = matDenseComplex->data + i*matDenseComplex->rowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      *rowPtr *= -1;
+      rowPtr += matDenseComplex->colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
 /* Implementation: MatDenseComplex */
 
 BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *matDenseComplex) {

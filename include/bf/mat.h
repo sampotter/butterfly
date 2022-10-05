@@ -59,7 +59,8 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfMat *, LstSq, BfMat const *, BfMat const *)               \
   _(Type, Subtype, bool, IsUpperTri, BfMat const *)                            \
   _(Type, Subtype, BfVec *, BackwardSolveVec, BfMat const *, BfVec const *)    \
-  _(Type, Subtype, bool, IsZero, BfMat const *)
+  _(Type, Subtype, bool, IsZero, BfMat const *)                                \
+  _(Type, Subtype, void, Negate, BfMat *)
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE_STRUCT(Mat)

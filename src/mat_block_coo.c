@@ -196,6 +196,7 @@ BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockCooIsZero, BfMat const *)
+BF_STUB(void, MatBlockCooNegate, BfMat *)
 
 /** Interface: MatBlock */
 

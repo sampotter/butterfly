@@ -233,6 +233,8 @@ bool bfMatCooRealIsZero(BfMat const *mat) {
   return bfMatConstToMatCooRealConst(mat)->numElts == 0;
 }
 
+BF_STUB(void, MatCooRealNegate, BfMat *)
+
 /** Upcasting: */
 
 BfMat *bfMatCooRealToMat(BfMatCooReal *matCooReal) {

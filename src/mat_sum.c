@@ -117,6 +117,7 @@ BF_STUB(BfMat *, MatSumLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatSumIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatSumBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatSumIsZero, BfMat const *)
+BF_STUB(void, MatSumNegate, BfMat *)
 
 /** Upcasting: */
 

@@ -149,6 +149,7 @@ BF_STUB(BfMat *, MatDiagRealGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatDiagRealIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatDiagRealBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatDiagRealIsZero, BfMat const *)
+BF_STUB(void, MatDiagRealNegate, BfMat *)
 
 /* Upcasting: */
 

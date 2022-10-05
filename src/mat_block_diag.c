@@ -186,34 +186,31 @@ BF_STUB(bool, MatBlockDiagIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockDiagIsZero, BfMat const *)
 
-/* Interface: MatBlock */
+void bfMatBlockDiagNegate(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = NULL;
+  BfMatBlockDiag *matBlockDiag = NULL;
+
+  matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  matBlockDiag = bfMatToMatBlockDiag(mat);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numBlocks; ++i)
+    bfMatNegate(bfMatBlockDiagGetBlock(matBlockDiag, i));
+
+  END_ERROR_HANDLING() {}
+}
+
+/** Interface: MatBlock */
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock) {
   BfMat const *mat = bfMatBlockConstToMatConst(matBlock);
   return mat->numRows < mat->numCols ? mat->numRows : mat->numCols;
-}
-
-BfMat const *
-bfMatBlockDiagGetBlock(BfMatBlockDiag const *mat, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
-
-  BfMat const *block = NULL;
-
-  if (i >= bfMatBlockGetNumRowBlocks(&mat->super))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  if (j >= bfMatBlockGetNumColBlocks(&mat->super))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  if (i != j)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  block = mat->super.block[i];
-
-  END_ERROR_HANDLING()
-    block = NULL;
-
-  return block;
 }
 
 BF_STUB(BfSize, MatBlockDiagGetNumRowBlocks, BfMatBlock const *)
@@ -227,11 +224,24 @@ BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag) {
   return &matBlockDiag->super.super;
 }
 
+BfMatBlock *bfMatBlockDiagToMatBlock(BfMatBlockDiag *matBlockDiag) {
+  return &matBlockDiag->super;
+}
+
 BfMatBlock const *bfMatBlockDiagConstToMatBlockConst(BfMatBlockDiag const *matBlockDiag) {
   return &matBlockDiag->super;
 }
 
 /** Downcasting: */
+
+BfMatBlockDiag *bfMatToMatBlockDiag(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_DIAG)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatBlockDiag *)mat;
+  }
+}
 
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_DIAG)) {
@@ -279,6 +289,28 @@ void bfMatBlockDiagDealloc(BfMatBlockDiag **mat) {
 void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat) {
   bfMatBlockDiagDeinit(*mat);
   bfMatBlockDiagDealloc(mat);
+}
+
+BfMat *bfMatBlockDiagGetBlock(BfMatBlockDiag *matBlockDiag, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = bfMatBlockDiagToMatBlock(matBlockDiag);
+  BfMat *block = NULL;
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  if (i >= numRowBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+  if (i >= numColBlocks)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  block = matBlockDiag->super.block[i];
+
+  END_ERROR_HANDLING()
+    block = NULL;
+
+  return block;
 }
 
 BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfSize i) {

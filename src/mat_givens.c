@@ -76,6 +76,7 @@ BF_STUB(BfMat *, MatGivensComplexLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatGivensComplexIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatGivensComplexBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatGivensComplexIsZero, BfMat const *)
+BF_STUB(void, MatGivensComplexNegate, BfMat *)
 
 /** Upcasting: */
 

@@ -297,6 +297,8 @@ bool bfMatCooComplexIsZero(BfMat const *mat) {
   return bfMatConstToMatCooComplexConst(mat)->numElts == 0;
 }
 
+BF_STUB(void, MatCooComplexNegate, BfMat *)
+
 /** Upcasting: */
 
 BfMat *bfMatCooComplexToMat(BfMatCooComplex *matCooComplex) {
