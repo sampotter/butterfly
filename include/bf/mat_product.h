@@ -26,3 +26,4 @@ BfSize bfMatProductNumFactors(BfMatProduct const *prod);
 BfMat *bfMatProductGetFactor(BfMatProduct *prod, BfSize i);
 BfMat const *bfMatProductGetFactorConst(BfMatProduct const *prod, BfSize i);
 void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat);
+BfMat *bfMatProductPopLastFactor(BfMatProduct *prod);

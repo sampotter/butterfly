@@ -292,3 +292,20 @@ void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat) {
   // TODO: verify that shapes are compatible
   bfPtrArrayAppend(&prod->factorArr, mat);
 }
+
+BfMat *bfMatProductPopLastFactor(BfMatProduct *matProduct) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *lastFactor = NULL;
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+
+  if (numFactors == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  lastFactor = bfPtrArrayPopLast(&matProduct->factorArr);
+
+  END_ERROR_HANDLING()
+    lastFactor = NULL;
+
+  return lastFactor;
+}
