@@ -10,6 +10,8 @@ struct BfMatZero {
 BF_DECLARE_INTERFACE(MatZero)
 #undef INTERFACE
 
+BfMat *bfMatZeroToMat(BfMatZero *mat);
+
 BfMatZero *bfMatZeroNew();
 void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols);
 void bfMatZeroDeinit(BfMatZero *mat);

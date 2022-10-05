@@ -53,6 +53,13 @@ BF_STUB(BfMat *, MatZeroLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatZeroIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatZeroBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatZeroIsZero, BfMat const *)
+BF_STUB(void, MatZeroNegate, BfMat *)
+
+/** Upcasting: */
+
+BfMat *bfMatZeroToMat(BfMatZero *mat) {
+  return &mat->super;
+}
 
 /** Implementation: MatZero */
 
