@@ -19,7 +19,12 @@ BF_STUB(BfVec *, MatZeroGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
 BF_STUB(void, MatZeroDelete, BfMat **)
 BF_STUB(BfMat *, MatZeroEmptyLike, BfMat const *, BfSize, BfSize)
 BF_STUB(BfMat *, MatZeroZerosLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfType, MatZeroGetType, BfMat const *)
+
+BfType bfMatZeroGetType(BfMat const *mat) {
+  (void)mat;
+  return BF_TYPE_MAT_ZERO;
+}
+
 BF_STUB(BfSize, MatZeroNumBytes, BfMat const *)
 BF_STUB(void, MatZeroSave, BfMat const *, char const *)
 BF_STUB(void, MatZeroPrint, BfMat const *, FILE *)
