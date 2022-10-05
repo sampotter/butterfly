@@ -19,39 +19,17 @@ typedef struct BfPtrArray {
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 
 BfPtrArray bfGetUninitializedPtrArray();
-
-void
-bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
-
-void
-bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
-
+void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
+void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
-
 void bfPtrArrayDeinit(BfPtrArray *arr);
-
-void
-bfFreePtrArray(BfPtrArray *arr);
-
+void bfFreePtrArray(BfPtrArray *arr);
 BfSize bfPtrArraySize(BfPtrArray const *arr);
-
 bool bfPtrArrayIsEmpty(BfPtrArray const *arr);
-
-void
-bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr);
-
+void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr);
 BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos);
-
-void
-bfPtrArrayGetFirst(BfPtrArray const *arr, BfPtr *ptr);
-
-void
-bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr);
-
-void
-bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end,
-                       BfPtrArray *view);
-
-void
-bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
+void bfPtrArrayGetFirst(BfPtrArray const *arr, BfPtr *ptr);
+void bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr);
+void bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end, BfPtrArray *view);
+void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
