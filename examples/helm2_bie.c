@@ -15,6 +15,7 @@
 #include <bf/mat_diag_real.h>
 #include <bf/mat_solve.h>
 #include <bf/mat_util.h>
+#include <bf/mat_zero.h>
 #include <bf/points.h>
 #include <bf/quadrature.h>
 #include <bf/quadtree.h>
@@ -37,6 +38,87 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
   BfReal const *ntgt = &wkspc->normals->data[j][0];
   return bfHelm2GetKernelValue(
     xsrc, xtgt, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+}
+
+/* This is a prototype of our "lifting" function.
+ *
+ * Improvements we can make:
+ */
+static void lift(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = NULL;
+  BfMatBlockDense *matBlockDense = NULL;
+
+  matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  matBlockDense = bfMatToMatBlockDense(mat);
+  HANDLE_ERROR();
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+
+  BfSize itail = numRowBlocks, jtail = numColBlocks;
+
+  for (BfSize i = 0; i < numRowBlocks; ++i) {
+    BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
+    for (BfSize j = 0; j < numColBlocks; ++j) {
+      BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, i);
+
+      BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i, j);
+      if (!bfMatInstanceOf(block, BF_TYPE_MAT_PRODUCT))
+        continue;
+
+      BfMatProduct *prod = bfMatToMatProduct(block);
+      BfSize numFactors = bfMatProductNumFactors(prod);
+      printf("%lu, %lu: num factors = %lu\n", i, j, numFactors);
+
+      BfMat *factor = bfMatProductPopLastFactor(prod);
+      bfMatNegate(factor);
+
+      /* Replace the current block with a zero block */
+      BfMatZero *zeroBlock = bfMatZeroNew();
+      bfMatZeroInit(zeroBlock, numBlockRows, numBlockCols);
+      bfMatBlockDenseSetBlock(matBlockDense, i, j, bfMatZeroToMat(zeroBlock));
+
+      /* Get the number of rows of the factor we just popped---this
+       * will be the number of appended rows *and* columns */
+      BfSize numRowsFactor = bfMatGetNumRows(factor);
+
+      /* Pad the bottom left of `matBlockDense` with a new rank of
+       * zero blocks */
+      bfMatBlockDenseAppendColumn(matBlockDense, numRowsFactor);
+      bfMatBlockDenseAppendRow(matBlockDense, numRowsFactor);
+
+      bfMatBlockDenseSetBlock(matBlockDense, i, jtail, block);
+
+      bfMatBlockDenseSetBlock(matBlockDense, itail, j, factor);
+
+      /* Set the new diagonal block to the identity */
+      BfMat *eye = bfEye(numRowsFactor, numRowsFactor, BF_DTYPE_REAL);
+      bfMatBlockDenseSetBlock(matBlockDense, itail, jtail, eye);
+
+      ++itail;
+      ++jtail;
+    }
+  }
+
+  FILE *fp = fopen("lifted_blocks.txt", "w");
+  for (BfSize i = 0; i < bfMatBlockGetNumRowBlocks(matBlock); ++i) {
+    BfSize i0 = matBlock->rowOffset[i];
+    BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
+    for (BfSize j = 0; j < bfMatBlockGetNumColBlocks(matBlock); ++j) {
+      BfSize j0 = matBlock->colOffset[j];
+      BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, j);
+      BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i, j);
+      BfType type = bfMatGetType(block);
+      fprintf(fp, "%lu %lu %lu %lu %u\n", i0, j0, numBlockRows, numBlockCols, type);
+    }
+  }
+  fclose(fp);
+
+  END_ERROR_HANDLING() {}
 }
 
 int main(int argc, char const *argv[]) {
@@ -200,6 +282,11 @@ int main(int argc, char const *argv[]) {
   printf("MVP rel. l2 errors:\n");
   printf("- BF: %g\n", max_rel_err_MVP);
   printf("- BF (copy): %g\n", max_rel_err_MVP_copy);
+
+  /** Lift the butterfly factorized matrix into a sparse matrix and
+   * compute its sparse LU decomposition */
+
+  lift(A_BF_lift);
 
   /** Solve the system using different methods */
 
