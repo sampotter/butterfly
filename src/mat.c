@@ -19,6 +19,10 @@ BfMat *bfMatGetView(BfMat *mat) {
   return mat->vtbl->GetView(mat);
 }
 
+BfVec *bfMatGetRowCopy(BfMat const *mat, BfSize i) {
+  return mat->vtbl->GetRowCopy(mat, i);
+}
+
 BfVec *bfMatGetRowView(BfMat *mat, BfSize i) {
   return mat->vtbl->GetRowView(mat, i);
 }
@@ -181,6 +185,10 @@ bool bfMatIsZero(BfMat const *mat) {
 
 void bfMatNegate(BfMat *mat) {
   mat->vtbl->Negate(mat);
+}
+
+BfMat *bfMatToType(BfMat const *mat, BfType type) {
+  return mat->vtbl->ToType(mat, type);
 }
 
 /** Implementation: Mat */

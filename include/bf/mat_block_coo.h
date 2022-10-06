@@ -29,6 +29,7 @@ BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo);
 BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo);
 
 /* Downcasting: */
+BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat);
 BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat);
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock);
 

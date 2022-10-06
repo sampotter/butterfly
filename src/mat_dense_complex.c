@@ -226,6 +226,40 @@ BfMat *bfMatDenseComplexGetView(BfMat *mat) {
   return matView;
 }
 
+BfVec *bfMatDenseComplexGetRowCopy(BfMat const *mat, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex const *matDenseComplex = NULL;
+  BfVecComplex *rowCopy = NULL;
+
+  matDenseComplex = bfMatConstToMatDenseComplexConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  if (i >= numRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  rowCopy = bfVecComplexNew();
+  HANDLE_ERROR();
+
+  bfVecComplexInit(rowCopy, numCols);
+  HANDLE_ERROR();
+
+  BfComplex *writePtr = rowCopy->data;
+  BfComplex const *readPtr = matDenseComplex->data + i*matDenseComplex->rowStride;
+  for (BfSize j = 0; j < numCols; ++j) {
+    *writePtr = *readPtr;
+    writePtr += rowCopy->stride;
+    readPtr += matDenseComplex->colStride;
+  }
+
+  END_ERROR_HANDLING() {}
+
+  return bfVecComplexToVec(rowCopy);
+}
+
 BfVec *bfMatDenseComplexGetRowView(BfMat *mat, BfSize i) {
   BEGIN_ERROR_HANDLING();
 
@@ -1059,6 +1093,8 @@ void bfMatDenseComplexNegate(BfMat *mat) {
 
   END_ERROR_HANDLING() {}
 }
+
+BF_STUB(BfMat *, MatDenseComplexToType, BfMat const *, BfType)
 
 /* Implementation: MatDenseComplex */
 

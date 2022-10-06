@@ -13,6 +13,7 @@ BF_DEFINE_VTABLE(Mat, MatCooReal)
 
 BF_STUB(BfMat *, MatCooRealCopy, BfMat const *)
 BF_STUB(BfMat *, MatCooRealGetView, BfMat *)
+BF_STUB(BfVec *, MatCooRealGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatCooRealGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatCooRealGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatCooRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -234,6 +235,7 @@ bool bfMatCooRealIsZero(BfMat const *mat) {
 }
 
 BF_STUB(void, MatCooRealNegate, BfMat *)
+BF_STUB(BfMat *, MatCooRealToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

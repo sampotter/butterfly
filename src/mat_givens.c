@@ -14,6 +14,7 @@ BF_DEFINE_VTABLE(Mat, MatGivensComplex)
 
 BF_STUB(BfMat *, MatGivensComplexCopy, BfMat const *)
 BF_STUB(BfMat *, MatGivensComplexGetView, BfMat *)
+BF_STUB(BfVec *, MatGivensComplexGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatGivensComplexGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatGivensComplexGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatGivensComplexGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -77,6 +78,7 @@ BF_STUB(bool, MatGivensComplexIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatGivensComplexBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatGivensComplexIsZero, BfMat const *)
 BF_STUB(void, MatGivensComplexNegate, BfMat *)
+BF_STUB(BfMat *, MatGivensComplexToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

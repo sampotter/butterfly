@@ -13,6 +13,7 @@ BF_DEFINE_VTABLE(Mat, MatZero)
 
 BF_STUB(BfMat *, MatZeroCopy, BfMat const *)
 BF_STUB(BfMat *, MatZeroGetView, BfMat *)
+BF_STUB(BfVec *, MatZeroGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatZeroGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatZeroGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatZeroGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -59,6 +60,7 @@ BF_STUB(bool, MatZeroIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatZeroBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatZeroIsZero, BfMat const *)
 BF_STUB(void, MatZeroNegate, BfMat *)
+BF_STUB(BfMat *, MatZeroToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

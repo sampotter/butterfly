@@ -48,6 +48,7 @@ BfMat *bfMatDenseRealCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatDenseRealGetView, BfMat *)
+BF_STUB(BfVec *, MatDenseRealGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatDenseRealGetRowView, BfMat *, BfSize)
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
@@ -247,6 +248,7 @@ BF_STUB(bool, MatDenseRealIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatDenseRealBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatDenseRealIsZero, BfMat const *)
 BF_STUB(void, MatDenseRealNegate, BfMat *)
+BF_STUB(BfMat *, MatDenseRealToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

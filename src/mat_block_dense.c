@@ -6,8 +6,10 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_coo_complex.h>
 #include <bf/mat_sum.h>
 #include <bf/mat_zero.h>
+#include <bf/vec_complex.h>
 
 /** Helper macros: */
 
@@ -18,6 +20,7 @@
   mat->super.rowOffset[i + 1] - mat->super.rowOffset[i]
 #define NUM_BLOCK_COLS(mat, j) \
   mat->super.colOffset[j + 1] - mat->super.colOffset[j]
+#define BLOCK(mat, i, j) mat->super.block[i*NUM_COL_BLOCKS(mat) + j]
 
 /** Interface: Mat */
 
@@ -73,6 +76,56 @@ BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockDenseGetView, BfMat *)
+
+BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVec *rowCopy = NULL;
+  BfMatBlock const *matBlock = NULL;
+  BfMatBlockDense const *matBlockDense = NULL;
+
+  matBlock = bfMatConstToMatBlockConst(mat);
+  HANDLE_ERROR();
+
+  matBlockDense = bfMatConstToMatBlockDenseConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  if (i >= numRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+
+  BfSize ib = 0, i0, i1;
+  for (; ib < numRowBlocks; ++ib) {
+    i0 = matBlockDense->super.rowOffset[ib];
+    i1 = matBlockDense->super.rowOffset[ib + 1];
+    if (i0 <= i && i < i1)
+      break;
+  }
+
+  for (BfSize jb = 0; jb < numColBlocks; ++jb) {
+    BfMat *block = BLOCK(matBlockDense, ib, jb);
+    BfVec *blockRowCopy = bfMatGetRowCopy(block, i - i0);
+    if (rowCopy == NULL) {
+      rowCopy = blockRowCopy;
+    } else {
+      BfVec *cat = bfVecConcat(rowCopy, blockRowCopy);
+      HANDLE_ERROR();
+      bfVecDelete(&rowCopy);
+      bfVecDelete(&blockRowCopy);
+      rowCopy = cat;
+    }
+  }
+
+  assert(rowCopy->size == bfMatGetNumCols(mat));
+
+  END_ERROR_HANDLING() {}
+
+  return rowCopy;
+}
+
 BF_STUB(BfVec *, MatBlockDenseGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDenseGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDenseGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -347,6 +400,109 @@ BF_STUB(bool, MatBlockDenseIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatBlockDenseBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockDenseIsZero, BfMat const *)
 BF_STUB(void, MatBlockDenseNegate, BfMat *)
+
+static BfMat *toType_cooComplex(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCooComplex *matCooComplex = NULL;
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  BfSize *rowInd = NULL;
+  BfSize *colInd = NULL;
+  BfComplex *value = NULL;
+
+  BfSize numElts = 0, capacity = 16;
+
+  rowInd = malloc(capacity*sizeof(BfSize));
+  if (rowInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  colInd = malloc(capacity*sizeof(BfSize));
+  if (colInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  value = malloc(capacity*sizeof(BfComplex));
+  if (value == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfVec *vec = bfMatGetRowCopy(mat, i);
+    HANDLE_ERROR();
+
+    BfVecComplex *vecComplex = bfVecToVecComplex(vec);
+    HANDLE_ERROR();
+
+    BfComplex *ptr = vecComplex->data;
+
+    /* Decrement the pointer here to simplify the logic of the
+     * following loop. */
+    --ptr;
+
+    /* Accumulate nonzero values and their row and column indices into
+     * our dynamic arrays */
+    for (BfSize j = 0; j < vec->size; ++j) {
+      if (*++ptr == 0)
+        continue;
+
+      /* If we've met the capacity of our dynamic arrays, increase
+       * their capacity and reallocate */
+      if (numElts == capacity) {
+        capacity *= 2;
+
+        BfSize *newRowInd = realloc(rowInd, capacity*sizeof(BfSize));
+        if (newRowInd == NULL)
+          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        rowInd = newRowInd;
+
+        BfSize *newColInd = realloc(colInd, capacity*sizeof(BfSize));
+        if (newColInd == NULL)
+          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        colInd = newColInd;
+
+        BfComplex *newValue = realloc(value, capacity*sizeof(BfComplex));
+        if (newValue == NULL)
+          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        value = newValue;
+      }
+
+      rowInd[numElts] = i;
+      colInd[numElts] = j;
+      value[numElts++] = *ptr;
+    }
+
+    bfVecDelete(&vec);
+  }
+
+  matCooComplex = bfMatCooComplexNew();
+  HANDLE_ERROR();
+
+  bfMatCooComplexInitEmpty(matCooComplex, numRows, numCols, numElts);
+  HANDLE_ERROR();
+
+  memcpy(matCooComplex->rowInd, rowInd, numElts*sizeof(BfSize));
+  memcpy(matCooComplex->colInd, colInd, numElts*sizeof(BfSize));
+  memcpy(matCooComplex->value, value, numElts*sizeof(BfComplex));
+
+  END_ERROR_HANDLING() {}
+
+  free(rowInd);
+  free(colInd);
+  free(value);
+
+  return bfMatCooComplexToMat(matCooComplex);
+}
+
+BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type) {
+  switch (type) {
+  case BF_TYPE_MAT_COO_COMPLEX:
+    return toType_cooComplex(mat);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
+}
 
 /** Interface: MatBlock */
 

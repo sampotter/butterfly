@@ -12,6 +12,7 @@ BF_DEFINE_VTABLE(Mat, MatSum)
 
 BF_STUB(BfMat *, MatSumCopy, BfMat const *)
 BF_STUB(BfMat *, MatSumGetView, BfMat *)
+BF_STUB(BfVec *, MatSumGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatSumGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatSumGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatSumGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -118,6 +119,7 @@ BF_STUB(bool, MatSumIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatSumBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatSumIsZero, BfMat const *)
 BF_STUB(void, MatSumNegate, BfMat *)
+BF_STUB(BfMat *, MatSumToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

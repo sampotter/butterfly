@@ -66,6 +66,7 @@ BfMat *bfMatBlockCooCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockCooGetView, BfMat *)
+BF_STUB(BfVec *, MatBlockCooGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatBlockCooGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockCooGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockCooGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -196,7 +197,24 @@ BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockCooIsZero, BfMat const *)
-BF_STUB(void, MatBlockCooNegate, BfMat *)
+
+void bfMatBlockCooNegate(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = NULL;
+
+  matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  for (BfSize i = 0; i < numBlocks; ++i)
+    bfMatNegate(matBlock->block[i]);
+
+  END_ERROR_HANDLING() {}
+}
+
+BF_STUB(BfMat *, MatBlockCooToType, BfMat const *, BfType)
 
 /** Interface: MatBlock */
 
@@ -220,6 +238,15 @@ BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo) {
 }
 
 /** Downcasting: */
+
+BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_COO)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatBlockCoo *)mat;
+  }
+}
 
 BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_COO)) {

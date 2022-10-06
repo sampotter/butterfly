@@ -45,7 +45,7 @@ BfMat *bfMatProductCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatProductGetView, BfMat *)
-
+BF_STUB(BfVec *, MatProductGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatProductGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatProductGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatProductGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -200,6 +200,7 @@ BF_STUB(bool, MatProductIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatProductBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatProductIsZero, BfMat const *)
 BF_STUB(void, MatProductNegate, BfMat *)
+BF_STUB(BfMat *, MatProductToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

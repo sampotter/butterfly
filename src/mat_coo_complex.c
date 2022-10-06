@@ -15,6 +15,7 @@ BF_DEFINE_VTABLE(Mat, MatCooComplex)
 
 BF_STUB(BfMat *, MatCooComplexCopy, BfMat const *)
 BF_STUB(BfMat *, MatCooComplexGetView, BfMat *)
+BF_STUB(BfVec *, MatCooComplexGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatCooComplexGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatCooComplexGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatCooComplexGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -298,6 +299,7 @@ bool bfMatCooComplexIsZero(BfMat const *mat) {
 }
 
 BF_STUB(void, MatCooComplexNegate, BfMat *)
+BF_STUB(BfMat *, MatCooComplexToType, BfMat const *, BfType)
 
 /** Upcasting: */
 

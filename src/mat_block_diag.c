@@ -61,6 +61,7 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockDiagGetView, BfMat *)
+BF_STUB(BfVec *, MatBlockDiagGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -205,6 +206,8 @@ void bfMatBlockDiagNegate(BfMat *mat) {
 
   END_ERROR_HANDLING() {}
 }
+
+BF_STUB(BfMat *, MatBlockDiagToType, BfMat const *, BfType)
 
 /** Interface: MatBlock */
 

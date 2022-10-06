@@ -20,6 +20,7 @@ typedef enum BfMatProps {
 #define BF_INTERFACE_Mat(Type, Subtype, _)                                     \
   _(Type, Subtype, BfMat *, Copy, BfMat const *)                               \
   _(Type, Subtype, BfMat *, GetView, BfMat *)                                  \
+  _(Type, Subtype, BfVec *, GetRowCopy, BfMat const *, BfSize)                 \
   _(Type, Subtype, BfVec *, GetRowView, BfMat *, BfSize)                       \
   _(Type, Subtype, BfVec *, GetColView, BfMat *, BfSize)                       \
   _(Type, Subtype, BfVec *, GetColRangeView, BfMat *, BfSize, BfSize, BfSize)  \
@@ -60,7 +61,8 @@ typedef enum BfMatProps {
   _(Type, Subtype, bool, IsUpperTri, BfMat const *)                            \
   _(Type, Subtype, BfVec *, BackwardSolveVec, BfMat const *, BfVec const *)    \
   _(Type, Subtype, bool, IsZero, BfMat const *)                                \
-  _(Type, Subtype, void, Negate, BfMat *)
+  _(Type, Subtype, void, Negate, BfMat *)                                      \
+  _(Type, Subtype, BfMat *, ToType, BfMat const *, BfType)
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE_STRUCT(Mat)

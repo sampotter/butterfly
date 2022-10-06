@@ -37,6 +37,7 @@ BfMat *bfMatDiagRealGetView(BfMat *mat) {
   return bfMatDiagRealToMat(view);
 }
 
+BF_STUB(BfVec *, MatDiagRealGetRowCopy, BfMat const *, BfSize)
 BF_STUB(BfVec *, MatDiagRealGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatDiagRealGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatDiagRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -150,6 +151,7 @@ BF_STUB(bool, MatDiagRealIsUpperTri, BfMat const *)
 BF_STUB(BfVec *, MatDiagRealBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatDiagRealIsZero, BfMat const *)
 BF_STUB(void, MatDiagRealNegate, BfMat *)
+BF_STUB(BfMat *, MatDiagRealToType, BfMat const *, BfType)
 
 /* Upcasting: */
 
