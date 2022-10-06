@@ -280,6 +280,53 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
 
 BF_STUB(void, VecComplexPermute, BfVec *, BfPerm const *)
 
+static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
+  HANDLE_ERROR();
+
+  BfVecComplex const *otherVecComplex = bfVecConstToVecComplexConst(otherVec);
+  HANDLE_ERROR();
+
+  BfVecComplex *cat = bfVecComplexNew();
+  HANDLE_ERROR();
+
+  bfVecComplexInit(cat, vec->size + otherVec->size);
+  HANDLE_ERROR();
+
+  BfComplex *writePtr = cat->data;
+  BfComplex *readPtr = NULL;
+
+  readPtr = vecComplex->data;
+  for (BfSize i = 0; i < vec->size; ++i) {
+    *writePtr = *readPtr;
+    writePtr += cat->stride;
+    readPtr += vecComplex->stride;
+  }
+
+  readPtr = otherVecComplex->data;
+  for (BfSize i = 0; i < otherVec->size; ++i) {
+    *writePtr = *readPtr;
+    writePtr += cat->stride;
+    readPtr += otherVecComplex->stride;
+  }
+
+  END_ERROR_HANDLING() {}
+
+  return bfVecComplexToVec(cat);
+}
+
+BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec) {
+  switch (bfVecGetType(otherVec)) {
+  case BF_TYPE_VEC_COMPLEX:
+    return concat_vecComplex(vec, otherVec);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
+}
+
 /** Upcasting: */
 
 BfVec *bfVecComplexToVec(BfVecComplex *vecComplex) {

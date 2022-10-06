@@ -88,6 +88,11 @@ void bfVecPermute(BfVec *vec, BfPerm const *perm) {
   vec->vtbl->Permute(vec, perm);
 }
 
+/* Concatenate `vec` together with `otherVec`, returning a new vector. */
+BfVec *bfVecConcat(BfVec const *vec, BfVec const *otherVec) {
+  return vec->vtbl->Concat(vec, otherVec);
+}
+
 /** Implementation: Vec */
 
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size) {

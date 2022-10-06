@@ -182,6 +182,15 @@ void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
   bfVecDelete(&vecCopy);
 }
 
+BfVec *bfVecRealConcat(BfVec const *vec, BfVec const *otherVec) {
+  switch (bfVecGetType(otherVec)) {
+    (void)vec;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
+}
+
 /** Upcasting: */
 
 BfVec *bfVecRealToVec(BfVecReal *vecReal) {

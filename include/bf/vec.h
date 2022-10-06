@@ -30,7 +30,8 @@ typedef enum BfVecProps {
   _(Type, Subtype, void, SolveInplace, BfVec *, BfMat const *)           \
   _(Type, Subtype, void, RecipInplace, BfVec *)                          \
   _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize srcInd, BfSize) \
-  _(Type, Subtype, void, Permute, BfVec *, BfPerm const *)
+  _(Type, Subtype, void, Permute, BfVec *, BfPerm const *)               \
+  _(Type, Subtype, BfVec *, Concat, BfVec const *, BfVec const *)
 
 #define INTERFACE BF_INTERFACE_Vec
 BF_DEFINE_VTABLE_STRUCT(Vec)
