@@ -11,6 +11,7 @@
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
+#include <bf/mat_coo_complex.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_diag_real.h>
 #include <bf/mat_solve.h>
@@ -40,12 +41,10 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
     xsrc, xtgt, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
 }
 
-/* This is a prototype of our "lifting" function.
- *
- * Improvements we can make:
- */
-static void lift(BfMat *mat) {
+static BfSize liftProducts(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
+
+  BfSize numLifted = 0;
 
   BfMatBlock *matBlock = NULL;
   BfMatBlockDense *matBlockDense = NULL;
@@ -62,20 +61,36 @@ static void lift(BfMat *mat) {
   BfSize itail = numRowBlocks, jtail = numColBlocks;
 
   for (BfSize i = 0; i < numRowBlocks; ++i) {
-    BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
+    // BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
     for (BfSize j = 0; j < numColBlocks; ++j) {
-      BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, i);
+      // BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, i);
 
       BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i, j);
       if (!bfMatInstanceOf(block, BF_TYPE_MAT_PRODUCT))
         continue;
 
       BfMatProduct *prod = bfMatToMatProduct(block);
-      BfSize numFactors = bfMatProductNumFactors(prod);
-      printf("%lu, %lu: num factors = %lu\n", i, j, numFactors);
 
       BfMat *factor = bfMatProductPopLastFactor(prod);
       bfMatNegate(factor);
+
+      /* If there's only one factor left, we don't need or want to box
+       * the remaining factor in a MatProduct. Grab it and delete the
+       * instance of MatProduct. We overwrite block with the remaining
+       * factor so that it gets lifted correctly below. */
+      if (bfMatProductNumFactors(prod) == 1) {
+        BfMat *lastFactor = bfMatProductPopLastFactor(prod);
+        bfMatDelete(&block);
+        block = lastFactor;
+      }
+
+      BfSize numBlockCols = bfMatGetNumCols(factor);
+      assert(numBlockCols == matBlockDense->super.colOffset[j + 1]
+             - matBlockDense->super.colOffset[j]);
+
+      BfSize numBlockRows = bfMatGetNumRows(block);
+      assert(numBlockRows == matBlockDense->super.rowOffset[i + 1]
+             - matBlockDense->super.rowOffset[i]);
 
       /* Replace the current block with a zero block */
       BfMatZero *zeroBlock = bfMatZeroNew();
@@ -99,12 +114,32 @@ static void lift(BfMat *mat) {
       BfMat *eye = bfEye(numRowsFactor, numRowsFactor, BF_DTYPE_REAL);
       bfMatBlockDenseSetBlock(matBlockDense, itail, jtail, eye);
 
+      /* Increment the count of number of lifted product blocks */
+      ++numLifted;
+
       ++itail;
       ++jtail;
     }
   }
 
-  FILE *fp = fopen("lifted_blocks.txt", "w");
+  END_ERROR_HANDLING() {}
+
+  return numLifted;
+}
+
+static void saveLiftedBlocks(BfMat *mat, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock *matBlock = NULL;
+  BfMatBlockDense *matBlockDense = NULL;
+
+  matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  matBlockDense = bfMatToMatBlockDense(mat);
+  HANDLE_ERROR();
+
+  FILE *fp = fopen(path, "w");
   for (BfSize i = 0; i < bfMatBlockGetNumRowBlocks(matBlock); ++i) {
     BfSize i0 = matBlock->rowOffset[i];
     BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
@@ -119,6 +154,30 @@ static void lift(BfMat *mat) {
   fclose(fp);
 
   END_ERROR_HANDLING() {}
+}
+
+static void runLiftingTest(BfMat *mat, char const *path) {
+  while (liftProducts(mat)) ;
+  saveLiftedBlocks(mat, path);
+
+  /** Save result to COO format for testing: */
+
+  BfMatCooComplex *matCooComplex =
+    bfMatToMatCooComplex(bfMatToType(mat, BF_TYPE_MAT_COO_COMPLEX));
+
+  FILE *fp = NULL;
+
+  fp = fopen("rowInd.bin", "w");
+  fwrite(matCooComplex->rowInd, sizeof(BfSize), matCooComplex->numElts, fp);
+  fclose(fp);
+
+  fp = fopen("colInd.bin", "w");
+  fwrite(matCooComplex->colInd, sizeof(BfSize), matCooComplex->numElts, fp);
+  fclose(fp);
+
+  fp = fopen("value.bin", "w");
+  fwrite(matCooComplex->value, sizeof(BfComplex), matCooComplex->numElts, fp);
+  fclose(fp);
 }
 
 int main(int argc, char const *argv[]) {
@@ -286,7 +345,7 @@ int main(int argc, char const *argv[]) {
   /** Lift the butterfly factorized matrix into a sparse matrix and
    * compute its sparse LU decomposition */
 
-  lift(A_BF_lift);
+  runLiftingTest(A_BF_lift, "lifted_blocks.txt");
 
   /** Solve the system using different methods */
 

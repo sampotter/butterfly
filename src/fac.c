@@ -775,8 +775,14 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
       if (mat == NULL)
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-      /* set the current block now that we've computed it */
-      bfMatBlockDenseSetBlock(blockMat, i, j, mat);
+      /* set the current block now that we've computed it
+       *
+       * TODO: add an init function for MatBlockDense which we can use
+       * to do all of this more safely... not great that we need to
+       * reach into MatBlockDense to do this right now without hitting
+       * the guardrails in SetBlock... */
+      // bfMatBlockDenseSetBlock(blockMat, i, j, mat);
+      blockMat->super.block[i*blockMat->super.super.numCols + j] = mat;
       HANDLE_ERROR();
 
       /* update the column block offset if we're making our first pass

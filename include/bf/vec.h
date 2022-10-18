@@ -29,7 +29,7 @@ typedef enum BfVecProps {
   _(Type, Subtype, void, MulInplace, BfVec *, BfMat const *)             \
   _(Type, Subtype, void, SolveInplace, BfVec *, BfMat const *)           \
   _(Type, Subtype, void, RecipInplace, BfVec *)                          \
-  _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize srcInd, BfSize) \
+  _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize, BfSize) \
   _(Type, Subtype, void, Permute, BfVec *, BfPerm const *)               \
   _(Type, Subtype, BfVec *, Concat, BfVec const *, BfVec const *)
 

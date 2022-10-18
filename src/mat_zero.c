@@ -4,6 +4,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/vec_zero.h>
 
 /** Interface: Mat */
 
@@ -13,7 +14,29 @@ BF_DEFINE_VTABLE(Mat, MatZero)
 
 BF_STUB(BfMat *, MatZeroCopy, BfMat const *)
 BF_STUB(BfMat *, MatZeroGetView, BfMat *)
-BF_STUB(BfVec *, MatZeroGetRowCopy, BfMat const *, BfSize)
+
+BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  if (i >= numRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_ZERO))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfVecZero *rowCopy = bfVecZeroNew();
+  HANDLE_ERROR();
+
+  bfVecZeroInit(rowCopy, numCols);
+
+  END_ERROR_HANDLING() {}
+
+  return bfVecZeroToVec(rowCopy);
+}
+
 BF_STUB(BfVec *, MatZeroGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatZeroGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatZeroGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
@@ -29,8 +52,37 @@ BfType bfMatZeroGetType(BfMat const *mat) {
 BF_STUB(BfSize, MatZeroNumBytes, BfMat const *)
 BF_STUB(void, MatZeroSave, BfMat const *, char const *)
 BF_STUB(void, MatZeroPrint, BfMat const *, FILE *)
-BF_STUB(BfSize, MatZeroGetNumRows, BfMat const *)
-BF_STUB(BfSize, MatZeroGetNumCols, BfMat const *)
+
+BfSize bfMatZeroGetNumRows(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = BF_SIZE_BAD_VALUE;
+
+  BfMatZero const *matZero = bfMatConstToMatZeroConst(mat);
+  HANDLE_ERROR();
+
+  numRows = matZero->super.numRows;
+
+  END_ERROR_HANDLING() {}
+
+  return numRows;
+}
+
+BfSize bfMatZeroGetNumCols(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numCols = BF_SIZE_BAD_VALUE;
+
+  BfMatZero const *matZero = bfMatConstToMatZeroConst(mat);
+  HANDLE_ERROR();
+
+  numCols = matZero->super.numCols;
+
+  END_ERROR_HANDLING() {}
+
+  return numCols;
+}
+
 BF_STUB(void, MatZeroSetRow, BfMat *, BfSize, BfVec const *)
 BF_STUB(void, MatZeroSetCol, BfMat *, BfSize, BfVec const *)
 BF_STUB(void, MatZeroSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
@@ -66,6 +118,21 @@ BF_STUB(BfMat *, MatZeroToType, BfMat const *, BfType)
 
 BfMat *bfMatZeroToMat(BfMatZero *mat) {
   return &mat->super;
+}
+
+BfMat const *bfMatZeroConstToMatConst(BfMatZero const *mat) {
+  return &mat->super;
+}
+
+/** Downcasting: */
+
+BfMatZero const *bfMatConstToMatZeroConst(BfMat const *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_ZERO)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatZero const *)mat;
+  }
 }
 
 /** Implementation: MatZero */

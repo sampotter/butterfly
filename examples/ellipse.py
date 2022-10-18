@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special
 
+from util import complex_to_hsv
+
 plt.ion()
 
 MAKE_DEBUG_PLOTS = True
@@ -53,7 +55,8 @@ def gradG(p, q, k):
     r = np.linalg.norm(p - q)
     return k*1j*dH0(k*r)*(q - p)/(4*r)
 
-print(f'number of wavelengths in curve: {int(np.floor(L[-1]/lam))}')
+nwaves = int(np.floor(L[-1]/lam))
+print(f'number of wavelengths in curve: {nwaves}')
 
 xsrc, ysrc = x0 + 0.1, y0 - 0.2
 psrc = np.array([xsrc, ysrc])
@@ -181,3 +184,32 @@ if MAKE_FIELD_PLOT:
     plt.scatter(*Perr.T, s=10, c='k', marker='x', zorder=2)
     plt.tight_layout()
     plt.show()
+
+# checking out the Schur complement of A
+
+m = 400
+A11 = A[:m, :m]
+A21 = A[m:, :m]
+A12 = A[:m, m:]
+A22 = A[m:, m:]
+Arefl = A21@np.linalg.solve(A11, A12)
+Asc = A22 - Arefl
+
+plt.figure()
+plt.imshow(complex_to_hsv(Arefl[25:375, 25:50]))
+plt.show()
+
+# I = [(0, 400)] * 5
+I = [(0, 400), (0, 200), (0, 100), (0, 50),  (0, 25)]
+J = [(0, 25),  (0, 50), (0, 100), (0, 200), (0, 400)]
+# J = [(0, 25)] * 5
+plt.figure()
+for (i0, i1), (j0, j1) in zip(I, J):
+    Aij = Arefl[i0:i1, j0:j1]
+    S = np.linalg.svd(Aij, full_matrices=False)[1]
+    plt.semilogy(S, label=rf'$A({i0}:{i1}, {j0}:{j1})$', linewidth=2, zorder=2)
+S = np.linalg.svd(Arefl, full_matrices=False)[1]
+plt.semilogy(S, linewidth=1, c='k', linestyle='--', zorder=1)
+plt.axvline(x=nwaves)
+plt.legend()
+plt.show()

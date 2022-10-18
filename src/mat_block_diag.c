@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/vec_zero.h>
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE(Mat, MatBlockDiag)
@@ -13,6 +14,17 @@ BF_DEFINE_VTABLE(Mat, MatBlockDiag)
 #define INTERFACE BF_INTERFACE_MatBlock
 BF_DEFINE_VTABLE(MatBlock, MatBlockDiag)
 #undef INTERFACE
+
+/** Helper macros: */
+
+#define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
+#define NUM_COL_BLOCKS(mat) mat->super.super.numCols
+#define NUM_BLOCKS(mat) NUM_ROW_BLOCKS(mat)*NUM_COL_BLOCKS(mat)
+#define ROW_OFFSET(mat, k) mat->super.rowOffset[k]
+#define COL_OFFSET(mat, k) mat->super.colOffset[k]
+#define NUM_BLOCK_ROWS(mat, k) ROW_OFFSET(mat, k + 1) - ROW_OFFSET(mat, k)
+#define NUM_BLOCK_COLS(mat, k) COL_OFFSET(mat, k + 1) - COL_OFFSET(mat, k)
+#define BLOCK(mat, k) mat->super.block[k]
 
 /** BfMat interface: */
 
@@ -61,7 +73,89 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockDiagGetView, BfMat *)
-BF_STUB(BfVec *, MatBlockDiagGetRowCopy, BfMat const *, BfSize)
+
+BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVec *rowCopy = NULL;
+  BfMatBlock const *matBlock = NULL;
+  BfMatBlockDiag const *matBlockDiag = NULL;
+  BfMat const *block = NULL;
+
+  matBlock = bfMatConstToMatBlockConst(mat);
+  HANDLE_ERROR();
+
+  matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  if (i >= numRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+
+  BfSize k = 0, i0, i1;
+  for (; k < numRowBlocks; ++k) {
+    i0 = matBlockDiag->super.rowOffset[k];
+    i1 = matBlockDiag->super.rowOffset[k + 1];
+    if (i0 <= i && i < i1)
+      break;
+  }
+
+  block = BLOCK(matBlockDiag, k);
+
+  rowCopy = bfMatGetRowCopy(block, i - i0);
+  HANDLE_ERROR();
+
+  /* Pad what we have so far on either side to make sure it matches
+   * the width of `mat` */
+
+  BfSize j0 = matBlockDiag->super.colOffset[k];
+
+  BfVec *cat = NULL;
+  BfVecZero *zeroPad = NULL;
+
+  if (j0 > 0) {
+    zeroPad = bfVecZeroNew();
+    HANDLE_ERROR();
+
+    bfVecZeroInit(zeroPad, j0);
+    HANDLE_ERROR();
+
+    cat = bfVecConcat(bfVecZeroToVec(zeroPad), rowCopy);
+    HANDLE_ERROR();
+
+    bfVecZeroDeinitAndDealloc(&zeroPad);
+    bfVecDelete(&rowCopy);
+
+    rowCopy = cat;
+  }
+
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  if (rowCopy->size < numCols) {
+    zeroPad = bfVecZeroNew();
+    HANDLE_ERROR();
+
+    bfVecZeroInit(zeroPad, numCols - rowCopy->size);
+    HANDLE_ERROR();
+
+    cat = bfVecConcat(rowCopy, bfVecZeroToVec(zeroPad));
+    HANDLE_ERROR();
+
+    bfVecZeroDeinitAndDealloc(&zeroPad);
+    bfVecDelete(&rowCopy);
+
+    rowCopy = cat;
+  }
+
+  assert(rowCopy->size == numCols);
+
+  END_ERROR_HANDLING() {}
+
+  return rowCopy;
+}
+
 BF_STUB(BfVec *, MatBlockDiagGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatBlockDiagGetColRangeView, BfMat *, BfSize, BfSize, BfSize)

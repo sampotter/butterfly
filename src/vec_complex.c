@@ -7,6 +7,8 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_givens.h>
+#include <bf/vec_real.h>
+#include <bf/vec_zero.h>
 
 /** Interface: Vec */
 
@@ -317,10 +319,86 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
   return bfVecComplexToVec(cat);
 }
 
+static BfVec *concat_vecReal(BfVec const *vec, BfVec const *otherVec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
+  HANDLE_ERROR();
+
+  BfVecReal const *vecReal = bfVecConstToVecRealConst(otherVec);
+  HANDLE_ERROR();
+
+  BfVecComplex *cat = bfVecComplexNew();
+  HANDLE_ERROR();
+
+  bfVecComplexInit(cat, vec->size + otherVec->size);
+  HANDLE_ERROR();
+
+  BfComplex *writePtr = cat->data;
+
+  BfComplex *complexReadPtr = vecComplex->data;
+  for (BfSize i = 0; i < vec->size; ++i) {
+    *writePtr = *complexReadPtr;
+    writePtr += cat->stride;
+    complexReadPtr += vecComplex->stride;
+  }
+
+  BfReal *realReadPtr = vecReal->data;
+  for (BfSize i = 0; i < otherVec->size; ++i) {
+    *writePtr = *realReadPtr;
+    writePtr += cat->stride;
+    realReadPtr += vecReal->stride;
+  }
+
+  END_ERROR_HANDLING() {}
+
+  return bfVecComplexToVec(cat);
+}
+
+static BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecComplex *cat = NULL;
+
+  BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
+  HANDLE_ERROR();
+
+  assert(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
+
+  cat = bfVecComplexNew();
+  HANDLE_ERROR();
+
+  bfVecComplexInit(cat, vec->size + otherVec->size);
+  HANDLE_ERROR();
+
+  /* First, copy over data from vecComplex: */
+  BfComplex *writePtr = cat->data;
+  BfComplex *readPtr = vecComplex->data;
+  for (BfSize i = 0; i < vec->size; ++i) {
+    *writePtr = *readPtr;
+    writePtr += cat->stride;
+    readPtr += vecComplex->stride;
+  }
+
+  /* Pad what's left over with zeros */
+  for (BfSize i = 0; i < otherVec->size; ++i) {
+    *writePtr = 0;
+    writePtr += cat->stride;
+  }
+
+  END_ERROR_HANDLING() {}
+
+  return bfVecComplexToVec(cat);
+}
+
 BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec) {
   switch (bfVecGetType(otherVec)) {
   case BF_TYPE_VEC_COMPLEX:
     return concat_vecComplex(vec, otherVec);
+  case BF_TYPE_VEC_REAL:
+    return concat_vecReal(vec, otherVec);
+  case BF_TYPE_VEC_ZERO:
+    return concat_vecZero(vec, otherVec);
   default:
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;

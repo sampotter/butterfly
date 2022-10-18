@@ -170,3 +170,7 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
   arr->data[arr->num_elts] = NULL;
   return ptr;
 }
+
+void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp) {
+  qsort(arr->data, arr->num_elts, sizeof(BfPtr), (__compar_fn_t)ptrCmp);
+}

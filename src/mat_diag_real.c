@@ -7,6 +7,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_coo_real.h>
+#include <bf/vec_real.h>
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE(Mat, MatDiagReal)
@@ -37,7 +38,40 @@ BfMat *bfMatDiagRealGetView(BfMat *mat) {
   return bfMatDiagRealToMat(view);
 }
 
-BF_STUB(BfVec *, MatDiagRealGetRowCopy, BfMat const *, BfSize)
+BfVec *bfMatDiagRealGetRowCopy(BfMat const *mat, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  if (i >= numRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  BfMatDiagReal const *matDiagReal = bfMatConstToMatDiagRealConst(mat);
+  HANDLE_ERROR();
+
+  BfVecReal *rowCopy = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(rowCopy, numCols);
+  HANDLE_ERROR();
+
+  /* Fill row with zeros */
+  BfReal *ptr = rowCopy->data;
+  for (BfSize j = 0; j < numCols; ++j) {
+    *ptr = 0;
+    ptr += rowCopy->stride;
+  }
+
+  /* Set ith element to corresponding diagonal entry of mat */
+  *(rowCopy->data + i*rowCopy->stride) = *(matDiagReal->data + i);
+
+  END_ERROR_HANDLING()
+    bfVecRealDeinitAndDealloc(&rowCopy);
+
+  return bfVecRealToVec(rowCopy);
+}
+
 BF_STUB(BfVec *, MatDiagRealGetRowView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatDiagRealGetColView, BfMat *, BfSize)
 BF_STUB(BfVec *, MatDiagRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)

@@ -11,6 +11,9 @@ BF_DECLARE_INTERFACE(MatZero)
 #undef INTERFACE
 
 BfMat *bfMatZeroToMat(BfMatZero *mat);
+BfMat const *bfMatZeroConstToMatConst(BfMatZero const *mat);
+
+BfMatZero const *bfMatConstToMatZeroConst(BfMat const *mat);
 
 BfMatZero *bfMatZeroNew();
 void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols);

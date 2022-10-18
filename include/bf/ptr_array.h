@@ -17,6 +17,7 @@ typedef struct BfPtrArray {
 } BfPtrArray;
 
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
+typedef int (*BfPtrCmp)(BfPtr, BfPtr);
 
 BfPtrArray bfGetUninitializedPtrArray();
 void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
@@ -33,3 +34,4 @@ void bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr);
 void bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end, BfPtrArray *view);
 void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
+void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);

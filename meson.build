@@ -55,6 +55,7 @@ butterfly_lib_src = [
   'src/vec.c',
   'src/vec_complex.c',
   'src/vec_real.c',
+  'src/vec_zero.c',
   'src/vectors.c',
   'src/xoshiro256plus.c',
 ]

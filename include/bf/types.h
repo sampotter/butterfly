@@ -20,6 +20,7 @@ typedef struct BfMatZero BfMatZero;
 typedef struct BfVec BfVec;
 typedef struct BfVecComplex BfVecComplex;
 typedef struct BfVecReal BfVecReal;
+typedef struct BfVecZero BfVecZero;
 
 typedef enum BfTypes {
   /* Mat hierarchy */
@@ -42,6 +43,7 @@ typedef enum BfTypes {
   BF_TYPE_VEC,
   BF_TYPE_VEC_COMPLEX,
   BF_TYPE_VEC_REAL,
+  BF_TYPE_VEC_ZERO,
 
   /* The total number of types */
   BF_TYPE_COUNT,
