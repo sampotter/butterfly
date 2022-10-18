@@ -196,7 +196,7 @@ Arefl = A21@np.linalg.solve(A11, A12)
 Asc = A22 - Arefl
 
 plt.figure()
-plt.imshow(complex_to_hsv(Arefl[25:375, 25:50]))
+plt.imshow(complex_to_hsv(Arefl[25:375, 25:375]))
 plt.show()
 
 # I = [(0, 400)] * 5
