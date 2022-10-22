@@ -41,145 +41,6 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
     xsrc, xtgt, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
 }
 
-static BfSize liftProducts(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
-
-  BfSize numLifted = 0;
-
-  BfMatBlock *matBlock = NULL;
-  BfMatBlockDense *matBlockDense = NULL;
-
-  matBlock = bfMatToMatBlock(mat);
-  HANDLE_ERROR();
-
-  matBlockDense = bfMatToMatBlockDense(mat);
-  HANDLE_ERROR();
-
-  BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
-  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
-
-  BfSize itail = numRowBlocks, jtail = numColBlocks;
-
-  for (BfSize i = 0; i < numRowBlocks; ++i) {
-    // BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
-    for (BfSize j = 0; j < numColBlocks; ++j) {
-      // BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, i);
-
-      BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i, j);
-      if (!bfMatInstanceOf(block, BF_TYPE_MAT_PRODUCT))
-        continue;
-
-      BfMatProduct *prod = bfMatToMatProduct(block);
-
-      BfMat *factor = bfMatProductPopLastFactor(prod);
-      bfMatNegate(factor);
-
-      /* If there's only one factor left, we don't need or want to box
-       * the remaining factor in a MatProduct. Grab it and delete the
-       * instance of MatProduct. We overwrite block with the remaining
-       * factor so that it gets lifted correctly below. */
-      if (bfMatProductNumFactors(prod) == 1) {
-        BfMat *lastFactor = bfMatProductPopLastFactor(prod);
-        bfMatDelete(&block);
-        block = lastFactor;
-      }
-
-      BfSize numBlockCols = bfMatGetNumCols(factor);
-      assert(numBlockCols == matBlockDense->super.colOffset[j + 1]
-             - matBlockDense->super.colOffset[j]);
-
-      BfSize numBlockRows = bfMatGetNumRows(block);
-      assert(numBlockRows == matBlockDense->super.rowOffset[i + 1]
-             - matBlockDense->super.rowOffset[i]);
-
-      /* Replace the current block with a zero block */
-      BfMatZero *zeroBlock = bfMatZeroNew();
-      bfMatZeroInit(zeroBlock, numBlockRows, numBlockCols);
-      bfMatBlockDenseSetBlock(matBlockDense, i, j, bfMatZeroToMat(zeroBlock));
-
-      /* Get the number of rows of the factor we just popped---this
-       * will be the number of appended rows *and* columns */
-      BfSize numRowsFactor = bfMatGetNumRows(factor);
-
-      /* Pad the bottom left of `matBlockDense` with a new rank of
-       * zero blocks */
-      bfMatBlockDenseAppendColumn(matBlockDense, numRowsFactor);
-      bfMatBlockDenseAppendRow(matBlockDense, numRowsFactor);
-
-      bfMatBlockDenseSetBlock(matBlockDense, i, jtail, block);
-
-      bfMatBlockDenseSetBlock(matBlockDense, itail, j, factor);
-
-      /* Set the new diagonal block to the identity */
-      BfMat *eye = bfEye(numRowsFactor, numRowsFactor, BF_DTYPE_REAL);
-      bfMatBlockDenseSetBlock(matBlockDense, itail, jtail, eye);
-
-      /* Increment the count of number of lifted product blocks */
-      ++numLifted;
-
-      ++itail;
-      ++jtail;
-    }
-  }
-
-  END_ERROR_HANDLING() {}
-
-  return numLifted;
-}
-
-static void saveLiftedBlocks(BfMat *mat, char const *path) {
-  BEGIN_ERROR_HANDLING();
-
-  BfMatBlock *matBlock = NULL;
-  BfMatBlockDense *matBlockDense = NULL;
-
-  matBlock = bfMatToMatBlock(mat);
-  HANDLE_ERROR();
-
-  matBlockDense = bfMatToMatBlockDense(mat);
-  HANDLE_ERROR();
-
-  FILE *fp = fopen(path, "w");
-  for (BfSize i = 0; i < bfMatBlockGetNumRowBlocks(matBlock); ++i) {
-    BfSize i0 = matBlock->rowOffset[i];
-    BfSize numBlockRows = bfMatBlockGetNumBlockRows(matBlock, i);
-    for (BfSize j = 0; j < bfMatBlockGetNumColBlocks(matBlock); ++j) {
-      BfSize j0 = matBlock->colOffset[j];
-      BfSize numBlockCols = bfMatBlockGetNumBlockCols(matBlock, j);
-      BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i, j);
-      BfType type = bfMatGetType(block);
-      fprintf(fp, "%lu %lu %lu %lu %u\n", i0, j0, numBlockRows, numBlockCols, type);
-    }
-  }
-  fclose(fp);
-
-  END_ERROR_HANDLING() {}
-}
-
-static void runLiftingTest(BfMat *mat, char const *path) {
-  while (liftProducts(mat)) ;
-  saveLiftedBlocks(mat, path);
-
-  /** Save result to COO format for testing: */
-
-  BfMatCooComplex *matCooComplex =
-    bfMatToMatCooComplex(bfMatToType(mat, BF_TYPE_MAT_COO_COMPLEX));
-
-  FILE *fp = NULL;
-
-  fp = fopen("rowInd.bin", "w");
-  fwrite(matCooComplex->rowInd, sizeof(BfSize), matCooComplex->numElts, fp);
-  fclose(fp);
-
-  fp = fopen("colInd.bin", "w");
-  fwrite(matCooComplex->colInd, sizeof(BfSize), matCooComplex->numElts, fp);
-  fclose(fp);
-
-  fp = fopen("value.bin", "w");
-  fwrite(matCooComplex->value, sizeof(BfComplex), matCooComplex->numElts, fp);
-  fclose(fp);
-}
-
 int main(int argc, char const *argv[]) {
   if (argc != 8) {
     printf("usage: %s <K> <points.bin> <normals.bin> <weights.bin> "
@@ -311,8 +172,6 @@ int main(int argc, char const *argv[]) {
    * copied correctly (recursive copying logic is a bit
    * involved---worth validating this here) */
 
-  BfMat *A_BF_lift = bfMatCopy(A_BF);
-
   /** Verify and time the matrix multiplications */
 
   bfToc();
@@ -324,28 +183,13 @@ int main(int argc, char const *argv[]) {
   bfMatPermuteRows(y_test_BF, &tree.perm);
   printf("did test butterfly MVP [%0.2fs]\n", bfToc());
 
-  bfToc();
-  BfMat *y_test_BF_copy = bfMatMul(A_BF_lift, phi_in_perm);
-  bfMatPermuteRows(y_test_BF_copy, &tree.perm);
-  printf("did test butterfly MVP (copy) [%0.2fs]\n", bfToc());
-
   BfVec *err_MVP = bfMatColDists(y_test_dense, y_test_BF);
-  BfVec *err_MVP_copy = bfMatColDists(y_test_dense, y_test_BF_copy);
   BfVec *y_col_norms = bfMatColNorms(y_test_dense);
   BfReal max_rel_err_MVP = bfVecNormMax(err_MVP)/bfVecNormMax(y_col_norms);
-  BfReal max_rel_err_MVP_copy =
-    bfVecNormMax(err_MVP_copy)/bfVecNormMax(y_col_norms);
   bfVecDelete(&err_MVP);
-  bfVecDelete(&err_MVP_copy);
   bfVecDelete(&y_col_norms);
   printf("MVP rel. l2 errors:\n");
   printf("- BF: %g\n", max_rel_err_MVP);
-  printf("- BF (copy): %g\n", max_rel_err_MVP_copy);
-
-  /** Lift the butterfly factorized matrix into a sparse matrix and
-   * compute its sparse LU decomposition */
-
-  runLiftingTest(A_BF_lift, "lifted_blocks.txt");
 
   /** Solve the system using different methods */
 

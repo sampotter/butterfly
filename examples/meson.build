@@ -19,7 +19,6 @@ python_scripts = [
   'plot_bf_all_blocks.py',
   'plot_bf_one_block.py',
   'plot_blocks.py',
-  'plot_lifted_blocks.py',
   'plot_points_and_quadtree.py',
   'run_bf_all_blocks_test.sh',
   'run_bf_one_block_test.sh',
