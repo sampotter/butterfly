@@ -4,8 +4,6 @@ usage() {
 	>&2 echo "usage: $0 <shape> <n> <k> <layerPot> <srcDepth> <srcIndex> <tgtDepth> <tgtIndex>"
 }
 
-echo $#
-
 SHAPE="ellipse"
 NUM_POINTS=4096
 K=100
@@ -47,12 +45,13 @@ if (( $# >= 8 )); then
 	TGT_INDEX=$8
 fi
 
-echo "shape: $SHAPE"
-echo "number of discretization points: n = $NUM_POINTS"
-echo "wavenumber: k = $K"
-echo "layer potential: $LAYER_POT"
-echo "source node: depth = $SRC_DEPTH, index = $SRC_INDEX"
-echo "target node: depth = $TGT_DEPTH, index = $TGT_INDEX"
+echo "running bf_one_block example:"
+echo "- shape: $SHAPE"
+echo "- number of discretization points: n = $NUM_POINTS"
+echo "- wavenumber: k = $K"
+echo "- layer potential: $LAYER_POT"
+echo "- source node: depth = $SRC_DEPTH, index = $SRC_INDEX"
+echo "- target node: depth = $TGT_DEPTH, index = $TGT_INDEX"
 
 rm -f *.bin
 rm -f *.txt
