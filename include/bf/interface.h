@@ -2,6 +2,22 @@
 
 #include <assert.h>
 
+/* `BF_DEFINE_VTABLE_STRUCT` is an X-macro which defines the virtual
+ * table struct for an interface. To use it, first #define a macro of
+ * the form:
+ *
+ *   <MACRONAME>(Type, Subtype, _) \
+ *     _(Type, Subtype, ReturnType1, Args1...) \
+ *     _(Type, Subtype, ReturnType2, Args2...) \
+ *     ...
+ *
+ * where <MACRONAME> can be whatever you please. Then write:
+ *
+ *   #define INTERFACE MACRONAME
+ *   BF_DEFINE_VTABLE_STRUCT(InterfaceName)
+ *   #undef INTERFACE
+ *
+ * to have BF_DEFINE_VTABLE_STRUCT stamp out the vtable struct. */
 #define BF_DEFINE_VTABLE_STRUCT_impl(Type, _2, X)   \
   typedef struct Bf##Type##Vtable {                 \
     INTERFACE(Type, _1, X)                          \
