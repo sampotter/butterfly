@@ -8,8 +8,8 @@ typedef struct BfFacStreamer BfFacStreamer;
 
 BfFacStreamer *bfFacStreamerNew();
 void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree const *rowTree,
-                       BfTree const *columnTree, BfStreamingMode mode,
-                       BfSize rowTreeInitDepth, BfSize columnTreeInitDepth,
+                       BfTree const *colTree, BfStreamingMode mode,
+                       BfSize rowTreeInitDepth, BfSize colTreeInitDepth,
                        BfReal tol);
 void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat);
 bool bfFacStreamerDone(BfFacStreamer const *facStreamer);
