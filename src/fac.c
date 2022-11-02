@@ -199,7 +199,7 @@ static bool makeFactorIterNext(MakeFactorIter *iter) {
 /* This function computes an inner factor in a butterfly
  * factorization.
  *
- * ... explain how this works ...
+ * TODO: explain how it works...
  */
 static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes) {
   BEGIN_ERROR_HANDLING();
