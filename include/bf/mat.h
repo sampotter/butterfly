@@ -23,7 +23,7 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfVec *, GetRowCopy, BfMat const *, BfSize)                 \
   _(Type, Subtype, BfVec *, GetRowView, BfMat *, BfSize)                       \
   _(Type, Subtype, BfVec *, GetColView, BfMat *, BfSize)                       \
-  _(Type, Subtype, BfVec *, GetColRangeView, BfMat *, BfSize, BfSize, BfSize)  \
+  _(Type, Subtype, BfVec *, GetColRangeView /* TODO: should be GetSubcolView */, BfMat *, BfSize, BfSize, BfSize) \
   _(Type, Subtype, void, Delete, BfMat **)                                     \
   _(Type, Subtype, BfMat *, EmptyLike, BfMat const *, BfSize, BfSize)          \
   _(Type, Subtype, BfMat *, ZerosLike, BfMat const *, BfSize, BfSize)          \
