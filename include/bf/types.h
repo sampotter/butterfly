@@ -22,6 +22,16 @@ typedef struct BfVecComplex BfVecComplex;
 typedef struct BfVecReal BfVecReal;
 typedef struct BfVecZero BfVecZero;
 
+typedef struct BfTree BfTree;
+typedef struct BfQuadtree BfQuadtree;
+typedef struct BfOctree BfOctree;
+typedef struct BfFiedlerTree BfFiedlerTree;
+
+typedef struct BfTreeNode BfTreeNode;
+typedef struct BfQuadtreeNode BfQuadtreeNode;
+typedef struct BfOctreeNode BfOctreeNode;
+typedef struct BfFiedlerTreeNode BfFiedlerTreeNode;
+
 typedef enum BfTypes {
   /* Mat hierarchy */
   BF_TYPE_MAT,
