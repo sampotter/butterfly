@@ -311,11 +311,11 @@ bfGetQuadtreeNode(BfQuadtree const *tree, BfSize depth, BfSize nodeIndex,
   END_ERROR_HANDLING() {}
 }
 
-BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node)
+BfCircle bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node)
 {
   BfReal const *min = node->bbox.min, *max = node->bbox.max;
 
-  BfCircle2 circ;
+  BfCircle circ;
   circ.r = hypot(max[0] - min[0], max[1] - min[1])/2;
   circ.center[0] = (min[0] + max[0])/2;
   circ.center[1] = (min[1] + max[1])/2;
@@ -420,8 +420,8 @@ void bfQuadtreeNodeGetUnitNormals(BfQuadtree const *tree, BfQuadtreeNode const *
 
 bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
                                  BfQuadtreeNode const *node2) {
-  BfCircle2 circ1 = bfGetQuadtreeNodeBoundingCircle(node1);
-  BfCircle2 circ2 = bfGetQuadtreeNodeBoundingCircle(node2);
+  BfCircle circ1 = bfGetQuadtreeNodeBoundingCircle(node1);
+  BfCircle circ2 = bfGetQuadtreeNodeBoundingCircle(node2);
 
   BfReal R = bfPoint2Dist(circ1.center, circ2.center);
 

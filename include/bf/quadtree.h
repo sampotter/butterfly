@@ -100,8 +100,8 @@ void
 bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i,
                   BfQuadtreeNode **node);
 
-BfCircle2 bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 
+BfCircle bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 BfSize bfQuadtreeNodeNumChildren(BfQuadtreeNode const *node);
 
 bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);

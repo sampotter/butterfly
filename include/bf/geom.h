@@ -3,9 +3,19 @@
 #include "def.h"
 
 typedef BfReal BfPoint2[2];
+typedef BfReal BfPoint3[3];
+
 typedef BfReal BfVector2[2];
+typedef BfReal BfVector3[3];
 
 typedef struct BfBbox2 BfBbox2;
-typedef struct BfCircle2 BfCircle2;
+typedef struct BfBbox3 BfBbox3;
+
+typedef struct BfCircle BfCircle;
+typedef struct BfSphere BfSphere;
+
 typedef struct BfPoints2 BfPoints2;
+typedef struct BfPoints3 BfPoints3;
+
 typedef struct BfVectors2 BfVectors2;
+typedef struct BfVectors3 BfVectors3;
