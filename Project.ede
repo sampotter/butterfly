@@ -1,0 +1,10 @@
+;; Object butterfly
+;; EDE Project Files are auto generated: Do Not Edit
+(ede-proj-project "butterfly"
+  :file "Project.ede"
+  :name "butterfly"
+  :targets nil
+  :configurations '("debug" "release")
+  :object-name "butterfly"
+  :makefile-type Makefile
+  :configuration-variables '("debug" (("DEBUG" . "1"))))
