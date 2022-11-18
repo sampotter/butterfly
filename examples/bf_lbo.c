@@ -1,50 +1,76 @@
-#include <bf/trimesh.h>
+#include <math.h>
+#include <stdlib.h>
+
+#include <bf/eig.h>
+#include <bf/fac_streamer.h>
+// #include <bf/fiedler_tree.h>
+#include <bf/interval_tree.h>
+#include <bf/lbo.h>
+#include <bf/octree.h>
+#include <bf/spmat.h>
 
 int main(int argc, char const *argv[]) {
+  if (argc != 5) {
+    printf("usage: %s vertsPath facesPath tol initDepth\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+
   char const *vertsPath = argv[1];
   char const *facesPath = argv[2];
+  BfReal tol = strtod(argv[3], NULL);
+  BfSize colTreeInitDepth = strtoull(argv[4], NULL, 10);
 
-  // load triangle mesh from binary files
+  /* Load triangle mesh from binary files */
   BfTrimesh *trimesh = bfTrimeshNew();
   bfTrimeshInitFromBinaryFiles(trimesh, vertsPath, facesPath);
 
-  // build fiedler tree
-  BfTree *rowTree = bfFiedlerTreeNew();
-  bfFiedlerTreeInitFromTrimesh(rowTree, trimesh);
-
-  // set up stiffness and mass matrices
+  /* Stiffness and mass matrices */
   BfSpmat *L, *M;
+
+  // TODO: implement
+//   /* Build fiedler tree */
+//   BfFiedlerTree fiedlerTree;
+//   bfFiedlerTreeInitFromTrimesh(&fiedlerTree, trimesh, &L, &M);
+//   BfTree *rowTree = bfFiedlerTreeToTree(&fiedlerTree);
+
+  BfOctree octree;
+  bfOctreeInitFromTrimesh(&octree, trimesh);
+  BfTree *rowTree = bfOctreeToTree(&octree);
+
   bfLboGetFemDiscretization(trimesh, &L, &M);
 
-  // find largest eigenvalue
-  BfReal lamMax = bfGetMaxEig(L, M);
+  /* Find largest eigenvalue */
+  BfReal lamMax = bfGetEigMax(bfSpmatToMat(L), bfSpmatToMat(M));
 
-  // set up frequency tree
+  /* Set up frequency tree */
   BfReal freqMax = sqrt(lamMax);
-  BfTree *colTree = bfIntervalTreeNew();
-  bfIntervalTreeInit(0, freqMax, colTreeInitDepth);
+  BfIntervalTree *intervalTree = bfIntervalTreeNew();
+  bfIntervalTreeInit(intervalTree, 0, freqMax, colTreeInitDepth, 2);
+  BfTree *colTree = bfIntervalTreeToTree(intervalTree);
 
-  // set up fac streamer
+  /* Set up fac streamer */
   BfFacStreamer *facStreamer = bfFacStreamerNew();
-  bfFacStreamerInit(facStreamer, rowTree, colTree, BF_STREAM_MODE_POST_ORDER,
+  bfFacStreamerInit(facStreamer, rowTree, colTree,
                     /* rowTreeInitDepth */ 1, colTreeInitDepth, tol);
 
-  // feed eigenvalues until done
+  /* Feed eigenvalues until done */
   BfSize n = 1 << colTreeInitDepth;
   for (BfSize j = 0; j < n; ++j) {
     BfReal j0 = j, j1 = j + 1;
     BfReal lam0 = lamMax*j0/n, lam1 = lamMax*j1/n;
     BfMat *Phi;
-    BfMatDiagReal *Lam;
+    BfMat *Lam;
     bfGetEigBand(L, M, lam0, lam1, &Phi, &Lam);
     bfFacStreamerFeed(facStreamer, Phi);
     bfMatDelete(&Phi);
-    bfMatDiagRealDeinitAndDealloc(&Lam);
+    bfMatDelete(&Lam);
   }
-
-  bfFacStreamerFinish(facStreamer);
 
   BfMat *fac = bfFacStreamerGetFac(facStreamer);
 
-  // do numerical tests
+  /* Do numerical tests */
+
+  /* Clean up */
+
+  bfMatDelete(&fac);
 }
