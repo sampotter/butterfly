@@ -12,6 +12,8 @@
 typedef struct BfQuadtree BfQuadtree;
 typedef struct BfQuadtreeNode BfQuadtreeNode;
 
+typedef void (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
+
 enum BfQuadtreeNodeFlags {
   BF_QUADTREE_NODE_FLAG_NONE = 0,
   BF_QUADTREE_NODE_FLAG_CHILD_0 = 1 << 0,
@@ -26,6 +28,36 @@ enum BfQuadtreeNodeFlags {
    * exiting any public API function. */
   BF_QUADTREE_NODE_FLAG_DIRTY = 1 << 5,
 };
+
+struct BfQuadtree {
+  BfTree base;
+
+  /* The root node of the quadtree. */
+  BfQuadtreeNode *root;
+
+  /* The permutation from the original ordering to the quadtree
+   * ordering. To undo this permutation, `bfPermGetReversePerm` can be
+   * used to construct the inverse permutation from the quadtree
+   * ordering back to the original ordering. */
+  BfPerm perm;
+
+  /* A pointer to the point set upon which the quadtree has been
+   * built. The points in this array in the original order, and have
+   * not been permuted into the quadtree order. */
+  BfPoints2 const *points;
+
+  /* Pointer to an array of unit normals, each associated with a point
+   * in `points`. */
+  BfVectors2 const *unitNormals;
+};
+
+void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals);
+void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);
+void bfFreeQuadtree(BfQuadtree *tree);
+void bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i, BfQuadtreeNode **node);
+void bfMapQuadtree(BfQuadtree *tree, enum BfTreeTraversals traversal, BfQuadtreeFunc func, void *arg);
+void bfMapQuadtreeNodes(BfQuadtree *tree, BfQuadtreeNode *node, enum BfTreeTraversals traversal, BfQuadtreeFunc func, void *arg);
+BfPerm const *bfQuadtreeGetPerm(BfQuadtree const *quadtree);
 
 struct BfQuadtreeNode {
   enum BfQuadtreeNodeFlags flags;
@@ -67,70 +99,17 @@ struct BfQuadtreeNode {
   BfSize depth;
 };
 
-typedef void (*BfQuadtreeFunc)(BfQuadtree *, BfQuadtreeNode *, void *);
-
-struct BfQuadtree {
-  /* A pointer to the point set upon which the quadtree has been
-   * built. The points in this array in the original order, and have
-   * not been permuted into the quadtree order. */
-  BfPoints2 const *points;
-
-  /* Pointer to an array of unit normals, each associated with a point
-   * in `points`. */
-  BfVectors2 const *unitNormals;
-
-  /* The permutation from the original ordering to the quadtree
-   * ordering. For example, to put the rows of a matrix `X` which have
-   * the same ordering as `points`, call `bfMatPermuteRows(X,
-   * &perm)`. To undo this permutation, `bfPermGetReversePerm` can be
-   * used to construct the inverse permutation from the quadtree
-   * ordering back to the original ordering. */
-  BfPerm perm;
-
-  BfQuadtreeNode *root;
-};
-
-void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals);
-
-void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);
-
-void bfFreeQuadtree(BfQuadtree *tree);
-
-void
-bfGetQuadtreeNode(BfQuadtree const *tree, BfSize l, BfSize i,
-                  BfQuadtreeNode **node);
-
-
 BfCircle bfGetQuadtreeNodeBoundingCircle(BfQuadtreeNode const *node);
 BfSize bfQuadtreeNodeNumChildren(BfQuadtreeNode const *node);
-
 bool bfQuadtreeNodeIsLeaf(BfQuadtreeNode const *node);
-
 BfSize bfQuadtreeNodeDepth(BfQuadtreeNode const *node);
-
 BfSize bfGetMaxDepthBelowQuadtreeNode(BfQuadtreeNode const *node);
-
 BfSize bfQuadtreeNodeNumPoints(BfQuadtreeNode const *node);
-
 BfQuadtree *bfGetQuadtreeFromNode(BfQuadtreeNode const *node);
 
-void
-bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node,
-                        BfPoints2 *points);
-
+void bfGetQuadtreeNodePoints(BfQuadtree const *tree, BfQuadtreeNode const *node, BfPoints2 *points);
 void bfQuadtreeNodeGetUnitNormals(BfQuadtree const *tree, BfQuadtreeNode const *node, BfVectors2 *vectors);
-
-bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
-                                 BfQuadtreeNode const *node2);
-
-void
-bfMapQuadtree(BfQuadtree *tree, enum BfTreeTraversals traversal,
-              BfQuadtreeFunc func, void *arg);
-
-void
-bfMapQuadtreeNodes(BfQuadtree *tree, BfQuadtreeNode *node,
-                   enum BfTreeTraversals traversal,
-                   BfQuadtreeFunc func, void *arg);
+bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1, BfQuadtreeNode const *node2);
 
 typedef struct BfQuadtreeLevelIter {
   enum BfTreeTraversals traversal;
