@@ -64,7 +64,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   BfReal const *split = node->split;
   node->depth = currentDepth;
 
-  // set sentinel values
+  /* Set sentinel values */
   node->offset[0] = i0;
 #if BF_DEBUG
   node->offset[1] = BF_SIZE_BAD_VALUE;
@@ -75,7 +75,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
 
   BfSize i, j;
 
-  // sift permutation indices for child[0] into place...
+  /* Sift permutation indices for child[0] into place... */
   i = node->offset[0];
   while (i < node->offset[4] &&
          (point[perm[i]][0] <= split[0] && point[perm[i]][1] <= split[1]))
@@ -91,7 +91,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   }
   node->offset[1] = i;
 
-  // ... for child[1]...
+  /* ... For child[1]... */
   i = node->offset[1]; // TODO: unnecessary
   while (i < node->offset[4] &&
          (point[perm[i]][0] <= split[0] && point[perm[i]][1] > split[1]))
@@ -107,7 +107,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   }
   node->offset[2] = i;
 
-  // ... for child[2]...
+  /* ... For child[2]... */
   i = node->offset[2]; // TODO: unnecessary
   while (i < node->offset[4] &&
          (point[perm[i]][0] > split[0] && point[perm[i]][1] <= split[1]))
@@ -123,10 +123,10 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   }
   node->offset[3] = i;
 
-  // we don't have to do any sifting for the last child! nice.
-  // ... but let's verify that things are as they should be.
+  /* we don't have to do any sifting for the last child! ... but
+   * should verify anyway */
 
-  // compute the bounding boxes each child node
+  /* Compute the bounding boxes each child node */
   BfBbox2 childBbox[4] = {
     [0] = {
       .min = {bbox.min[0], bbox.min[1]},
@@ -147,22 +147,23 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   };
 
 #ifdef BF_DEBUG
-  /* sanity checks */
+  /* Sanity checks follow: */
+
   assert(j == node->offset[4]);
 
-  /* verify that child[0]'s indices are correctly sifted */
+  /* child[0]'s indices are correctly sifted */
   for (BfSize k = node->offset[0]; k < node->offset[1]; ++k)
     assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1]);
 
-  /* verify that child[1]'s indices are correctly sifted */
+  /* child[1]'s indices are correctly sifted */
   for (BfSize k = node->offset[1]; k < node->offset[2]; ++k)
     assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1]);
 
-  /* verify that child[2]'s indices are correctly sifted */
+  /* child[2]'s indices are correctly sifted */
   for (BfSize k = node->offset[2]; k < node->offset[3]; ++k)
     assert(point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1]);
 
-  /* verify that child[3]'s indices are correctly sifted */
+  /* child[3]'s indices are correctly sifted */
   for (BfSize k = node->offset[3]; k < node->offset[4]; ++k)
     assert(point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1]);
 #endif
@@ -170,7 +171,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
   for (BfSize q = 0; q < 4; ++q) {
     BfSize childPermSize = node->offset[q + 1] - node->offset[q];
 
-    // TODO: for now, we build the quadtree out to the maximum depth possible
+    /* TODO: right now, building quadtree to maximum depth possible */
     if (childPermSize <= 1) {
       node->child[q] = NULL;
       continue;
@@ -181,7 +182,7 @@ recInitQuadtreeNode(BfQuadtreeNode *node,
     node->child[q]->parent = node;
     node->child[q]->bbox = childBbox[q];
 
-    // compute the split for the `q`th child node
+    /* Compute the split for the `q`th child node */
     node->child[q]->split[0] = (childBbox[q].min[0] + childBbox[q].max[0])/2;
     node->child[q]->split[1] = (childBbox[q].min[1] + childBbox[q].max[1])/2;
 
@@ -209,7 +210,7 @@ void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVecto
   if (numPoints == 0)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  // initialize permutation to identity
+  /* Initialize permutation to identity */
   tree->perm = bfPermIdentity(numPoints);
   HANDLE_ERROR();
 
@@ -219,11 +220,11 @@ void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVecto
   tree->root->flags = BF_QUADTREE_NODE_FLAG_ROOT;
   tree->root->parent = tree;
 
-  // compute the bounding box for the entire quadtree
+  /* Compute the bounding box for the entire quadtree */
   BfBbox2 bbox = bfGetPoints2BoundingBox(points);
   assert(!bfBbox2IsEmpty(&bbox));
 
-  // rescale the bounding box so that it's square
+  /* Rescale the bounding box so that it's square */
   BfReal w = bbox.max[0] - bbox.min[0];
   BfReal h = bbox.max[1] - bbox.min[1];
   if (w > h) {
@@ -238,7 +239,7 @@ void bfInitQuadtreeFromPoints(BfQuadtree *tree, BfPoints2 const *points, BfVecto
 
   tree->root->bbox = bbox;
 
-  // compute the split for the root node
+  /* Compute the split for the root node */
   tree->root->split[0] = (bbox.min[0] + bbox.max[0])/2;
   tree->root->split[1] = (bbox.min[1] + bbox.max[1])/2;
 
