@@ -1,5 +1,7 @@
 #include <bf/util.h>
 
+#include <bf/error.h>
+#include <bf/error_macros.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_diag.h>
 
@@ -73,4 +75,37 @@ static void printBlocksRec(BfMat const *mat,
 
 void bfPrintBlocks(BfMat const *mat, BfSize level, FILE *fp) {
   printBlocksRec(mat, level, 0, 0, fp);
+}
+
+BfSize bfGetFileSizeInBytes(char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numBytes = BF_SIZE_BAD_VALUE;
+
+  FILE *fp = fopen(path, "rb");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fseek(fp, SEEK_END, 0);
+  numBytes = ftell(fp);
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
+
+  return numBytes;
+}
+
+void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "rb");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fread(ptr, numBytes, sizeof(BfByte), fp);
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
 }
