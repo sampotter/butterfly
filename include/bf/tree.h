@@ -1,42 +1,34 @@
 #pragma once
 
-#include <bf/ptr_array.h>
+#include "interface.h"
+#include "ptr_array.h"
+#include "tree_traversals.h"
+#include "types.h"
 
-typedef enum BfTreeTraversals {
-  BF_TREE_TRAVERSAL_UNKNOWN,
-  BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
-  BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER,
-  BF_TREE_TRAVERSAL_POST_ORDER
-} BfTreeTraversal;
+typedef void (*BfTreeMapFunc)(BfTree *, BfTreeNode *, void *);
 
-typedef struct BfTree {
-} BfTree;
+#define BF_INTERFACE_Tree(Type, Subtype, _)                             \
+  _(Type, Subtype, BfSize, GetMaxDepth, BfTree const *)                 \
+  _(Type, Subtype, void, Map, BfTree *, BfTreeTraversal, BfTreeMapFunc, void *)
 
-typedef struct BfTreeNode {
-} BfTreeNode;
+#define INTERFACE BF_INTERFACE_Tree
+BF_DEFINE_VTABLE_STRUCT(Tree)
+BF_DECLARE_INTERFACE(Tree)
+#undef INTERFACE
 
-typedef struct BfTreeIter BfTreeIter;
-
-typedef struct BfTreeLevelIter BfTreeLevelIter;
-
-BfSize bfTreeGetNumPoints(BfTree const *tree);
-void bfTreeMap(BfTree *tree, BfTreeTraversal traversal, BfMapFunc func, void *arg);
-BfTreeLevelIter *bfTreeGetLevelIter(BfTree *tree, BfTreeTraversal traversal, BfSize skip);
-
-BfSize bfTreeNodeGetNumPoints(BfTreeNode const *node);
-BfSize bfTreeNodeNumChildren(BfTreeNode const *node);
-bool bfTreeNodeIsLeaf(BfTreeNode const *node);
-
-struct BfTreeLevelIter {
-  BfTreeTraversal traversal;
-  BfPtrArray nodes;
-  BfPtrArray levelNodes;
-  void *aux;
+struct BfTree {
+  BfTreeVtable *vtbl;
 };
 
-BfTreeLevelIter bfTreeLevelIterInit(BfTreeTraversal traversal, BfTreeNode *node);
-void bfTreeLevelIterFree(BfTreeLevelIter *iter);
-BfSize bfTreeLevelIterCurrentDepth(BfTreeLevelIter const *iter);
-bool bfTreeLevelIterIsDone(BfTreeLevelIter const *iter);
-void bfTreeLevelIterNext(BfTreeLevelIter *iter);
-BfSize bfTreeLevelIterGetNumPoints(BfTreeLevelIter const *iter);
+#define BF_INTERFACE_TreeNode(Type, Subtype, _) \
+  _(Type, Subtype, BfSize, GetNumChildren, BfTreeNode const *)  \
+  _(Type, Subtype, bool, IsLeaf, BfTreeNode const *)
+
+#define INTERFACE BF_INTERFACE_TreeNode
+BF_DEFINE_VTABLE_STRUCT(TreeNode)
+BF_DECLARE_INTERFACE(TreeNode)
+#undef INTERFACE
+
+struct BfTreeNode {
+  BfTreeNodeVtable *vtbl;
+};
