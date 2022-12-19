@@ -59,3 +59,19 @@ As another example, when it comes time to generate instructions for
 our "matrix algebra VM" ("Maeve"), we may just want to replace matrix
 vector product calls with functions which generate instructions and
 record them somewhere.
+
+# Get rid of macros for interfaces
+
+These aren't actually helpful. Using them, we tie ourself in a knot
+which makes it hard to accomplish the sort of things described above
+in "Debug vtable wrappers and instrumentation".
+
+# Get rid of const...?
+
+It's not clear how useful `const` actually is. If I try to be too fussy about `const` correctness in C, then it seems like the main downstream effect is having to maintain a parallel set of data structures, one for `const` pointers, and one more regular pointers.
+
+The bigger problem is that `const` in C means "physical" `const`ness: if a variable is `const`, then we can't modify its bitwise representation. For example, if we have a const struct with a non-const pointer, we can still modify what is pointed to by that pointer. So, we do not get logical `const`ness from physical `const`ness.
+
+What we want is logical `const`ness to aid with debugging and program correctness, but it does not seem possible to achieve this with `const` alone---it isn't a powerful enough tool for the job. Instead, it might be better to juts abandon the project and reap benefits elsewhere---for instance, there being less code.
+
+The question is where or not it's helpful to use `const` anywhere beyond this...
