@@ -9,7 +9,7 @@ typedef BfReal BfVector2[2];
 typedef BfReal BfVector3[3];
 
 typedef struct BfBbox2 BfBbox2;
-typedef struct BfBbox3 BfBbox3;
+typedef struct BfBoundingBox3 BfBoundingBox3;
 
 typedef struct BfCircle BfCircle;
 typedef struct BfSphere BfSphere;
