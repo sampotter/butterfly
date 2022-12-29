@@ -2,9 +2,10 @@
 
 #include <assert.h>
 #include <math.h>
-#include <openblas/lapacke.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <openblas/lapacke.h>
 
 #include <bf/blas.h>
 #include <bf/error.h>
@@ -129,6 +130,8 @@ static BfVec *bfMatDenseComplexDenseComplexColDots(
 
   return bfVecComplexToVec(result);
 }
+
+BF_STUB(void, MatDenseComplexScaleRows, BfMat *, BfVec const *)
 
 void bfMatDenseComplexScaleCols_real(BfMatDenseComplex *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -1019,6 +1022,8 @@ bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
   return upperTri;
 }
 
+BF_STUB(BfVec *, MatDenseComplexForwardSolveVec, BfMat const *, BfVec const *)
+
 static BfVec *
 backwardSolveVec_complex(BfMatDenseComplex const *matDenseComplex,
                          BfVecComplex const *vecComplex, BfSize m)
@@ -1095,6 +1100,7 @@ void bfMatDenseComplexNegate(BfMat *mat) {
 }
 
 BF_STUB(BfMat *, MatDenseComplexToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatDenseComplexCholesky, BfMat const *)
 
 /* Implementation: MatDenseComplex */
 

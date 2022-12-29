@@ -40,7 +40,7 @@ struct BfMatBlock {
   /* Array of `numBlockCols + 1` entries containing the offset in
    * columns of each block column in the matrix (i.e., `block[i]`
    * starts on column `colOffset[colInd[i]]`). The final entry,
-   * `colOffset[numBlockCols]`, contains a sentinel value indicating
+   * `coloffset[numBlockCols]`, contains a sentinel value indicating
    * the total number of columns in the block matrix. */
   BfSize *colOffset;
 };

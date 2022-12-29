@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "backends.h"
 #include "def.h"
 #include "dtype.h"
 #include "interface.h"
@@ -47,6 +48,7 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfVec *, ColDists, BfMat const *, BfMat const *)            \
   _(Type, Subtype, BfVec *, ColDots, BfMat const *, BfMat const *)             \
   _(Type, Subtype, BfVec *, ColNorms, BfMat const *)                           \
+  _(Type, Subtype, void, ScaleRows, BfMat *, BfVec const *)                    \
   _(Type, Subtype, void, ScaleCols, BfMat *, BfVec const *)                    \
   _(Type, Subtype, BfVec *, SumCols, BfMat const *)                            \
   _(Type, Subtype, void, AddInplace, BfMat *, BfMat const *)                   \
@@ -59,10 +61,12 @@ typedef enum BfMatProps {
   _(Type, Subtype, BfMat *, SolveLU, BfMat const *, BfMat const *)             \
   _(Type, Subtype, BfMat *, LstSq, BfMat const *, BfMat const *)               \
   _(Type, Subtype, bool, IsUpperTri, BfMat const *)                            \
+  _(Type, Subtype, BfVec *, ForwardSolveVec, BfMat const *, BfVec const *)     \
   _(Type, Subtype, BfVec *, BackwardSolveVec, BfMat const *, BfVec const *)    \
   _(Type, Subtype, bool, IsZero, BfMat const *)                                \
   _(Type, Subtype, void, Negate, BfMat *)                                      \
-  _(Type, Subtype, BfMat *, ToType, BfMat const *, BfType)
+  _(Type, Subtype, BfMat *, ToType, BfMat const *, BfType)                     \
+  _(Type, Subtype, BfMat *, Cholesky, BfMat const *)
 
 #define INTERFACE BF_INTERFACE_Mat
 BF_DEFINE_VTABLE_STRUCT(Mat)
@@ -87,4 +91,11 @@ void bfMatDeinit(BfMat *mat);
 BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype dtype);
 bool bfMatInstanceOf(BfMat const *mat, BfType type);
 bool bfMatIsTransposed(BfMat const *mat);
+BfMat *bfMatTrans(BfMat *mat);
 BfMat *bfMatConjTrans(BfMat *mat);
+BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0, BfReal tol,
+                       BfSize maxNumIter, BfSize *numIter);
+BfReal bfMatGetEigMaxGenSym(BfMat const *L, BfMat const *M, BfMat **R);
+void bfMatGetEigBandGenSym(BfMat const *L, BfMat const *M, BfReal lam0, BfReal lam1,
+                           BfMat **Phi, BfMat **Lam);
+void bfMatGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V, BfReal eps_or_k, BfBackend backend);

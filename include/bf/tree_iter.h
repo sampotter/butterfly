@@ -1,17 +1,11 @@
 #pragma once
 
 #include "tree_traversals.h"
+#include "types.h"
 
-struct BfTreeLevelIter {
+typedef struct BfTreeIter {
   BfTreeTraversal traversal;
-  BfPtrArray nodes;
-  BfPtrArray levelNodes;
-  void *aux;
-};
+  BfTreeNode *currentNode;
+} BfTreeIter;
 
-BfTreeLevelIter bfTreeLevelIterInit(BfTreeTraversal traversal, BfTreeNode *node);
-void bfTreeLevelIterFree(BfTreeLevelIter *iter);
-BfSize bfTreeLevelIterCurrentDepth(BfTreeLevelIter const *iter);
-bool bfTreeLevelIterIsDone(BfTreeLevelIter const *iter);
-void bfTreeLevelIterNext(BfTreeLevelIter *iter);
-BfSize bfTreeLevelIterGetNumPoints(BfTreeLevelIter const *iter);
+bool bfTreeIterIsDone(BfTreeIter const *iter);

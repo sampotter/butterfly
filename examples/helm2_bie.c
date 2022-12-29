@@ -1,11 +1,12 @@
-#include "bf/geom.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <openblas/cblas.h>
 
 #include <bf/error_macros.h>
 #include <bf/fac.h>
+#include "bf/geom.h"
 #include <bf/helm2.h>
 #include <bf/layer_pot.h>
 #include <bf/mat_block_coo.h>
@@ -88,13 +89,17 @@ int main(int argc, char const *argv[]) {
 
   /* Build a quadtree on the points sampling the boundary */
   bfToc();
-  BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, X_points, N_vectors);
+  BfQuadtree quadtree;
+  bfQuadtreeInit(&quadtree, X_points, N_vectors);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
+  BfTree *tree = bfQuadtreeToTree(&quadtree);
+
+  BfPerm const *perm = bfTreeGetPermConst(tree);
+
   /* Compute the reverse of the quadtree permutation */
-  BfPerm revPerm = bfPermGetReversePerm(&tree.perm);
+  BfPerm revPerm = bfPermGetReversePerm(perm);
 
   /* Set up the LHS of the problem */
   // BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
@@ -146,11 +151,11 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   BfMat *A_BF = bfFacHelm2MakeMultilevel(
-    &tree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
-  bf_apply_KR_correction_quadtree(A_BF, KR_order, &tree, K_helm2, (void *)&K_wkspc);
+  bf_apply_KR_correction_quadtree(A_BF, KR_order, tree, K_helm2, (void *)&K_wkspc);
 
   /* Scale the columns by the trapezoid rule weights */
   BfVec *w_perm = bfVecCopy(w);
@@ -180,7 +185,7 @@ int main(int argc, char const *argv[]) {
 
   bfToc();
   BfMat *y_test_BF = bfMatMul(A_BF, phi_in_perm);
-  bfMatPermuteRows(y_test_BF, &tree.perm);
+  bfMatPermuteRows(y_test_BF, perm);
   printf("did test butterfly MVP [%0.2fs]\n", bfToc());
 
   BfVec *err_MVP = bfMatColDists(y_test_dense, y_test_BF);
@@ -213,7 +218,7 @@ int main(int argc, char const *argv[]) {
   BfSize num_iter_BF_GMRES;
   BfMat *sigma_BF_GMRES = bfMatSolveGMRES(
     A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES);
-  bfMatPermuteRows(sigma_BF_GMRES, &tree.perm);
+  bfMatPermuteRows(sigma_BF_GMRES, perm);
   printf("solved using GMRES (BF): %lu iter. [%0.2fs]\n",
          num_iter_BF_GMRES, bfToc());
 

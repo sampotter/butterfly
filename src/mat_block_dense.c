@@ -255,6 +255,7 @@ BF_STUB(BfVec *, MatBlockDenseRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDenseColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDenseColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDenseColNorms, BfMat const *)
+BF_STUB(void, MatBlockDenseScaleRows, BfMat *, BfVec const *)
 
 void bfMatBlockDenseScaleCols(BfMat *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -399,6 +400,7 @@ BF_STUB(BfMat *, MatBlockDenseSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDenseLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDenseGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockDenseIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatBlockDenseForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatBlockDenseBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockDenseIsZero, BfMat const *)
 BF_STUB(void, MatBlockDenseNegate, BfMat *)
@@ -506,6 +508,8 @@ BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type) {
   }
 }
 
+BF_STUB(BfMat *, MatBlockDenseCholesky, BfMat const *)
+
 /** Interface: MatBlock */
 
 #define INTERFACE BF_INTERFACE_MatBlock
@@ -577,7 +581,16 @@ BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat) {
 /** Implementation: */
 
 BfMatBlockDense *bfMatBlockDenseNew() {
-  return malloc(sizeof(BfMatBlockDense));
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockDense *matBlockDense = malloc(sizeof(BfMatBlockDense));
+  if (matBlockDense == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  END_ERROR_HANDLING()
+    matBlockDense = NULL;
+
+  return matBlockDense;
 }
 
 void bfMatBlockDenseInit(BfMatBlockDense *mat,

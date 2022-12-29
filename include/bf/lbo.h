@@ -1,6 +1,6 @@
 #pragma once
 
-#include "spmat.h"
+#include "mat_csr_real.h"
 #include "trimesh.h"
 
-void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfSpmat **L, BfSpmat **M);
+void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L, BfMatCsrReal **M);

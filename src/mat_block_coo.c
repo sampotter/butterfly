@@ -240,6 +240,7 @@ BF_STUB(BfVec *, MatBlockCooColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockCooColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockCooColNorms, BfMat const *)
 BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfVec const *)
+BF_STUB(void, MatBlockCooScaleRows, BfMat *, BfVec const *)
 BF_STUB(BfVec *, MatBlockCooSumCols, BfMat const *)
 BF_STUB(void, MatBlockCooAddInplace, BfMat *, BfMat const *)
 BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)
@@ -293,6 +294,7 @@ BF_STUB(BfMat *, MatBlockCooSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockCooLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatBlockCooForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockCooIsZero, BfMat const *)
 
@@ -313,6 +315,7 @@ void bfMatBlockCooNegate(BfMat *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockCooToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatBlockCooCholesky, BfMat const *)
 
 /** Interface: MatBlock */
 

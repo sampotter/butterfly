@@ -1,34 +1,48 @@
 #pragma once
 
-#include "interface.h"
+#include "perm.h"
 #include "ptr_array.h"
 #include "tree_traversals.h"
 #include "types.h"
 
+enum BfTreeNodeFlags {
+  BF_TREE_NODE_FLAG_NONE = 0
+};
+
+/** Interface: Tree */
+
 typedef void (*BfTreeMapFunc)(BfTree *, BfTreeNode *, void *);
+typedef void (*BfTreeMapConstFunc)(BfTree const *, BfTreeNode const *, void *);
 
-#define BF_INTERFACE_Tree(Type, Subtype, _)                             \
-  _(Type, Subtype, BfSize, GetMaxDepth, BfTree const *)                 \
-  _(Type, Subtype, void, Map, BfTree *, BfTreeTraversal, BfTreeMapFunc, void *)
+BfType bfTreeGetType(BfTree const *);
 
-#define INTERFACE BF_INTERFACE_Tree
-BF_DEFINE_VTABLE_STRUCT(Tree)
-BF_DECLARE_INTERFACE(Tree)
-#undef INTERFACE
+typedef struct BfTreeVtable {
+  __typeof__(&bfTreeGetType) GetType;
+} BfTreeVtable;
+
+/** Implementation: Tree */
 
 struct BfTree {
-  BfTreeVtable *vtbl;
+  BfTreeVtable *vtable;
+
+  /* Root node of the tree. */
+  BfTreeNode *root;
+
+  /* Permutation from domain ordering to the tree ordering. To undo,
+   * use `bfPermGetReversePerm` to gete the inverse permutation. */
+  BfPerm perm;
 };
 
-#define BF_INTERFACE_TreeNode(Type, Subtype, _) \
-  _(Type, Subtype, BfSize, GetNumChildren, BfTreeNode const *)  \
-  _(Type, Subtype, bool, IsLeaf, BfTreeNode const *)
-
-#define INTERFACE BF_INTERFACE_TreeNode
-BF_DEFINE_VTABLE_STRUCT(TreeNode)
-BF_DECLARE_INTERFACE(TreeNode)
-#undef INTERFACE
-
-struct BfTreeNode {
-  BfTreeNodeVtable *vtbl;
-};
+void bfTreeInit(BfTree *tree, BfTreeVtable *vtbl, BfTreeNode *root, BfSize size);
+void bfTreeDeinit(BfTree *tree);
+bool bfTreeInstanceOf(BfTree const *tree, BfType type);
+BfTreeNode *bfTreeGetRootNode(BfTree *);
+BfTreeNode const *bfTreeGetRootNodeConst(BfTree const *);
+BfPerm const *bfTreeGetPermConst(BfTree const *tree);
+BfSize bfTreeGetMaxDepth(BfTree const *);
+void bfTreeMap(BfTree *, BfTreeNode *, BfTreeTraversal, BfTreeMapFunc, void *);
+void bfTreeMapConst(BfTree const *, BfTreeNode const *, BfTreeTraversal, BfTreeMapConstFunc, void *);
+BfSize bfTreeGetNumPoints(BfTree const *);
+BfTreeNode *bfTreeGetNode(BfTree *, BfSize, BfSize);
+BfPtrArray bfTreeGetLevelPtrArray(BfTree *, BfSize);
+BfConstPtrArray bfTreeGetLevelConstPtrArray(BfTree const *, BfSize);

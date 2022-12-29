@@ -24,7 +24,7 @@ void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
 void bfPtrArrayDeinit(BfPtrArray *arr);
-void bfFreePtrArray(BfPtrArray *arr);
+BfPtrArray bfPtrArrayCopy(BfPtrArray *arr);
 BfSize bfPtrArraySize(BfPtrArray const *arr);
 bool bfPtrArrayIsEmpty(BfPtrArray const *arr);
 void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr);
@@ -35,3 +35,14 @@ void bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end, BfP
 void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);
+
+typedef struct BfConstPtrArray {
+  enum BfPtrArrayFlags flags;
+  BfConstPtr *data;
+  BfSize capacity, num_elts;
+} BfConstPtrArray;
+
+void bfConstPtrArrayDeinit(BfConstPtrArray *arr);
+bool bfConstPtrArrayIsEmpty(BfConstPtrArray const *arr);
+void bfConstPtrArrayAppend(BfConstPtrArray *arr, BfConstPtr ptr);
+BfConstPtr bfConstPtrArrayPopLast(BfConstPtrArray *arr);

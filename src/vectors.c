@@ -1,9 +1,30 @@
 #include <bf/vectors.h>
 
+#include <math.h>
 #include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+
+void bfVector3Scale(BfVector3 u, BfReal alpha) {
+  u[0] *= alpha;
+  u[1] *= alpha;
+  u[2] *= alpha;
+}
+
+BfReal bfVector3Norm(BfVector3 const u) {
+  return sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
+}
+
+BfReal bfVector3Dot(BfVector3 const u, BfVector3 const v) {
+  return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+}
+
+void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
+  w[0] = u[1]*v[2] - u[2]*v[1];
+  w[1] = u[2]*v[0] - u[0]*v[2];
+  w[2] = u[0]*v[1] - u[1]*v[0];
+}
 
 BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat) {
   return bfVectors2ConstViewFromMatDenseReal(bfMatConstToMatDenseRealConst(mat));
@@ -15,11 +36,12 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
   BfVectors2 *vectors = NULL;
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
 
   if (bfMatDenseRealGetNumCols(mat) != 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  if (matDenseReal->colStride != 1)
+  if (bfMatDenseGetColStride(matDense) != 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   vectors = malloc(sizeof(BfVectors2));

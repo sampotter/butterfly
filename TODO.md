@@ -75,3 +75,8 @@ The bigger problem is that `const` in C means "physical" `const`ness: if a varia
 What we want is logical `const`ness to aid with debugging and program correctness, but it does not seem possible to achieve this with `const` alone---it isn't a powerful enough tool for the job. Instead, it might be better to juts abandon the project and reap benefits elsewhere---for instance, there being less code.
 
 The question is where or not it's helpful to use `const` anywhere beyond this...
+
+# Useful libraries
+
+- https://librsb.sourceforge.net/
+- https://github.com/opencollab/arpack-ng

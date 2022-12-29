@@ -127,6 +127,10 @@ BfVec *bfMatColNorms(BfMat const *mat) {
   return mat->vtbl->ColNorms(mat);
 }
 
+void bfMatScaleRows(BfMat *mat, BfVec const *vec) {
+  mat->vtbl->ScaleRows(mat, vec);
+}
+
 void bfMatScaleCols(BfMat *mat, BfVec const *vec) {
   mat->vtbl->ScaleCols(mat, vec);
 }
@@ -175,6 +179,10 @@ bool bfMatIsUpperTri(BfMat const *mat) {
   return mat->vtbl->IsUpperTri(mat);
 }
 
+BfVec *bfMatForwardSolveVec(BfMat const *mat, BfVec const *vec) {
+  return mat->vtbl->ForwardSolveVec(mat, vec);
+}
+
 BfVec *bfMatBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
   return mat->vtbl->BackwardSolveVec(mat, vec);
 }
@@ -189,6 +197,10 @@ void bfMatNegate(BfMat *mat) {
 
 BfMat *bfMatToType(BfMat const *mat, BfType type) {
   return mat->vtbl->ToType(mat, type);
+}
+
+BfMat *bfMatCholesky(BfMat const *mat) {
+  return mat->vtbl->Cholesky(mat);
 }
 
 /** Implementation: Mat */
@@ -233,7 +245,31 @@ bool bfMatIsTransposed(BfMat const *mat) {
   return mat->props & BF_MAT_PROPS_TRANS;
 }
 
+BfMat *bfMatTrans(BfMat *mat) {
+  mat->props ^= BF_MAT_PROPS_TRANS;
+  return mat;
+}
+
 BfMat *bfMatConjTrans(BfMat *mat) {
   mat->props ^= (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ);
   return mat;
+}
+
+void bfMatGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V,
+                          BfReal eps_or_k, BfBackend backend) {
+  BEGIN_ERROR_HANDLING();
+
+  if (backend != BF_BACKEND_LAPACK)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  (void)mat;
+  (void)U;
+  (void)S;
+  (void)V;
+  (void)eps_or_k;
+  (void)backend;
+
+  assert(false);
+
+  END_ERROR_HANDLING() {}
 }

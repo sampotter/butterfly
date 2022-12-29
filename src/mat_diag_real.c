@@ -169,6 +169,7 @@ BF_STUB(BfVec *, MatDiagRealRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatDiagRealColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatDiagRealColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatDiagRealColNorms, BfMat const *)
+BF_STUB(void, MatDiagRealScaleRows, BfMat *, BfVec const *)
 BF_STUB(void, MatDiagRealScaleCols, BfMat *, BfVec const *)
 BF_STUB(BfVec *, MatDiagRealSumCols, BfMat const *)
 BF_STUB(void, MatDiagRealAddInplace, BfMat *, BfMat const *)
@@ -182,10 +183,12 @@ BF_STUB(BfMat *, MatDiagRealSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatDiagRealLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatDiagRealGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatDiagRealIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatDiagRealForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatDiagRealBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatDiagRealIsZero, BfMat const *)
 BF_STUB(void, MatDiagRealNegate, BfMat *)
 BF_STUB(BfMat *, MatDiagRealToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatDiagRealCholesky, BfMat const *)
 
 /* Upcasting: */
 
@@ -367,4 +370,18 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
+}
+
+BfVec *bfMatDiagRealGetVecView(BfMatDiagReal *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal *vecReal = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInitView(vecReal, mat->numElts, 1, mat->data);
+
+  END_ERROR_HANDLING()
+    bfVecRealDeinitAndDealloc(&vecReal);
+
+  return bfVecRealToVec(vecReal);
 }

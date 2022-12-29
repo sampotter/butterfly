@@ -126,7 +126,7 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
     fig = plt.figure(figsize=(10, 8))
 
     ax = fig.add_subplot(3, 1, 1)
-    ax.imshow(complex_to_hsv(PhiOrig), extent=extent)
+    ax.imshow(complex_to_hsv(PhiOrig), extent=extent, interpolation='none')
     ax.scatter(*srcPtsOrig.T, s=1, c='cyan', zorder=1)
     ax.scatter(*srcPtsEquiv.T, s=1, c='orange', zorder=2)
     ax.scatter(*tgtPts.T, s=1, c='pink', zorder=3)
@@ -139,7 +139,7 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
     ax.set_aspect('equal')
 
     ax = fig.add_subplot(3, 1, 2)
-    ax.imshow(complex_to_hsv(PhiEquiv), extent=extent)
+    ax.imshow(complex_to_hsv(PhiEquiv), extent=extent, interpolation='none')
     ax.scatter(*srcPtsOrig.T, s=1, c='cyan', zorder=1)
     ax.scatter(*srcPtsEquiv.T, s=1, c='orange', zorder=2)
     ax.scatter(*tgtPts.T, s=1, c='pink', zorder=3)
@@ -153,7 +153,7 @@ def plotdiff(srcPtsOrig, srcPtsEquiv, tgtPts, qOrig, block, h=0.0025,
 
     ax = fig.add_subplot(3, 1, 3)
     im = ax.imshow(digits, extent=extent, cmap=cc.cm.rainbow, vmin=0,
-                   vmax=16, zorder=0)
+                   vmax=16, zorder=0, interpolation='none')
     fig.colorbar(im, ax=ax)
     ax.scatter(*srcPtsOrig.T, s=1, c='cyan', zorder=1)
     ax.scatter(*srcPtsEquiv.T, s=1, c='orange', zorder=2)
@@ -270,18 +270,18 @@ print(f'factor elts: {nnz}')
 
 plt.figure(figsize=(11, 4))
 plt.subplot(1, 3, 1)
-plt.imshow(complex_to_hsv(Z_gt, rmin=0))
+plt.imshow(complex_to_hsv(Z_gt, rmin=0), interpolation='none')
 plt.gca().set_aspect('equal')
 plt.title('Z (groundtruth)')
 plt.subplot(1, 3, 2)
-plt.imshow(complex_to_hsv(Z_butterfly, rmin=0))
+plt.imshow(complex_to_hsv(Z_butterfly, rmin=0), interpolation='none')
 plt.gca().set_aspect('equal')
 plt.title('Z (butterfly)')
 plt.tight_layout()
 plt.subplot(1, 3, 3)
 plt.imshow(-np.log10(np.maximum(np.finfo(np.float64).eps,
                                 abs(Z_butterfly - Z_gt)/abs(Z_gt))),
-           cmap=cc.cm.rainbow)
+           cmap=cc.cm.rainbow, interpolation='none')
 plt.colorbar()
 plt.gca().set_aspect('equal')
 if SAVE_PLOTS:
@@ -296,7 +296,7 @@ for k, Z in enumerate(factors):
     rowOffset = np.fromfile(f'{path}/rowOffset.bin', dtype=np.uintp)
     colOffset = np.fromfile(f'{path}/colOffset.bin', dtype=np.uintp)
     plt.figure()
-    plt.imshow(complex_to_hsv(Z, rmin=0))
+    plt.imshow(complex_to_hsv(Z, rmin=0), interpolation='none')
     plt.gca().set_aspect('equal')
     plt.xticks(colOffset, rotation=90)
     plt.xlim(colOffset[0], colOffset[-1])

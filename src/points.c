@@ -12,6 +12,18 @@ BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
 }
 
+void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv) {
+  uv[0] = u[0] - v[0];
+  uv[1] = u[1] - v[1];
+  uv[2] = u[2] - v[2];
+}
+
+void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt) {
+  rt[0] = r0[0] + t*dr[0];
+  rt[1] = r0[1] + t*dr[1];
+  rt[2] = r0[2] + t*dr[2];
+}
+
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat) {
   return bfPoints2ConstViewFromMatDenseReal(bfMatConstToMatDenseRealConst(mat));
 }
@@ -22,11 +34,12 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
   BfPoints2 *points = NULL;
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
 
   if (bfMatDenseRealGetNumCols(mat) != 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  if (matDenseReal->colStride != 1)
+  if (bfMatDenseGetColStride(matDense) != 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   points = malloc(sizeof(BfPoints2));
@@ -102,7 +115,7 @@ bool bfPoints2Initialized(BfPoints2 const *points) {
   return points->data != NULL && points->size != 0;
 }
 
-BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points) {
+BfBbox2 bfPoints2GetBoundingBox(BfPoints2 const *points) {
   BfBbox2 bbox = bfGetEmptyBbox2();
 
   BfSize numPoints = points->size;
@@ -192,4 +205,78 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
   END_ERROR_HANDLING() {}
 
   return r;
+}
+
+void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {
+  if (numPoints == 0) {
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+    return;
+  }
+
+  points->size = numPoints;
+
+  points->data = malloc(numPoints*sizeof(BfPoint3));
+  if (points->data == NULL)
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+}
+
+void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  /* open the file for reading */
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* get the size of the file */
+  fseek(fp, 0, SEEK_END);
+  BfSize size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  /* make sure the binary file is the right size */
+  if (size % sizeof(BfPoint3) != 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* get the number of points */
+  points->size = size/sizeof(BfPoint3);
+
+  /* allocate space for the points */
+  points->data = malloc(size);
+  if (points->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  /* read them in */
+  fread(points->data, sizeof(BfPoint3), points->size, fp);
+  // TODO: error-handling
+
+  END_ERROR_HANDLING() {
+    free(points->data);
+  }
+
+  fclose(fp);
+}
+
+void bfPoints3Deinit(BfPoints3 *points) {
+  (void)points;
+  assert(false);
+}
+
+BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
+  BfBoundingBox3 boundingBox;
+  bfBoundingBox3InitEmpty(&boundingBox);
+
+  BfSize numPoints = points->size;
+
+  for (BfSize i = 0; i < numPoints; ++i) {
+    BfReal const *point = points->data[i];
+
+    BfReal x = point[0], y = point[1];
+
+    boundingBox.min[0] = fmin(boundingBox.min[0], x);
+    boundingBox.max[0] = fmax(boundingBox.max[0], x);
+    boundingBox.min[1] = fmin(boundingBox.min[1], y);
+    boundingBox.max[1] = fmax(boundingBox.max[1], y);
+  }
+
+  return boundingBox;
 }

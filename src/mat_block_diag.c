@@ -208,6 +208,7 @@ BF_STUB(BfVec *, MatBlockDiagRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatBlockDiagColNorms, BfMat const *)
+BF_STUB(void, MatBlockDiagScaleRows, BfMat *, BfVec const *)
 
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -278,6 +279,7 @@ BF_STUB(BfMat *, MatBlockDiagSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDiagLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatBlockDiagGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatBlockDiagIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatBlockDiagForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatBlockDiagBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatBlockDiagIsZero, BfMat const *)
 
@@ -302,6 +304,7 @@ void bfMatBlockDiagNegate(BfMat *mat) {
 }
 
 BF_STUB(BfMat *, MatBlockDiagToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatBlockDiagCholesky, BfMat const *)
 
 /** Interface: MatBlock */
 

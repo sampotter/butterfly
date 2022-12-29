@@ -6,6 +6,8 @@
 
 #include <bf/error_macros.h>
 
+/** Implementation: PtrArray */
+
 BfPtrArray bfGetUninitializedPtrArray() {
   return (BfPtrArray) {
     .flags = BF_PTR_ARRAY_FLAG_NONE,
@@ -34,14 +36,11 @@ bfInitPtrArray(BfPtrArray *arr, BfSize capacity)
   }
 }
 
-void
-bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr)
-{
+void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr) {
   bfInitPtrArray(arr, BF_ARRAY_DEFAULT_CAPACITY);
 }
 
-void bfMakeEmptyPtrArrayView(BfPtrArray *arr)
-{
+void bfMakeEmptyPtrArrayView(BfPtrArray *arr) {
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
   arr->data = NULL;
   arr->capacity = 0;
@@ -53,10 +52,25 @@ void bfPtrArrayDeinit(BfPtrArray *arr) {
   memset(arr, 0x0, sizeof(BfPtrArray));
 }
 
-void
-bfFreePtrArray(BfPtrArray *arr)
-{
-  free(arr->data);
+BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPtrArray arrCopy = {
+    .flags = BF_PTR_ARRAY_FLAG_NONE,
+    .data = malloc(arr->capacity*sizeof(BfPtr)),
+    .capacity = arr->capacity,
+    .num_elts = arr->num_elts
+  };
+
+  if (arrCopy.data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  memcpy(arrCopy.data, arr->data, arr->num_elts*sizeof(BfPtr));
+
+  END_ERROR_HANDLING()
+    free(arrCopy.data);
+
+  return arrCopy;
 }
 
 BfSize bfPtrArraySize(BfPtrArray const *arr) {
@@ -80,9 +94,7 @@ void extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
   arr->capacity = new_capacity;
 }
 
-void
-bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr)
-{
+void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr) {
   if (arr->num_elts == arr->capacity) {
     extendPtrArray(arr, 2*arr->capacity);
     enum BfError error = bfGetError();
@@ -91,7 +103,6 @@ bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr)
       return;
     }
   }
-
   arr->data[arr->num_elts++] = ptr;
 }
 
@@ -173,4 +184,46 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
 
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp) {
   qsort(arr->data, arr->num_elts, sizeof(BfPtr), (__compar_fn_t)ptrCmp);
+}
+
+/** Implementation: ConstPtrArray */
+
+void bfConstPtrArrayDeinit(BfConstPtrArray *arr) {
+  free(arr->data);
+  memset(arr, 0x0, sizeof(BfConstPtrArray));
+}
+
+bool bfConstPtrArrayIsEmpty(BfConstPtrArray const *arr) {
+  return arr->num_elts == 0;
+}
+
+void extendConstPtrArray(BfConstPtrArray *arr, BfSize new_capacity) {
+  assert(new_capacity > arr->capacity);
+
+  void *new_data = realloc(arr->data, sizeof(BfConstPtr)*new_capacity);
+  if (new_data == NULL) {
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+    return;
+  }
+
+  arr->data = new_data;
+  arr->capacity = new_capacity;
+}
+
+void bfConstPtrArrayAppend(BfConstPtrArray *arr, BfConstPtr constPtr) {
+  if (arr->num_elts == arr->capacity) {
+    extendConstPtrArray(arr, 2*arr->capacity);
+    enum BfError error = bfGetError();
+    if (error) {
+      bfSetError(error);
+      return;
+    }
+  }
+  arr->data[arr->num_elts++] = constPtr;
+}
+
+BfConstPtr bfConstPtrArrayPopLast(BfConstPtrArray *arr) {
+  BfConstPtr ptr = arr->data[--arr->num_elts];
+  arr->data[arr->num_elts] = NULL;
+  return ptr;
 }

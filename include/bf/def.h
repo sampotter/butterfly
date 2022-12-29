@@ -1,5 +1,8 @@
 #pragma once
 
+/* For getline */
+#define _POSIX_C_SOURCE 200809L
+
 #include <complex.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -26,3 +29,4 @@ typedef BfSize BfSize3[3];
 #define BF_SIZE_BAD_VALUE (BfSize)(-1)
 
 typedef void *BfPtr;
+typedef void const *BfConstPtr;

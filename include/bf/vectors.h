@@ -3,6 +3,11 @@
 #include "geom.h"
 #include "mat_dense_real.h"
 
+void bfVector3Scale(BfVector3 u, BfReal alpha);
+BfReal bfVector3Norm(BfVector3 const u);
+BfReal bfVector3Dot(BfVector3 const u, BfVector3 const v);
+void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w);
+
 struct BfVectors2 {
   BfVector2 *data;
   BfSize size;

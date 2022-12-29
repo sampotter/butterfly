@@ -16,5 +16,5 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order, BfKernelComplex K,
                             BfPtr *aux);
 
 void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
-                                     BfQuadtree const *tree, BfKernelComplex K,
+                                     BfTree const *tree, BfKernelComplex K,
                                      BfPtr *aux);

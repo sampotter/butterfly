@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -15,6 +16,7 @@
 #include <bf/mat_dense_complex.h>
 #include <bf/points.h>
 #include <bf/quadtree.h>
+#include <bf/quadtree_node.h>
 #include <bf/rand.h>
 
 void print_usage_and_exit(char const *argv0) {
@@ -61,25 +63,32 @@ int main(int argc, char const *argv[]) {
 
   BfReal K = atoi(argv[1]);
 
+  char const *pointsPath = argv[6];
   BfPoints2 points;
-  bfReadPoints2FromFile(argv[6], &points);
+  bfReadPoints2FromFile(pointsPath, &points);
   HANDLE_ERROR();
-  printf("read points from %s\n", argv[2]);
+  printf("read %lu points from %s\n", points.size, pointsPath);
 
+  char const *normalsPath = argv[8];
   BfVectors2 tgtNormals, *tgtNormalsPtr = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
-    bfReadVectors2FromFile(argv[8], &tgtNormals);
+    bfReadVectors2FromFile(normalsPath, &tgtNormals);
     HANDLE_ERROR();
-    printf("read unit normals from %s\n", argv[8]);
+    printf("read %lu unit normals from %s\n", tgtNormals.size, normalsPath);
     tgtNormalsPtr = &tgtNormals;
   }
 
-  BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, &points, tgtNormalsPtr);
+  BfQuadtree *quadtree = bfQuadtreeNew();
+  bfQuadtreeInit(quadtree, &points, tgtNormalsPtr);
   HANDLE_ERROR();
   puts("built quadtree");
 
-  bfQuadtreeSaveBoxesToTextFile(&tree, "quadtree.txt");
+  BfTree *tree = bfQuadtreeToTree(quadtree);
+
+  BfSize maxDepth = bfTreeGetMaxDepth(tree);
+  printf("- max depth: %lu\n", maxDepth);
+
+  bfQuadtreeSaveBoxesToTextFile(quadtree, "quadtree.txt");
   puts("saved quadtree boxes to quadtree.txt");
 
   bfSeed(1234);
@@ -92,33 +101,32 @@ int main(int argc, char const *argv[]) {
   BfSize tgt_depth = atoi(argv[4]);
   BfSize tgtNodeIndex = atoi(argv[5]);
 
-  BfQuadtreeNode *srcNode;
-  bfGetQuadtreeNode(&tree, src_depth, srcNodeIndex, &srcNode);
+  BfTreeNode *treeNodeSrc = bfTreeGetNode(tree, src_depth, srcNodeIndex);
   HANDLE_ERROR();
 
   printf("source node index range (column range): [%lu, %lu)\n",
-         srcNode->offset[0], srcNode->offset[4]);
+         bfTreeNodeGetFirstIndex(treeNodeSrc), bfTreeNodeGetLastIndex(treeNodeSrc));
 
-  BfQuadtreeNode *tgtNode;
-  bfGetQuadtreeNode(&tree, tgt_depth, tgtNodeIndex, &tgtNode);
+  BfTreeNode *treeNodeTgt = bfTreeGetNode(tree, tgt_depth, tgtNodeIndex);
   HANDLE_ERROR();
 
   printf("target node index range (row range): [%lu, %lu)\n",
-         tgtNode->offset[0], tgtNode->offset[4]);
+         bfTreeNodeGetFirstIndex(treeNodeTgt), bfTreeNodeGetLastIndex(treeNodeTgt));
+
+  BfQuadtreeNode *quadtreeNodeSrc = bfTreeNodeToQuadtreeNode(treeNodeSrc);
+  BfQuadtreeNode *quadtreeNodeTgt = bfTreeNodeToQuadtreeNode(treeNodeTgt);
 
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
 
-  BfPoints2 tgtNodePts;
-  bfGetQuadtreeNodePoints(&tree, tgtNode, &tgtNodePts);
+  BfPoints2 tgtNodePts = bfQuadtreeNodeGetPoints(bfTreeNodeToQuadtreeNode(treeNodeTgt), quadtree);
   HANDLE_ERROR();
 
   bfSavePoints2(&tgtNodePts, "tgtNodePts.bin");
   HANDLE_ERROR();
   puts("wrote target node points to tgtNodePts.bin");
 
-  BfPoints2 srcNodePts;
-  bfGetQuadtreeNodePoints(&tree, srcNode, &srcNodePts);
+  BfPoints2 srcNodePts = bfQuadtreeNodeGetPoints(quadtreeNodeSrc, quadtree);
   HANDLE_ERROR();
 
   bfSavePoints2(&srcNodePts, "srcNodePts.bin");
@@ -127,7 +135,7 @@ int main(int argc, char const *argv[]) {
 
   BfVectors2 tgtNodeNormals, *tgtNodeNormalsPtr = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
-    bfQuadtreeNodeGetUnitNormals(&tree, tgtNode, &tgtNodeNormals);
+    tgtNodeNormals = bfQuadtreeNodeGetUnitNormals(quadtreeNodeTgt, quadtree);
     HANDLE_ERROR();
 
     bfSaveVectors2(&tgtNodeNormals, "tgtNormals.bin");
@@ -153,14 +161,14 @@ int main(int argc, char const *argv[]) {
 
   /* TODO: wrap this up into a single function in fac */
 
-  BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
+  BfTreeLevelIter srcLevelIter, tgtLevelIter;
   numFactors = bfFacHelm2Prepare(
-    srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
+    quadtreeNodeSrc, quadtreeNodeTgt, K, &srcLevelIter, &tgtLevelIter);
   if (numFactors == 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   factorization = bfFacHelm2Make(
-    &tree, K, layerPot, &srcLevelIter, &tgtLevelIter, numFactors);
+    quadtree, K, layerPot, &srcLevelIter, &tgtLevelIter, numFactors);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 
@@ -299,6 +307,6 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&Z_gt);
   bfFreePoints2(&srcNodePts);
   bfFreePoints2(&tgtNodePts);
-  bfFreeQuadtree(&tree);
+  // bfQuadtreeDeinitAndDealloc(&tree);
   bfFreePoints2(&points);
 }

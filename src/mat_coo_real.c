@@ -216,6 +216,7 @@ BF_STUB(BfVec *, MatCooRealRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooRealColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooRealColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooRealColNorms, BfMat const *)
+BF_STUB(void, MatCooRealScaleRows, BfMat *, BfVec const *)
 BF_STUB(void, MatCooRealScaleCols, BfMat *, BfVec const *)
 BF_STUB(BfVec *, MatCooRealSumCols, BfMat const *)
 BF_STUB(void, MatCooRealAddInplace, BfMat *, BfMat const *)
@@ -228,6 +229,7 @@ BF_STUB(void, MatCooRealMulInplace, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCooRealSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatCooRealLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatCooRealIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatCooRealForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatCooRealBackwardSolveVec, BfMat const *, BfVec const *)
 
 bool bfMatCooRealIsZero(BfMat const *mat) {
@@ -236,6 +238,7 @@ bool bfMatCooRealIsZero(BfMat const *mat) {
 
 BF_STUB(void, MatCooRealNegate, BfMat *)
 BF_STUB(BfMat *, MatCooRealToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatCooRealCholesky, BfMat const *)
 
 /** Upcasting: */
 

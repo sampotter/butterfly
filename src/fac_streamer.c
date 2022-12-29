@@ -1,32 +1,66 @@
-#include "bf_streaming.h"
+#include <bf/fac_streamer.h>
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block_diag.h>
+#include <bf/mat_diag_real.h>
 #include <bf/ptr_array.h>
 #include <bf/tree.h>
+#include <bf/tree_node.h>
+#include <bf/tree_iter.h>
+#include <bf/vec_real.h>
 
 #undef BF_ARRAY_DEFAULT_CAPACITY
 #define BF_ARRAY_DEFAULT_CAPACITY 32
 
 struct BfFacStreamer {
   BfReal tol;
-  bool adaptive;
   BfSize rowTreeInitDepth;
+  BfSize colTreeInitDepth;
 
   BfTree const *rowTree;
   BfTree const *colTree;
 
-  BfTreeIter colTreeIter;
+  BfTreeIter *colTreeIter;
   BfTreeNode const *currentColNode;
+};
 
+BfFacStreamer *bfFacStreamerNew() {
+  BEGIN_ERROR_HANDLING();
+
+  BfFacStreamer *facStreamer = malloc(sizeof(BfFacStreamer));
+  if (facStreamer == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  END_ERROR_HANDLING()
+    facStreamer = NULL;
+
+  return facStreamer;
+}
+
+void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree const *rowTree,
+                       BfTree const *colTree, BfSize rowTreeInitDepth,
+                       BfSize colTreeInitDepth, BfReal tol) {
+  facStreamer->tol = tol;
+
+  facStreamer->rowTreeInitDepth = rowTreeInitDepth;
+  facStreamer->colTreeInitDepth = colTreeInitDepth;
+
+  facStreamer->rowTree = rowTree;
+  facStreamer->colTree = colTree;
+
+  facStreamer->colTreeIter = NULL;
+  facStreamer->currentColNode = NULL;
 }
 
 static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
                        BfTreeNode const *colNode, BfReal tol,
                        BfMat **Psi, BfMat **W) {
+  (void)colNode;
+
   BEGIN_ERROR_HANDLING();
 
   BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
@@ -37,46 +71,49 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
   BfSize kmax = m < n ? m : n;
 
   /* TODO: should be something like: `bfMatGetRowRangeViewConst` */
-  BfMat const *block = bfMatGetRowRange((BfMat *)mat, i0, i1);
+  BfMat *block = bfMatGetRowRange((BfMat *)mat, i0, i1);
   HANDLE_ERROR();
 
   /* Compute truncated SVD of the block. */
   BfMatDiagReal *S;
-  bfMatGetTruncatedSvd(block, *Psi, S, *W, tol);
+  bfMatGetTruncatedSvd(block, Psi, &S, W, tol, BF_BACKEND_LAPACK);
   HANDLE_ERROR();
 
   /* Bail if we didn't compress this block */
-  BfSize k = bfMatGetNumCols(U);
+  BfSize k = bfMatGetNumCols(*Psi);
   if (k == kmax) {
     bfMatDelete(Psi);
     bfMatDelete(W);
-    bfMatDiagRealDeallocAndDelete(&S);
+    bfMatDiagRealDeinitAndDealloc(&S);
     return false;
   }
 
-  BfVec *Svec = bfVecRealToVec(bfMatDiagRealGetVecView(S));
+  BfVec *Svec = bfMatDiagRealGetVecView(S);
   bfMatScaleRows(*W, Svec);
 
   END_ERROR_HANDLING() {}
 
   bfVecDelete(&Svec);
-  bfMatDiagRealDeallocAndDelete(&S);
+  bfMatDiagRealDeinitAndDealloc(&S);
   bfMatDelete(&block);
 
   return true;
 }
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
-  BEGIN_ERROR_HANDLING();
-
   BfTreeNode const *currentNode = NULL;
 
-  while (!bfTreeLevelIterIsDone(facStreamer->colTreeIter)
-         && !bfTreeNodeIsLeaf(facStreamer->colTreeIter->currentNode)) {
+  while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
     currentNode = facStreamer->colTreeIter->currentNode;
+    if (bfTreeNodeIsLeaf(currentNode))
+      break;
 
-    BfSize currentDepth = bfTreeNodeGetDepth(currentNode);
-    BfSize numChildren = bfTreeNodeGetNumChildren(currentNode);
+    BfSize currentDepth = currentNode->depth;
+    BfSize numChildren = currentNode->maxNumChildren;
+
+
+    (void)currentDepth;
+    (void)numChildren;
 
     // get Psi blocks for children
 
@@ -90,8 +127,6 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
   }
 
   facStreamer->currentColNode = facStreamer->colTreeIter->currentNode;
-
-  END_ERROR_HANDLING() {}
 }
 
 /* Notes:
@@ -106,7 +141,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
   assert(bfTreeNodeIsLeaf(colNode));
 
   /* Make sure `mat` has the right number of rows */
-  if (bfMatGetNumRows(mat) != bfTreeGetNumPoints(facStreamer->rowTree));
+  if (bfMatGetNumRows(mat) != bfTreeGetNumPoints(facStreamer->rowTree))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* Make sure `mat` has the right number of columns */
@@ -125,22 +160,12 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
 
   /* Create the stack used to adaptively find the cut through the row
    * tree to start the adaptive butterfly factorization */
-  BfPtrArray stack;
-  bfInitPtrArray(&stack, BF_ARRAY_DEFAULT_CAPACITY);
+  BfConstPtrArray stack = bfTreeGetLevelConstPtrArray(
+    facStreamer->rowTree, facStreamer->rowTreeInitDepth);
   HANDLE_ERROR();
 
-  /* Fill it with nodes on the starting level of the row tree
-   *
-   * TODO: simplify this by adding `bfTreeGetLevelNodes` function */
-  { BfTreeLevelIter *iter = bfTreeGetLevelIter(
-      facStreamer->rowTree, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
-      facStreamer->rowTreeInitDepth);
-    for (BfSize i = 0; i < bfPtrArraySize(&iter->levelNodes); ++i)
-      bfPtrArrayAppend(&stack, bfPtrArrayGet(&iter->levelNodes, i));
-    bfTreeLevelIterFree(iter); }
-
-  while (!bfPtrArrayIsEmpty(&stack)) {
-    BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
+  while (!bfConstPtrArrayIsEmpty(&stack)) {
+    BfTreeNode const *rowNode = bfConstPtrArrayPopLast(&stack);
 
     BfMat *Psi = NULL, *W = NULL;
     bool metTol = getPsiAndW(mat, rowNode, colNode, facStreamer->tol, &Psi, &W);
@@ -156,8 +181,8 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
 
     /* Push the children of the current row node onto the stack in
      * reverse order so that we traverse `mat` top to bottom */
-    for (BfSize i = bfTreeNodeGetNumChildren(rowNode) - 1; i >= 0; --i)
-      bfPtrArrayAppend(bfTreeNodeGetChild(rowNode, i));
+    for (BfSize i = rowNode->maxNumChildren; i > 0; --i)
+      bfConstPtrArrayAppend(&stack, rowNode->child[i - 1]);
   }
 
   continueFactorizing(facStreamer);
@@ -166,9 +191,15 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
 
   bfPtrArrayDeinit(&W_blocks);
   bfPtrArrayDeinit(&Psi_blocks);
-  bfPtrArrayDeinit(&stack);
+  bfConstPtrArrayDeinit(&stack);
 }
 
 bool bfFacStreamerDone(BfFacStreamer const *facStreamer) {
-  return bfTreeLevelIterIsDone(facStreamer->colTreeIter);
+  return bfTreeIterIsDone(facStreamer->colTreeIter);
+}
+
+BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
+  (void)facStreamer;
+
+  assert(false);
 }

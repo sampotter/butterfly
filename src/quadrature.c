@@ -126,12 +126,14 @@ BfMat *bf_get_KR_corr_spmat(BfSize order, BfSize m, BfKernelComplex K, BfPtr *au
 }
 
 void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
-                                     BfQuadtree const *tree,
+                                     BfTree const *tree,
                                      BfKernelComplex K, BfPtr *aux)
 {
   BEGIN_ERROR_HANDLING();
 
   BfMat *corr = NULL;
+
+  BfPerm const *perm = bfTreeGetPermConst(tree);
 
   if (order != 2 && order != 6 && order != 10)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -146,8 +148,8 @@ void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   corr = bf_get_KR_corr_spmat(order, m, K, aux);
-  bfMatPermuteRows(corr, &tree->perm);
-  bfMatPermuteCols(corr, &tree->perm);
+  bfMatPermuteRows(corr, perm);
+  bfMatPermuteCols(corr, perm);
 
   bfMatAddInplace(mat, corr);
 

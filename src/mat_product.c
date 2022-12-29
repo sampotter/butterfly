@@ -128,6 +128,7 @@ BF_STUB(BfVec *, MatProductRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatProductColNorms, BfMat const *)
+BF_STUB(void, MatProductScaleRows, BfMat *, BfVec const *)
 
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -197,10 +198,12 @@ BF_STUB(BfMat *, MatProductSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatProductLstSq, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatProductGetGivensRotation, BfVec const *, BfSize, BfSize)
 BF_STUB(bool, MatProductIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatProductForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatProductBackwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(bool, MatProductIsZero, BfMat const *)
 BF_STUB(void, MatProductNegate, BfMat *)
 BF_STUB(BfMat *, MatProductToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatProductCholesky, BfMat const *)
 
 /** Upcasting: */
 

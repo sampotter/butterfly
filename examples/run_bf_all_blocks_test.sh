@@ -37,6 +37,8 @@ echo "- wavenumber: k = $K"
 echo "- layer potential: $LAYER_POT"
 echo "- saving blocks to $BLOCKS_PATH"
 
+set -x
+
 ./make_${SHAPE}_test_data.py ${NUM_POINTS}
 
 ./bf_all_blocks ${K} \
@@ -48,3 +50,5 @@ echo "- saving blocks to $BLOCKS_PATH"
 ./plot_blocks.py ${BLOCKS_PATH}
 
 ./plot_bf_all_blocks.py
+
+set +x

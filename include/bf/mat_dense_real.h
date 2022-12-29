@@ -1,11 +1,9 @@
 #pragma once
 
-#include "mat.h"
+#include "mat_dense.h"
 
 struct BfMatDenseReal {
-  BfMat super;
-  BfSize rowStride;
-  BfSize colStride;
+  BfMatDense super;
   BfReal *data;
 };
 
@@ -15,6 +13,9 @@ BF_DECLARE_INTERFACE(MatDenseReal)
 
 BfMat *bfMatDenseRealToMat(BfMatDenseReal *matDenseReal);
 BfMat const *bfMatDenseRealConstToMatConst(BfMatDenseReal const *matDenseReal);
+
+BfMatDense *bfMatDenseRealToMatDense(BfMatDenseReal *matDenseReal);
+BfMatDense const *bfMatDenseRealConstToMatDenseConst(BfMatDenseReal const *matDenseReal);
 
 BfMatDenseReal *bfMatToMatDenseReal(BfMat *mat);
 BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat);
@@ -27,3 +28,5 @@ void bfMatDenseRealInitWithValue(BfMatDenseReal *mat, BfSize numRows,
 void bfMatDenseRealDeinit(BfMatDenseReal *mat);
 void bfMatDenseRealDealloc(BfMatDenseReal **mat);
 void bfMatDenseRealDeinitAndDealloc(BfMatDenseReal **mat);
+void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal *U,
+                       BfMatDiagReal *S, BfMatDenseReal *VH);

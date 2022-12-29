@@ -3,7 +3,6 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/lbo.h>
-#include <bf/spmat.h>
 
 void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree,
                                   BfTrimesh const *trimesh) {

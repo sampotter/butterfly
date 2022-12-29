@@ -5,6 +5,9 @@
 
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q);
 
+void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv);
+void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt);
+
 struct BfPoints2 {
   BfPoint2 *data;
   BfSize size;
@@ -17,10 +20,20 @@ void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points);
 void bfFreePoints2(BfPoints2 *points);
 bool bfPoints2Initialized(BfPoints2 const *points);
-BfBbox2 bfGetPoints2BoundingBox(BfPoints2 const *points);
+BfBbox2 bfPoints2GetBoundingBox(BfPoints2 const *points);
 void bfGetPointsByIndex(BfPoints2 const *points,
                                 BfSize numInds, BfSize const *inds,
                                 BfPoints2 *indexedPoints);
 void bfPrintPoints2(BfPoints2 const *points);
 void bfSavePoints2(BfPoints2 const *points, char const *path);
 BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y);
+
+struct BfPoints3 {
+  BfPoint3 *data;
+  BfSize size;
+};
+
+void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints);
+void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path);
+void bfPoints3Deinit(BfPoints3 *points);
+BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points);

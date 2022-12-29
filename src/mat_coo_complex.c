@@ -218,6 +218,7 @@ BF_STUB(BfVec *, MatCooComplexRowDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooComplexColDists, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooComplexColDots, BfMat const *, BfMat const *)
 BF_STUB(BfVec *, MatCooComplexColNorms, BfMat const *)
+BF_STUB(void, MatCooComplexScaleRows, BfMat *, BfVec const *)
 BF_STUB(void, MatCooComplexScaleCols, BfMat *, BfVec const *)
 BF_STUB(BfVec *, MatCooComplexSumCols, BfMat const *)
 BF_STUB(void, MatCooComplexAddInplace, BfMat *, BfMat const *)
@@ -292,6 +293,7 @@ BF_STUB(void, MatCooComplexMulInplace, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCooComplexSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatCooComplexLstSq, BfMat const *, BfMat const *)
 BF_STUB(bool, MatCooComplexIsUpperTri, BfMat const *)
+BF_STUB(BfVec *, MatCooComplexForwardSolveVec, BfMat const *, BfVec const *)
 BF_STUB(BfVec *, MatCooComplexBackwardSolveVec, BfMat const *, BfVec const *)
 
 bool bfMatCooComplexIsZero(BfMat const *mat) {
@@ -300,6 +302,7 @@ bool bfMatCooComplexIsZero(BfMat const *mat) {
 
 BF_STUB(void, MatCooComplexNegate, BfMat *)
 BF_STUB(BfMat *, MatCooComplexToType, BfMat const *, BfType)
+BF_STUB(BfMat *, MatCooComplexCholesky, BfMat const *)
 
 /** Upcasting: */
 
