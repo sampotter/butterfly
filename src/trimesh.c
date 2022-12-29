@@ -197,10 +197,14 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
     free(lineptr);
   } while (nread >= 0);
 
+  /* Allocate space for the vertices and faces */
+
   bfPoints3InitEmpty(&trimesh->verts, num_verts);
   HANDLE_ERROR();
 
-  trimesh->faces = malloc(num_face_vertex_indices*sizeof(BfSize3));
+  trimesh->numFaces = num_face_vertex_indices;
+
+  trimesh->faces = malloc(trimesh->numFaces*sizeof(BfSize3));
   if (trimesh->faces == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -245,9 +249,9 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
         for (size_t i = 0; i < 3; ++i) {
           saveptr_ = NULL;
           tok = strtok_r(toks[i], "//", &saveptr_);
-          trimesh->faces[fv_index][i] = strtoull(tok, NULL, 10);
+          trimesh->faces[fv_index][i] = strtoull(tok, NULL, 10) - 1;
 //           tok = strtok_r(NULL, "//", &saveptr_);
-//           face_vertex_normal_indices[fvn_index][i] = strtoull(tok, NULL, 10);
+//           face_vertex_normal_indices[fvn_index][i] = strtoull(tok, NULL, 10) - 1;
         }
         ++fv_index;
 //         ++fvn_index;
