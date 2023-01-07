@@ -46,6 +46,9 @@ BfMat *bfMatCsrRealCholesky(BfMat const *mat) {
   };
 
   cholmod_factor *R_factor = cholmod_analyze(&A, c);
+  if (R_factor == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
   cholmod_factorize(&A, R_factor, c);
 
   if (R_factor->minor != n)
