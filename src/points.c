@@ -269,13 +269,10 @@ BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
 
   for (BfSize i = 0; i < numPoints; ++i) {
     BfReal const *point = points->data[i];
-
-    BfReal x = point[0], y = point[1];
-
-    boundingBox.min[0] = fmin(boundingBox.min[0], x);
-    boundingBox.max[0] = fmax(boundingBox.max[0], x);
-    boundingBox.min[1] = fmin(boundingBox.min[1], y);
-    boundingBox.max[1] = fmax(boundingBox.max[1], y);
+    for (BfSize j = 0; j < 3; ++j) {
+      boundingBox.min[j] = fmin(boundingBox.min[j], point[j]);
+      boundingBox.max[j] = fmax(boundingBox.max[j], point[j]);
+    }
   }
 
   return boundingBox;
