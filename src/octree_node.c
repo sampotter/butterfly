@@ -85,7 +85,7 @@ BfOctreeNode *bfOctreeNodeNew() {
  * `perm`: an array of `points->size` indices indexing `points`.
  * `currentDepth`: `node`'s depth */
 static void octreeNodeInitRecursive(
-  BfOctreeNode *node, BfPoints3 const *points, BfBoundingBox3 boundingBox,
+  BfOctreeNode *node, BfPoints3 const *points, BfBoundingBox3 const *boundingBox,
   BfSize i0, BfSize i1, BfSize *perm, BfSize currentDepth)
 {
   BEGIN_ERROR_HANDLING();
@@ -153,36 +153,36 @@ static void octreeNodeInitRecursive(
   /* Compute the bounding boxes each child node */
   BfBoundingBox3 childBoundingBox[8] = {
     [0] = {
-      .min = {boundingBox.min[0], boundingBox.min[1], boundingBox.min[2]},
-      .max = {split[0],           split[1],           split[2]}
+      .min = {boundingBox->min[0], boundingBox->min[1], boundingBox->min[2]},
+      .max = {split[0],            split[1],            split[2]}
     },
     [1] = {
-      .min = {boundingBox.min[0], boundingBox.min[1], split[2]},
-      .max = {split[0],           split[1],           boundingBox.max[2]}
+      .min = {boundingBox->min[0], boundingBox->min[1], split[2]},
+      .max = {split[0],            split[1],            boundingBox->max[2]}
     },
     [2] = {
-      .min = {boundingBox.min[0], split[1],           boundingBox.min[2]},
-      .max = {split[0],           boundingBox.max[1], split[2]}
+      .min = {boundingBox->min[0], split[1],            boundingBox->min[2]},
+      .max = {split[0],            boundingBox->max[1], split[2]}
     },
     [3] = {
-      .min = {boundingBox.min[0], split[1],           split[2]},
-      .max = {split[0],           boundingBox.max[1], boundingBox.max[2]}
+      .min = {boundingBox->min[0], split[1],            split[2]},
+      .max = {split[0],            boundingBox->max[1], boundingBox->max[2]}
     },
     [4] = {
-      .min = {split[0],           boundingBox.min[1], boundingBox.min[2]},
-      .max = {boundingBox.max[0], split[1],           split[2]}
+      .min = {split[0],            boundingBox->min[1], boundingBox->min[2]},
+      .max = {boundingBox->max[0], split[1],            split[2]}
     },
     [5] = {
-      .min = {split[0],           boundingBox.min[1], split[2]},
-      .max = {boundingBox.max[0], split[1],           boundingBox.max[2]}
+      .min = {split[0],            boundingBox->min[1], split[2]},
+      .max = {boundingBox->max[0], split[1],            boundingBox->max[2]}
     },
     [6] = {
-      .min = {split[0],           split[1],           boundingBox.min[2]},
-      .max = {boundingBox.max[0], boundingBox.max[1], split[2]}
+      .min = {split[0],            split[1],            boundingBox->min[2]},
+      .max = {boundingBox->max[0], boundingBox->max[1], split[2]}
     },
     [7] = {
-      .min = {split[0],           split[1],           split[2]},
-      .max = {boundingBox.max[0], boundingBox.max[1], boundingBox.max[2]}
+      .min = {split[0],            split[1],            split[2]},
+      .max = {boundingBox->max[0], boundingBox->max[1], boundingBox->max[2]}
     }
   };
 
@@ -226,7 +226,7 @@ static void octreeNodeInitRecursive(
     newChild->split[1] = (childBoundingBox[q].min[1] + childBoundingBox[q].max[1])/2;
     newChild->split[2] = (childBoundingBox[q].min[2] + childBoundingBox[q].max[2])/2;
 
-    octreeNodeInitRecursive(newChild, points, childBoundingBox[q],
+    octreeNodeInitRecursive(newChild, points, &newChild->boundingBox,
                             offset[q], offset[q + 1], perm, currentDepth + 1);
     HANDLE_ERROR();
 
@@ -242,21 +242,22 @@ static void octreeNodeInitRecursive(
 void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   BEGIN_ERROR_HANDLING();
 
+  bfTreeNodeInit(&node->super, &TreeNodeVtable, true, (void *)tree,
+                 NUM_CHILDREN, BF_SIZE_BAD_VALUE, 0);
+  HANDLE_ERROR();
+
   /* Compute the bounding box for the entire octree */
-  BfBoundingBox3 boundingBox = bfPoints3GetBoundingBox(tree->points);
-  assert(!bfBoundingBox3IsEmpty(&boundingBox));
+  node->boundingBox = bfPoints3GetBoundingBox(tree->points);
+  assert(!bfBoundingBox3IsEmpty(&node->boundingBox));
 
   /* Rescale the bounding box so that it's square */
-  bfBoundingBox3RescaleToCube(&boundingBox);
-
-  node->boundingBox = boundingBox;
+  bfBoundingBox3RescaleToCube(&node->boundingBox);
 
   /* Compute the split for the root node */
-  node->split[0] = (boundingBox.min[0] + boundingBox.max[0])/2;
-  node->split[1] = (boundingBox.min[1] + boundingBox.max[1])/2;
-  node->split[2] = (boundingBox.min[2] + boundingBox.max[2])/2;
+  bfBoundingBox3GetCenter(&node->boundingBox, node->split);
 
-  octreeNodeInitRecursive(node, tree->points, boundingBox, 0,
+  /* Recursively initialize octree starting from root */
+  octreeNodeInitRecursive(node, tree->points, &node->boundingBox, 0,
                           tree->points->size, tree->super.perm.index, 0);
   HANDLE_ERROR();
 
