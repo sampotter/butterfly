@@ -12,10 +12,10 @@ BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
 }
 
-void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv) {
-  uv[0] = u[0] - v[0];
-  uv[1] = u[1] - v[1];
-  uv[2] = u[2] - v[2];
+void bfPoint3Sub(BfPoint3 const u, BfPoint3 const v, BfVector3 w) {
+  w[0] = u[0] - v[0];
+  w[1] = u[1] - v[1];
+  w[2] = u[2] - v[2];
 }
 
 void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt) {
