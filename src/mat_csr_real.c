@@ -187,3 +187,42 @@ void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat) {
   bfMatCsrRealDeinit(*mat);
   bfMatCsrRealDealloc(mat);
 }
+
+void bfMatCsrRealDump(BfMatCsrReal const *matCsrReal, char const *rowptrPath,
+                      char const *colindPath, char const *dataPath) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = matCsrReal->super.numRows;
+  BfSize nnz = matCsrReal->rowptr[numRows];
+
+  FILE *fp;
+
+  /* Save `rowptr` to disk: */
+
+  fp = fopen(rowptrPath, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  fwrite(matCsrReal->rowptr, sizeof(BfSize), numRows + 1, fp);
+  fclose(fp);
+
+  /* Save `colind` to disk: */
+
+  fp = fopen(colindPath, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  fwrite(matCsrReal->colind, sizeof(BfSize), nnz, fp);
+  fclose(fp);
+
+  /* Save `data` to disk: */
+
+  fp = fopen(dataPath, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  fwrite(matCsrReal->data, sizeof(BfReal), nnz, fp);
+  fclose(fp);
+
+  END_ERROR_HANDLING() {
+    // TODO: delete all files
+    fclose(fp);
+  }
+}

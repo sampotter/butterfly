@@ -36,3 +36,5 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols, BfSize 
 void bfMatCsrRealDeinit(BfMatCsrReal *mat);
 void bfMatCsrRealDealloc(BfMatCsrReal **mat);
 void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat);
+void bfMatCsrRealDump(BfMatCsrReal const *mat, char const *rowptrPath, char const *colindPath,
+                      char const *dataPath);
