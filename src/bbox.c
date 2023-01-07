@@ -60,8 +60,8 @@ bool bfBoundingBox3IsEmpty(BfBoundingBox3 const *boundingBox) {
 void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox) {
   BfPoint3 c = {
     (boundingBox->min[0] + boundingBox->max[0])/2,
-    (boundingBox->min[0] + boundingBox->max[0])/2,
-    (boundingBox->min[0] + boundingBox->max[0])/2
+    (boundingBox->min[1] + boundingBox->max[1])/2,
+    (boundingBox->min[2] + boundingBox->max[2])/2
   };
 
   BfReal dx = boundingBox->max[0] - boundingBox->min[0];
@@ -79,7 +79,7 @@ void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox) {
   boundingBox->max[2] = c[2] + dmax/2;
 }
 
-void bfBoundingBox2GetCenter(BfBoundingBox3 const *boundingBox, BfPoint2 center) {
+void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center) {
   center[0] = (boundingBox->min[0] + boundingBox->max[0])/2;
   center[1] = (boundingBox->min[1] + boundingBox->max[1])/2;
   center[2] = (boundingBox->min[2] + boundingBox->max[2])/2;
