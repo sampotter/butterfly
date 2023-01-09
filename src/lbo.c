@@ -37,15 +37,17 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
 
   /* Fill colind */
   for (BfSize i = 0; i < numVerts; ++i) {
-    BfSize j = rowptr[i], *vv = &trimesh->vv[trimesh->vvOffset[i]];
-    while (j < rowptr[i + 1] && *vv < i)
-      colind[j++] = *vv;
+    BfSize j = rowptr[i];
+    BfSize jend = rowptr[i + 1] - 1;
+    BfSize *vv = &trimesh->vv[trimesh->vvOffset[i]];
+    while (j < jend && *vv < i)
+      colind[j++] = *vv++;
     colind[j++] = i;
-    while (j < rowptr[i + 1])
-      colind[j++] = *vv;
+    while (j < jend)
+      colind[j++] = *vv++;
   }
 
-  BfSize f, i, i0, i1, *jptr, k, k0, k1;
+  BfSize f, j, i, i0, i1, *jptr, k, k0, k1;
   BfPoint3 x, x0, x1, y, y0, y1;
   BfVector3 d, d0, d1, g, g0, g1, n;
   BfReal A;
@@ -62,7 +64,9 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
     while (jptr[k] != i) ++k;
 
     /* For each incident face: */
-    for (f = trimesh->vfOffset[i]; f < trimesh->vfOffset[i + 1]; ++f) {
+    for (j = trimesh->vfOffset[i]; j < trimesh->vfOffset[i + 1]; ++j) {
+      f = trimesh->vf[j];
+
       /* Get the other two vertices in the current face */
       bfTrimeshGetOpFaceVerts(trimesh, f, i, &i0, &i1);
       bfTrimeshGetVertex(trimesh, i0, x0);
@@ -81,16 +85,16 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
       /* Compute orthogonal projection of each vertex onto the
        * opposite face edge */
       bfPoint3GetPointOnRay(x0, d, -bfVector3Dot(d, d1)/bfVector3Dot(d, d), y);
-      bfPoint3GetPointOnRay(x1, d0, -bfVector3Dot(d0, d)/bfVector3Dot(d0, d0), y);
-      bfPoint3GetPointOnRay(x, d1, -bfVector3Dot(d1, d0)/bfVector3Dot(d1, d1), y);
+      bfPoint3GetPointOnRay(x1, d0, -bfVector3Dot(d0, d)/bfVector3Dot(d0, d0), y0);
+      bfPoint3GetPointOnRay(x, d1, -bfVector3Dot(d1, d0)/bfVector3Dot(d1, d1), y1);
 
       /* Compute gradients for hat functions centered at each vertex */
       bfPoint3Sub(x, y, g);
       bfPoint3Sub(x0, y0, g0);
       bfPoint3Sub(x1, y1, g1);
-      bfVector3Scale(g, bfVector3Dot(g, g));
-      bfVector3Scale(g0, bfVector3Dot(g0, g0));
-      bfVector3Scale(g1, bfVector3Dot(g1, g1));
+      bfVector3Scale(g, 1/bfVector3Dot(g, g));
+      bfVector3Scale(g0, 1/bfVector3Dot(g0, g0));
+      bfVector3Scale(g1, 1/bfVector3Dot(g1, g1));
 
       /* Get triangle area */
       bfVector3Cross(d0, d1, n);
@@ -108,10 +112,16 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
     }
   }
 
+  *L = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
   bfMatCsrRealInit(*L, numVerts, numVerts, rowptr, colind, L_data);
   HANDLE_ERROR();
 
-  bfMatCsrRealInit(*M, numVerts, numVerts, rowptr, colind, L_data);
+  *M = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
+  bfMatCsrRealInit(*M, numVerts, numVerts, rowptr, colind, M_data);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
