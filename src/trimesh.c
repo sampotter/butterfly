@@ -54,41 +54,76 @@ static void initVf(BfTrimesh *trimesh) {
   free(offset);
 }
 
-/* Insert a new entry into `trimesh->vv`. This assumes that the `vv`
- * blocks are being filled in increasing vertex order. */
-static void vvInsertNewSorted(BfTrimesh *trimesh, BfSize i, BfSize i0, BfSize *vvCapacity) {
+static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
+                                         BfSize *nvvPtr, BfSize *capacityPtr,
+                                         BfSize **vvPtr) {
   BEGIN_ERROR_HANDLING();
 
-  /* Find position of `i0` in `vv` */
-  BfSize j = trimesh->vvOffset[i];
-  for (; j < trimesh->vvOffset[i + 1]; ++j)
-    if (trimesh->vv[j] >= i0)
-      break;
-  assert (j <= *vvCapacity);
+  BfSize nvv = *nvvPtr;
+  BfSize capacity = *capacityPtr;
+  BfSize *vv = *vvPtr;
 
-  /* If `vv` already contains `i0`, return */
-  if (trimesh->vv[j] == i0)
-    return;
+  for (BfSize j = trimesh->vfOffset[i]; j < trimesh->vfOffset[i + 1]; ++j) {
+    BfSize f = trimesh->vf[j];
 
-  /* If we're at capacity, expand the array */
-  if (j == *vvCapacity) {
-    *vvCapacity *= 2;
-    BfSize *vvNew = realloc(trimesh->vv, *vvCapacity*sizeof(BfSize));
-    if (vvNew == NULL)
-      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-    trimesh->vv = vvNew;
+    BfSize inds[2];
+    bfTrimeshGetOpFaceVerts(trimesh, f, i, &inds[0], &inds[1]);
+
+    for (BfSize k = 0; k < 2; ++k) {
+      /* Scan through vv looking for inds[k] */
+      BfSize l = 0;
+      while (l < nvv && vv[l] < inds[k])
+        ++l;
+
+      /* If we found inds[k], continue---otherwise, need to insert
+       * inds[k] into vv (in sorted order) */
+      if (l < nvv && vv[l] == inds[k])
+        continue;
+
+      /* If we're at capacity, need to allocate */
+      if (nvv == capacity) {
+        BfSize capacityNew = 2*capacity;
+        BfSize *vvNew = realloc(vv, capacityNew*sizeof(BfSize));
+        if (vvNew == NULL)
+          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        capacity = capacityNew;
+        vv = vvNew;
+      }
+
+      /* Shift the latter part of vv back */
+      if (l < nvv)
+        memmove(&vv[l + 1], &vv[l], (nvv - l)*sizeof(BfSize));
+
+      /* Insert inds[k] */
+      vv[l] = inds[k];
+
+      /* Grow the size of the adjacency list */
+      ++nvv;
+    }
   }
 
-  /* Move the rest of the current `vv` block over one element to make
-   * room for `i0` (no-op if `j` is at the end of the block) */
-  memmove(&trimesh->vv[j + 1], &trimesh->vv[j],
-          (trimesh->vvOffset[i + 1] - j)*sizeof(BfSize));
-
-  /* Insert `i0` and update the offset to the next block */
-  trimesh->vv[j] = i0;
-  ++trimesh->vvOffset[i + 1];
+  *nvvPtr = nvv;
+  *capacityPtr = capacity;
+  *vvPtr = vv;
 
   END_ERROR_HANDLING() {}
+}
+
+static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize nvv = 0, capacity = 16;
+  BfSize *vv = malloc(capacity*sizeof(BfSize));
+  fillWithAdjacentVertsUsingVf(trimesh, i, &nvv, &capacity, &vv);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    nvv = BF_SIZE_BAD_VALUE;
+  }
+
+  free(vv);
+
+  return nvv;
 }
 
 static void initVv(BfTrimesh *trimesh) {
@@ -96,31 +131,37 @@ static void initVv(BfTrimesh *trimesh) {
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
 
+  /* Allocate space for vvOffset */
   trimesh->vvOffset = malloc((numVerts + 1)*sizeof(BfSize));
   if (trimesh->vvOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
+  /* First entry of vvOffset is just 0 */
   trimesh->vvOffset[0] = 0;
 
-  BfSize vvCapacity = numVerts;
+  /* Count the number of vertices neighboring each vertex using vf,
+   * which should already be initialized */
+  for (BfSize i = 0; i < numVerts; ++i)
+    trimesh->vvOffset[i + 1] = countAdjacentVertsUsingVf(trimesh, i);
 
-  trimesh->vv = malloc(vvCapacity*sizeof(BfSize));
+  /* Transform vvOffset using a cumulative sum over each entry */
+  for (BfSize i = 0; i < numVerts; ++i)
+    trimesh->vvOffset[i + 1] += trimesh->vvOffset[i];
+
+  /* Allocate space for vv */
+  trimesh->vv = malloc(trimesh->vvOffset[numVerts]*sizeof(BfSize));
   if (trimesh->vv == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
+  /* Fill vv */
   for (BfSize i = 0; i < numVerts; ++i) {
-    for (BfSize j = trimesh->vfOffset[i]; j < trimesh->vfOffset[i + 1]; ++j) {
-      BfSize i0, i1;
-      bfTrimeshGetOpFaceVerts(trimesh, trimesh->vf[j], i, &i0, &i1);
-      vvInsertNewSorted(trimesh, i, i0, &vvCapacity);
-      vvInsertNewSorted(trimesh, i, i1, &vvCapacity);
-    }
+    BfSize nvv = 0;
+    BfSize capacity = trimesh->vvOffset[i + 1] - trimesh->vvOffset[i];
+    BfSize *vv = &trimesh->vv[trimesh->vvOffset[i]];
+    fillWithAdjacentVertsUsingVf(trimesh, i, &nvv, &capacity, &vv);
   }
 
-  // resize to fit
-
-  END_ERROR_HANDLING() {
-  }
+  END_ERROR_HANDLING() {}
 }
 
 void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
@@ -297,8 +338,10 @@ void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex,
   BfSize *F = trimesh->faces[faceIndex];
   assert(F[0] == i || F[1] == i || F[2] == i);
   BfSize k = 0;
-  while (F[k] != i) ++k;
+  while (F[k] == i) ++k;
   *i0 = F[k];
-  while (F[k] != i) ++k;
+  assert(*i0 != i);
+  while (F[k] == *i0 || F[k] == i) ++k;
   *i1 = F[k];
+  assert(*i1 != *i0 && *i1 != i);
 }
