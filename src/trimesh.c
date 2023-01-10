@@ -15,16 +15,24 @@ static void initVf(BfTrimesh *trimesh) {
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   BfSize numFaces = bfTrimeshGetNumFaces(trimesh);
 
-  trimesh->vfOffset = malloc((numVerts + 1)*sizeof(BfSize));
+  trimesh->vfOffset = calloc(numVerts + 1, sizeof(BfSize));
   if (trimesh->vfOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  trimesh->vfOffset[0] = 0;
-
+  /* Count the number of faces incident on each vertex by making a
+   * pass over the vertex array. Accumulate the count into the
+   * *following* entry of vfOffset, since we will do a cumulative sum
+   * below to get the offsets. */
   for (BfSize i = 0; i < numFaces; ++i)
     for (BfSize j = 0; j < 3; ++j)
       ++trimesh->vfOffset[trimesh->faces[i][j] + 1];
 
+  /* Raise an error if there are any isolated vertices. */
+  for (BfSize i = 0; i < numVerts; ++i)
+    if (trimesh->vfOffset[i + 1] == 0)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* Cumsum vfOffset to convert counts to offsets. */
   for (BfSize i = 0; i < numVerts; ++i)
     trimesh->vfOffset[i + 1] += trimesh->vfOffset[i];
 
@@ -202,9 +210,9 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
   BEGIN_ERROR_HANDLING();
 
   FILE *fp;
-  char *lineptr;
+  char *lineptr = NULL;
   ssize_t nread;
-  size_t n;
+  size_t n = 1024;
   char *saveptr;
   char *tok;
 
@@ -223,6 +231,8 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
   do {
     lineptr = NULL;
     nread = getline(&lineptr, &n, fp);
+    if (nread < 0)
+      break;
 
     saveptr = NULL;
     tok = strtok_r(lineptr, " ", &saveptr);
@@ -261,6 +271,8 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
   do {
     lineptr = NULL;
     nread = getline(&lineptr, &n, fp);
+    if (nread < 0)
+      break;
 
     saveptr = NULL;
     tok = strtok_r(lineptr, " ", &saveptr);
