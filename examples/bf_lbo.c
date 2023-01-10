@@ -38,7 +38,7 @@ int main(int argc, char const *argv[]) {
   bfLboGetFemDiscretization(&trimesh, &L, &M);
 
   bfMatCsrRealDump(L, "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-  bfMatCsrRealDump(L, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
+  bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
   /* Find largest eigenvalue */
   BfReal lamMax = bfMatGetEigMaxGenSym(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), NULL);
