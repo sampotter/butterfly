@@ -13,7 +13,7 @@ foreach example : examples
   )
 endforeach
 
-python_scripts = [
+scripts = [
   'ellipse.py',
   'make_circle_test_data.py',
   'make_ellipse_test_data.py',
@@ -29,10 +29,10 @@ python_scripts = [
   'util.py',
 ]
 
-foreach python_script : python_scripts
+foreach script : scripts
   custom_target(
-    python_script,
-    input : python_script, output : python_script,
+    script,
+    input : script, output : script,
     command : ['cp', '@INPUT@', '@OUTPUT@'],
     install : false,
     build_by_default : true
