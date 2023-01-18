@@ -19,8 +19,8 @@ cc = meson.get_compiler('c')
 arpack_ng_dep = cc.find_library('arpack', required : true)
 cblas_dep = cc.find_library('openblas', required : true)
 cholmod_dep = cc.find_library('cholmod', required : true)
-gsl_dep = cc.find_library('gsl', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
+gsl_dep = dependency('gsl', required : true)
 
 butterfly_lib_src = [
   'src/bbox.c',
