@@ -30,3 +30,5 @@ static BfSize const BF_SIZE_BAD_VALUE = -1;
 
 typedef void *BfPtr;
 typedef void const *BfConstPtr;
+
+static BfSize const BF_DEFAULT_STRIDE = 0;

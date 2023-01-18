@@ -294,7 +294,7 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride,
 
   vecReal->super.props |= BF_VEC_PROPS_VIEW;
 
-  vecReal->stride = stride;
+  vecReal->stride = stride == BF_DEFAULT_STRIDE ? 1 : 0;
   vecReal->data = data;
 
   END_ERROR_HANDLING()
