@@ -48,6 +48,7 @@ butterfly_lib_src = [
   'src/mat_coo_real.c',
   'src/mat_csr_real.c',
   'src/mat_csr_real.cholmod.c',
+  'src/mat_csr_real.umfpack.c',
   'src/mat_dense.c',
   'src/mat_dense_complex.c',
   'src/mat_dense_real.c',
