@@ -19,6 +19,7 @@ cc = meson.get_compiler('c')
 cblas_dep = cc.find_library('openblas', required : true)
 cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
+umfpack_dep = cc.find_library('umfpack', required : true)
 
 arpack_ng_dep = dependency('arpack', required : true)
 gsl_dep = dependency('gsl', required : true)
