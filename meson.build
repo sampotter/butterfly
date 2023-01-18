@@ -87,11 +87,24 @@ butterfly_lib_src = [
 
 butterfly_inc = include_directories('include')
 
+butterfly_dependencies = [
+  arpack_ng_dep,
+  cblas_dep,
+  cholmod_dep,
+  gsl_dep,
+  m_dep,
+  umfpack_dep
+]
+
+butterfly_include_directories = [
+  butterfly_inc
+]
+
 butterfly_lib = library(
   'butterfly',
   butterfly_lib_src,
-  dependencies : [arpack_ng_dep, cblas_dep, cholmod_dep, gsl_dep, m_dep],
-  include_directories : [butterfly_inc]
+  dependencies : butterfly_dependencies,
+  include_directories : butterfly_include_directories
 )
 
 butterfly_dep = declare_dependency(
