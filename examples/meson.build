@@ -22,6 +22,7 @@ scripts = [
   'plot_blocks.py',
   'plot_points_and_quadtree.py',
   'run_bf_all_blocks_test.sh',
+  'run_bf_lbo_test.sh',
   'run_bf_one_block_test.sh',
   'run_helm2_bie_test.sh',
   'scratch.py',
