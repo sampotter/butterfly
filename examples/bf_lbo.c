@@ -41,7 +41,7 @@ int main(int argc, char const *argv[]) {
   bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
   /* Find largest eigenvalue */
-  BfReal lamMax = bfMatGetEigMaxGenSym(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), NULL);
+  BfReal lamMax = bfMatGetEigMaxGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M));
 
   /* Set up frequency tree */
   BfReal freqMax = sqrt(lamMax);
@@ -61,7 +61,7 @@ int main(int argc, char const *argv[]) {
     BfReal lam0 = lamMax*j0/n, lam1 = lamMax*j1/n;
     BfMat *Phi;
     BfMat *Lam;
-    bfMatGetEigBandGenSym(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), lam0, lam1, &Phi, &Lam);
+    bfMatGetEigBandGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), lam0, lam1, &Phi, &Lam);
     bfFacStreamerFeed(facStreamer, Phi);
     bfMatDelete(&Phi);
     bfMatDelete(&Lam);

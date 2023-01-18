@@ -95,7 +95,7 @@ BfMat *bfMatTrans(BfMat *mat);
 BfMat *bfMatConjTrans(BfMat *mat);
 BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0, BfReal tol,
                        BfSize maxNumIter, BfSize *numIter);
-BfReal bfMatGetEigMaxGenSym(BfMat const *L, BfMat const *M, BfMat **R);
-void bfMatGetEigBandGenSym(BfMat const *L, BfMat const *M, BfReal lam0, BfReal lam1,
-                           BfMat **Phi, BfMat **Lam);
+BfReal bfMatGetEigMaxGen(BfMat const *L, BfMat const *M);
+void bfMatGetEigBandGen(BfMat const *L, BfMat const *M, BfReal lam0, BfReal lam1,
+                        BfMat **Phi, BfMat **Lam);
 void bfMatGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V, BfReal eps_or_k, BfBackend backend);

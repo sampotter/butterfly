@@ -1,37 +1,38 @@
 #include <bf/mat.h>
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <arpack/arpack.h>
+#include <arpack.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/lu.h>
 #include <bf/vec_real.h>
 
-BfReal bfMatGetEigMaxGenSym(BfMat const *A, BfMat const *M, BfMat **Lhandle) {
+BfReal bfMatGetEigMaxGen(BfMat const *L, BfMat const *M) {
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
 
   BEGIN_ERROR_HANDLING();
 
-  a_int const N = bfMatGetNumRows(A);
+  a_int const N = bfMatGetNumRows(L);
   char const which[] = "LM";
   a_int const nev = 1;
-  a_int const ncv = 20; /* TODO: how many is best? */
-  char const bmat[] = "G";
+  a_int const ncv = N < 20 ? N : 20; /* TODO: how many is best? */
+  char bmat = 'G'; /* Solve (G)eneralized eigenvalue problem */
   BfReal const tol = 0;
   a_int const ldv = N;
-  a_int const lworkl = ncv*(ncv + 8);
+  a_int const lworkl = 3*ncv*ncv + 6*ncv;
   a_int const rvec = 0; /* only computing eigenvalues */
   char const howmny[] = "A";
 
-  BfMat *L = NULL;
-  if (Lhandle == NULL) {
-    L = bfMatCholesky(M);
-  } else {
-    L = *Lhandle;
-  }
+  BfLu *M_lu = bfLuNew();
+  HANDLE_ERROR();
+
+  bfLuInit(M_lu, M);
+  HANDLE_ERROR();
 
   double *resid = malloc(N*sizeof(BfReal));
   if (resid == NULL)
@@ -46,8 +47,8 @@ BfReal bfMatGetEigMaxGenSym(BfMat const *A, BfMat const *M, BfMat **Lhandle) {
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
     [2] = 10*N, /* max number of iterations */
-    [4] = 1, /* only value allowed */
-    [6] = 1, /* mode: A*x = lam*M*x */
+    // [3] = 1, /* only value allowed */
+    [6] = 2, /* mode: A*x = lam*M*x */
   };
 
   a_int ipntr[11];
@@ -56,57 +57,108 @@ BfReal bfMatGetEigMaxGenSym(BfMat const *A, BfMat const *M, BfMat **Lhandle) {
   if (workd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
+  for (a_int i = 0; i < 3*N; ++i)
+    workd[i] = 0;
+
   double *workl = malloc(lworkl*sizeof(BfReal));
   if (workl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int ido = 0, info = 0;
-  do {
-    dsaupd_c(&ido, bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
-             workd, workl, lworkl, &info);
+  BfReal *workev = malloc(3*ncv*sizeof(BfReal));
+  if (workev == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  a_int ido = 0;
+  a_int info = 0;
+
+dnaupd:
+  dnaupd_c(&ido, &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
+           workd, workl, lworkl, &info);
+  printf("ido = %d\n", ido);
+  if (ido == 1 || ido == -1) {
+    assert(ipntr[0] > 0);
+    assert(ipntr[1] > 0);
 
     BfVecReal x;
-    bfVecRealInitView(&x, N, 0, &workd[ipntr[0] - 1]);
-
-    BfVec *tmp1 = bfMatForwardSolveVec(bfMatTrans(L), bfVecRealToVec(&x));
-    BfVec *tmp2 = bfMatMulVec(A, tmp1);
-    BfVecReal *y = bfVecToVecReal(bfMatBackwardSolveVec(L, tmp2));
-
-    bfVecDelete(&tmp1);
-    bfVecDelete(&tmp2);
+    bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
+    BfVec *tmp = bfMatMulVec(L, bfVecRealToVec(&x));
+    BfVecReal *y = bfVecToVecReal(bfLuSolve(M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
-  } while ((ido == 1) || (ido == -1));
+
+    bfVecRealDump(&x, "tmp0.bin");
+    bfVecRealDump(bfVecToVecReal(tmp), "tmp1.bin");
+    bfVecRealDump(y, "tmp2.bin");
+
+    bfVecDelete(&tmp);
+    bfVecRealDeinitAndDealloc(&y);
+
+    goto dnaupd;
+  } else if (ido == 2) {
+    assert(ipntr[0] > 0);
+    assert(ipntr[1] > 0);
+
+    BfVecReal x;
+    bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
+
+    BfVecReal *y = bfVecToVecReal(bfMatMulVec(M, bfVecRealToVec(&x)));
+
+    memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
+
+    bfVecRealDump(&x, "tmp0.bin");
+    bfVecRealDump(y, "tmp1.bin");
+
+    bfVecRealDeinitAndDealloc(&y);
+
+    goto dnaupd;
+  }
 
   if (info < 0 || iparam[4] < nev)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfReal eigmax;
+  BfReal dr[2], di[2];
 
-  dseupd_c(rvec, howmny, select, &eigmax,
-           NULL, 0, 0, /* <-- these three parameters aren't referenced */
-           /* dsaupd parameters: don't modify before calling dseupd */
-           bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
-           workd, workl, lworkl, &info);
+  dneupd_c(
+    rvec, /* == 0 -> not computing Ritz vectors */
+    howmny, /* == "A" -> compute all requested eigenvalues */
+    select, /* used as internal workspace since howmny == "A" */
+    dr, /* will contain real part of first nev + 1 eigenvalues */
+    di,       /* ... imaginary part ... */
+    NULL, /* not reversed since rvec == 0 */
+    0,              /* ditto */
+    0.0, /* not referenced since mode == 2 */
+    0.0,           /* ditto */
+    workev, /* internal workspace */
 
-  if (Lhandle == NULL)
-    bfMatDelete(&L);
+    /* dnaupd parameters: don't modify before calling dseupd */
+    &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
+    workd, workl, lworkl, &info);
 
-  if (info < 0)
+  if (info != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BfReal eigmax = dr[0];
+
+  if (fabs(di[0]) > 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  END_ERROR_HANDLING() {
+    eigmax = NAN;
+  }
+
+  bfLuDeinitAndDealloc(&M_lu);
 
   free(resid);
   free(V);
   free(workd);
   free(workl);
+  free(workev);
 
   return eigmax;
 }
 
-void bfMatGetEigBandGenSym(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
-                           BfMat **Phi, BfMat **Lam) {
+void bfMatGetEigBandGen(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
+                        BfMat **Phi, BfMat **Lam) {
   (void)A;
   (void)M;
   (void)lam0;
