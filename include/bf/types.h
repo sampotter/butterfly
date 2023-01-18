@@ -24,6 +24,8 @@ typedef struct BfVecComplex BfVecComplex;
 typedef struct BfVecReal BfVecReal;
 typedef struct BfVecZero BfVecZero;
 
+typedef struct BfLu BfLu;
+
 typedef struct BfTree BfTree;
 typedef struct BfIntervalTree BfIntervalTree;
 typedef struct BfQuadtree BfQuadtree;
