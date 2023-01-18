@@ -16,10 +16,11 @@ endif
 
 cc = meson.get_compiler('c')
 
-arpack_ng_dep = cc.find_library('arpack', required : true)
 cblas_dep = cc.find_library('openblas', required : true)
 cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
+
+arpack_ng_dep = dependency('arpack', required : true)
 gsl_dep = dependency('gsl', required : true)
 
 butterfly_lib_src = [
