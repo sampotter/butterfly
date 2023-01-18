@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/vec_real.h>
 
 /** Interface: Mat */
 
@@ -75,7 +76,64 @@ BF_STUB(void, MatCsrRealAddDiag, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCsrRealSub, BfMat const *, BfMat const *)
 BF_STUB(void, MatCsrRealSubInplace, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCsrRealMul, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCsrRealMulVec, BfMat const *, BfVec const *)
+
+static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(mat);
+
+  BfSize n = bfMatGetNumCols(mat);
+  if (vecReal->super.size != n)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfVecReal *result = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(result, m);
+  HANDLE_ERROR();
+
+  BfReal const *src = vecReal->data;
+  BfReal *dst = result->data;
+  for (BfSize i = 0; i < m; ++i) {
+    *dst = 0;
+    for (BfSize j = matCsrReal->rowptr[i]; j < matCsrReal->rowptr[i + 1]; ++j) {
+      BfReal elt = *(src + vecReal->stride*matCsrReal->colind[j]);
+      *dst += elt*matCsrReal->data[j];
+    }
+    dst += result->stride;
+  }
+
+  END_ERROR_HANDLING() {
+    bfVecRealDeinitAndDealloc(&result);
+  }
+
+  return bfVecRealToVec(result);
+}
+
+BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVec *result = NULL;
+
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = mulVec_vecReal(mat, bfVecConstToVecRealConst(vec));
+    HANDLE_ERROR();
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  }
+
+  END_ERROR_HANDLING() {
+    bfVecDelete(&result);
+  }
+
+  return result;
+}
+
 BF_STUB(void, MatCsrRealMulInplace, BfMat *, BfMat const *)
 BF_STUB(BfMat *, MatCsrRealSolveLU, BfMat const *, BfMat const *)
 BF_STUB(BfMat *, MatCsrRealLstSq, BfMat const *, BfMat const *)
