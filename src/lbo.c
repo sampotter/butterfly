@@ -36,15 +36,21 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
     rowptr[i] = trimesh->vvOffset[i] + i;
 
   /* Fill colind */
-  for (BfSize i = 0; i < numVerts; ++i) {
-    BfSize j = rowptr[i];
-    BfSize jend = rowptr[i + 1] - 1;
-    BfSize *vv = &trimesh->vv[trimesh->vvOffset[i]];
-    while (j < jend && *vv < i)
-      colind[j++] = *vv++;
+  for (BfSize i = 0, j = 0; i < numVerts; ++i) {
+    assert(j == rowptr[i]);
+
+    /* Find the position of i in vv */
+    BfSize kmid = trimesh->vvOffset[i];
+    while (trimesh->vv[kmid] < i && kmid < trimesh->vvOffset[i + 1])
+      ++kmid;
+
+    /* Copy over vv, inserting i into the correct sorted order */
+    BfSize k = trimesh->vvOffset[i];
+    for (; k < kmid; ++k)
+      colind[j++] = trimesh->vv[k];
     colind[j++] = i;
-    while (j < jend)
-      colind[j++] = *vv++;
+    for (; k < trimesh->vvOffset[i + 1]; ++k)
+      colind[j++] = trimesh->vv[k];
   }
 
   BfSize f, j, i, i0, i1, *jptr, k, k0, k1;
