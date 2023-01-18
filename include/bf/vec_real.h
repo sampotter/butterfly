@@ -24,3 +24,4 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *d
 void bfVecRealDeinit(BfVecReal *vecReal);
 void bfVecRealDealloc(BfVecReal **vecReal);
 void bfVecRealDeinitAndDealloc(BfVecReal **vecReal);
+void bfVecRealDump(BfVecReal const *vecReal, char const *path);

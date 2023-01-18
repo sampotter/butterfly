@@ -317,3 +317,17 @@ void bfVecRealDeinitAndDealloc(BfVecReal **vecReal) {
   bfVecRealDeinit(*vecReal);
   bfVecRealDealloc(vecReal);
 }
+
+void bfVecRealDump(BfVecReal const *vecReal, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(vecReal->data, sizeof(BfReal), vecReal->super.size, fp);
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
+}
