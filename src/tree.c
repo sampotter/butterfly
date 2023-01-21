@@ -173,7 +173,7 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
 
   BfSize maxDepth = bfTreeGetMaxDepth(tree);
 
-  if (depth >= maxDepth)
+  if (depth > maxDepth)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfTreeLevelIter iter;
