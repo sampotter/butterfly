@@ -39,6 +39,7 @@ butterfly_lib_src = [
   'src/interval_tree.c',
   'src/interval_tree_node.c',
   'src/lbo.c',
+  'src/lu.c',
   'src/mat.c',
   'src/mat_block.c',
   'src/mat_block_coo.c',
