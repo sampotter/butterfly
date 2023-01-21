@@ -12,6 +12,11 @@ BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
 }
 
+BfReal bfPoint3Dist(BfPoint3 const p, BfPoint3 const q) {
+  BfVector3 u = {q[0] - p[0], q[1] - p[1], q[2] - p[2]};
+  return sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
+}
+
 void bfPoint3Sub(BfPoint3 const u, BfPoint3 const v, BfVector3 w) {
   w[0] = u[0] - v[0];
   w[1] = u[1] - v[1];
@@ -22,6 +27,12 @@ void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPo
   rt[0] = r0[0] + t*dr[0];
   rt[1] = r0[1] + t*dr[1];
   rt[2] = r0[2] + t*dr[2];
+}
+
+void bfPoint3Copy(BfPoint3 x, BfPoint3 const y) {
+  x[0] = y[0];
+  x[1] = y[1];
+  x[2] = y[2];
 }
 
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat) {
@@ -276,4 +287,18 @@ BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
   }
 
   return boundingBox;
+}
+
+void bfPoints3GetByIndex(BfPoints3 const *points, BfSize numInds, BfSize const *inds, BfPoints3 *indexedPoints) {
+  BEGIN_ERROR_HANDLING();
+
+  bfPoints3InitEmpty(indexedPoints, numInds);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numInds; ++i)
+    bfPoint3Copy(indexedPoints->data[i], points->data[inds[i]]);
+
+  END_ERROR_HANDLING() {
+    bfPoints3Deinit(indexedPoints);
+  }
 }
