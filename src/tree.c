@@ -86,6 +86,9 @@ void bfTreeMap(BfTree *tree, BfTreeNode *node,
                    void *arg) {
   BEGIN_ERROR_HANDLING();
 
+  if (node == NULL)
+    node = tree->root;
+
   switch (traversal) {
   case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
   case BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER: {
@@ -126,6 +129,9 @@ mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
 void bfTreeMapConst(BfTree const *tree, BfTreeNode const *node,
                     BfTreeTraversal traversal, BfTreeMapConstFunc func, void *arg) {
   BEGIN_ERROR_HANDLING();
+
+  if (node == NULL)
+    node = tree->root;
 
   switch (traversal) {
   case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
