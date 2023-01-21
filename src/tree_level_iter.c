@@ -21,7 +21,7 @@ fillWithLrLevelOrderNodePtrs(BfPtrArray *nodes, BfTreeNode *current)
   BfSize i = 0;
   while (i < bfPtrArraySize(nodes)) {
     current = bfPtrArrayGet(nodes, i);
-    for (BfSize j = 0; j < 4; ++j) {
+    for (BfSize j = 0; j < current->maxNumChildren; ++j) {
       if (current->child[j] == NULL)
         continue;
       bfPtrArrayAppend(nodes, current->child[j]);
