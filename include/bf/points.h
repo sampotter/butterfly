@@ -23,9 +23,7 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points);
 void bfFreePoints2(BfPoints2 *points);
 bool bfPoints2Initialized(BfPoints2 const *points);
 BfBbox2 bfPoints2GetBoundingBox(BfPoints2 const *points);
-void bfGetPointsByIndex(BfPoints2 const *points,
-                                BfSize numInds, BfSize const *inds,
-                                BfPoints2 *indexedPoints);
+void bfGetPointsByIndex(BfPoints2 const *points, BfSize numInds, BfSize const *inds, BfPoints2 *indexedPoints);
 void bfPrintPoints2(BfPoints2 const *points);
 void bfSavePoints2(BfPoints2 const *points, char const *path);
 BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y);
