@@ -89,3 +89,17 @@ void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center)
   center[1] = (boundingBox->min[1] + boundingBox->max[1])/2;
   center[2] = (boundingBox->min[2] + boundingBox->max[2])/2;
 }
+
+BfSphere bfBoundingBox3GetBoundingSphere(BfBoundingBox3 const *boundingBox) {
+  BfSphere sphere;
+
+  /* The radius is one half the diagonal of the bounding box: */
+  BfReal dx, dy, dz;
+  getSideLengths(boundingBox, &dx, &dy, &dz);
+  sphere.r = sqrt(dx*dx + dy*dy + dz*dz)/2;
+
+  /* The center is the centroid of the bounding box: */
+  bfBoundingBox3GetCenter(boundingBox, sphere.center);
+
+  return sphere;
+}

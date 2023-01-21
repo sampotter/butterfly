@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geom.h"
+#include "sphere.h"
 
 typedef struct BfBbox2 {
   BfPoint2 min, max;
@@ -21,3 +22,4 @@ void bfBoundingBox3InitEmpty(BfBoundingBox3 *boundingBox);
 bool bfBoundingBox3IsEmpty(BfBoundingBox3 const *boundingBox);
 void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox);
 void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center);
+BfSphere bfBoundingBox3GetBoundingSphere(BfBoundingBox3 const *boundingBox);
