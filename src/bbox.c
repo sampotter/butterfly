@@ -57,6 +57,12 @@ bool bfBoundingBox3IsEmpty(BfBoundingBox3 const *boundingBox) {
          boundingBox->min[2] >= boundingBox->max[2];
 }
 
+static void getSideLengths(BfBoundingBox3 const *boundingBox, BfReal *dx, BfReal *dy, BfReal *dz) {
+  *dx = boundingBox->max[0] - boundingBox->min[0];
+  *dy = boundingBox->max[1] - boundingBox->min[1];
+  *dz = boundingBox->max[2] - boundingBox->min[2];
+}
+
 void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox) {
   BfPoint3 c = {
     (boundingBox->min[0] + boundingBox->max[0])/2,
@@ -64,9 +70,8 @@ void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox) {
     (boundingBox->min[2] + boundingBox->max[2])/2
   };
 
-  BfReal dx = boundingBox->max[0] - boundingBox->min[0];
-  BfReal dy = boundingBox->max[1] - boundingBox->min[1];
-  BfReal dz = boundingBox->max[2] - boundingBox->min[2];
+  BfReal dx, dy, dz;
+  getSideLengths(boundingBox, &dx, &dy, &dz);
 
   BfReal dmax = fmax(dx, fmax(dy, dz));
 
