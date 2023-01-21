@@ -124,8 +124,7 @@ mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
 }
 
 void bfTreeMapConst(BfTree const *tree, BfTreeNode const *node,
-                        BfTreeTraversal traversal, BfTreeMapConstFunc func,
-                        void *arg) {
+                    BfTreeTraversal traversal, BfTreeMapConstFunc func, void *arg) {
   BEGIN_ERROR_HANDLING();
 
   switch (traversal) {
