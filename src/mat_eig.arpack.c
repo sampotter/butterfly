@@ -74,7 +74,6 @@ BfReal bfMatGetEigMaxGen(BfMat const *L, BfMat const *M) {
 dnaupd:
   dnaupd_c(&ido, &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
            workd, workl, lworkl, &info);
-  printf("ido = %d\n", ido);
   if (ido == 1 || ido == -1) {
     assert(ipntr[0] > 0);
     assert(ipntr[1] > 0);
@@ -85,10 +84,6 @@ dnaupd:
     BfVecReal *y = bfVecToVecReal(bfLuSolve(M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
-
-    bfVecRealDump(&x, "tmp0.bin");
-    bfVecRealDump(bfVecToVecReal(tmp), "tmp1.bin");
-    bfVecRealDump(y, "tmp2.bin");
 
     bfVecDelete(&tmp);
     bfVecRealDeinitAndDealloc(&y);
@@ -104,9 +99,6 @@ dnaupd:
     BfVecReal *y = bfVecToVecReal(bfMatMulVec(M, bfVecRealToVec(&x)));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
-
-    bfVecRealDump(&x, "tmp0.bin");
-    bfVecRealDump(y, "tmp1.bin");
 
     bfVecRealDeinitAndDealloc(&y);
 
