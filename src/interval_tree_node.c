@@ -60,19 +60,59 @@ BfIntervalTreeNode *bfIntervalTreeNodeNew() {
   return node;
 }
 
-void bfIntervalTreeNodeInitEmpty(BfIntervalTreeNode *intervalTreeNode,
-                                 BfIntervalTree const *intervalTree,
-                                 BfReal a, BfReal b, BfSize k) {
+static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeNode,
+                                               BfSize k, BfSize depth, BfSize maxDepth) {
   BEGIN_ERROR_HANDLING();
 
-  (void)a;
-  (void)b;
+  BfReal const a = intervalTreeNode->a;
+  BfReal const b = intervalTreeNode->b;
+  BfReal const delta = (b - a)/k;
 
-  assert(false);
+  BfTreeNode *treeNode = bfIntervalTreeNodeToTreeNode(intervalTreeNode);
+
+  if (depth < maxDepth) {
+    for (BfSize i = 0; i < k; ++i) {
+      BfIntervalTreeNode *child = bfIntervalTreeNodeNew();
+      HANDLE_ERROR();
+
+      bfTreeNodeInit(&child->super, &TreeNodeVtable, false, (void *)treeNode, k, i, depth + 1);
+      HANDLE_ERROR();
+
+      child->a = delta*i;
+      child->b = delta*(i + 1);
+
+      child->isRightmost = i == k - 1;
+
+      if (child->isRightmost)
+        child->b = b;
+
+      intervalTreeNodeInitEmptyRecursive(child, k, depth + 1, maxDepth);
+      HANDLE_ERROR();
+
+      treeNode->child[i] = bfIntervalTreeNodeToTreeNode(child);
+    }
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *intervalTreeNode,
+                                     BfIntervalTree const *intervalTree,
+                                     BfReal a, BfReal b, BfSize k, BfSize maxDepth) {
+  BEGIN_ERROR_HANDLING();
 
   bfTreeNodeInit(&intervalTreeNode->super, &TreeNodeVtable,
                  true, (void *)intervalTree, k, BF_SIZE_BAD_VALUE, 0);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  intervalTreeNode->a = a;
+  intervalTreeNode->b = b;
+  intervalTreeNode->isRightmost = true;
+
+  intervalTreeNodeInitEmptyRecursive(intervalTreeNode, k, 0, maxDepth);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    // bfIntervalTreeNodeDeinit(intervalTreeNode);
+  }
 }

@@ -31,6 +31,6 @@ struct BfIntervalTreeNode {
 };
 
 BfIntervalTreeNode *bfIntervalTreeNodeNew();
-void bfIntervalTreeNodeInitEmpty(BfIntervalTreeNode *node,
-                                 BfIntervalTree const *intervalTree,
-                                 BfReal a, BfReal b, BfSize k);
+void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *node,
+                                     BfIntervalTree const *intervalTree,
+                                     BfReal a, BfReal b, BfSize k, BfSize maxDepth);

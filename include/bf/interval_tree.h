@@ -17,4 +17,4 @@ BfType bfIntervalTreeGetType(BfTree const *tree);
 BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree);
 
 BfIntervalTree *bfIntervalTreeNew();
-void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k);
+void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize depth);

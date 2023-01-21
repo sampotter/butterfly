@@ -39,15 +39,19 @@ BfIntervalTree *bfIntervalTreeNew() {
   return intervalTree;
 }
 
-void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k) {
+void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize maxDepth) {
   BEGIN_ERROR_HANDLING();
 
   BfIntervalTreeNode *root = bfIntervalTreeNodeNew();
   HANDLE_ERROR();
 
-  bfIntervalTreeNodeInitEmpty(root, intervalTree, a, b, k);
-
   bfTreeInit(&intervalTree->super, &TreeVtable, bfIntervalTreeNodeToTreeNode(root), 0);
+  HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  bfIntervalTreeNodeInitEmptyRoot(root, intervalTree, a, b, k, maxDepth);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    // bfIntervalTreeDeinit(intervalTree);
+  }
 }
