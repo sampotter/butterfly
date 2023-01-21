@@ -14,9 +14,11 @@ enum BfTreeNodeFlags {
 typedef void (*BfTreeMapFunc)(BfTree *, BfTreeNode *, void *);
 typedef void (*BfTreeMapConstFunc)(BfTree const *, BfTreeNode const *, void *);
 
+void bfTreeDelete(BfTree **);
 BfType bfTreeGetType(BfTree const *);
 
 typedef struct BfTreeVtable {
+  __typeof__(&bfTreeDelete) Delete;
   __typeof__(&bfTreeGetType) GetType;
 } BfTreeVtable;
 

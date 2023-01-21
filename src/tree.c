@@ -9,6 +9,10 @@
 
 /** Interface: Tree */
 
+void bfTreeDelete(BfTree **tree) {
+  return (*tree)->vtable->Delete(tree);
+}
+
 BfType bfTreeGetType(BfTree const *tree) {
   return tree->vtable->GetType(tree);
 }
