@@ -1,20 +1,10 @@
 #pragma once
 
-#include <stdlib.h>
-
 #include "bbox.h"
 #include "error.h"
 #include "mat.h"
 #include "ptr_array.h"
 #include "tree.h"
-
-/** Interface: Tree -> Octree */
-
-BfType bfOctreeGetType(BfTree const *tree);
-
-/** Upcasting: Octree -> Tree */
-
-BfTree *bfOctreeToTree(BfOctree *octree);
 
 /** Octree: */
 
@@ -31,6 +21,20 @@ struct BfOctree {
   BfVectors3 const *unitNormals;
 };
 
-void bfOctreeInitFromPoints(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals);
+/** Interface(Tree, Octree) */
+
+BfType bfOctreeGetType(BfOctree const *);
+
+/** Upcasting: Octree -> Tree */
+
+BfTree *bfOctreeToTree(BfOctree *octree);
+BfTree const *bfOctreeConstToTreeConst(BfOctree const *octree);
+
+/** Downcasting: Tree -> Octree */
+
+BfOctree *bfTreeToOctree(BfTree *tree);
+
+BfOctree *bfOctreeNew();
+void bfOctreeInit(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals);
 void bfOctreeDeinit(BfOctree *tree);
 void bfOctreeSaveBoxesToTextFile(BfOctree const *tree, char const *path);

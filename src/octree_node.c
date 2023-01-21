@@ -1,15 +1,21 @@
 #include <bf/octree_node.h>
 
-#include <bf/bbox.h>
+#include <math.h>
+#include <stdlib.h>
+
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/points.h>
+#include <bf/vectors.h>
 
 #include "macros.h"
 
-static BfSize const NUM_CHILDREN = 8;
+#define NUM_CHILDREN_ 8
+static BfSize const NUM_CHILDREN = NUM_CHILDREN_;
 
-/** Interface: TreeNode -> OctreeNode */
+static BfSize const LEAF_SIZE_THRESHOLD = 1;
+
+/** Interface(TreeNode, OctreeNode) */
 
 static BfTreeNodeVtable TreeNodeVtable = {
   .GetType = (__typeof__(&bfTreeNodeGetType))bfOctreeNodeGetType
@@ -50,6 +56,8 @@ BfOctreeNode const *bfTreeNodeConstToOctreeNodeConst(BfTreeNode const *node) {
   }
 }
 
+/** Implementation: OctreeNode */
+
 BfOctreeNode *bfOctreeNodeNew() {
   BEGIN_ERROR_HANDLING();
 
@@ -57,20 +65,75 @@ BfOctreeNode *bfOctreeNodeNew() {
   if (node == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
-    node = NULL;
+  END_ERROR_HANDLING() {}
 
   return node;
 }
 
-#define IN_CHILD_0(x) (x[0] <= split[0] && x[1] <= split[1] && x[2] <= split[2])
-#define IN_CHILD_1(x) (x[0] <= split[0] && x[1] <= split[1] && x[2] >  split[2])
-#define IN_CHILD_2(x) (x[0] <= split[0] && x[1] >  split[1] && x[2] <= split[2])
-#define IN_CHILD_3(x) (x[0] <= split[0] && x[1] >  split[1] && x[2] >  split[2])
-#define IN_CHILD_4(x) (x[0] >  split[0] && x[1] <= split[1] && x[2] <= split[2])
-#define IN_CHILD_5(x) (x[0] >  split[0] && x[1] <= split[1] && x[2] >  split[2])
-#define IN_CHILD_6(x) (x[0] >  split[0] && x[1] >  split[1] && x[2] <= split[2])
-#define IN_CHILD_7(x) (x[0] >  split[0] && x[1] >  split[1] && x[2] >  split[2])
+static void sift(BfSize q, BfSize *offset, BfPoint3 const *point,
+                 BfReal const *split, BfSize *perm,
+                 bool (*inOctant)(BfPoint3 const, BfReal const *)) {
+  BfSize const lastOffset = offset[NUM_CHILDREN];
+
+  BfSize i = offset[q];
+
+  /* Skip over any points at the start of this block indices that are
+   * already in the correct octant. This moves `i` to the position of
+   * the first point which isn't in the current octant.  */
+  while (i < lastOffset && inOctant(point[perm[i]], split))
+    ++i;
+
+  BfSize j = (i == lastOffset) ? i : i + 1;
+
+  /* Scan over the remaining points, swapping points in the current
+   * octant into position. */
+  while (j < lastOffset) {
+    if (inOctant(point[perm[j]], split) && !inOctant(point[perm[i]], split)) {
+      SWAP(perm[i], perm[j]);
+      ++i;
+    }
+    ++j;
+  }
+
+  offset[q + 1] = i;
+}
+
+static bool inOctant1(BfPoint3 const x, BfReal const *split) {
+  return x[0] <= split[0] && x[1] <= split[1] && x[2] <= split[2];
+}
+
+static bool inOctant2(BfPoint3 const x, BfReal const *split) {
+  return x[0] <= split[0] && x[1] <= split[1] && x[2] > split[2];
+}
+
+static bool inOctant3(BfPoint3 const x, BfReal const *split) {
+  return x[0] <= split[0] && x[1] > split[1] && x[2] <= split[2];
+}
+
+static bool inOctant4(BfPoint3 const x, BfReal const *split) {
+  return x[0] <= split[0] && x[1] > split[1] && x[2] > split[2];
+}
+
+static bool inOctant5(BfPoint3 const x, BfReal const *split) {
+  return x[0] > split[0] && x[1] <= split[1] && x[2] <= split[2];
+}
+
+static bool inOctant6(BfPoint3 const x, BfReal const *split) {
+  return x[0] > split[0] && x[1] <= split[1] && x[2] > split[2];
+}
+
+static bool inOctant7(BfPoint3 const x, BfReal const *split) {
+  return x[0] > split[0] && x[1] > split[1] && x[2] <= split[2];
+}
+
+static bool inOctant8(BfPoint3 const x, BfReal const *split) {
+  return x[0] > split[0] && x[1] > split[1] && x[2] > split[2];
+}
+
+static __typeof__(&inOctant1) inOctant[NUM_CHILDREN_] = {
+  inOctant1, inOctant2, inOctant3, inOctant4,
+  inOctant5, inOctant6, inOctant7, inOctant8
+};
 
 /* Initialize a octree node, and allocate and initialize each node
  * beneath this node. Calling this function for the octree's root
@@ -84,187 +147,205 @@ BfOctreeNode *bfOctreeNodeNew() {
  *   these entries of `perm` will be put into Z order.
  * `perm`: an array of `points->size` indices indexing `points`.
  * `currentDepth`: `node`'s depth */
-static void octreeNodeInitRecursive(
-  BfOctreeNode *node, BfPoints3 const *points, BfBoundingBox3 const *boundingBox,
-  BfSize i0, BfSize i1, BfSize *perm, BfSize currentDepth)
-{
+static void octreeNodeInitRecursive(BfOctreeNode *node,
+                                      BfPoints3 const *points, BfBoundingBox3 boundingBox,
+                                      BfSize i0, BfSize i1, BfSize *perm,
+                                      BfSize currentDepth) {
   BEGIN_ERROR_HANDLING();
 
   assert(i0 <= i1);
 
   BfPoint3 *point = points->data;
   BfReal const *split = node->split;
-  node->super.depth = currentDepth;
-
   BfTreeNode **child = &node->super.child[0];
   BfSize *offset = &node->super.offset[0];
 
-  /* Set sentinel values */
+  /* Sift the points into the correct octants at this level. Note that
+   * because of the way we do the sifting, it's unnecessary to call
+   * `sift` for the last child node. */
   offset[0] = i0;
-#if BF_DEBUG
-  for (BfSize q = 1; q < NUM_CHILDREN; ++q)
-    offset[q] = BF_SIZE_BAD_VALUE;
+  offset[NUM_CHILDREN] = i1;
+  for (BfSize q = 0; q < NUM_CHILDREN - 1; ++q)
+    sift(q, offset, point, split, perm, inOctant[q]);
+
+  /* Check that each point is in the correct octant now. */
+#ifdef BF_DEBUG
+  for (BfSize q = 0; q < NUM_CHILDREN; ++q)
+    for (BfSize i = offset[q]; i < offset[q + 1]; ++i)
+      assert(inOctant[q](point[perm[i]], split));
 #endif
-  offset[8] = i1;
-
-#define SIFT_POINTS(LAST_OFFSET, CURRENT_OFFSET) do {               \
-    BfSize i = offset[CURRENT_OFFSET];                        \
-    while (i < offset[LAST_OFFSET] &&                         \
-           IN_CHILD(point[perm[i]]))                                \
-      ++i;                                                          \
-    BfSize j = i;                                                   \
-    assert(j <= offset[LAST_OFFSET]);                         \
-    if (j < offset[LAST_OFFSET])                              \
-      ++j;                                                          \
-    while (j < offset[LAST_OFFSET]) {                         \
-      if (IN_CHILD(point[perm[j]]) && !IN_CHILD(point[perm[i]])) {  \
-        SWAP(perm[j], perm[i]);                                     \
-        ++i;                                                        \
-      }                                                             \
-      ++j;                                                          \
-    }                                                               \
-    offset[CURRENT_OFFSET + 1] = i;                           \
-  } while (0)
-
-  /* Sift all children */
-#define IN_CHILD(x) IN_CHILD_0(x)
-  SIFT_POINTS(8, 0);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_1(x)
-  SIFT_POINTS(8, 1);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_2(x)
-  SIFT_POINTS(8, 2);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_3(x)
-  SIFT_POINTS(8, 3);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_4(x)
-  SIFT_POINTS(8, 4);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_5(x)
-  SIFT_POINTS(8, 5);
-#undef IN_CHILD
-#define IN_CHILD(x) IN_CHILD_6(x)
-  SIFT_POINTS(8, 6);
-#undef IN_CHILD
-  /* (... last child doesn't need to be sifted!) */
 
   /* Compute the bounding boxes each child node */
-  BfBoundingBox3 childBoundingBox[8] = {
+  BfBoundingBox3 childBoundingBox[NUM_CHILDREN_] = {
     [0] = {
-      .min = {boundingBox->min[0], boundingBox->min[1], boundingBox->min[2]},
-      .max = {split[0],            split[1],            split[2]}
+      .min = {boundingBox.min[0], boundingBox.min[1], boundingBox.min[2]},
+      .max = {split[0], split[1], split[2]}
     },
     [1] = {
-      .min = {boundingBox->min[0], boundingBox->min[1], split[2]},
-      .max = {split[0],            split[1],            boundingBox->max[2]}
+      .min = {boundingBox.min[0], boundingBox.min[1], split[2]},
+      .max = {split[0], split[1], boundingBox.max[2]}
     },
     [2] = {
-      .min = {boundingBox->min[0], split[1],            boundingBox->min[2]},
-      .max = {split[0],            boundingBox->max[1], split[2]}
+      .min = {boundingBox.min[0], split[1], boundingBox.min[2]},
+      .max = {split[0], boundingBox.max[1], split[2]}
     },
     [3] = {
-      .min = {boundingBox->min[0], split[1],            split[2]},
-      .max = {split[0],            boundingBox->max[1], boundingBox->max[2]}
+      .min = {boundingBox.min[0], split[1], split[2]},
+      .max = {split[0], boundingBox.max[1], boundingBox.max[2]}
     },
     [4] = {
-      .min = {split[0],            boundingBox->min[1], boundingBox->min[2]},
-      .max = {boundingBox->max[0], split[1],            split[2]}
+      .min = {split[0], boundingBox.min[1], boundingBox.min[2]},
+      .max = {boundingBox.max[0], split[1], split[2]}
     },
     [5] = {
-      .min = {split[0],            boundingBox->min[1], split[2]},
-      .max = {boundingBox->max[0], split[1],            boundingBox->max[2]}
+      .min = {split[0], boundingBox.min[1], split[2]},
+      .max = {boundingBox.max[0], split[1], boundingBox.max[2]}
     },
     [6] = {
-      .min = {split[0],            split[1],            boundingBox->min[2]},
-      .max = {boundingBox->max[0], boundingBox->max[1], split[2]}
+      .min = {split[0], split[1], boundingBox.min[2]},
+      .max = {boundingBox.max[0], boundingBox.max[1], split[2]}
     },
     [7] = {
-      .min = {split[0],            split[1],            split[2]},
-      .max = {boundingBox->max[0], boundingBox->max[1], boundingBox->max[2]}
-    }
+      .min = {split[0], split[1], split[2]},
+      .max = {boundingBox.max[0], boundingBox.max[1], boundingBox.max[2]}
+    },
   };
 
-#ifdef BF_DEBUG
-  for (BfSize k = offset[0]; k < offset[1]; ++k)
-    assert(IN_CHILD_0(point[perm[k]]));
-  for (BfSize k = offset[1]; k < offset[2]; ++k)
-    assert(IN_CHILD_1(point[perm[k]]));
-  for (BfSize k = offset[2]; k < offset[3]; ++k)
-    assert(IN_CHILD_2(point[perm[k]]));
-  for (BfSize k = offset[3]; k < offset[4]; ++k)
-    assert(IN_CHILD_3(point[perm[k]]));
-  for (BfSize k = offset[4]; k < offset[5]; ++k)
-    assert(IN_CHILD_4(point[perm[k]]));
-  for (BfSize k = offset[5]; k < offset[6]; ++k)
-    assert(IN_CHILD_5(point[perm[k]]));
-  for (BfSize k = offset[6]; k < offset[7]; ++k)
-    assert(IN_CHILD_6(point[perm[k]]));
-  for (BfSize k = offset[7]; k < offset[8]; ++k)
-    assert(IN_CHILD_7(point[perm[k]]));
-#endif
-
-  for (BfSize q = 0; q < 8; ++q) {
-    BfSize childPermSize = offset[q + 1] - offset[q];
-
-    /* TODO: right now, building octree to maximum depth possible */
-    if (childPermSize <= 1) {
-      child[q] = NULL;
+  for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
+    BfSize numChildPoints = offset[q + 1] - offset[q];
+    if (numChildPoints == 0)
       continue;
-    }
 
+    /* Create and initialize a new octree node */
     BfOctreeNode *newChild = bfOctreeNodeNew();
-
     bfTreeNodeInit(&newChild->super, &TreeNodeVtable, false, (void *)node,
                    NUM_CHILDREN, q, currentDepth + 1);
 
+    /* Compute bounding box and split for the `q`th child node */
     newChild->boundingBox = childBoundingBox[q];
+    bfBoundingBox3GetCenter(&childBoundingBox[q], newChild->split);
 
-    /* Compute the split for the `q`th child node */
-    newChild->split[0] = (childBoundingBox[q].min[0] + childBoundingBox[q].max[0])/2;
-    newChild->split[1] = (childBoundingBox[q].min[1] + childBoundingBox[q].max[1])/2;
-    newChild->split[2] = (childBoundingBox[q].min[2] + childBoundingBox[q].max[2])/2;
+    /* If the node has few enough points, it's a leaf and no more
+     * initialization needs to be done. Otherwise, we continue
+     * building the octree recursively. */
+    if (numChildPoints > LEAF_SIZE_THRESHOLD) {
+      octreeNodeInitRecursive(
+        newChild, points, childBoundingBox[q], offset[q], offset[q + 1],
+        perm, currentDepth + 1);
+      HANDLE_ERROR();
+    }
 
-    octreeNodeInitRecursive(newChild, points, &newChild->boundingBox,
-                            offset[q], offset[q + 1], perm, currentDepth + 1);
-    HANDLE_ERROR();
-
+    /* Set the `q`th child to `newChild` for the current node */
     child[q] = bfOctreeNodeToTreeNode(newChild);
   }
 
+  /* Sanity check: a child is `NULL` exactly when there are *no*
+   * points in the corresponding index range. */
+#if BF_DEBUG
+  for (BfSize q = 0; q < NUM_CHILDREN; ++q)
+    assert((offset[q] == offset[q + 1] && child[q] == NULL) ||
+           (offset[q] < offset[q + 1] && child[q] != NULL));
+#endif
+
   END_ERROR_HANDLING() {
-    for (BfSize q = 0; q < NUM_CHILDREN; ++q)
+    for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
       free(child[q]);
+    }
   }
 }
 
 void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   BEGIN_ERROR_HANDLING();
 
-  bfTreeNodeInit(&node->super, &TreeNodeVtable, true, (void *)tree,
-                 NUM_CHILDREN, BF_SIZE_BAD_VALUE, 0);
+  bfTreeNodeInit(&node->super, &TreeNodeVtable,
+                 true, (void *)tree, NUM_CHILDREN, BF_SIZE_BAD_VALUE, 0);
   HANDLE_ERROR();
 
-  /* Compute the bounding box for the entire octree */
-  node->boundingBox = bfPoints3GetBoundingBox(tree->points);
-  assert(!bfBoundingBox3IsEmpty(&node->boundingBox));
+  /* Compute scaled bounding box for the entire octree */
+  BfBoundingBox3 boundingBox = bfPoints3GetBoundingBox(tree->points);
+  bfBoundingBox3RescaleToCube(&boundingBox);
+  node->boundingBox = boundingBox;
 
-  /* Rescale the bounding box so that it's square */
-  bfBoundingBox3RescaleToCube(&node->boundingBox);
+  /* Compute the split for the node node */
+  bfBoundingBox3GetCenter(&boundingBox, node->split);
 
-  /* Compute the split for the root node */
-  bfBoundingBox3GetCenter(&node->boundingBox, node->split);
-
-  /* Recursively initialize octree starting from root */
-  octreeNodeInitRecursive(node, tree->points, &node->boundingBox, 0,
-                          tree->points->size, tree->super.perm.index, 0);
+  octreeNodeInitRecursive(node, tree->points, boundingBox, 0, tree->points->size,
+                            tree->super.perm.index, 0);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {}
 }
 
-void bfOctreeNodeDeinit(BfOctreeNode *node) {
-  (void)node;
-  assert(false);
+// void bfOctreeNodeDeinit(BfOctreeNode *node);
+// void bfOctreeNodeDealloc(BfOctreeNode **node);
+// void bfOctreeNodeDeinitAndDealloc(BfOctreeNode **node);
+// BfOctreeNode *bfOctreeNodeGetChild(BfOctreeNode *node, BfSize i);
+// BfOctreeNode const *bfOctreeNodeGetChildConst(BfOctreeNode const *node, BfSize i);
+
+BfSphere bfOctreeNodeGetBoundingSphere(BfOctreeNode const *node) {
+  return bfBoundingBox3GetBoundingSphere(&node->boundingBox);
+}
+
+/* Fill `points` with the points contained in `node`. They will be
+ * added in octree order.
+ *
+ * If `tree == NULL`, then this function will retrieve the containing
+ * `BfOctree` from `node`, which takes `O(log N)` time. */
+BfPoints3 bfOctreeNodeGetPoints(BfOctreeNode const *octreeNode, BfOctree const *octree) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints3 points;
+
+  BfTreeNode const *treeNode = bfOctreeNodeConstToTreeNodeConst(octreeNode);
+
+  BfTree const *tree = octree == NULL ?
+    bfTreeNodeGetTreeConst(treeNode) :
+    bfOctreeConstToTreeConst(octree);
+
+  /* determine the number of points contained by `node` and find the
+   * offset into `tree->perm` */
+  BfSize numInds = bfTreeNodeGetNumPoints(treeNode);
+  BfSize const *inds = bfTreeNodeGetIndexPtrConst(treeNode, tree);
+
+  bfPoints3GetByIndex(octree->points, numInds, inds, &points);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {}
+
+  return points;
+}
+
+BfVectors3 bfOctreeNodeGetUnitNormals(BfOctreeNode const *octreeNode, BfOctree const *octree) {
+  BEGIN_ERROR_HANDLING();
+
+  if (octree->unitNormals == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfTreeNode const *treeNode = bfOctreeNodeConstToTreeNodeConst(octreeNode);
+
+  BfTree const *tree = octree == NULL ?
+    bfTreeNodeGetTreeConst(treeNode) :
+    bfOctreeConstToTreeConst(octree);
+
+  /* determine the number of points contained by `node` and find the
+   * offset into `tree->perm` */
+  BfSize numInds = bfTreeNodeGetNumPoints(treeNode);
+  BfSize const *inds = bfTreeNodeGetIndexPtrConst(treeNode, tree);
+
+  BfVectors3 unitNormals;
+  bfVectors3GetByIndex(octree->unitNormals, numInds, inds, &unitNormals);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {}
+
+  return unitNormals;
+}
+
+bool bfOctreeNodesAreSeparated(BfOctreeNode const *node1, BfOctreeNode const *node2) {
+  BfSphere sphere1 = bfOctreeNodeGetBoundingSphere(node1);
+  BfSphere sphere2 = bfOctreeNodeGetBoundingSphere(node2);
+
+  BfReal R = bfPoint3Dist(sphere1.center, sphere2.center);
+
+  return R > sphere1.r + sphere2.r + 1e1*BF_EPS_MACH;
 }
