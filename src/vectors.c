@@ -6,6 +6,12 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
+void bfVector3Copy(BfVector3 u, BfVector3 const v) {
+  u[0] = v[0];
+  u[1] = v[1];
+  u[2] = v[2];
+}
+
 void bfVector3Scale(BfVector3 u, BfReal alpha) {
   u[0] *= alpha;
   u[1] *= alpha;
@@ -149,4 +155,36 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
+  if (numVectors == 0) {
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+    return;
+  }
+
+  vectors->size = numVectors;
+
+  vectors->data = malloc(numVectors*sizeof(BfVector3));
+  if (vectors->data == NULL)
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+}
+
+void bfVectors3Deinit(BfVectors3 *vectors) {
+  (void)vectors;
+  assert(false);
+}
+
+void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors) {
+  BEGIN_ERROR_HANDLING();
+
+  bfVectors3InitEmpty(indexedVectors, numInds);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numInds; ++i)
+    bfVector3Copy(indexedVectors->data[i], vectors->data[inds[i]]);
+
+  END_ERROR_HANDLING() {
+    bfVectors3Deinit(indexedVectors);
+  }
 }
