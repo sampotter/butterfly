@@ -143,7 +143,7 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   iter->aux = info;
 
-  findLevelOrderOffsets(&iter->nodes,&info->numLevels,&info->offsets);
+  findLevelOrderOffsets(&iter->nodes, &info->numLevels, &info->offsets);
   HANDLE_ERROR();
 
   info->currentLevel = info->numLevels - 1;
