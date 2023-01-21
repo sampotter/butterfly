@@ -4,26 +4,24 @@
 #include <bf/fac_streamer.h>
 // #include <bf/fiedler_tree.h>
 #include <bf/interval_tree.h>
+#include <bf/interval_tree_node.h>
 #include <bf/lbo.h>
 #include <bf/mat.h>
 #include <bf/octree.h>
 
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
-    printf("usage: %s objPath tol initDepth\n", argv[0]);
+    printf("usage: %s objPath tol freqTreeDepth\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   char const *objPath = argv[1];
   BfReal tol = strtod(argv[2], NULL);
-  BfSize colTreeInitDepth = strtoull(argv[3], NULL, 10);
+  BfSize freqTreeDepth = strtoull(argv[3], NULL, 10);
 
   /* Load triangle mesh from binary files */
   BfTrimesh trimesh;
   bfTrimeshInitFromObjFile(&trimesh, objPath);
-
-  /* Stiffness and mass matrices */
-  BfMatCsrReal *L, *M;
 
   // TODO: implement
 //   /* Build fiedler tree */
@@ -32,35 +30,58 @@ int main(int argc, char const *argv[]) {
 //   BfTree *rowTree = bfFiedlerTreeToTree(&fiedlerTree);
 
   BfOctree octree;
-  bfOctreeInitFromPoints(&octree, &trimesh.verts, NULL);
+  bfOctreeInit(&octree, &trimesh.verts, NULL);
+
+  char const *octreeBoxesPath = "octree_boxes.txt";
+  bfOctreeSaveBoxesToTextFile(&octree, octreeBoxesPath);
+  printf("- wrote octree cells to %s\n", octreeBoxesPath);
+
+  /* Upcast the spatial tree to get the row tree */
   BfTree *rowTree = bfOctreeToTree(&octree);
 
+  BfSize rowTreeMaxDepth = bfTreeGetMaxDepth(rowTree);
+  printf("- row tree has depth %lu\n", rowTreeMaxDepth);
+
+  /* Compute a finite element discretization of the Laplace-Beltrami
+   * operator on `trimesh` using linear finite elements. The stiffness
+   * matrix is returned in L and the mass matrix is returned in M. The
+   * mass matrix isn't diagonal but this isn't too important. */
+  BfMatCsrReal *L, *M;
   bfLboGetFemDiscretization(&trimesh, &L, &M);
 
-  bfMatCsrRealDump(L, "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-  bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
-
-  /* Find largest eigenvalue */
+  /* Find the largest eigenvalue. We need this to determine the
+   * interval on which we'll build the frequency tree. */
   BfReal lamMax = bfMatGetEigMaxGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M));
+  printf("- lambda_max = %g\n", lamMax);
 
-  /* Set up frequency tree */
+  /* The natural frequency of each eigenvector is the square root of
+   * the associated eigenvalue. */
   BfReal freqMax = sqrt(lamMax);
-  BfIntervalTree *intervalTree = bfIntervalTreeNew();
-  bfIntervalTreeInitEmpty(intervalTree, 0, freqMax, 2);
-  BfTree *colTree = bfIntervalTreeToTree(intervalTree);
 
-  /* Set up fac streamer */
+  /* Set up the frequency tree. Note: we build the tree on the
+   * frequency scale as opposed to the eigenvalue scale to preserve
+   * the time-frequency product in the butterfly factorization. */
+  BfIntervalTree *freqTree = bfIntervalTreeNew();
+  bfIntervalTreeInitEmpty(freqTree, 0, freqMax, 2, rowTreeMaxDepth);
+
+  /* Upcast frequency tree to get the column tree */
+  BfTree *colTree = bfIntervalTreeToTree(freqTree);
+  BfSize colTreeMaxDepth = bfTreeGetMaxDepth(colTree);
+  assert(colTreeMaxDepth == rowTreeMaxDepth);
+
+  /* Set up the depth-first butterfly factorization streamer. We'll
+   * use this below to construct the butterfly factorization
+   * incrementally. */
   BfFacStreamer *facStreamer = bfFacStreamerNew();
-  bfFacStreamerInit(facStreamer, rowTree, colTree,
-                    /* rowTreeInitDepth */ 1, colTreeInitDepth, tol);
+  bfFacStreamerInit(facStreamer, rowTree, colTree, 1, freqTreeDepth, tol);
 
   /* Feed eigenvalues until done */
-  BfSize n = 1 << colTreeInitDepth;
-  for (BfSize j = 0; j < n; ++j) {
-    BfReal j0 = j, j1 = j + 1;
-    BfReal lam0 = lamMax*j0/n, lam1 = lamMax*j1/n;
-    BfMat *Phi;
-    BfMat *Lam;
+  BfPtrArray colTreeLeafNodes = bfTreeGetLevelPtrArray(colTree, colTreeMaxDepth);
+  for (BfSize i = 0; i < bfPtrArraySize(&colTreeLeafNodes); ++i) {
+    BfIntervalTreeNode const *node = bfPtrArrayGet(&colTreeLeafNodes, i);
+    BfReal lam0 = pow(node->a, 2);
+    BfReal lam1 = pow(node->b, 2);
+    BfMat *Phi, *Lam;
     bfMatGetEigBandGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), lam0, lam1, &Phi, &Lam);
     bfFacStreamerFeed(facStreamer, Phi);
     bfMatDelete(&Phi);
@@ -74,4 +95,10 @@ int main(int argc, char const *argv[]) {
   /* Clean up */
 
   bfMatDelete(&fac);
+  bfPtrArrayDeinit(&colTreeLeafNodes);
+  bfTreeDelete(&rowTree);
+  bfOctreeDeinit(&octree);
+  bfMatCsrRealDeinitAndDealloc(&M);
+  bfMatCsrRealDeinitAndDealloc(&L);
+  bfTrimeshDeinit(&trimesh);
 }
