@@ -6,6 +6,7 @@
 #include <bf/interval_tree.h>
 #include <bf/interval_tree_node.h>
 #include <bf/lbo.h>
+#include <bf/linalg.h>
 #include <bf/mat.h>
 #include <bf/octree.h>
 

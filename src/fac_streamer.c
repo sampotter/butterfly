@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/linalg.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_diag_real.h>
 #include <bf/ptr_array.h>
@@ -76,7 +77,8 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
 
   /* Compute truncated SVD of the block. */
   BfMatDiagReal *S;
-  bfMatGetTruncatedSvd(block, Psi, &S, W, tol, BF_BACKEND_LAPACK);
+  BfTruncSpec truncSpec = {.usingTol = true, .tol = tol};
+  bfGetTruncatedSvd(block, Psi, &S, W, truncSpec, BF_BACKEND_LAPACK);
   HANDLE_ERROR();
 
   /* Bail if we didn't compress this block */

@@ -254,22 +254,3 @@ BfMat *bfMatConjTrans(BfMat *mat) {
   mat->props ^= (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ);
   return mat;
 }
-
-void bfMatGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V,
-                          BfReal eps_or_k, BfBackend backend) {
-  BEGIN_ERROR_HANDLING();
-
-  if (backend != BF_BACKEND_LAPACK)
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
-
-  (void)mat;
-  (void)U;
-  (void)S;
-  (void)V;
-  (void)eps_or_k;
-  (void)backend;
-
-  assert(false);
-
-  END_ERROR_HANDLING() {}
-}
