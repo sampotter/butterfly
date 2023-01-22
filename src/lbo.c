@@ -6,8 +6,7 @@
 #include <bf/error_macros.h>
 #include <bf/vectors.h>
 
-void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
-                               BfMatCsrReal **M) {
+void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
   BEGIN_ERROR_HANDLING();
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
@@ -118,21 +117,24 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMatCsrReal **L,
     }
   }
 
-  *L = bfMatCsrRealNew();
+  BfMatCsrReal *L_csr = bfMatCsrRealNew();
   HANDLE_ERROR();
 
-  bfMatCsrRealInit(*L, numVerts, numVerts, rowptr, colind, L_data);
+  bfMatCsrRealInit(L_csr, numVerts, numVerts, rowptr, colind, L_data);
   HANDLE_ERROR();
 
-  *M = bfMatCsrRealNew();
+  BfMatCsrReal *M_csr = bfMatCsrRealNew();
   HANDLE_ERROR();
 
-  bfMatCsrRealInit(*M, numVerts, numVerts, rowptr, colind, M_data);
+  bfMatCsrRealInit(M_csr, numVerts, numVerts, rowptr, colind, M_data);
   HANDLE_ERROR();
+
+  *L = bfMatCsrRealToMat(L_csr);
+  *M = bfMatCsrRealToMat(M_csr);
 
   END_ERROR_HANDLING() {
-    bfMatCsrRealDeinitAndDealloc(L);
-    bfMatCsrRealDeinitAndDealloc(M);
+    bfMatCsrRealDeinitAndDealloc(&L_csr);
+    bfMatCsrRealDeinitAndDealloc(&M_csr);
   }
 
   free(rowptr);

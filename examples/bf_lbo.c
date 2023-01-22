@@ -47,12 +47,12 @@ int main(int argc, char const *argv[]) {
    * operator on `trimesh` using linear finite elements. The stiffness
    * matrix is returned in L and the mass matrix is returned in M. The
    * mass matrix isn't diagonal but this isn't too important. */
-  BfMatCsrReal *L, *M;
+  BfMat *L, *M;
   bfLboGetFemDiscretization(&trimesh, &L, &M);
 
   /* Find the largest eigenvalue. We need this to determine the
    * interval on which we'll build the frequency tree. */
-  BfReal lamMax = bfMatGetEigMaxGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M));
+  BfReal lamMax = bfGetMaxEigenvalue(L, M);
   printf("- lambda_max = %g\n", lamMax);
 
   /* The natural frequency of each eigenvector is the square root of
@@ -83,7 +83,7 @@ int main(int argc, char const *argv[]) {
     BfReal lam0 = pow(node->a, 2);
     BfReal lam1 = pow(node->b, 2);
     BfMat *Phi, *Lam;
-    bfMatGetEigBandGen(bfMatCsrRealToMat(L), bfMatCsrRealToMat(M), lam0, lam1, &Phi, &Lam);
+    bfGetEigenband(L, M, lam0, lam1, &Phi, &Lam);
     bfFacStreamerFeed(facStreamer, Phi);
     bfMatDelete(&Phi);
     bfMatDelete(&Lam);
@@ -99,7 +99,7 @@ int main(int argc, char const *argv[]) {
   bfPtrArrayDeinit(&colTreeLeafNodes);
   bfTreeDelete(&rowTree);
   bfOctreeDeinit(&octree);
-  bfMatCsrRealDeinitAndDealloc(&M);
-  bfMatCsrRealDeinitAndDealloc(&L);
+  bfMatDelete(&M);
+  bfMatDelete(&L);
   bfTrimeshDeinit(&trimesh);
 }
