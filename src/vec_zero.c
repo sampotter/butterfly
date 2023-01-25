@@ -1,5 +1,6 @@
 #include <bf/vec_zero.h>
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include <bf/error.h>
@@ -8,11 +9,11 @@
 
 /** Interface: Vec */
 
-#define INTERFACE BF_INTERFACE_Vec
-BF_DEFINE_VTABLE(Vec, VecZero)
-#undef INTERFACE
-
-BF_STUB(BfVec *, VecZeroCopy, BfVec const *)
+static BfVecVtable VEC_VTABLE = {
+  .Delete = (__typeof__(&bfVecZeroDelete))bfVecZeroDelete,
+  .GetType = (__typeof__(&bfVecZeroGetType))bfVecZeroGetType,
+  .Concat = (__typeof__(&bfVecZeroConcat))bfVecZeroConcat,
+};
 
 void bfVecZeroDelete(BfVec **mat) {
   bfVecZeroDeinitAndDealloc((BfVecZero **)mat);
@@ -22,21 +23,6 @@ BfType bfVecZeroGetType(BfVec const *vec) {
   (void)vec;
   return BF_TYPE_VEC_ZERO;
 }
-
-BF_STUB(bool, VecZeroInstanceOf, BfVec const *, BfType)
-BF_STUB(BfPtr, VecZeroGetEltPtr, BfVec *, BfSize)
-BF_STUB(BfVec *, VecZeroGetSubvecCopy, BfVec const *, BfSize, BfSize)
-BF_STUB(BfVec *, VecZeroGetSubvecView, BfVec *, BfSize, BfSize)
-BF_STUB(void, VecZeroPrint, BfVec const *, FILE *)
-BF_STUB(BfReal, VecZeroDist, BfVec const *, BfVec const *)
-BF_STUB(BfReal, VecZeroNormMax, BfVec const *)
-BF_STUB(void, VecZeroScaleByReal, BfVec *, BfReal)
-BF_STUB(void, VecZeroAddInplace, BfVec *, BfVec const *)
-BF_STUB(void, VecZeroMulInplace, BfVec *, BfMat const *)
-BF_STUB(void, VecZeroSolveInplace, BfVec *, BfMat const *)
-BF_STUB(void, VecZeroRecipInplace, BfVec *)
-BF_STUB(BfMat *, VecZeroGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(void, VecZeroPermute, BfVec *, BfPerm const *)
 
 static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
@@ -138,7 +124,7 @@ BfVecZero *bfVecZeroNew() {
 void bfVecZeroInit(BfVecZero *vecZero, BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  bfVecInit(&vecZero->super, &VecVtbl, size);
+  bfVecInit(&vecZero->super, &VEC_VTABLE, size);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()

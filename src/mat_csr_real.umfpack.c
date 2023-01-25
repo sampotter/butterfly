@@ -1,10 +1,11 @@
 #include <bf/mat_csr_real.h>
 
+#include <assert.h>
+
 #include <suitesparse/umfpack.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
-
 #include <bf/rand.h>
 
 void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q) {

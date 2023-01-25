@@ -5,7 +5,6 @@
 #include "backends.h"
 #include "def.h"
 #include "dtype.h"
-#include "interface.h"
 #include "perm.h"
 #include "types.h"
 #include "vec.h"
@@ -18,59 +17,111 @@ typedef enum BfMatProps {
   BF_MAT_PROPS_ORTHO = 1 << 3
 } BfMatProps;
 
-#define BF_INTERFACE_Mat(Type, Subtype, _)                                     \
-  _(Type, Subtype, BfMat *, Copy, BfMat const *)                               \
-  _(Type, Subtype, BfMat *, GetView, BfMat *)                                  \
-  _(Type, Subtype, BfVec *, GetRowCopy, BfMat const *, BfSize)                 \
-  _(Type, Subtype, BfVec *, GetRowView, BfMat *, BfSize)                       \
-  _(Type, Subtype, BfVec *, GetColView, BfMat *, BfSize)                       \
-  _(Type, Subtype, BfVec *, GetColRangeView, BfMat *, BfSize, BfSize, BfSize)  \
-  _(Type, Subtype, void, Delete, BfMat **)                                     \
-  _(Type, Subtype, BfMat *, EmptyLike, BfMat const *, BfSize, BfSize)          \
-  _(Type, Subtype, BfMat *, ZerosLike, BfMat const *, BfSize, BfSize)          \
-  _(Type, Subtype, BfType, GetType, BfMat const *)                             \
-  _(Type, Subtype, BfSize, NumBytes, BfMat const *)                            \
-  _(Type, Subtype, void, Save, BfMat const *, char const *)                    \
-  _(Type, Subtype, void, Print, BfMat const *, FILE *)                         \
-  _(Type, Subtype, BfSize, GetNumRows, BfMat const *)                          \
-  _(Type, Subtype, BfSize, GetNumCols, BfMat const *)                          \
-  _(Type, Subtype, void, SetRow, BfMat *, BfSize, BfVec const *)               \
-  _(Type, Subtype, void, SetCol, BfMat *, BfSize, BfVec const *)               \
-  _(Type, Subtype, void, SetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *) \
-  _(Type, Subtype, BfMat *, GetRowRange, BfMat *, BfSize, BfSize)              \
-  _(Type, Subtype, BfMat *, GetColRange, BfMat *, BfSize, BfSize)              \
-  _(Type, Subtype, BfMat *, GetRowRangeCopy, BfMat const *, BfSize, BfSize)    \
-  _(Type, Subtype, BfMat *, GetColRangeCopy , BfMat const *, BfSize, BfSize)   \
-  _(Type, Subtype, void, SetRowRange, BfMat *, BfSize, BfSize, BfMat const *)  \
-  _(Type, Subtype, void, PermuteRows, BfMat *, BfPerm const *)                 \
-  _(Type, Subtype, void, PermuteCols, BfMat *, BfPerm const *)                 \
-  _(Type, Subtype, BfVec *, RowDists, BfMat const *, BfMat const *)            \
-  _(Type, Subtype, BfVec *, ColDists, BfMat const *, BfMat const *)            \
-  _(Type, Subtype, BfVec *, ColDots, BfMat const *, BfMat const *)             \
-  _(Type, Subtype, BfVec *, ColNorms, BfMat const *)                           \
-  _(Type, Subtype, void, ScaleRows, BfMat *, BfVec const *)                    \
-  _(Type, Subtype, void, ScaleCols, BfMat *, BfVec const *)                    \
-  _(Type, Subtype, BfVec *, SumCols, BfMat const *)                            \
-  _(Type, Subtype, void, AddInplace, BfMat *, BfMat const *)                   \
-  _(Type, Subtype, void, AddDiag, BfMat *, BfMat const *)                      \
-  _(Type, Subtype, BfMat *, Sub, BfMat const *, BfMat const *)                 \
-  _(Type, Subtype, void, SubInplace, BfMat *, BfMat const *)                   \
-  _(Type, Subtype, BfMat *, Mul, BfMat const *, BfMat const *)                 \
-  _(Type, Subtype, BfVec *, MulVec, BfMat const *, BfVec const *)              \
-  _(Type, Subtype, void, MulInplace, BfMat *, BfMat const *)                   \
-  _(Type, Subtype, BfMat *, SolveLU, BfMat const *, BfMat const *)             \
-  _(Type, Subtype, BfMat *, LstSq, BfMat const *, BfMat const *)               \
-  _(Type, Subtype, bool, IsUpperTri, BfMat const *)                            \
-  _(Type, Subtype, BfVec *, ForwardSolveVec, BfMat const *, BfVec const *)     \
-  _(Type, Subtype, BfVec *, BackwardSolveVec, BfMat const *, BfVec const *)    \
-  _(Type, Subtype, bool, IsZero, BfMat const *)                                \
-  _(Type, Subtype, void, Negate, BfMat *)                                      \
-  _(Type, Subtype, BfMat *, ToType, BfMat const *, BfType)                     \
-  _(Type, Subtype, BfMat *, Cholesky, BfMat const *)
+/** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE_STRUCT(Mat)
-#undef INTERFACE
+BfMat *bfMatCopy(BfMat const *);
+BfMat *bfMatGetView(BfMat *);
+BfVec *bfMatGetRowCopy(BfMat const *, BfSize);
+BfVec *bfMatGetRowView(BfMat *, BfSize);
+BfVec *bfMatGetColView(BfMat *, BfSize);
+BfVec *bfMatGetColRangeView(BfMat *, BfSize, BfSize, BfSize);
+void bfMatDelete(BfMat **);
+BfMat *bfMatEmptyLike(BfMat const *, BfSize, BfSize);
+BfMat *bfMatZerosLike(BfMat const *, BfSize, BfSize);
+BfType bfMatGetType(BfMat const *);
+BfSize bfMatNumBytes(BfMat const *);
+void bfMatSave(BfMat const *, char const *);
+void bfMatPrint(BfMat const *, FILE *);
+BfSize bfMatGetNumRows(BfMat const *);
+BfSize bfMatGetNumCols(BfMat const *);
+void bfMatSetRow(BfMat *, BfSize, BfVec const *);
+void bfMatSetCol(BfMat *, BfSize, BfVec const *);
+void bfMatSetColRange(BfMat *, BfSize, BfSize, BfSize, BfVec const *);
+BfMat *bfMatGetRowRange(BfMat *, BfSize, BfSize);
+BfMat *bfMatGetColRange(BfMat *, BfSize, BfSize);
+BfMat *bfMatGetRowRangeCopy(BfMat const *, BfSize, BfSize);
+BfMat *bfMatGetColRangeCopy (BfMat const *, BfSize, BfSize);
+void bfMatSetRowRange(BfMat *, BfSize, BfSize, BfMat const *);
+void bfMatPermuteRows(BfMat *, BfPerm const *);
+void bfMatPermuteCols(BfMat *, BfPerm const *);
+BfVec *bfMatRowDists(BfMat const *, BfMat const *);
+BfVec *bfMatColDists(BfMat const *, BfMat const *);
+BfVec *bfMatColDots(BfMat const *, BfMat const *);
+BfVec *bfMatColNorms(BfMat const *);
+void bfMatScale(BfMat *, BfReal);
+void bfMatScaleRows(BfMat *, BfVec const *);
+void bfMatScaleCols(BfMat *, BfVec const *);
+BfVec *bfMatSumCols(BfMat const *);
+void bfMatAddInplace(BfMat *, BfMat const *);
+void bfMatAddDiag(BfMat *, BfMat const *);
+BfMat *bfMatSub(BfMat const *, BfMat const *);
+void bfMatSubInplace(BfMat *, BfMat const *);
+BfMat *bfMatMul(BfMat const *, BfMat const *);
+BfVec *bfMatMulVec(BfMat const *, BfVec const *);
+void bfMatMulInplace(BfMat *, BfMat const *);
+BfMat *bfMatSolveLU(BfMat const *, BfMat const *);
+BfMat *bfMatLstSq(BfMat const *, BfMat const *);
+bool bfMatIsUpperTri(BfMat const *);
+BfVec *bfMatForwardSolveVec(BfMat const *, BfVec const *);
+BfVec *bfMatBackwardSolveVec(BfMat const *, BfVec const *);
+bool bfMatIsZero(BfMat const *);
+void bfMatNegate(BfMat *);
+BfMat *bfMatToType(BfMat const *, BfType);
+BfMat *bfMatCholesky(BfMat const *);
+
+typedef struct BfMatVtable {
+  __typeof__(&bfMatCopy) Copy;
+  __typeof__(&bfMatGetView) GetView;
+  __typeof__(&bfMatGetRowCopy) GetRowCopy;
+  __typeof__(&bfMatGetRowView) GetRowView;
+  __typeof__(&bfMatGetColView) GetColView;
+  __typeof__(&bfMatGetColRangeView) GetColRangeView;
+  __typeof__(&bfMatDelete) Delete;
+  __typeof__(&bfMatEmptyLike) EmptyLike;
+  __typeof__(&bfMatZerosLike) ZerosLike;
+  __typeof__(&bfMatGetType) GetType;
+  __typeof__(&bfMatNumBytes) NumBytes;
+  __typeof__(&bfMatSave) Save;
+  __typeof__(&bfMatPrint) Print;
+  __typeof__(&bfMatGetNumRows) GetNumRows;
+  __typeof__(&bfMatGetNumCols) GetNumCols;
+  __typeof__(&bfMatSetRow) SetRow;
+  __typeof__(&bfMatSetCol) SetCol;
+  __typeof__(&bfMatSetColRange) SetColRange;
+  __typeof__(&bfMatGetRowRange) GetRowRange;
+  __typeof__(&bfMatGetColRange) GetColRange;
+  __typeof__(&bfMatGetRowRangeCopy) GetRowRangeCopy;
+  __typeof__(&bfMatGetColRangeCopy ) GetColRangeCopy ;
+  __typeof__(&bfMatSetRowRange) SetRowRange;
+  __typeof__(&bfMatPermuteRows) PermuteRows;
+  __typeof__(&bfMatPermuteCols) PermuteCols;
+  __typeof__(&bfMatRowDists) RowDists;
+  __typeof__(&bfMatColDists) ColDists;
+  __typeof__(&bfMatColDots) ColDots;
+  __typeof__(&bfMatColNorms) ColNorms;
+  __typeof__(&bfMatScale) Scale;
+  __typeof__(&bfMatScaleRows) ScaleRows;
+  __typeof__(&bfMatScaleCols) ScaleCols;
+  __typeof__(&bfMatSumCols) SumCols;
+  __typeof__(&bfMatAddInplace) AddInplace;
+  __typeof__(&bfMatAddDiag) AddDiag;
+  __typeof__(&bfMatSub) Sub;
+  __typeof__(&bfMatSubInplace) SubInplace;
+  __typeof__(&bfMatMul) Mul;
+  __typeof__(&bfMatMulVec) MulVec;
+  __typeof__(&bfMatMulInplace) MulInplace;
+  __typeof__(&bfMatSolveLU) SolveLU;
+  __typeof__(&bfMatLstSq) LstSq;
+  __typeof__(&bfMatIsUpperTri) IsUpperTri;
+  __typeof__(&bfMatForwardSolveVec) ForwardSolveVec;
+  __typeof__(&bfMatBackwardSolveVec) BackwardSolveVec;
+  __typeof__(&bfMatIsZero) IsZero;
+  __typeof__(&bfMatNegate) Negate;
+  __typeof__(&bfMatToType) ToType;
+  __typeof__(&bfMatCholesky) Cholesky;
+} BfMatVtable;
+
+/** Implementation: Mat */
 
 struct BfMat {
   BfMatVtable *vtbl;
@@ -81,10 +132,6 @@ struct BfMat {
   void *aux; /* pointer to extra user-defined data for purposes of debugging */
 #endif
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(Mat)
-#undef INTERFACE
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);

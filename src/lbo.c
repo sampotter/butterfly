@@ -1,5 +1,6 @@
 #include <bf/lbo.h>
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include <bf/error.h>

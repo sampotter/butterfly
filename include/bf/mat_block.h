@@ -2,17 +2,23 @@
 
 #include "mat.h"
 
-#define BF_INTERFACE_MatBlock(Type, Subtype, _)                         \
-  _(Type, Subtype, BfSize, NumBlocks, BfMatBlock const *)               \
-  _(Type, Subtype, BfSize, GetNumRowBlocks, BfMatBlock const *)         \
-  _(Type, Subtype, BfSize, GetNumColBlocks, BfMatBlock const *)         \
-  _(Type, Subtype, BfSize, GetNumBlockRows, BfMatBlock const *, BfSize) \
-  _(Type, Subtype, BfSize, GetNumBlockCols, BfMatBlock const *, BfSize)
+/** Interface: MatBlock */
 
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE_STRUCT(MatBlock)
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
+BfSize bfMatBlockNumBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *, BfSize);
+BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *, BfSize);
+
+typedef struct BfMatBlockVtable {
+  __typeof__(&bfMatBlockNumBlocks) NumBlocks;
+  __typeof__(&bfMatBlockGetNumRowBlocks) GetNumRowBlocks;
+  __typeof__(&bfMatBlockGetNumColBlocks) GetNumColBlocks;
+  __typeof__(&bfMatBlockGetNumBlockRows) GetNumBlockRows;
+  __typeof__(&bfMatBlockGetNumBlockCols) GetNumBlockCols;
+} BfMatBlockVtable;
+
+/** Implementation: MatBlock */
 
 /* An abstract block matrix type. Shouldn't be instantiated
  * directly. */
@@ -45,14 +51,6 @@ struct BfMatBlock {
   BfSize *colOffset;
 };
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
-
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
-
 /* Upcasting: */
 BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock);
 
@@ -61,7 +59,7 @@ BfMatBlock *bfMatToMatBlock(BfMat *mat);
 BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat);
 
 void bfMatBlockInit(BfMatBlock *mat,
-                    BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
+                    BfMatVtable *matVtbl, BfMatBlockVtable *MAT_BLOCK_VTABLE,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDeinit(BfMatBlock *mat);
 void bfMatBlockDealloc(BfMatBlock **mat);

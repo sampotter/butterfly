@@ -3,14 +3,22 @@
 #include "mat.h"
 #include "ptr_array.h"
 
+/** Interface: MatProduct */
+
+BfMat *bfMatProductCopy(BfMat const *mat);
+void bfMatProductDelete(BfMat **mat);
+BfType bfMatProductGetType(BfMat const *mat);
+BfSize bfMatProductGetNumRows(BfMat const *mat);
+BfSize bfMatProductGetNumCols(BfMat const *mat);
+void bfMatProductScaleCols(BfMat *mat, BfVec const *vec);
+BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat);
+
+/** Implementation: MatProduct */
+
 typedef struct BfMatProduct {
   BfMat super;
   BfPtrArray factorArr;
 } BfMatProduct;
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatProduct)
-#undef INTERFACE
 
 BfMat *bfMatProductToMat(BfMatProduct *matProduct);
 

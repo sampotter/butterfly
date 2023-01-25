@@ -1,5 +1,6 @@
 #include <bf/octree_node.h>
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 

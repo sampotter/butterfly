@@ -9,32 +9,23 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatCsrReal)
-#undef INTERFACE
-
-BF_STUB(BfMat *, MatCsrRealCopy, BfMat const *)
-BF_STUB(BfMat *, MatCsrRealGetView, BfMat *)
-BF_STUB(BfVec *, MatCsrRealGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatCsrRealGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCsrRealGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCsrRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
+static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatCsrRealDelete))bfMatCsrRealDelete,
+  .GetType = (__typeof__(&bfMatCsrRealGetType))bfMatCsrRealGetType,
+  .GetNumRows = (__typeof__(&bfMatCsrRealGetNumRows))bfMatCsrRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatCsrRealGetNumCols))bfMatCsrRealGetNumCols,
+  .MulVec = (__typeof__(&bfMatCsrRealMulVec))bfMatCsrRealMulVec,
+  .IsZero = (__typeof__(&bfMatCsrRealIsZero))bfMatCsrRealIsZero,
+};
 
 void bfMatCsrRealDelete(BfMat **mat) {
   bfMatCsrRealDeinitAndDealloc((BfMatCsrReal **)mat);
 }
 
-BF_STUB(BfMat *, MatCsrRealEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCsrRealZerosLike, BfMat const *, BfSize, BfSize)
-
 BfType bfMatCsrRealGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_CSR_REAL;
 }
-
-BF_STUB(BfSize, MatCsrRealNumBytes, BfMat const *)
-BF_STUB(void, MatCsrRealSave, BfMat const *, char const *)
-BF_STUB(void, MatCsrRealPrint, BfMat const *, FILE *)
 
 BfSize bfMatCsrRealGetNumRows(BfMat const *mat) {
   if (bfMatGetType(mat) != BF_TYPE_MAT_CSR_REAL) {
@@ -53,29 +44,6 @@ BfSize bfMatCsrRealGetNumCols(BfMat const *mat) {
     return mat->numCols;
   }
 }
-
-BF_STUB(void, MatCsrRealSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCsrRealSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCsrRealSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatCsrRealGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCsrRealGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCsrRealGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCsrRealGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatCsrRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatCsrRealPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatCsrRealPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatCsrRealRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCsrRealColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCsrRealColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCsrRealColNorms, BfMat const *)
-BF_STUB(void, MatCsrRealScaleRows, BfMat *, BfVec const *)
-BF_STUB(void, MatCsrRealScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatCsrRealSumCols, BfMat const *)
-BF_STUB(void, MatCsrRealAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatCsrRealAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCsrRealSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatCsrRealSubInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCsrRealMul, BfMat const *, BfMat const *)
 
 static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
   BEGIN_ERROR_HANDLING();
@@ -134,19 +102,9 @@ BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec) {
   return result;
 }
 
-BF_STUB(void, MatCsrRealMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCsrRealSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatCsrRealLstSq, BfMat const *, BfMat const *)
-BF_STUB(bool, MatCsrRealIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatCsrRealForwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(BfVec *, MatCsrRealBackwardSolveVec, BfMat const *, BfVec const *)
-
 bool bfMatCsrRealIsZero(BfMat const *mat) {
   return bfMatConstToMatCsrRealConst(mat)->rowptr[mat->numRows] == 0;
 }
-
-BF_STUB(void, MatCsrRealNegate, BfMat *)
-BF_STUB(BfMat *, MatCsrRealToType, BfMat const *, BfType)
 
 /** Upcasting: */
 
@@ -199,7 +157,7 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
 
   BfSize nnz = rowptr[numRows];
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->rowptr = malloc((numRows + 1)*sizeof(BfSize));

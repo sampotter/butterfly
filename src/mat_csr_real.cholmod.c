@@ -1,5 +1,6 @@
 #include <bf/mat_csr_real.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include <bf/cholmod.h>

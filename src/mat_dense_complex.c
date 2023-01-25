@@ -131,8 +131,6 @@ static BfVec *bfMatDenseComplexDenseComplexColDots(
   return bfVecComplexToVec(result);
 }
 
-BF_STUB(void, MatDenseComplexScaleRows, BfMat *, BfVec const *)
-
 void bfMatDenseComplexScaleCols_real(BfMatDenseComplex *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
 
@@ -171,9 +169,44 @@ void bfMatDenseComplexScaleCols_complex(BfMatDenseComplex *mat, BfVec const *vec
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatDenseComplex)
-#undef INTERFACE
+static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatDenseComplexCopy))bfMatDenseComplexCopy,
+  .GetView = (__typeof__(&bfMatDenseComplexGetView))bfMatDenseComplexGetView,
+  .GetRowCopy = (__typeof__(&bfMatDenseComplexGetRowCopy))bfMatDenseComplexGetRowCopy,
+  .GetRowView = (__typeof__(&bfMatDenseComplexGetRowView))bfMatDenseComplexGetRowView,
+  .GetColView = (__typeof__(&bfMatDenseComplexGetColView))bfMatDenseComplexGetColView,
+  .GetColRangeView = (__typeof__(&bfMatDenseComplexGetColRangeView))bfMatDenseComplexGetColRangeView,
+  .Delete = (__typeof__(&bfMatDenseComplexDelete))bfMatDenseComplexDelete,
+  .EmptyLike = (__typeof__(&bfMatDenseComplexEmptyLike))bfMatDenseComplexEmptyLike,
+  .ZerosLike = (__typeof__(&bfMatDenseComplexZerosLike))bfMatDenseComplexZerosLike,
+  .GetType = (__typeof__(&bfMatDenseComplexGetType))bfMatDenseComplexGetType,
+  .NumBytes = (__typeof__(&bfMatDenseComplexNumBytes))bfMatDenseComplexNumBytes,
+  .Save = (__typeof__(&bfMatDenseComplexSave))bfMatDenseComplexSave,
+  .Print = (__typeof__(&bfMatDenseComplexPrint))bfMatDenseComplexPrint,
+  .GetNumRows = (__typeof__(&bfMatDenseComplexGetNumRows))bfMatDenseComplexGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatDenseComplexGetNumCols))bfMatDenseComplexGetNumCols,
+  .SetRow = (__typeof__(&bfMatDenseComplexSetRow))bfMatDenseComplexSetRow,
+  .SetCol = (__typeof__(&bfMatDenseComplexSetCol))bfMatDenseComplexSetCol,
+  .SetColRange = (__typeof__(&bfMatDenseComplexSetColRange))bfMatDenseComplexSetColRange,
+  .GetRowRange = (__typeof__(&bfMatDenseComplexGetRowRange))bfMatDenseComplexGetRowRange,
+  .GetColRange = (__typeof__(&bfMatDenseComplexGetColRange))bfMatDenseComplexGetColRange,
+  .SetRowRange = (__typeof__(&bfMatDenseComplexSetRowRange))bfMatDenseComplexSetRowRange,
+  .PermuteRows = (__typeof__(&bfMatDenseComplexPermuteRows))bfMatDenseComplexPermuteRows,
+  .ColDists = (__typeof__(&bfMatDenseComplexColDists))bfMatDenseComplexColDists,
+  .ColDots = (__typeof__(&bfMatDenseComplexColDots))bfMatDenseComplexColDots,
+  .ColNorms = (__typeof__(&bfMatDenseComplexColNorms))bfMatDenseComplexColNorms,
+  .ScaleCols = (__typeof__(&bfMatDenseComplexScaleCols))bfMatDenseComplexScaleCols,
+  .AddInplace = (__typeof__(&bfMatDenseComplexAddInplace))bfMatDenseComplexAddInplace,
+  .Sub = (__typeof__(&bfMatDenseComplexSub))bfMatDenseComplexSub,
+  .SubInplace = (__typeof__(&bfMatDenseComplexSubInplace))bfMatDenseComplexSubInplace,
+  .Mul = (__typeof__(&bfMatDenseComplexMul))bfMatDenseComplexMul,
+  .MulVec = (__typeof__(&bfMatDenseComplexMulVec))bfMatDenseComplexMulVec,
+  .SolveLU = (__typeof__(&bfMatDenseComplexSolveLU))bfMatDenseComplexSolveLU,
+  .LstSq = (__typeof__(&bfMatDenseComplexLstSq))bfMatDenseComplexLstSq,
+  .IsUpperTri = (__typeof__(&bfMatDenseComplexIsUpperTri))bfMatDenseComplexIsUpperTri,
+  .BackwardSolveVec = (__typeof__(&bfMatDenseComplexBackwardSolveVec))bfMatDenseComplexBackwardSolveVec,
+  .Negate = (__typeof__(&bfMatDenseComplexNegate))bfMatDenseComplexNegate,
+};
 
 BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -305,7 +338,6 @@ BfVec *bfMatDenseComplexGetColView(BfMat *mat, BfSize j) {
   return bfVecComplexToVec(colView);
 }
 
-
 BfVec *bfMatDenseComplexGetColRangeView(BfMat *mat, BfSize i0, BfSize i1, BfSize j) {
   BEGIN_ERROR_HANDLING();
 
@@ -384,10 +416,6 @@ BfMat *bfMatDenseComplexZerosLike(BfMat const *mat, BfSize numRows, BfSize numCo
 BfType bfMatDenseComplexGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_DENSE_COMPLEX;
-}
-
-bool bfMatDenseComplexInstanceOf(BfMat const *mat, BfType type) {
-  return bfTypeDerivedFrom(bfMatGetType(mat), type);
 }
 
 BfSize bfMatDenseComplexNumBytes(BfMat const *mat) {
@@ -606,9 +634,6 @@ BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
   return bfMatDenseComplexToMat(matDenseComplexView);
 }
 
-BF_STUB(BfMat *, MatDenseComplexGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDenseComplexGetColRangeCopy, BfMat const *, BfSize, BfSize)
-
 void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows) {
   BEGIN_ERROR_HANDLING();
 
@@ -662,9 +687,6 @@ void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
 
   bfMatDelete(&matPerm);
 }
-
-BF_STUB(void, MatDenseComplexPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatDenseComplexRowDists, BfMat const *, BfMat const *)
 
 BfVec *bfMatDenseComplexColDists(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
@@ -768,8 +790,6 @@ void bfMatDenseComplexScaleCols(BfMat *mat, BfVec const *vec) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(BfVec *, MatDenseComplexSumCols, BfMat const *)
-
 void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
 
@@ -798,8 +818,6 @@ void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
 
   END_ERROR_HANDLING() {}
 }
-
-BF_STUB(void, MatDenseComplexAddDiag, BfMat *, BfMat const *)
 
 BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
@@ -946,8 +964,6 @@ BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec) {
   return result;
 }
 
-BF_STUB(void, MatDenseComplexMulInplace, BfMat *, BfMat const *)
-
 BfMat *bfMatDenseComplexSolveLU(BfMat const *A, BfMat const *B) {
   BEGIN_ERROR_HANDLING();
 
@@ -993,8 +1009,6 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs) {
   return result;
 }
 
-BF_STUB(BfMat *, MatDenseComplexGetGivensRotation, BfVec const *, BfSize, BfSize)
-
 bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
@@ -1021,8 +1035,6 @@ bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
 
   return upperTri;
 }
-
-BF_STUB(BfVec *, MatDenseComplexForwardSolveVec, BfMat const *, BfVec const *)
 
 static BfVec *
 backwardSolveVec_complex(BfMatDenseComplex const *matDenseComplex,
@@ -1077,8 +1089,6 @@ BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
   return result;
 }
 
-BF_STUB(bool, MatDenseComplexIsZero, BfMat const *)
-
 void bfMatDenseComplexNegate(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
 
@@ -1098,9 +1108,6 @@ void bfMatDenseComplexNegate(BfMat *mat) {
 
   END_ERROR_HANDLING() {}
 }
-
-BF_STUB(BfMat *, MatDenseComplexToType, BfMat const *, BfType)
-BF_STUB(BfMat *, MatDenseComplexCholesky, BfMat const *)
 
 /* Implementation: MatDenseComplex */
 
@@ -1654,7 +1661,7 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
                            BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->rowStride = numCols;

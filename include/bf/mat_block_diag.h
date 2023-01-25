@@ -2,17 +2,26 @@
 
 #include "mat_block.h"
 
+/** Interface: Mat */
+
+BfMat *bfMatBlockDiagCopy(BfMat const *mat);
+BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i);
+void bfMatBlockDiagDelete(BfMat **mat);
+BfType bfMatBlockDiagGetType(BfMat const *mat);
+bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfType type);
+BfSize bfMatBlockDiagGetNumRows(BfMat const *mat);
+BfSize bfMatBlockDiagGetNumCols(BfMat const *mat);
+void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec);
+BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other);
+void bfMatBlockDiagNegate(BfMat *mat);
+
+/** Interface: MatBlock */
+
+BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock);
+
 struct BfMatBlockDiag {
   BfMatBlock super;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockDiag)
-#undef INTERFACE
-
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockDiag)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag);

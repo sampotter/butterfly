@@ -1,5 +1,6 @@
 #include <bf/vec_complex.h>
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -12,9 +13,19 @@
 
 /** Interface: Vec */
 
-#define INTERFACE BF_INTERFACE_Vec
-BF_DEFINE_VTABLE(Vec, VecComplex)
-#undef INTERFACE
+static BfVecVtable VEC_VTABLE = {
+  .Copy = (__typeof__(&bfVecComplexCopy))bfVecComplexCopy,
+  .Delete = (__typeof__(&bfVecComplexDelete))bfVecComplexDelete,
+  .GetType = (__typeof__(&bfVecComplexGetType))bfVecComplexGetType,
+  .GetSubvecView = (__typeof__(&bfVecComplexGetSubvecView))bfVecComplexGetSubvecView,
+  .Print = (__typeof__(&bfVecComplexPrint))bfVecComplexPrint,
+  .NormMax = (__typeof__(&bfVecComplexNormMax))bfVecComplexNormMax,
+  .AddInplace = (__typeof__(&bfVecComplexAddInplace))bfVecComplexAddInplace,
+  .MulInplace = (__typeof__(&bfVecComplexMulInplace))bfVecComplexMulInplace,
+  .SolveInplace = (__typeof__(&bfVecComplexSolveInplace))bfVecComplexSolveInplace,
+  .GetGivensRotation = (__typeof__(&bfVecComplexGetGivensRotation))bfVecComplexGetGivensRotation,
+  .Concat = (__typeof__(&bfVecComplexConcat))bfVecComplexConcat,
+};
 
 BfVec *bfVecComplexCopy(BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -53,10 +64,6 @@ BfType bfVecComplexGetType(BfVec const *vec) {
   (void)vec;
   return BF_TYPE_VEC_COMPLEX;
 }
-
-BF_STUB(bool, VecComplexInstanceOf, BfVec const *, BfType)
-BF_STUB(BfPtr, VecComplexGetEltPtr, BfVec *, BfSize)
-BF_STUB(BfVec *, VecComplexGetSubvecCopy, BfVec const *, BfSize, BfSize)
 
 BfVec *bfVecComplexGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
@@ -97,8 +104,6 @@ void bfVecComplexPrint(BfVec const *vec, FILE *fp) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(BfReal, VecComplexDist, BfVec const *, BfVec const *)
-
 BfReal bfVecComplexNormMax(BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
 
@@ -120,8 +125,6 @@ BfReal bfVecComplexNormMax(BfVec const *vec) {
 
   return norm;
 }
-
-BF_STUB(void, VecComplexScaleByReal, BfVec *, BfReal)
 
 void bfVecComplexAddInplace(BfVec *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
@@ -223,8 +226,6 @@ void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(void, VecComplexRecipInplace, BfVec *)
-
 BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd) {
   BEGIN_ERROR_HANDLING();
 
@@ -279,8 +280,6 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
 
   return bfMatGivensComplexToMat(givens);
 }
-
-BF_STUB(void, VecComplexPermute, BfVec *, BfPerm const *)
 
 static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
@@ -485,7 +484,7 @@ BfVecComplex *bfVecComplexFromFile(char const *path, BfSize size) {
 void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  bfVecInit(&vecComplex->super, &VecVtbl, size);
+  bfVecInit(&vecComplex->super, &VEC_VTABLE, size);
 
   vecComplex->stride = 1;
 
@@ -503,7 +502,7 @@ void bfVecComplexInitView(BfVecComplex *vecComplex, BfSize size, BfSize stride, 
   if (data == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  bfVecInit(&vecComplex->super, &VecVtbl, size);
+  bfVecInit(&vecComplex->super, &VEC_VTABLE, size);
 
   vecComplex->super.props |= BF_VEC_PROPS_VIEW;
 

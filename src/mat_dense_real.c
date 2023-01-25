@@ -13,9 +13,18 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatDenseReal)
-#undef INTERFACE
+static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatDenseRealCopy))bfMatDenseRealCopy,
+  .GetColView = (__typeof__(&bfMatDenseRealGetColView))bfMatDenseRealGetColView,
+  .Delete = (__typeof__(&bfMatDenseRealDelete))bfMatDenseRealDelete,
+  .GetType = (__typeof__(&bfMatDenseRealGetType))bfMatDenseRealGetType,
+  .Save = (__typeof__(&bfMatDenseRealSave))bfMatDenseRealSave,
+  .Print = (__typeof__(&bfMatDenseRealPrint))bfMatDenseRealPrint,
+  .GetNumRows = (__typeof__(&bfMatDenseRealGetNumRows))bfMatDenseRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatDenseRealGetNumCols))bfMatDenseRealGetNumCols,
+  .SetRow = (__typeof__(&bfMatDenseRealSetRow))bfMatDenseRealSetRow,
+  .PermuteRows = (__typeof__(&bfMatDenseRealPermuteRows))bfMatDenseRealPermuteRows,
+};
 
 BfMat *bfMatDenseRealCopy(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -64,10 +73,6 @@ BfMat *bfMatDenseRealCopy(BfMat const *mat) {
   return bfMatDenseRealToMat(copy);
 }
 
-BF_STUB(BfMat *, MatDenseRealGetView, BfMat *)
-BF_STUB(BfVec *, MatDenseRealGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatDenseRealGetRowView, BfMat *, BfSize)
-
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
   BEGIN_ERROR_HANDLING();
 
@@ -96,22 +101,14 @@ BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
   return bfVecRealToVec(colView);
 }
 
-BF_STUB(BfVec *, MatDenseRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-
 void bfMatDenseRealDelete(BfMat **mat) {
   bfMatDenseRealDeinitAndDealloc((BfMatDenseReal **)mat);
 }
-
-BF_STUB(BfMat *, MatDenseRealEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDenseRealZerosLike, BfMat const *, BfSize, BfSize)
 
 BfType bfMatDenseRealGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_DENSE_REAL;
 }
-
-BF_STUB(bool, MatDenseRealInstanceOf, BfMat const *, BfType)
-BF_STUB(BfSize, MatDenseRealNumBytes, BfMat const *)
 
 void bfMatDenseRealSave(BfMat const *mat, char const *path) {
   BEGIN_ERROR_HANDLING();
@@ -223,14 +220,6 @@ void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(void, MatDenseRealSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatDenseRealSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatDenseRealGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDenseRealGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDenseRealGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDenseRealGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatDenseRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
@@ -271,32 +260,6 @@ void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
 
   bfMatDelete(&matPerm);
 }
-
-BF_STUB(void, MatDenseRealPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatDenseRealRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDenseRealColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDenseRealColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDenseRealColNorms, BfMat const *)
-BF_STUB(void, MatDenseRealScaleRows, BfMat *, BfVec const *)
-BF_STUB(void, MatDenseRealScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatDenseRealSumCols, BfMat const *)
-BF_STUB(void, MatDenseRealAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatDenseRealAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDenseRealSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatDenseRealSubInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDenseRealMul, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDenseRealMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatDenseRealMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDenseRealSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatDenseRealLstSq, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatDenseRealGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(bool, MatDenseRealIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatDenseRealForwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(BfVec *, MatDenseRealBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatDenseRealIsZero, BfMat const *)
-BF_STUB(void, MatDenseRealNegate, BfMat *)
-BF_STUB(BfMat *, MatDenseRealToType, BfMat const *, BfType)
-BF_STUB(BfMat *, MatDenseRealCholesky, BfMat const *)
 
 /** Interface: MatDense */
 
@@ -402,7 +365,7 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
 void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatDenseInit(&mat->super, &MatVtbl, &matDenseVtable, numRows, numCols, numCols, 1);
+  bfMatDenseInit(&mat->super, &MAT_VTABLE, &matDenseVtable, numRows, numCols, numCols, 1);
   HANDLE_ERROR();
 
   mat->data = malloc(numRows*numCols*sizeof(BfReal));

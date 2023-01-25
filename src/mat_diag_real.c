@@ -9,13 +9,17 @@
 #include <bf/mat_coo_real.h>
 #include <bf/vec_real.h>
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatDiagReal)
-#undef INTERFACE
+/** Interface: Mat */
 
-/* Interface: Mat */
-
-BF_STUB(BfMat *, MatDiagRealCopy, BfMat const *)
+static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatDiagRealGetView))bfMatDiagRealGetView,
+  .GetRowCopy = (__typeof__(&bfMatDiagRealGetRowCopy))bfMatDiagRealGetRowCopy,
+  .Delete = (__typeof__(&bfMatDiagRealDelete))bfMatDiagRealDelete,
+  .GetType = (__typeof__(&bfMatDiagRealGetType))bfMatDiagRealGetType,
+  .GetNumRows = (__typeof__(&bfMatDiagRealGetNumRows))bfMatDiagRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatDiagRealGetNumCols))bfMatDiagRealGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatDiagRealGetRowRangeCopy))bfMatDiagRealGetRowRangeCopy,
+};
 
 BfMat *bfMatDiagRealGetView(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
@@ -72,29 +76,14 @@ BfVec *bfMatDiagRealGetRowCopy(BfMat const *mat, BfSize i) {
   return bfVecRealToVec(rowCopy);
 }
 
-BF_STUB(BfVec *, MatDiagRealGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatDiagRealGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatDiagRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-
 void bfMatDiagRealDelete(BfMat **mat) {
   bfMatDiagRealDeinitAndDealloc((BfMatDiagReal **)mat);
 }
-
-BF_STUB(BfMat *, MatDiagRealEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDiagRealZerosLike, BfMat const *, BfSize, BfSize)
 
 BfType bfMatDiagRealGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_DIAG_REAL;
 }
-
-bool bfMatDiagRealInstanceOf(BfMat const *mat, BfType type) {
-  return bfTypeDerivedFrom(bfMatGetType(mat), type);
-}
-
-BF_STUB(BfSize, MatDiagRealNumBytes, BfMat const *)
-BF_STUB(void, MatDiagRealSave, BfMat const *, char const *)
-BF_STUB(void, MatDiagRealPrint, BfMat const *, FILE *)
 
 BfSize bfMatDiagRealGetNumRows(BfMat const *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_DIAG_REAL)) {
@@ -113,12 +102,6 @@ BfSize bfMatDiagRealGetNumCols(BfMat const *mat) {
     return mat->numCols;
   }
 }
-
-BF_STUB(void, MatDiagRealSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatDiagRealSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatDiagRealSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatDiagRealGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatDiagRealGetColRange, BfMat *, BfSize, BfSize)
 
 BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
@@ -160,35 +143,6 @@ BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
 
   return bfMatCooRealToMat(rowRange);
 }
-
-BF_STUB(BfMat *, MatDiagRealGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatDiagRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatDiagRealPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatDiagRealPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatDiagRealRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDiagRealColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDiagRealColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDiagRealColNorms, BfMat const *)
-BF_STUB(void, MatDiagRealScaleRows, BfMat *, BfVec const *)
-BF_STUB(void, MatDiagRealScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatDiagRealSumCols, BfMat const *)
-BF_STUB(void, MatDiagRealAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatDiagRealAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDiagRealSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatDiagRealSubInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDiagRealMul, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatDiagRealMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatDiagRealMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatDiagRealSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatDiagRealLstSq, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatDiagRealGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(bool, MatDiagRealIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatDiagRealForwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(BfVec *, MatDiagRealBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatDiagRealIsZero, BfMat const *)
-BF_STUB(void, MatDiagRealNegate, BfMat *)
-BF_STUB(BfMat *, MatDiagRealToType, BfMat const *, BfType)
-BF_STUB(BfMat *, MatDiagRealCholesky, BfMat const *)
 
 /* Upcasting: */
 
@@ -254,7 +208,7 @@ BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols) {
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->numElts = numRows < numCols ? numRows : numCols;
@@ -271,7 +225,7 @@ void bfMatDiagRealInitView(BfMatDiagReal *mat, BfSize numRows, BfSize numCols,
                            BfReal *data) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->super.props |= BF_MAT_PROPS_VIEW;

@@ -2,28 +2,41 @@
 
 #include "mat_block.h"
 
+/** Interface: Mat */
+
+BfMat *bfMatBlockDenseCopy(BfMat const *mat);
+BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i);
+void bfMatBlockDenseDelete(BfMat **mat);
+BfType bfMatBlockDenseGetType(BfMat const *mat);
+BfSize bfMatBlockDenseNumBytes(BfMat const *mat);
+BfSize bfMatBlockDenseGetNumRows(BfMat const *mat);
+BfSize bfMatBlockDenseGetNumCols(BfMat const *mat);
+BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
+void bfMatBlockDenseScaleCols(BfMat *mat, BfVec const *vec);
+void bfMatBlockDenseAddInplace(BfMat *mat, BfMat const *otherMat);
+BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat);
+BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type);
+
+/** Interface: MatBlock */
+
+BfSize bfMatBlockDenseNumBlocks(BfMatBlock const *matBlock);
+BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlock const *matBlock);
+BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlock const *matBlock);
+
+/** Implementation: MatBlockDense */
+
 struct BfMatBlockDense {
   BfMatBlock super;
 };
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockDense)
-#undef INTERFACE
-
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockDense)
-#undef INTERFACE
-
-/** Upcasting: */
+/* Upcasting: */
 BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense);
 BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense);
 BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlock);
 
-/** Downcasting: */
+/* Downcasting: */
 BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
 BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
-
-/** Implementation: */
 
 BfMatBlockDense *bfMatBlockDenseNew();
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,

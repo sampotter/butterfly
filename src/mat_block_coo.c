@@ -19,9 +19,17 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatBlockCoo)
-#undef INTERFACE
+static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatBlockCooCopy))bfMatBlockCooCopy,
+  .GetRowCopy = (__typeof__(&bfMatBlockCooGetRowCopy))bfMatBlockCooGetRowCopy,
+  .Delete = (__typeof__(&bfMatBlockCooDelete))bfMatBlockCooDelete,
+  .GetType = (__typeof__(&bfMatBlockCooGetType))bfMatBlockCooGetType,
+  .NumBytes = (__typeof__(&bfMatBlockCooNumBytes))bfMatBlockCooNumBytes,
+  .GetNumRows = (__typeof__(&bfMatBlockCooGetNumRows))bfMatBlockCooGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatBlockCooGetNumCols))bfMatBlockCooGetNumCols,
+  .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
+  .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
+};
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -71,8 +79,6 @@ BfMat *bfMatBlockCooCopy(BfMat const *mat) {
 
   return bfMatBlockCooToMat(matBlockCooCopy);
 }
-
-BF_STUB(BfMat *, MatBlockCooGetView, BfMat *)
 
 typedef struct {
   BfSize i0, j0;
@@ -165,25 +171,13 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   return rowCopy;
 }
 
-BF_STUB(BfVec *, MatBlockCooGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatBlockCooGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatBlockCooGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-
 void bfMatBlockCooDelete(BfMat **mat) {
   bfMatBlockCooDeinitAndDealloc((BfMatBlockCoo **)mat);
 }
 
-BF_STUB(BfMat *, MatBlockCooEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooZerosLike, BfMat const *, BfSize, BfSize)
-
 BfType bfMatBlockCooGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_BLOCK_COO;
-}
-
-bool bfMatBlockCooInstanceOf(BfMat const *mat, BfType type) {
-  BfMat const *parent = bfMatBlockCooConstToMatConst((BfMatBlockCoo const *)mat);
-  return bfTypeDerivedFrom(bfMatGetType(parent), type);
 }
 
 BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
@@ -208,9 +202,6 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
   return num_bytes;
 }
 
-BF_STUB(void, MatBlockCooSave, BfMat const *, char const *)
-BF_STUB(void, MatBlockCooPrint, BfMat const *, FILE *)
-
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat) {
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
   return bfMatIsTransposed(mat) ?
@@ -224,28 +215,6 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
     matBlock->rowOffset[bfMatBlockGetNumRowBlocks(matBlock)] :
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
-
-BF_STUB(void, MatBlockCooSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatBlockCooSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatBlockCooSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatBlockCooGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatBlockCooSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatBlockCooPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatBlockCooPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatBlockCooRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColNorms, BfMat const *)
-BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfVec const *)
-BF_STUB(void, MatBlockCooScaleRows, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatBlockCooSumCols, BfMat const *)
-BF_STUB(void, MatBlockCooAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatBlockCooSubInplace, BfMat *, BfMat const *)
 
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
   BEGIN_ERROR_HANDLING();
@@ -288,16 +257,6 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
 }
 
-BF_STUB(BfVec *, MatBlockCooMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatBlockCooMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooLstSq, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooForwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatBlockCooIsZero, BfMat const *)
-
 void bfMatBlockCooNegate(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
 
@@ -314,23 +273,15 @@ void bfMatBlockCooNegate(BfMat *mat) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(BfMat *, MatBlockCooToType, BfMat const *, BfType)
-BF_STUB(BfMat *, MatBlockCooCholesky, BfMat const *)
-
 /** Interface: MatBlock */
 
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE(MatBlock, MatBlockCoo)
-#undef INTERFACE
+static BfMatBlockVtable MAT_BLOCK_VTABLE = {
+  .NumBlocks = (__typeof__(&bfMatBlockCooNumBlocks))bfMatBlockCooNumBlocks
+};
 
 BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
   return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
 }
-
-BF_STUB(BfSize, MatBlockCooGetNumRowBlocks, BfMatBlock const *)
-BF_STUB(BfSize, MatBlockCooGetNumColBlocks, BfMatBlock const *)
-BF_STUB(BfSize, MatBlockCooGetNumBlockRows, BfMatBlock const *, BfSize)
-BF_STUB(BfSize, MatBlockCooGetNumBlockCols, BfMatBlock const *, BfSize)
 
 /** Upcasting: */
 
@@ -378,7 +329,7 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
   BEGIN_ERROR_HANDLING();
 
   bfMatBlockInit(&mat->super,
-                 &MatVtbl, &MatBlockVtbl,
+                 &MAT_VTABLE, &MAT_BLOCK_VTABLE,
                  numBlocks, numBlockRows, numBlockCols);
   HANDLE_ERROR();
 

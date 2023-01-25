@@ -2,6 +2,22 @@
 
 #include "mat_block.h"
 
+/** Interface: Mat */
+
+BfMat *bfMatBlockCooCopy(BfMat const *mat);
+BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i);
+void bfMatBlockCooDelete(BfMat **mat);
+BfType bfMatBlockCooGetType(BfMat const *mat);
+BfSize bfMatBlockCooNumBytes(BfMat const *mat);
+BfSize bfMatBlockCooGetNumRows(BfMat const *mat);
+BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
+BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2);
+void bfMatBlockCooNegate(BfMat *mat);
+
+/** Interface: MatBlock */
+
+BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat);
+
 struct BfMatBlockCoo {
   BfMatBlock super;
 
@@ -15,14 +31,6 @@ struct BfMatBlockCoo {
    * `colInd[i]`th block column). */
   BfSize *colInd;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockCoo)
-#undef INTERFACE
-
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockCoo)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo);

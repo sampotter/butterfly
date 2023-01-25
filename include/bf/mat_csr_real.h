@@ -2,6 +2,17 @@
 
 #include "mat.h"
 
+/** Interface: MatCsrReal */
+
+void bfMatCsrRealDelete(BfMat **mat);
+BfType bfMatCsrRealGetType(BfMat const *mat);
+BfSize bfMatCsrRealGetNumRows(BfMat const *mat);
+BfSize bfMatCsrRealGetNumCols(BfMat const *mat);
+BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec);
+bool bfMatCsrRealIsZero(BfMat const *mat);
+
+/** Implementation: MatCsrReal */
+
 /* Sparse matrix stored in compressed sparse row format. */
 struct BfMatCsrReal {
   BfMat super;
@@ -18,10 +29,6 @@ struct BfMatCsrReal {
   /* Nonzero (and explicit zero) entries of matrix. */
   BfReal *data;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatCsrReal)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat *bfMatCsrRealToMat(BfMatCsrReal *matCsrReal);

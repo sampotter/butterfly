@@ -127,6 +127,10 @@ BfVec *bfMatColNorms(BfMat const *mat) {
   return mat->vtbl->ColNorms(mat);
 }
 
+void bfMatScale(BfMat *mat, BfReal scalar) {
+  mat->vtbl->Scale(mat, scalar);
+}
+
 void bfMatScaleRows(BfMat *mat, BfVec const *vec) {
   mat->vtbl->ScaleRows(mat, vec);
 }

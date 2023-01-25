@@ -11,9 +11,18 @@
 
 /** Interface: Vec */
 
-#define INTERFACE BF_INTERFACE_Vec
-BF_DEFINE_VTABLE(Vec, VecReal)
-#undef INTERFACE
+static BfVecVtable VEC_VTABLE = {
+  .Copy = (__typeof__(&bfVecRealCopy))bfVecRealCopy,
+  .Delete = (__typeof__(&bfVecRealDelete))bfVecRealDelete,
+  .GetType = (__typeof__(&bfVecRealGetType))bfVecRealGetType,
+  .GetEltPtr = (__typeof__(&bfVecRealGetEltPtr))bfVecRealGetEltPtr,
+  .GetSubvecCopy = (__typeof__(&bfVecRealGetSubvecCopy))bfVecRealGetSubvecCopy,
+  .Print = (__typeof__(&bfVecRealPrint))bfVecRealPrint,
+  .NormMax = (__typeof__(&bfVecRealNormMax))bfVecRealNormMax,
+  .RecipInplace = (__typeof__(&bfVecRealRecipInplace))bfVecRealRecipInplace,
+  .Permute = (__typeof__(&bfVecRealPermute))bfVecRealPermute,
+  .Concat = (__typeof__(&bfVecRealConcat))bfVecRealConcat,
+};
 
 BfVec *bfVecRealCopy(BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -52,8 +61,6 @@ BfType bfVecRealGetType(BfVec const *vec) {
   (void)vec;
   return BF_TYPE_VEC_REAL;
 }
-
-BF_STUB(bool, VecRealInstanceOf, BfVec const *, BfType)
 
 BfPtr bfVecRealGetEltPtr(BfVec *vec, BfSize i) {
   BEGIN_ERROR_HANDLING();
@@ -99,8 +106,6 @@ BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
   return bfVecRealToVec(subvec);
 }
 
-BF_STUB(BfVec *, VecRealGetSubvecView, BfVec *, BfSize, BfSize)
-
 void bfVecRealPrint(BfVec const *vec, FILE *fp) {
   BEGIN_ERROR_HANDLING();
 
@@ -112,8 +117,6 @@ void bfVecRealPrint(BfVec const *vec, FILE *fp) {
 
   END_ERROR_HANDLING() {}
 }
-
-BF_STUB(BfReal, VecRealDist, BfVec const *, BfVec const *)
 
 BfReal bfVecRealNormMax(BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
@@ -137,11 +140,6 @@ BfReal bfVecRealNormMax(BfVec const *vec) {
   return norm;
 }
 
-BF_STUB(void, VecRealScaleByReal, BfVec *, BfReal)
-BF_STUB(void, VecRealAddInplace, BfVec *, BfVec const *)
-BF_STUB(void, VecRealMulInplace, BfVec *, BfMat const *)
-BF_STUB(void, VecRealSolveInplace, BfVec *, BfMat const *)
-
 void bfVecRealRecipInplace(BfVec *vec) {
   BEGIN_ERROR_HANDLING();
 
@@ -156,8 +154,6 @@ void bfVecRealRecipInplace(BfVec *vec) {
 
   END_ERROR_HANDLING() {}
 }
-
-BF_STUB(BfMat *, VecRealGetGivensRotation, BfVec const *, BfSize, BfSize)
 
 void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
@@ -271,7 +267,7 @@ BfVecReal *bfVecRealFromFile(char const *path, BfSize size) {
 void bfVecRealInit(BfVecReal *vec, BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  bfVecInit(&vec->super, &VecVtbl, size);
+  bfVecInit(&vec->super, &VEC_VTABLE, size);
 
   vec->stride = 1;
 
@@ -290,7 +286,7 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride,
   if (data == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  bfVecInit(&vecReal->super, &VecVtbl, size);
+  bfVecInit(&vecReal->super, &VEC_VTABLE, size);
 
   vecReal->super.props |= BF_VEC_PROPS_VIEW;
 

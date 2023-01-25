@@ -2,15 +2,24 @@
 
 #include "vec.h"
 
+/** Interface: Vec */
+
+BfVec *bfVecRealCopy(BfVec const *vec);
+void bfVecRealDelete(BfVec **mat);
+BfType bfVecRealGetType(BfVec const *vec);
+BfPtr bfVecRealGetEltPtr(BfVec *vec, BfSize i);
+BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1);
+void bfVecRealPrint(BfVec const *vec, FILE *fp);
+BfReal bfVecRealNormMax(BfVec const *vec);
+void bfVecRealRecipInplace(BfVec *vec);
+void bfVecRealPermute(BfVec *vec, BfPerm const *perm);
+BfVec *bfVecRealConcat(BfVec const *vec, BfVec const *otherVec);
+
 struct BfVecReal {
   BfVec super;
   BfSize stride;
   BfReal *data;
 };
-
-#define INTERFACE BF_INTERFACE_Vec
-BF_DECLARE_INTERFACE(VecReal)
-#undef INTERFACE
 
 BfVec *bfVecRealToVec(BfVecReal *vecReal);
 

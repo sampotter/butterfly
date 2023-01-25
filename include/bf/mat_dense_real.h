@@ -2,14 +2,23 @@
 
 #include "mat_dense.h"
 
+/** Interface: Mat */
+
+BfMat *bfMatDenseRealCopy(BfMat const *mat);
+BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j);
+void bfMatDenseRealDelete(BfMat **mat);
+BfType bfMatDenseRealGetType(BfMat const *mat);
+void bfMatDenseRealSave(BfMat const *mat, char const *path);
+void bfMatDenseRealPrint(BfMat const *mat, FILE *fp);
+BfSize bfMatDenseRealGetNumRows(BfMat const *mat);
+BfSize bfMatDenseRealGetNumCols(BfMat const *mat);
+void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row);
+void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
+
 struct BfMatDenseReal {
   BfMatDense super;
   BfReal *data;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatDenseReal)
-#undef INTERFACE
 
 BfMat *bfMatDenseRealToMat(BfMatDenseReal *matDenseReal);
 BfMat const *bfMatDenseRealConstToMatConst(BfMatDenseReal const *matDenseReal);
