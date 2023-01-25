@@ -47,9 +47,9 @@ plt.show()
 # now make a nicer block matrix plot
 
 type2hatch = {
-    7: '..', # BF_TYPE_MAT_DENSE_COMPLEX
-    11: 'o', # BF_MAT_PRODUCT
-    12: '*', # BF_MAT_SUM
+    6: 'o', # BF_MAT_PRODUCT
+    7: '*', # BF_MAT_SUM
+    14: '..', # BF_TYPE_MAT_DENSE_COMPLEX
 }
 
 cmap = cc.cm.gouldian
