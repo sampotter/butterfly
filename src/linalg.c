@@ -196,6 +196,15 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   return X;
 }
 
+static BfSize estimateNcv(BfSize nev, BfSize N) {
+  BfSize ncv = 2*nev + 1;
+  if (ncv < 20)
+    ncv = 20;
+  if (ncv > N)
+    ncv = N;
+  return ncv;
+}
+
 BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
@@ -205,7 +214,7 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   a_int const N = bfMatGetNumRows(L);
   char const which[] = "LM";
   a_int const nev = 1;
-  a_int const ncv = N < 20 ? N : 20; /* TODO: how many is best? */
+  a_int const ncv = estimateNcv(nev, N);
   char bmat = 'G'; /* Solve (G)eneralized eigenvalue problem */
   BfReal const tol = 0;
   a_int const ldv = N;
@@ -344,7 +353,7 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   a_int const N = bfMatGetNumRows(A);
   char const which[] = "LM";
   a_int const nev = k;
-  a_int const ncv = N < 20 ? N : 20; /* TODO: how many is best? */
+  a_int const ncv = estimateNcv(nev, N);
   char bmat = 'G'; /* Solve (G)eneralized eigenvalue problem */
   BfReal const tol = 0;
   a_int const ldv = N;
