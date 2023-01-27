@@ -1,17 +1,34 @@
 #include <bf/util.h>
 
+#include <time.h>
+
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_diag.h>
 
-#include <time.h>
+#include "macros.h"
 
 BfReal bfToc() {
   static clock_t t1 = 0;
   clock_t t0 = t1;
   t1 = clock();
   return ((double)t1 - (double)t0)/CLOCKS_PER_SEC;
+}
+
+void bfRealArgsort(BfReal const *values, BfSize n, BfSize *perm) {
+  for (BfSize i = 0; i < n; ++i)
+    perm[i] = i;
+
+  /* TODO: just using selection sort here for now... should upgrade to
+   * something better later */
+  for (BfSize i = 0; i < n - 1; ++i) {
+    BfSize k = i;
+    for (BfSize j = i + 1; j < n; ++j)
+      if (values[perm[j]] < values[perm[k]])
+        k = j;
+    SWAP(perm[i], perm[k]);
+  }
 }
 
 void bfSizeSetConstant(BfSize numSizes, BfSize *size, BfSize value) {
