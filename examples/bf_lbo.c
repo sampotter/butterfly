@@ -10,16 +10,17 @@
 #include <bf/linalg.h>
 #include <bf/mat.h>
 #include <bf/octree.h>
+#include <bf/vec_real.h>
 
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
-    printf("usage: %s objPath tol freqTreeDepth\n", argv[0]);
+    printf("usage: %s objPath tol freqTreeOffset\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   char const *objPath = argv[1];
   BfReal tol = strtod(argv[2], NULL);
-  BfSize freqTreeDepth = strtoull(argv[3], NULL, 10);
+  BfSize freqTreeOffset = strtoull(argv[3], NULL, 10);
 
   /* Load triangle mesh from binary files */
   BfTrimesh trimesh;
@@ -56,6 +57,9 @@ int main(int argc, char const *argv[]) {
   BfReal lamMax = bfGetMaxEigenvalue(L, M);
   printf("- lambda_max = %g\n", lamMax);
 
+  bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
+  bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
+
   /* The natural frequency of each eigenvector is the square root of
    * the associated eigenvalue. */
   BfReal freqMax = sqrt(lamMax);
@@ -70,12 +74,13 @@ int main(int argc, char const *argv[]) {
   BfTree *colTree = bfIntervalTreeToTree(freqTree);
   BfSize colTreeMaxDepth = bfTreeGetMaxDepth(colTree);
   assert(colTreeMaxDepth == rowTreeMaxDepth);
+  assert(colTreeMaxDepth > freqTreeOffset);
 
   /* Set up the depth-first butterfly factorization streamer. We'll
    * use this below to construct the butterfly factorization
    * incrementally. */
   BfFacStreamer *facStreamer = bfFacStreamerNew();
-  bfFacStreamerInit(facStreamer, rowTree, colTree, 1, freqTreeDepth, tol);
+  bfFacStreamerInit(facStreamer, rowTree, colTree, 1, colTreeMaxDepth - freqTreeOffset, tol);
 
   /* Feed eigenvalues until done */
   BfPtrArray colTreeLeafNodes = bfTreeGetLevelPtrArray(colTree, colTreeMaxDepth);
@@ -83,11 +88,21 @@ int main(int argc, char const *argv[]) {
     BfIntervalTreeNode const *node = bfPtrArrayGet(&colTreeLeafNodes, i);
     BfReal lam0 = pow(node->a, 2);
     BfReal lam1 = pow(node->b, 2);
-    BfMat *Phi, *Lam;
-    bfGetEigenband(L, M, lam0, lam1, &Phi, &Lam);
+    BfReal sigma = (lam0 + lam1)/2;
+    assert(!node->isLeftmost || !node->isRightmost);
+    if (node->isLeftmost) {
+      sigma = lam0;
+      lam0 = NAN;
+    } else if (node->isRightmost) {
+      sigma = lam1;
+      lam1 = NAN;
+    }
+    BfMat *Phi = NULL;
+    BfVecReal *Lam = NULL;
+    bfGetEigenband(L, M, lam0, lam1, sigma, &Phi, &Lam);
     bfFacStreamerFeed(facStreamer, Phi);
     bfMatDelete(&Phi);
-    bfMatDelete(&Lam);
+    bfVecRealDeinitAndDealloc(&Lam);
   }
 
   BfMat *fac = bfFacStreamerGetFac(facStreamer);
