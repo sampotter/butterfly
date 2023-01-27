@@ -279,8 +279,30 @@ void bfVecRealInit(BfVecReal *vec, BfSize size) {
     bfVecDeinit(&vec->super);
 }
 
-void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride,
-                       BfReal *data) {
+void bfVecRealInitFrom(BfVecReal *vec, BfSize size, BfSize stride, BfReal const *data) {
+  BEGIN_ERROR_HANDLING();
+
+  bfVecInit(&vec->super, &VEC_VTABLE, size);
+
+  vec->stride = 1;
+
+  vec->data = malloc(size*sizeof(BfReal));
+  if (vec->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfReal *writePtr = vec->data;
+  BfReal const *readPtr = data;
+  for (BfSize i = 0; i < size; ++i) {
+    *writePtr = *readPtr;
+    writePtr += vec->stride;
+    readPtr += stride;
+  }
+
+  END_ERROR_HANDLING()
+    bfVecDeinit(&vec->super);
+}
+
+void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *data) {
   BEGIN_ERROR_HANDLING();
 
   if (data == NULL)

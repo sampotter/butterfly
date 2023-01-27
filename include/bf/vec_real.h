@@ -29,6 +29,7 @@ BfVecReal const *bfVecConstToVecRealConst(BfVec const *vec);
 BfVecReal *bfVecRealNew();
 BfVecReal *bfVecRealFromFile(char const *path, BfSize size);
 void bfVecRealInit(BfVecReal *vecReal, BfSize size);
+void bfVecRealInitFrom(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal const *data);
 void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *data);
 void bfVecRealDeinit(BfVecReal *vecReal);
 void bfVecRealDealloc(BfVecReal **vecReal);
