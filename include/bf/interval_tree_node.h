@@ -25,6 +25,10 @@ struct BfIntervalTreeNode {
    * is interpreted as the interval `[a, b]`, otherwise `[a, b)`. */
   BfReal a, b;
 
+  /* Whether this node corresponds to the leftmost interval at the
+   * current level. */
+  bool isLeftmost;
+
   /* Whether this node corresponds to the rightmost interval at the
    * current level. */
   bool isRightmost;
