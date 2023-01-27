@@ -8,6 +8,8 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/lu.h>
+#include <bf/mat_dense_real.h>
+#include <bf/util.h>
 #include <bf/vec_real.h>
 
 #include <arpack.h>
@@ -310,7 +312,7 @@ dnaupd:
     select, /* used as internal workspace since howmny == "A" */
     dr, /* will contain real part of first nev + 1 eigenvalues */
     di,       /* ... imaginary part ... */
-    NULL, /* not reversed since rvec == 0 */
+    NULL, /* not referenced since rvec == 0 */
     0,              /* ditto */
     0.0, /* not referenced since mode == 2 */
     0.0,           /* ditto */
@@ -344,7 +346,7 @@ dnaupd:
 }
 
 void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
-                      BfMat **Phi, BfMat **Lam) {
+                      BfMat **PhiPtr, BfVecReal **LambdaPtr) {
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
 
@@ -389,7 +391,7 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
     [2] = 10*N, /* max number of iterations */
-    [6] = 3, /* shift-invert mode solving A*x = lam*M*x */
+    [6] = 3, /* shift-invert mode */
   };
 
   a_int ipntr[11];
@@ -449,7 +451,22 @@ dnaupd:
   if (info < 0 || iparam[4] < nev)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfReal dr[2], di[2];
+  BfReal *dr = malloc((nev + 1)*sizeof(BfReal));
+  if (dr == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfReal *di = malloc((nev + 1)*sizeof(BfReal));
+  if (di == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfReal *z = malloc(N*(nev + 1)*sizeof(BfReal));
+  if (z == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfSize ldz = N;
+
+  BfReal sigmar = sigma;
+  BfReal sigmai = 0.0;
 
   dneupd_c(
     rvec, /* == 0 -> not computing Ritz vectors */
@@ -457,10 +474,10 @@ dnaupd:
     select, /* used as internal workspace since howmny == "A" */
     dr, /* will contain real part of first nev + 1 eigenvalues */
     di,       /* ... imaginary part ... */
-    NULL, /* not reversed since rvec == 0 */
-    0,              /* ditto */
-    0.0, /* not referenced since mode == 2 */
-    0.0,           /* ditto */
+    z,
+    ldz,
+    sigmar,
+    sigmai,
     workev, /* internal workspace */
 
     /* dnaupd parameters: don't modify before calling dseupd */
@@ -470,11 +487,74 @@ dnaupd:
   if (info != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  /* TODO: set Lam and Phi */
+  /* TODO: evals could obviously be complex but right now we're only
+   * interested in real evals and haven't introduced any other
+   * safeguards to deal with complex case yet. So just treat complex
+   * eigenvalues as an error for now. */
+  for (BfSize i = 0; i < k; ++i)
+    if (fabs(di[i]) != 0)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfSize *J = malloc(k*sizeof(BfSize));
+  if (J == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  bfRealArgsort(dr, k, J);
+
+  if (LambdaPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*LambdaPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfVecReal *Lambda = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(Lambda, k);
+  HANDLE_ERROR();
+
+  for (BfSize j = 0; j < k; ++j)
+    *(Lambda->data + j*Lambda->stride) = dr[J[j]];
+
+  if (PhiPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*PhiPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDenseReal *Phi = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(Phi, N, k);
+  HANDLE_ERROR();
+
+  for (BfSize j = 0; j < k; ++j) {
+    BfVecReal *col = bfVecRealNew();
+    HANDLE_ERROR();
+
+    bfVecRealInitView(col, N, BF_DEFAULT_STRIDE, z + N*J[j]);
+    HANDLE_ERROR();
+
+    bfMatDenseRealSetCol(bfMatDenseRealToMat(Phi), j, bfVecRealToVec(col));
+
+    bfVecRealDeinitAndDealloc(&col);
+  }
+
+  *LambdaPtr = Lambda;
+  *PhiPtr = bfMatDenseRealToMat(Phi);
 
   END_ERROR_HANDLING() {
-    /* TODO: reset Lam and Phi on failure */
+    bfVecRealDeinitAndDealloc(&Lambda);
+    bfMatDenseRealDeinitAndDealloc(&Phi);
+
+    *LambdaPtr = NULL;
+    *PhiPtr = NULL;
   }
+
+  free(J);
+  free(z);
+  free(dr);
+  free(di);
 
   bfLuDeinitAndDealloc(&A_minus_sigma_M_lu);
   bfMatDelete(&A_minus_sigma_M);
@@ -487,15 +567,88 @@ dnaupd:
 }
 
 void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
-                    BfMat **Phi, BfMat **Lam) {
-  (void)A;
-  (void)M;
-  (void)lam0;
-  (void)lam1;
-  (void)Phi;
-  (void)Lam;
+                    BfReal sigma, BfMat **PhiPtr, BfVecReal **LambdaPtr) {
+  BEGIN_ERROR_HANDLING();
 
-  assert(false);
+  BfMat *Phi = NULL;
+  BfVecReal *Lambda = NULL;
+
+  if (PhiPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*PhiPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (LambdaPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*LambdaPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize k = 8;
+
+  bool useLeft = isfinite(lam0);
+  bool useRight = isfinite(lam1);
+
+get_shifted_eigs:
+  bfGetShiftedEigs(A, M, sigma, k, &Phi, &Lambda);
+  HANDLE_ERROR();
+
+  BfReal const *lam = Lambda->data;
+  BfReal lamMin = lam[0];
+  BfReal lamMax = lam[k - 1];
+  if ((useLeft && lam0 < lamMin) || (useRight && lamMax < lam1)) {
+    k *= 2;
+    bfMatDelete(&Phi);
+    bfVecRealDeinitAndDealloc(&Lambda);
+    goto get_shifted_eigs;
+  }
+
+  /* Find the first eigenpair in the band */
+  BfSize j0 = 0;
+  if (useLeft) {
+    while (j0 < k && lam[j0] < lam0)
+      ++j0;
+    assert(lam0 <= lam[j0]);
+  }
+  assert(j0 < k);
+
+  /* Find the last eigenpair in the band */
+  BfSize j1 = 0;
+  if (useRight) {
+    while (j1 < k && lam[j1] <= lam1)
+      ++j1;
+    assert(lam[j1 - 1] < lam1);
+    assert(j1 == k || lam1 <= lam[j1]);
+  }
+  assert(j1 <= k);
+
+  if (0 > j0 || j1 < k - 1) {
+    /* Prune unnecessary eigenvectors */
+    BfMat *oldPhi = Phi;
+    Phi = bfMatGetColRangeCopy(oldPhi, j0, j1);
+    HANDLE_ERROR();
+
+    /* Prune unnecessary eigenvalues */
+    BfVecReal *oldLambda = Lambda;
+    Lambda = bfVecToVecReal(bfVecGetSubvecCopy(bfVecRealToVec(oldLambda), j0, j1));
+    HANDLE_ERROR();
+
+    /* Free old eigenvectors and values */
+    bfMatDelete(&oldPhi);
+    bfVecRealDeinitAndDealloc(&oldLambda);
+  }
+
+  *PhiPtr = Phi;
+  *LambdaPtr = Lambda;
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&Phi);
+    bfVecRealDeinitAndDealloc(&Lambda);
+
+    *PhiPtr = NULL;
+    *LambdaPtr = NULL;
+  }
 }
 
 void bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V,
