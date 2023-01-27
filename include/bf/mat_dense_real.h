@@ -13,6 +13,8 @@ void bfMatDenseRealPrint(BfMat const *mat, FILE *fp);
 BfSize bfMatDenseRealGetNumRows(BfMat const *mat);
 BfSize bfMatDenseRealGetNumCols(BfMat const *mat);
 void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row);
+void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col);
+BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1);
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
 
 struct BfMatDenseReal {

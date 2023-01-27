@@ -10,13 +10,38 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatCsrRealCopy))bfMatCsrRealCopy,
   .Delete = (__typeof__(&bfMatCsrRealDelete))bfMatCsrRealDelete,
   .GetType = (__typeof__(&bfMatCsrRealGetType))bfMatCsrRealGetType,
   .GetNumRows = (__typeof__(&bfMatCsrRealGetNumRows))bfMatCsrRealGetNumRows,
   .GetNumCols = (__typeof__(&bfMatCsrRealGetNumCols))bfMatCsrRealGetNumCols,
+  .AddInplace = (__typeof__(&bfMatCsrRealAddInplace))bfMatCsrRealAddInplace,
+  .Scale = (__typeof__(&bfMatCsrRealScale))bfMatCsrRealScale,
   .MulVec = (__typeof__(&bfMatCsrRealMulVec))bfMatCsrRealMulVec,
   .IsZero = (__typeof__(&bfMatCsrRealIsZero))bfMatCsrRealIsZero,
 };
+
+BfMat *bfMatCsrRealCopy(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
+  HANDLE_ERROR();
+
+  BfMatCsrReal *copy = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  bfMatCsrRealInit(copy, m, n, matCsrReal->rowptr, matCsrReal->colind, matCsrReal->data);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfMatCsrRealDeinitAndDealloc(&copy);
+  }
+
+  return bfMatCsrRealToMat(copy);
+}
 
 void bfMatCsrRealDelete(BfMat **mat) {
   bfMatCsrRealDeinitAndDealloc((BfMatCsrReal **)mat);
@@ -43,6 +68,40 @@ BfSize bfMatCsrRealGetNumCols(BfMat const *mat) {
   } else {
     return mat->numCols;
   }
+}
+
+void bfMatCsrRealScale(BfMat *mat, BfReal scalar) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCsrReal *matCsrReal = bfMatToMatCsrReal(mat);
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize nnz = matCsrReal->rowptr[m];
+  for (BfSize i = 0; i < nnz; ++i)
+    matCsrReal->data[i] *= scalar;
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatCsrReal *matCsrReal = bfMatToMatCsrReal(mat);
+  HANDLE_ERROR();
+
+  BfMatCsrReal const *otherMatCsrReal = bfMatConstToMatCsrRealConst(otherMat);
+  HANDLE_ERROR();
+
+  if (!bfMatCsrRealHasSameSparsityPattern(matCsrReal, otherMatCsrReal))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize nnz = matCsrReal->rowptr[m];
+  for (BfSize i = 0; i < nnz; ++i)
+    matCsrReal->data[i] += otherMatCsrReal->data[i];
+
+  END_ERROR_HANDLING() {}
 }
 
 static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
@@ -241,4 +300,30 @@ void bfMatCsrRealDump(BfMatCsrReal const *matCsrReal, char const *rowptrPath,
     // TODO: delete all files
     fclose(fp);
   }
+}
+
+bool bfMatCsrRealHasSameSparsityPattern(BfMatCsrReal const *matCsrReal, BfMatCsrReal const *otherMatCsrReal) {
+  BfMat const *mat = &matCsrReal->super;
+  BfMat const *otherMat = &otherMatCsrReal->super;
+
+  BfSize m = bfMatGetNumRows(mat);
+  if (m != bfMatGetNumRows(otherMat))
+    return false;
+
+  if (bfMatGetNumCols(mat) != bfMatGetNumCols(otherMat))
+    return false;
+
+  for (BfSize i = 0; i < m; ++i)
+    if (matCsrReal->rowptr[i] != otherMatCsrReal->rowptr[i])
+      return false;
+
+  BfSize nnz = matCsrReal->rowptr[m];
+  if (nnz != otherMatCsrReal->rowptr[m])
+    return false;
+
+  for (BfSize i = 0; i < nnz; ++i)
+    if (matCsrReal->colind[i] != otherMatCsrReal->colind[i])
+      return false;
+
+  return true;
 }

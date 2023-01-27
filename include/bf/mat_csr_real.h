@@ -4,10 +4,13 @@
 
 /** Interface: MatCsrReal */
 
+BfMat *bfMatCsrRealCopy(BfMat const *mat);
 void bfMatCsrRealDelete(BfMat **mat);
 BfType bfMatCsrRealGetType(BfMat const *mat);
 BfSize bfMatCsrRealGetNumRows(BfMat const *mat);
 BfSize bfMatCsrRealGetNumCols(BfMat const *mat);
+void bfMatCsrRealScale(BfMat *mat, BfReal scalar);
+void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat);
 BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec);
 bool bfMatCsrRealIsZero(BfMat const *mat);
 
@@ -45,3 +48,4 @@ void bfMatCsrRealDealloc(BfMatCsrReal **mat);
 void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat);
 void bfMatCsrRealDump(BfMatCsrReal const *mat, char const *rowptrPath, char const *colindPath,
                       char const *dataPath);
+bool bfMatCsrRealHasSameSparsityPattern(BfMatCsrReal const *matCsrReal, BfMatCsrReal const *otherMatCsrReal);

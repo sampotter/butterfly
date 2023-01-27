@@ -23,6 +23,8 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumRows = (__typeof__(&bfMatDenseRealGetNumRows))bfMatDenseRealGetNumRows,
   .GetNumCols = (__typeof__(&bfMatDenseRealGetNumCols))bfMatDenseRealGetNumCols,
   .SetRow = (__typeof__(&bfMatDenseRealSetRow))bfMatDenseRealSetRow,
+  .SetCol = (__typeof__(&bfMatDenseRealSetCol))bfMatDenseRealSetCol,
+  .GetColRangeCopy = (__typeof__(&bfMatDenseRealGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatDenseRealPermuteRows))bfMatDenseRealPermuteRows,
 };
 
@@ -220,6 +222,98 @@ void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
   END_ERROR_HANDLING() {}
 }
 
+void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal const *colReal = NULL;
+  BfMatDense *matDense = NULL;
+  BfMatDenseReal *matDenseReal = NULL;
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  if (j >= n)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  colReal = bfVecConstToVecRealConst(col);
+  HANDLE_ERROR();
+
+  if (col->size > m)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  matDense = bfMatToMatDense(mat);
+  HANDLE_ERROR();
+
+  matDenseReal = bfMatToMatDenseReal(mat);
+  HANDLE_ERROR();
+
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  if (matDenseReal->data == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfReal *dstPtr = matDenseReal->data + j*colStride;
+  if (dstPtr == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfReal const *srcPtr = colReal->data;
+  if (srcPtr == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  for (BfSize i = 0; i < m; ++i) {
+    *dstPtr = *srcPtr;
+    dstPtr += rowStride;
+    srcPtr += colReal->stride;
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
+BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDense const *matDense = bfMatConstToMatDenseConst(mat);
+  HANDLE_ERROR();
+
+  BfMatDenseReal const *matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  if (j0 >= j1)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  if (j1 > n)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(matDenseRealCopy, m, j1 - j0);
+  HANDLE_ERROR();
+
+  BfMatDense *matDenseCopy = bfMatDenseRealToMatDense(matDenseRealCopy);
+  HANDLE_ERROR();
+
+  for (BfSize j = j0; j < j1; ++j) {
+    BfReal const *readPtr = matDenseReal->data + (j - j0)*matDense->colStride;
+    BfReal *writePtr = matDenseRealCopy->data + j*matDenseCopy->colStride;
+    for (BfSize i = 0; i < m; ++i) {
+      *writePtr = *readPtr;
+      readPtr += matDense->rowStride;
+      writePtr += matDenseCopy->colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
+  }
+
+  return bfMatDenseRealToMat(matDenseRealCopy);
+}
+
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
@@ -263,7 +357,7 @@ void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
 
 /** Interface: MatDense */
 
-static BfMatDenseVtable matDenseVtable = {
+static BfMatDenseVtable MAT_DENSE_VTABLE = {
   .Svd = (__typeof__(&bfMatDenseSvd))bfMatDenseRealSvd
 };
 
@@ -365,7 +459,7 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
 void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatDenseInit(&mat->super, &MAT_VTABLE, &matDenseVtable, numRows, numCols, numCols, 1);
+  bfMatDenseInit(&mat->super, &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
   HANDLE_ERROR();
 
   mat->data = malloc(numRows*numCols*sizeof(BfReal));
