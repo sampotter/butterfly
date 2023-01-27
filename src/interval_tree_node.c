@@ -78,14 +78,13 @@ static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeN
       bfTreeNodeInit(&child->super, &TreeNodeVtable, false, (void *)treeNode, k, i, depth + 1);
       HANDLE_ERROR();
 
-      child->a = delta*i;
-      child->b = delta*(i + 1);
+      child->a = a + delta*i;
 
-      child->isLeftmost = i == 0;
-      child->isRightmost = i == k - 1;
+      /* Avoid any possibility of floating-point error here */
+      child->b = i == k - 1 ? b : a + delta*(i + 1);
 
-      if (child->isRightmost)
-        child->b = b;
+      child->isLeftmost = intervalTreeNode->isLeftmost && i == 0;
+      child->isRightmost = intervalTreeNode->isRightMost && i == k - 1;
 
       intervalTreeNodeInitEmptyRecursive(child, k, depth + 1, maxDepth);
       HANDLE_ERROR();
