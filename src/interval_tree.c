@@ -18,7 +18,27 @@ BfType bfIntervalTreeGetType(BfTree const *tree) {
   return BF_TYPE_INTERVAL_TREE;
 }
 
-/** Upcasting: */
+/** Downcasting: Tree -> IntervalTree */
+
+BfIntervalTree *bfTreeToIntervalTree(BfTree *tree) {
+  if (!bfTreeInstanceOf(tree, BF_TYPE_INTERVAL_TREE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfIntervalTree *)tree;
+  }
+}
+
+BfIntervalTree const *bfTreeConstToIntervalTreeConst(BfTree const *tree) {
+  if (!bfTreeInstanceOf(tree, BF_TYPE_INTERVAL_TREE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfIntervalTree const *)tree;
+  }
+}
+
+/** Upcasting: IntervalTree -> Tree */
 
 BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree) {
   return &intervalTree->super;

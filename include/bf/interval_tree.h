@@ -12,6 +12,9 @@ BfType bfIntervalTreeGetType(BfTree const *tree);
 
 /** Interface: Tree -> IntervalTree */
 
+BfIntervalTree *bfTreeToIntervalTree(BfTree *tree);
+BfIntervalTree const *bfTreeConstToIntervalTreeConst(BfTree const *tree);
+
 /** Upcasting: IntervalTree -> Tree */
 
 BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree);
