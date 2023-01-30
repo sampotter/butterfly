@@ -10,6 +10,20 @@ void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv);
 void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt);
 void bfPoint3Copy(BfPoint3 x, BfPoint3 const y);
 
+struct BfPoints1 {
+  BfPoint1 *data;
+  BfSize size;
+  BfSize capacity;
+  bool isView;
+};
+
+BfPoints1 *bfPoints1New();
+void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity);
+void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal);
+void bfPoints1Deinit(BfPoints1 *points);
+bool bfPoints1IsSorted(BfPoints1 const *points);
+void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, BfSize **pos);
+
 struct BfPoints2 {
   BfPoint2 *data;
   BfSize size;

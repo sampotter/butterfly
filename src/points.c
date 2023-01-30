@@ -8,6 +8,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_real.h>
+#include <bf/vec_real.h>
 
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
@@ -65,6 +66,128 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
 
   return points;
 }
+
+/** Implementation: Points1 */
+
+BfPoints1 *bfPoints1New() {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints1 *points = malloc(sizeof(BfPoints1));
+  if (points == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  points->data = NULL;
+  points->size = BF_SIZE_BAD_VALUE;
+  points->capacity = BF_SIZE_BAD_VALUE;
+
+  END_ERROR_HANDLING() {
+    points = NULL;
+  }
+
+  return points;
+}
+
+void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity) {
+  BEGIN_ERROR_HANDLING();
+
+  points->data = malloc(capacity*sizeof(BfPoint1));
+  if (points->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  points->size = 0;
+  points->capacity = capacity;
+  points->isView = false;
+
+  END_ERROR_HANDLING() {
+    bfPoints1Deinit(points);
+  }
+}
+
+void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal) {
+  BfVec const *vec = bfVecRealConstToVecConst(vecReal);
+
+  points->data = vecReal->data;
+  points->size = vec->size;
+  points->capacity = BF_SIZE_BAD_VALUE;
+  points->isView = true;
+}
+
+void bfPoints1Deinit(BfPoints1 *points) {
+  if (!points->isView)
+    free(points->data);
+  points->data = NULL;
+  points->size = BF_SIZE_BAD_VALUE;
+  points->capacity = BF_SIZE_BAD_VALUE;
+}
+
+bool bfPoints1IsSorted(BfPoints1 const *points) {
+  for (BfSize i = 1; i < points->size; ++i)
+    if (points->data[i - 1] > points->data[i])
+      return false;
+  return true;
+}
+
+void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, BfSize **posPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  if (!bfPoints1IsSorted(points))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (!bfPoints1IsSorted(newPoints))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (posPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*posPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize *pos = malloc(newPoints->size*sizeof(BfSize));
+  if (pos == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfSize newSize = points->size + newPoints->size;
+
+  BfReal *newData = malloc(newSize*sizeof(BfReal));
+  if (newData == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfSize i = 0, j = 0, k = 0;
+  while ((i < points->size || j < newPoints->size) && k < newSize) {
+    if (i < points->size && j < newPoints->size) {
+      if (points->data[i] < newPoints->data[j]) {
+        newData[k++] = points->data[i++];
+      } else {
+        pos[j] = k;
+        newData[k++] = newPoints->data[j++];
+      }
+    } else if (i < points->size) {
+      newData[k++] = points->data[i++];
+    } else if (j < newPoints->size) {
+      pos[j] = k;
+      newData[k++] = newPoints->data[j++];
+    } else {
+      assert(false);
+    }
+  }
+  assert(i == points->size && j == newPoints->size && k == newSize);
+
+  if (!points->isView)
+    free(points->data);
+  points->data = newData;
+  points->size = newSize;
+  points->capacity = newSize;
+
+  END_ERROR_HANDLING() {
+    free(pos);
+    free(newData);
+    *posPtr = NULL;
+  }
+
+  *posPtr = pos;
+}
+
+/** Implementation: Points2 */
 
 BfPoints2 bfGetUninitializedPoints2() {
   return (BfPoints2) {.data = NULL, .size = 0};
@@ -218,6 +341,8 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
 
   return r;
 }
+
+/** Implementation: Points3 */
 
 void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {
   if (numPoints == 0) {
