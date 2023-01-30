@@ -84,7 +84,7 @@ static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeN
       child->b = i == k - 1 ? b : a + delta*(i + 1);
 
       child->isLeftmost = intervalTreeNode->isLeftmost && i == 0;
-      child->isRightmost = intervalTreeNode->isRightMost && i == k - 1;
+      child->isRightmost = intervalTreeNode->isRightmost && i == k - 1;
 
       intervalTreeNodeInitEmptyRecursive(child, k, depth + 1, maxDepth);
       HANDLE_ERROR();
