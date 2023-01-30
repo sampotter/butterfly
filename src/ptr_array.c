@@ -17,9 +17,7 @@ BfPtrArray bfGetUninitializedPtrArray() {
   };
 }
 
-void
-bfInitPtrArray(BfPtrArray *arr, BfSize capacity)
-{
+void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
   BEGIN_ERROR_HANDLING();
 
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
