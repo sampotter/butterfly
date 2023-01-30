@@ -144,3 +144,7 @@ BfTree const *bfTreeNodeGetTreeConst(BfTreeNode const *node) {
     node = bfTreeNodeGetParentConst(node);
   return (BfTree const *)bfTreeNodeGetParentConst(node);
 }
+
+bool bfTreeNodeIsEmpty(BfTreeNode const *treeNode) {
+  return bfTreeNodeGetNumPoints(treeNode) == 0;
+}

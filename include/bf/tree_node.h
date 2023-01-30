@@ -64,3 +64,4 @@ BfSize bfTreeNodeGetLastIndex(BfTreeNode const *treeNode);
 BfSize const *bfTreeNodeGetIndexPtrConst(BfTreeNode const *treeNode, BfTree const *tree);
 BfTree *bfTreeNodeGetTree(BfTreeNode *treeNode);
 BfTree const *bfTreeNodeGetTreeConst(BfTreeNode const *treeNode);
+bool bfTreeNodeIsEmpty(BfTreeNode const *treeNode);
