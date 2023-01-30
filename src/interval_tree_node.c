@@ -14,7 +14,7 @@ static BfTreeNodeVtable TreeNodeVtable = {
 
 BfType bfIntervalTreeNodeGetType(BfTreeNode const *treeNode) {
   (void)treeNode;
-  return BF_TYPE_QUADTREE_NODE;
+  return BF_TYPE_INTERVAL_TREE_NODE;
 }
 
 /** Upcasting: IntervalTreeNode -> TreeNode */
