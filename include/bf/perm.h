@@ -7,6 +7,8 @@ typedef struct BfPerm {
   BfSize size;
 } BfPerm;
 
+BfPerm *bfPermNew();
+void bfPermInitEmpty(BfPerm *perm, BfSize size);
 void bfPermDeinit(BfPerm *perm);
 BfPerm bfPermIdentity(BfSize size);
 BfPerm bfPermGetReversePerm(BfPerm const *perm);
