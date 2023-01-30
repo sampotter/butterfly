@@ -193,6 +193,10 @@ BfVec *bfVecRealToVec(BfVecReal *vecReal) {
   return &vecReal->super;
 }
 
+BfVec const *bfVecRealConstToVecConst(BfVecReal const *vecReal) {
+  return &vecReal->super;
+}
+
 /** Downcasting: */
 
 BfVecReal *bfVecToVecReal(BfVec *vec) {

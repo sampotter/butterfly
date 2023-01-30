@@ -22,6 +22,7 @@ struct BfVecReal {
 };
 
 BfVec *bfVecRealToVec(BfVecReal *vecReal);
+BfVec const *bfVecRealConstToVecConst(BfVecReal const *vecReal);
 
 BfVecReal *bfVecToVecReal(BfVec *vec);
 BfVecReal const *bfVecConstToVecRealConst(BfVec const *vec);
