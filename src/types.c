@@ -140,6 +140,15 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_TREE_NODE] =     true,
       [BF_TYPE_QUADTREE_NODE] = true
     },
+
+    /** Tree iterator hierarchy: */
+    [BF_TYPE_TREE_ITER] = {
+      [BF_TYPE_TREE_ITER] = true
+    },
+    [BF_TYPE_TREE_ITER_POST_ORDER] = {
+      [BF_TYPE_TREE_ITER] =            true,
+      [BF_TYPE_TREE_ITER_POST_ORDER] = true
+    },
   };
   return _[derived][parent];
 }

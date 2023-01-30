@@ -72,6 +72,7 @@ butterfly_lib_src = [
   'src/splitmix64.c',
   'src/tree.c',
   'src/tree_iter.c',
+  'src/tree_iter_post_order.c',
   'src/tree_level_iter.c',
   'src/tree_node.c',
   'src/trimesh.c',

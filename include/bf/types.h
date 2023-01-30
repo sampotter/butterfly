@@ -38,6 +38,9 @@ typedef struct BfQuadtreeNode BfQuadtreeNode;
 typedef struct BfOctreeNode BfOctreeNode;
 typedef struct BfFiedlerTreeNode BfFiedlerTreeNode;
 
+typedef struct BfTreeIter BfTreeIter;
+typedef struct BfTreeIterPostOrder BfTreeIterPostOrder;
+
 typedef enum BfTypes {
   /* Mat hierarchy */
   BF_TYPE_MAT,
@@ -80,6 +83,10 @@ typedef enum BfTypes {
   BF_TYPE_INTERVAL_TREE_NODE,
   BF_TYPE_OCTREE_NODE,
   BF_TYPE_QUADTREE_NODE,
+
+  /* Tree iterator hierarchy */
+  BF_TYPE_TREE_ITER,
+  BF_TYPE_TREE_ITER_POST_ORDER,
 
   /* The total number of types */
   BF_TYPE_COUNT,
