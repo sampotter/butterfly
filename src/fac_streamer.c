@@ -11,7 +11,7 @@
 #include <bf/ptr_array.h>
 #include <bf/tree.h>
 #include <bf/tree_node.h>
-#include <bf/tree_iter.h>
+#include <bf/tree_iter_post_order.h>
 #include <bf/vec_real.h>
 
 #undef BF_ARRAY_DEFAULT_CAPACITY
@@ -22,11 +22,11 @@ struct BfFacStreamer {
   BfSize rowTreeInitDepth;
   BfSize colTreeInitDepth;
 
-  BfTree const *rowTree;
-  BfTree const *colTree;
+  BfTree *rowTree;
+  BfTree *colTree;
 
   BfTreeIter *colTreeIter;
-  BfTreeNode const *currentColNode;
+  BfTreeNode *currentColNode;
 };
 
 BfFacStreamer *bfFacStreamerNew() {
@@ -42,9 +42,11 @@ BfFacStreamer *bfFacStreamerNew() {
   return facStreamer;
 }
 
-void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree const *rowTree,
-                       BfTree const *colTree, BfSize rowTreeInitDepth,
+void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree *rowTree,
+                       BfTree *colTree, BfSize rowTreeInitDepth,
                        BfSize colTreeInitDepth, BfReal tol) {
+  BEGIN_ERROR_HANDLING();
+
   facStreamer->tol = tol;
 
   facStreamer->rowTreeInitDepth = rowTreeInitDepth;
@@ -53,8 +55,26 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree const *rowTree,
   facStreamer->rowTree = rowTree;
   facStreamer->colTree = colTree;
 
-  facStreamer->colTreeIter = NULL;
-  facStreamer->currentColNode = NULL;
+  BfTreeIterPostOrder *iter = bfTreeIterPostOrderNew();
+  HANDLE_ERROR();
+
+  bfTreeIterPostOrderInit(iter, colTree);
+  HANDLE_ERROR();
+
+  facStreamer->colTreeIter = bfTreeIterPostOrderToTreeIter(iter);
+
+  facStreamer->currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+  if (facStreamer->currentColNode == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  END_ERROR_HANDLING() {
+    bfFacStreamerDeinit(facStreamer);
+  }
+}
+
+void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
+  (void)facStreamer;
+  assert(false);
 }
 
 static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
@@ -106,7 +126,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
   BfTreeNode const *currentNode = NULL;
 
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
-    currentNode = facStreamer->colTreeIter->currentNode;
+    currentNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
     if (bfTreeNodeIsLeaf(currentNode))
       break;
 
@@ -128,14 +148,14 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
   }
 
-  facStreamer->currentColNode = facStreamer->colTreeIter->currentNode;
+  facStreamer->currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
 }
 
 /* Notes:
  * - The rows and columns of `mat` should already be permuted into the
  *   orders defined by `facStreamer->rowTree` and
  *   `facStreamer->colTree`. */
-void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
+void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal const *Lam) {
   BEGIN_ERROR_HANDLING();
 
   /* Get the current column tree leaf node */
@@ -143,11 +163,11 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
   assert(bfTreeNodeIsLeaf(colNode));
 
   /* Make sure `mat` has the right number of rows */
-  if (bfMatGetNumRows(mat) != bfTreeGetNumPoints(facStreamer->rowTree))
+  if (bfMatGetNumRows(Phi) != bfTreeGetNumPoints(facStreamer->rowTree))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* Make sure `mat` has the right number of columns */
-  if (bfMatGetNumCols(mat) != bfTreeNodeGetNumPoints(colNode))
+  if (bfMatGetNumCols(Phi) != bfTreeNodeGetNumPoints(colNode))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* Array used to accumulate blocks for block diagonal Psi factor */
@@ -166,11 +186,15 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
     facStreamer->rowTree, facStreamer->rowTreeInitDepth);
   HANDLE_ERROR();
 
+  /* Reverse the contents of the stack to make sure we traverse it
+   * from the top of the column block down. */
+  bfPtrArrayReverse(&stack);
+
   while (!bfPtrArrayIsEmpty(&stack)) {
     BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
 
     BfMat *Psi = NULL, *W = NULL;
-    bool metTol = getPsiAndW(mat, rowNode, colNode, facStreamer->tol, &Psi, &W);
+    bool metTol = getPsiAndW(Phi, rowNode, colNode, facStreamer->tol, &Psi, &W);
     HANDLE_ERROR();
 
     /* Accumulate the Psi and W blocks and continue if we successfully
@@ -196,7 +220,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
   bfPtrArrayDeinit(&stack);
 }
 
-bool bfFacStreamerDone(BfFacStreamer const *facStreamer) {
+bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer) {
   return bfTreeIterIsDone(facStreamer->colTreeIter);
 }
 
@@ -204,4 +228,8 @@ BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
   (void)facStreamer;
 
   assert(false);
+}
+
+BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) {
+  return facStreamer->currentColNode;
 }
