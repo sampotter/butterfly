@@ -187,11 +187,20 @@ int main(int argc, char const *argv[]) {
   bfPoints1InitEmpty(freqs, BF_ARRAY_DEFAULT_CAPACITY);
   HANDLE_ERROR();
 
+  BfFacStreamerSpec spec = {
+    .rowTree = rowTree,
+    .colTree = colTree,
+    .rowTreeInitDepth = 1,
+    .colTreeInitDepth = colTreeMaxDepth - freqTreeOffset,
+    .tol = tol,
+    .minNumCols = 20
+  };
+
   /* Set up the depth-first butterfly factorization streamer. We'll
    * use this below to construct the butterfly factorization
    * incrementally. */
   BfFacStreamer *facStreamer = bfFacStreamerNew();
-  bfFacStreamerInit(facStreamer, rowTree, colTree, 1, colTreeMaxDepth - freqTreeOffset, tol);
+  bfFacStreamerInit(facStreamer, &spec);
   HANDLE_ERROR();
 
   while (!bfFacStreamerIsDone(facStreamer)) {
