@@ -1,11 +1,13 @@
 #pragma once
 
+#include "points.h"
 #include "tree.h"
 
 /** IntervalTree: */
 
 struct BfIntervalTree {
   BfTree super;
+  BfPoints1 const *points;
 };
 
 BfType bfIntervalTreeGetType(BfTree const *tree);
@@ -21,3 +23,4 @@ BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree);
 
 BfIntervalTree *bfIntervalTreeNew();
 void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize depth);
+void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *points, bool rebuildTree);
