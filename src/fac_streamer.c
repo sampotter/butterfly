@@ -186,17 +186,17 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
 }
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
-  BfTreeNode const *currentNode = NULL;
+  BfTreeNode *currentColNode = NULL;
 
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
     bfTreeIterNext(facStreamer->colTreeIter);
 
-    currentNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
-    if (bfTreeNodeIsLeaf(currentNode))
+    currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+    if (bfTreeNodeIsLeaf(currentColNode))
       break;
 
-    BfSize currentDepth = currentNode->depth;
-    BfSize numChildren = currentNode->maxNumChildren;
+    BfSize currentDepth = currentColNode->depth;
+    BfSize numChildren = currentColNode->maxNumChildren;
 
     (void)currentDepth;
     (void)numChildren;
@@ -213,7 +213,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
   }
 
-  facStreamer->currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+  facStreamer->currentColNode = currentColNode;
 }
 
 /* Notes:
