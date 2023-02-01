@@ -18,7 +18,7 @@
 #define NUM_BLOCK_COLS(mat, k) COL_OFFSET(mat, k + 1) - COL_OFFSET(mat, k)
 #define BLOCK(mat, k) mat->super.block[k]
 
-/** BfMat interface: */
+/** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatBlockDiagCopy))bfMatBlockDiagCopy,
@@ -303,7 +303,7 @@ BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
   }
 }
 
-/** Implementation: */
+/** Implementation: MatBlockDiag */
 
 BfMatBlockDiag *bfMatBlockDiagNew() {
   BEGIN_ERROR_HANDLING();
