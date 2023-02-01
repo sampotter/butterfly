@@ -15,6 +15,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatDenseRealCopy))bfMatDenseRealCopy,
+  .GetView = (__typeof__(&bfMatDenseRealGetView))bfMatDenseRealGetView,
   .GetColView = (__typeof__(&bfMatDenseRealGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDenseRealDelete))bfMatDenseRealDelete,
   .GetType = (__typeof__(&bfMatDenseRealGetType))bfMatDenseRealGetType,
@@ -73,6 +74,26 @@ BfMat *bfMatDenseRealCopy(BfMat const *mat) {
     bfMatDenseRealDeinitAndDealloc(&copy);
 
   return bfMatDenseRealToMat(copy);
+}
+
+BfMat *bfMatDenseRealGetView(BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseReal *matDenseReal = bfMatToMatDenseReal(mat);
+  HANDLE_ERROR();
+
+  BfMatDenseReal *matDenseRealView = bfMatDenseRealNew();
+
+  *matDenseRealView = *matDenseReal;
+
+  BfMat *matView = bfMatDenseRealToMat(matDenseRealView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING()
+    matView = NULL;
+
+  return matView;
 }
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {

@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatDenseRealCopy(BfMat const *mat);
+BfMat *bfMatDenseRealGetView(BfMat *mat);
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j);
 void bfMatDenseRealDelete(BfMat **mat);
 BfType bfMatDenseRealGetType(BfMat const *mat);
