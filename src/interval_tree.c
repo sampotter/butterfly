@@ -120,6 +120,9 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
       while (j < i1 && (x[P[j]] < a || b <= x[P[j]]))
         ++j;
 
+      if (j == i1)
+        break;
+
       SWAP(P[i], P[j]);
       ++i;
       ++j;
