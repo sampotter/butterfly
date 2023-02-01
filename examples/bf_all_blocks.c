@@ -11,7 +11,6 @@
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_dense_complex.h>
-#include <bf/mat_util.h>
 #include <bf/points.h>
 #include <bf/quadtree.h>
 #include <bf/rand.h>

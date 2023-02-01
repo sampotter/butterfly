@@ -16,7 +16,6 @@
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_diag_real.h>
 #include <bf/mat_solve.h>
-#include <bf/mat_util.h>
 #include <bf/mat_zero.h>
 #include <bf/points.h>
 #include <bf/quadrature.h>
