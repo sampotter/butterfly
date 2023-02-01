@@ -98,16 +98,14 @@ bool bfTreeIterPostOrderIsDone(BfTreeIterPostOrder const *iter) {
 static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
   BEGIN_ERROR_HANDLING();
 
-  assert(stackNode->nextChild != BF_SIZE_BAD_VALUE);
-
-  do {
+  while (stackNode->nextChild != BF_SIZE_BAD_VALUE) {
     stackNode = makeStackNode(
       stackNode->treeNode->child[stackNode->nextChild]);
     HANDLE_ERROR();
 
     bfPtrArrayAppend(stack, stackNode);
     HANDLE_ERROR();
-  } while (stackNode->nextChild != BF_SIZE_BAD_VALUE);
+  }
 
   END_ERROR_HANDLING();
 }
