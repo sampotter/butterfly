@@ -127,7 +127,27 @@ bool bfPoints1IsSorted(BfPoints1 const *points) {
   return true;
 }
 
-void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, BfSize **posPtr) {
+void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Grow the array if we're at capacity */
+  if (points->size == points->capacity) {
+    points->capacity *= 2;
+
+    BfReal *newData = realloc(points->data, points->capacity*sizeof(BfReal));
+    if (newData == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    points->data = newData;
+  }
+
+  /* Append new point */
+  points->data[points->size++] = point;
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) {
   BEGIN_ERROR_HANDLING();
 
   if (!bfPoints1IsSorted(points))
@@ -135,16 +155,6 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, 
 
   if (!bfPoints1IsSorted(newPoints))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  if (posPtr == NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  if (*posPtr != NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  BfSize *pos = malloc(newPoints->size*sizeof(BfSize));
-  if (pos == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   BfSize newSize = points->size + newPoints->size;
 
@@ -158,13 +168,11 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, 
       if (points->data[i] < newPoints->data[j]) {
         newData[k++] = points->data[i++];
       } else {
-        pos[j] = k;
         newData[k++] = newPoints->data[j++];
       }
     } else if (i < points->size) {
       newData[k++] = points->data[i++];
     } else if (j < newPoints->size) {
-      pos[j] = k;
       newData[k++] = newPoints->data[j++];
     } else {
       assert(false);
@@ -179,12 +187,8 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints, 
   points->capacity = newSize;
 
   END_ERROR_HANDLING() {
-    free(pos);
     free(newData);
-    *posPtr = NULL;
   }
-
-  *posPtr = pos;
 }
 
 /** Implementation: Points2 */
