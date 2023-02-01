@@ -196,12 +196,12 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     BfSize currentDepth = currentNode->depth;
     BfSize numChildren = currentNode->maxNumChildren;
 
-
     (void)currentDepth;
     (void)numChildren;
 
-    // get Psi blocks for children
+    assert(false);
 
+    // get Psi blocks for children
 
     // merge
 
