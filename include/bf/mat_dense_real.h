@@ -15,6 +15,7 @@ BfSize bfMatDenseRealGetNumRows(BfMat const *mat);
 BfSize bfMatDenseRealGetNumCols(BfMat const *mat);
 void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row);
 void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col);
+BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
 BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1);
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
 

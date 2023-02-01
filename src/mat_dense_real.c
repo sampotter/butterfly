@@ -25,6 +25,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumCols = (__typeof__(&bfMatDenseRealGetNumCols))bfMatDenseRealGetNumCols,
   .SetRow = (__typeof__(&bfMatDenseRealSetRow))bfMatDenseRealSetRow,
   .SetCol = (__typeof__(&bfMatDenseRealSetCol))bfMatDenseRealSetCol,
+  .GetRowRange = (__typeof__(&bfMatDenseRealGetRowRange))bfMatDenseRealGetRowRange,
   .GetColRangeCopy = (__typeof__(&bfMatDenseRealGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatDenseRealPermuteRows))bfMatDenseRealPermuteRows,
 };
@@ -289,6 +290,31 @@ void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
   }
 
   END_ERROR_HANDLING() {}
+}
+
+BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+  BfSize numRows = mat->numRows;
+
+  assert(i0 < i1);
+  assert(i1 <= numRows);
+  assert(!bfMatIsTransposed(mat)); // TODO: implement
+
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *matView = bfMatGetView(mat);
+
+  BfMatDenseReal *submat = bfMatToMatDenseReal(matView);
+  HANDLE_ERROR();
+
+  if (i1 - i0 != numRows) {
+    bfMatDenseRealToMat(submat)->numRows = i1 - i0;
+    submat->data += bfMatDenseRealToMatDense(submat)->rowStride*i0;
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDelete(&matView);
+
+  return matView;
 }
 
 BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1) {
