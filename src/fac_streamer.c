@@ -8,6 +8,7 @@
 #include <bf/linalg.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_diag_real.h>
+#include <bf/mat_identity.h>
 #include <bf/ptr_array.h>
 #include <bf/tree.h>
 #include <bf/tree_node.h>
@@ -18,7 +19,6 @@
 #define BF_ARRAY_DEFAULT_CAPACITY 32
 
 struct BfFacStreamer {
-  BfReal tol;
   BfSize rowTreeInitDepth;
   BfSize colTreeInitDepth;
 
@@ -26,6 +26,10 @@ struct BfFacStreamer {
   BfTree *colTree;
 
   BfTreeIter *colTreeIter;
+
+  BfReal tol;
+  BfSize minNumCols;
+
   BfTreeNode *currentColNode;
 };
 
@@ -42,23 +46,22 @@ BfFacStreamer *bfFacStreamerNew() {
   return facStreamer;
 }
 
-void bfFacStreamerInit(BfFacStreamer *facStreamer, BfTree *rowTree,
-                       BfTree *colTree, BfSize rowTreeInitDepth,
-                       BfSize colTreeInitDepth, BfReal tol) {
+void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec) {
   BEGIN_ERROR_HANDLING();
 
-  facStreamer->tol = tol;
+  facStreamer->rowTree = spec->rowTree;
+  facStreamer->colTree = spec->colTree;
 
-  facStreamer->rowTreeInitDepth = rowTreeInitDepth;
-  facStreamer->colTreeInitDepth = colTreeInitDepth;
+  facStreamer->rowTreeInitDepth = spec->rowTreeInitDepth;
+  facStreamer->colTreeInitDepth = spec->colTreeInitDepth;
 
-  facStreamer->rowTree = rowTree;
-  facStreamer->colTree = colTree;
+  facStreamer->tol = spec->tol;
+  facStreamer->minNumCols = spec->minNumCols;
 
   BfTreeIterPostOrder *iter = bfTreeIterPostOrderNew();
   HANDLE_ERROR();
 
-  bfTreeIterPostOrderInit(iter, colTree);
+  bfTreeIterPostOrderInit(iter, facStreamer->colTree);
   HANDLE_ERROR();
 
   facStreamer->colTreeIter = bfTreeIterPostOrderToTreeIter(iter);
@@ -77,49 +80,109 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
   assert(false);
 }
 
-static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
-                       BfTreeNode const *colNode, BfReal tol,
-                       BfMat **Psi, BfMat **W) {
-  (void)colNode;
+static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) {
+  BEGIN_ERROR_HANDLING();
 
+  bool success = true;
+
+  BfSize n = bfMatGetNumCols(block);
+
+  BfMat *Psi = bfMatCopy(block);
+  HANDLE_ERROR();
+
+  BfMatIdentity *W = bfMatIdentityNew();
+  HANDLE_ERROR();
+
+  bfMatIdentityInit(W, n);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    success = false;
+
+    bfMatDelete(&Psi);
+    bfMatIdentityDeinitAndDealloc(&W);
+  }
+
+  *PsiPtr = Psi;
+  *WPtr = bfMatIdentityToMat(W);
+
+  return success;
+}
+
+static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, BfMat **WPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  bool success = true;
+
+  BfSize m = bfMatGetNumRows(block);
+  BfSize n = bfMatGetNumCols(block);
+
+  BfSize kmax = m < n ? m : n;
+
+  /* Compute truncated SVD of the block. */
+  BfMat *Psi = NULL;
+  BfMatDiagReal *S = NULL;
+  BfMat *W = NULL;
+  BfTruncSpec truncSpec = {.usingTol = true, .tol = tol};
+  bfGetTruncatedSvd(block, &Psi, &S, &W, truncSpec, BF_BACKEND_LAPACK);
+  HANDLE_ERROR();
+
+  BfSize k = bfMatGetNumCols(Psi);
+
+  /* Scale W if we successfully compressed this block. */
+  success = k < kmax;
+  if (success)
+    bfMatMulInplace(W, bfMatDiagRealToMat(S));
+
+  END_ERROR_HANDLING() {
+    success = false;
+  }
+
+  if (success) {
+    *PsiPtr = Psi;
+    *WPtr = W;
+  } else {
+    bfMatDelete(&Psi);
+    bfMatDelete(&W);
+  }
+
+  bfMatDiagRealDeinitAndDealloc(&S);
+
+  return success;
+}
+
+static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
+                       BfTreeNode const *colNode,
+                       BfReal tol, BfSize minNumCols,
+                       BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
   BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
   BfSize i1 = bfTreeNodeGetLastIndex(rowNode);
 
-  BfSize m = i1 - i0;
-  BfSize n = bfMatGetNumCols(mat);
-  BfSize kmax = m < n ? m : n;
-
   /* TODO: should be something like: `bfMatGetRowRangeViewConst` */
   BfMat *block = bfMatGetRowRange((BfMat *)mat, i0, i1);
   HANDLE_ERROR();
 
-  /* Compute truncated SVD of the block. */
-  BfMatDiagReal *S;
-  BfTruncSpec truncSpec = {.usingTol = true, .tol = tol};
-  bfGetTruncatedSvd(block, Psi, &S, W, truncSpec, BF_BACKEND_LAPACK);
-  HANDLE_ERROR();
+  /* If there are too few columns in the current block, we don't
+   * bother trying to compress. Instead, we just pass the current
+   * block through for the Psi block and emit an identity matrix for
+   * the new W block. Otherwise, we compute a truncated SVD of the
+   * current block. We emit Psi := U and W := S*V'. */
+  bool success = bfMatGetNumCols(mat) < minNumCols ?
+    getPsiAndW_skinny(block, PsiPtr, WPtr) :
+    getPsiAndW_normal(block, tol, PsiPtr, WPtr);
 
-  /* Bail if we didn't compress this block */
-  BfSize k = bfMatGetNumCols(*Psi);
-  if (k == kmax) {
-    bfMatDelete(Psi);
-    bfMatDelete(W);
-    bfMatDiagRealDeinitAndDealloc(&S);
-    return false;
+  END_ERROR_HANDLING() {
+    success = false;
+
+    /* TODO: make sure to free Psi and W if I allocated them... */
+    assert(false);
   }
 
-  BfVec *Svec = bfMatDiagRealGetVecView(S);
-  bfMatScaleRows(*W, Svec);
-
-  END_ERROR_HANDLING() {}
-
-  bfVecDelete(&Svec);
-  bfMatDiagRealDeinitAndDealloc(&S);
   bfMatDelete(&block);
 
-  return true;
+  return success;
 }
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
@@ -194,7 +257,8 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal c
     BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
 
     BfMat *Psi = NULL, *W = NULL;
-    bool metTol = getPsiAndW(Phi, rowNode, colNode, facStreamer->tol, &Psi, &W);
+    bool metTol = getPsiAndW(
+      Phi, rowNode, colNode, facStreamer->tol, facStreamer->minNumCols, &Psi, &W);
     HANDLE_ERROR();
 
     /* Accumulate the Psi and W blocks and continue if we successfully
