@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <bf/error.h>
 #include <bf/error_macros.h>
+
+#include "macros.h"
 
 /** Implementation: PtrArray */
 
@@ -182,6 +185,12 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
 
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp) {
   qsort(arr->data, arr->num_elts, sizeof(BfPtr), (__compar_fn_t)ptrCmp);
+}
+
+void bfPtrArrayReverse(BfPtrArray *arr) {
+  BfSize n = bfPtrArraySize(arr);
+  for (BfSize i = 0; i < n/2; ++i)
+    SWAP(arr->data[i], arr->data[n - i - 1]);
 }
 
 /** Implementation: ConstPtrArray */

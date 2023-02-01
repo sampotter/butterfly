@@ -35,6 +35,7 @@ void bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end, BfP
 void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);
+void bfPtrArrayReverse(BfPtrArray *arr);
 
 typedef struct BfConstPtrArray {
   enum BfPtrArrayFlags flags;
