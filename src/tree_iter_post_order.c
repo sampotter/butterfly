@@ -39,6 +39,28 @@ StackNode *makeStackNode(BfTreeNode *treeNode) {
   return stackNode;
 }
 
+void incStackNodeChild(StackNode *stackNode) {
+  assert(stackNode->nextChild != BF_SIZE_BAD_VALUE);
+
+  BfTreeNode *treeNode = stackNode->treeNode;
+
+  /* Seek to the next non-NULL child */
+  BfSize i = stackNode->nextChild + 1;
+  while (i < treeNode->maxNumChildren) {
+    if (treeNode->child[i] != NULL) {
+      stackNode->nextChild = i;
+      break;
+    }
+    ++i;
+  }
+
+  /* If we make it to the end without finding a non-NULL child, we've
+   * visited all of `treeNode`'s children and can mark this stack node
+   * as done by setting `nextChild` to `BF_SIZE_BAD_VALUE` */
+  if (i == treeNode->maxNumChildren)
+    stackNode->nextChild = BF_SIZE_BAD_VALUE;
+}
+
 /** Interface: TreeIter */
 
 BfType bfTreeIterPostOrderGetType(BfTreeIterPostOrder const *iter) {
@@ -73,9 +95,56 @@ bool bfTreeIterPostOrderIsDone(BfTreeIterPostOrder const *iter) {
   return bfPtrArrayIsEmpty(&iter->stack);
 }
 
+static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
+  BEGIN_ERROR_HANDLING();
+
+  assert(stackNode->nextChild != BF_SIZE_BAD_VALUE);
+
+  do {
+    stackNode = makeStackNode(
+      stackNode->treeNode->child[stackNode->nextChild]);
+    HANDLE_ERROR();
+
+    bfPtrArrayAppend(stack, stackNode);
+    HANDLE_ERROR();
+  } while (stackNode->nextChild != BF_SIZE_BAD_VALUE);
+
+  END_ERROR_HANDLING();
+}
+
 void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
-  (void)iter;
-  assert(false);
+  BEGIN_ERROR_HANDLING();
+
+  if (bfPtrArrayIsEmpty(&iter->stack))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* Start by popping the current stack node off the stack used to
+   * drive the iterator */
+  bfPtrArrayPopLast(&iter->stack);
+
+  /* If the stack still has nodes on it, we need to inspect the next
+   * stack node to decide what to do. */
+  if (!bfPtrArrayIsEmpty(&iter->stack)) {
+    StackNode *stackNode = NULL;
+    bfPtrArrayGetLast(&iter->stack, (BfPtr *)&stackNode);
+
+    /* If this node has more children to visit beneath it, we
+     * increment the current stack node's child pointer and
+     * recursively push the next one (and all subsequent leftmost
+     * children beneath it) onto the stack */
+    if (stackNode->nextChild != BF_SIZE_BAD_VALUE) {
+      incStackNodeChild(stackNode);
+
+      pushNewChildNodes(&iter->stack, stackNode);
+      HANDLE_ERROR();
+    }
+
+    /* ... otherwise, `stackNode` is the next node to visit */
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 }
 
 #define _(FUNC_NAME)                                                    \
