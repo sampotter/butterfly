@@ -189,6 +189,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
   BfTreeNode const *currentNode = NULL;
 
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
+    bfTreeIterNext(facStreamer->colTreeIter);
+
     currentNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
     if (bfTreeNodeIsLeaf(currentNode))
       break;
