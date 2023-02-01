@@ -198,9 +198,3 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
 
   return levelNodes;
 }
-
-BfConstPtrArray bfTreeGetLevelConstPtrArray(BfTree const *tree, BfSize depth) {
-  (void)tree;
-  (void)depth;
-  assert(false);
-}

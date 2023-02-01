@@ -47,4 +47,3 @@ void bfTreeMapConst(BfTree const *, BfTreeNode const *, BfTreeTraversal, BfTreeM
 BfSize bfTreeGetNumPoints(BfTree const *);
 BfTreeNode *bfTreeGetNode(BfTree *, BfSize, BfSize);
 BfPtrArray bfTreeGetLevelPtrArray(BfTree *, BfSize);
-BfConstPtrArray bfTreeGetLevelConstPtrArray(BfTree const *, BfSize);

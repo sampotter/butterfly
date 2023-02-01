@@ -162,12 +162,12 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
 
   /* Create the stack used to adaptively find the cut through the row
    * tree to start the adaptive butterfly factorization */
-  BfConstPtrArray stack = bfTreeGetLevelConstPtrArray(
+  BfPtrArray stack = bfTreeGetLevelPtrArray(
     facStreamer->rowTree, facStreamer->rowTreeInitDepth);
   HANDLE_ERROR();
 
-  while (!bfConstPtrArrayIsEmpty(&stack)) {
-    BfTreeNode const *rowNode = bfConstPtrArrayPopLast(&stack);
+  while (!bfPtrArrayIsEmpty(&stack)) {
+    BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
 
     BfMat *Psi = NULL, *W = NULL;
     bool metTol = getPsiAndW(mat, rowNode, colNode, facStreamer->tol, &Psi, &W);
@@ -184,7 +184,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
     /* Push the children of the current row node onto the stack in
      * reverse order so that we traverse `mat` top to bottom */
     for (BfSize i = rowNode->maxNumChildren; i > 0; --i)
-      bfConstPtrArrayAppend(&stack, rowNode->child[i - 1]);
+      bfPtrArrayAppend(&stack, rowNode->child[i - 1]);
   }
 
   continueFactorizing(facStreamer);
@@ -193,7 +193,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *mat) {
 
   bfPtrArrayDeinit(&W_blocks);
   bfPtrArrayDeinit(&Psi_blocks);
-  bfConstPtrArrayDeinit(&stack);
+  bfPtrArrayDeinit(&stack);
 }
 
 bool bfFacStreamerDone(BfFacStreamer const *facStreamer) {
