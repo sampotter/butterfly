@@ -60,7 +60,7 @@ our "matrix algebra VM" ("Maeve"), we may just want to replace matrix
 vector product calls with functions which generate instructions and
 record them somewhere.
 
-# Get rid of macros for interfaces
+# ~~Get rid of macros for interfaces~~ (Done!)
 
 These aren't actually helpful. Using them, we tie ourself in a knot
 which makes it hard to accomplish the sort of things described above
@@ -80,3 +80,9 @@ The question is where or not it's helpful to use `const` anywhere beyond this...
 
 - https://librsb.sourceforge.net/
 - https://github.com/opencollab/arpack-ng
+
+# Handle ownership correctly
+
+As we build up more elaborate data types, we're going to need to think more carefully about how we handle the ownership of our different types.
+
+One straightforward approach would be to use smart pointers with explicit `retain` and `release` functions, a la Embree. Another option would be to have ownership semantics which are set manually.
