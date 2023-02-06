@@ -86,3 +86,13 @@ The question is where or not it's helpful to use `const` anywhere beyond this...
 As we build up more elaborate data types, we're going to need to think more carefully about how we handle the ownership of our different types.
 
 One straightforward approach would be to use reference counting with explicit `retain` and `release` functions, a la Embree. Another option would be to have ownership semantics which are set manually.
+
+# Add a top type
+
+# All objects should be passed as pointers
+
+Since we rely so heavily on using `NULL` as a tombstone value, we really need
+
+# Add a NodeSpan type
+
+There's a lot of useful stuff in [fac_streamer.c](./src/fac_streamer.c) related to working with contiguous spans of nodes. Given how much stuff we have to do with node spans when working with butterfly factorizations, it seems useful to break this off into a separate ADT.
