@@ -1,4 +1,4 @@
-# To-do list
+# to-do list
 
 1. [ ] `CamelCase` -> `snake_case`
 2. [ ] more abbreviations (e.g., `BfMatDenseComplex` -> `bf_zmat`)
@@ -87,6 +87,8 @@ As we build up more elaborate data types, we're going to need to think more care
 
 One straightforward approach would be to use reference counting with explicit `retain` and `release` functions, a la Embree. Another option would be to have ownership semantics which are set manually.
 
+For reference counting, retain functions may not actually be necessary? Not sure.
+
 # Add a top type
 
 # All objects should be passed as pointers
@@ -96,3 +98,21 @@ Since we rely so heavily on using `NULL` as a tombstone value, we really need
 # Add a NodeSpan type
 
 There's a lot of useful stuff in [fac_streamer.c](./src/fac_streamer.c) related to working with contiguous spans of nodes. Given how much stuff we have to do with node spans when working with butterfly factorizations, it seems useful to break this off into a separate ADT.
+
+# Better assert
+
+[Ideas here.](https://nullprogram.com/blog/2022/06/26/)
+
+# Provenance tracking
+
+If I write my own interface to malloc, I can wrap it with a macro which will let me track where every object was allocated (i.e., which line number, what CPU time... could annotate with various bits of data).
+
+# Invalidating objects
+
+Objects should always be put in an obvious invalid state immediately after being created, with all values set by default to "bad value" for the type.
+
+Once this is set up, it should be possible to set a flag to strip all of this out when running in release mode.
+
+# Better interface for constructing objects
+
+Add `Alloc` function which does what `New` does now. Create `New*` versions of `Init*` functions which do the same thing but also allocate. Then `Alloc`:`Init`:`New`::`Dealloc`:`Deinit`:`Delete` works as an anlogy, which should make things a little more regular and intuitive.
