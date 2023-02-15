@@ -579,7 +579,7 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
   if (W0BlockPtr == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfMatBlock const *Psi = bfMatToMatBlock(partialFac->Psi);
+  BfMatBlockDiag const *Psi = bfMatToMatBlockDiag(partialFac->Psi);
   HANDLE_ERROR();
 
   BfMat const *W0 = partialFac->W[0];
@@ -615,8 +615,8 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
 
   for (BfSize k = 0; k < bfMatBlockDiagNumBlocks(Psi); ++k) {
     /* Get row offsets for current block of Psi */
-    BfSize i0_ = Psi->rowOffset[k];
-    BfSize i1_ = Psi->rowOffset[k + 1];
+    BfSize i0_ = Psi->super.rowOffset[k];
+    BfSize i1_ = Psi->super.rowOffset[k + 1];
 
     /* Skip blocks which aren't indexed by [i0, i1) */
     if (!(i0 <= i0_ && i1_ <= i1))
@@ -625,7 +625,7 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
     ++numSubblocks;
 
     /* Get a copy of the current diagonal Psi block */
-    BfMat *PsiSubblock = bfMatBlockGetBlockCopy(Psi, k, k);
+    BfMat *PsiSubblock = bfMatBlockDiagGetBlockCopy(Psi, k, k);
     HANDLE_ERROR();
 
     /* ... and append it to the running array of Psi subblocks */
@@ -633,8 +633,8 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
     HANDLE_ERROR();
 
     /* Get column offsets for current block of Psi */
-    BfSize j0_ = Psi->colOffset[k];
-    BfSize j1_ = Psi->colOffset[k + 1];
+    BfSize j0_ = Psi->super.colOffset[k];
+    BfSize j1_ = Psi->super.colOffset[k + 1];
 
     /* Get a copy of the current W row subblock */
     BfMat *W0Subblock = bfMatGetRowRangeCopy(W0, j0_, j1_);
