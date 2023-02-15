@@ -125,3 +125,7 @@ void bfMatBlockDeinitAndDealloc(BfMatBlock **mat) {
   bfMatBlockDeinit(*mat);
   bfMatBlockDealloc(mat);
 }
+
+void bfMatBlockDelete(BfMat **mat) {
+  bfMatBlockDeinitAndDealloc((BfMatBlock **)mat);
+}
