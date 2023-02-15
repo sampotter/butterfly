@@ -623,7 +623,7 @@ get_shifted_eigs:
   }
   assert(j1 <= k);
 
-  if (0 > j0 || j1 < k - 1) {
+  if (0 < j0 || j1 < k) {
     /* Prune unnecessary eigenvectors */
     BfMat *oldPhi = Phi;
     Phi = bfMatGetColRangeCopy(oldPhi, j0, j1);
