@@ -7,13 +7,19 @@
 #include <bf/error_macros.h>
 #include <bf/util.h>
 
+/** Interface: MatBlock */
+
 BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *matBlock, BfSize i, BfSize j) {
   return matBlock->vtbl->GetBlockCopy(matBlock, i, j);
 }
 
+/** Upcasting: MatBlock -> Mat */
+
 BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock) {
   return &matBlock->super;
 }
+
+/** Downcasting: Mat -> MatBlock */
 
 BfMatBlock *bfMatToMatBlock(BfMat *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK)) {
@@ -32,6 +38,8 @@ BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat) {
     return (BfMatBlock const *)mat;
   }
 }
+
+/** Implementation: MatBlock */
 
 void bfMatBlockInvalidate(BfMatBlock *matBlock) {
   bfMatInvalidate(&matBlock->super);
