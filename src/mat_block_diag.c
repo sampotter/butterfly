@@ -5,6 +5,8 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/indexed_mat.h>
+#include <bf/mat_block_coo.h>
 #include <bf/mat_zero.h>
 #include <bf/ptr_array.h>
 #include <bf/util.h>
@@ -30,6 +32,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetType = (__typeof__(&bfMatBlockDiagGetType))bfMatBlockDiagGetType,
   .GetNumRows = (__typeof__(&bfMatBlockDiagGetNumRows))bfMatBlockDiagGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockDiagGetNumCols))bfMatBlockDiagGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockDiagGetRowRangeCopy,
   .ScaleCols = (__typeof__(&bfMatBlockDiagScaleCols))bfMatBlockDiagScaleCols,
   .Mul = (__typeof__(&bfMatBlockDiagMul))bfMatBlockDiagMul,
   .Negate = (__typeof__(&bfMatBlockDiagNegate))bfMatBlockDiagNegate,
@@ -184,10 +187,86 @@ BfSize bfMatBlockDiagGetNumCols(BfMat const *mat) {
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
 
+BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockCoo *blockRow = NULL;
+
+  BfPtrArray indexedRowBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&indexedRowBlocks);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize i0_ = ROW_OFFSET(matBlockDiag, k);
+    BfSize i1_ = ROW_OFFSET(matBlockDiag, k + 1);
+
+    /* If the current block's row range doesn't overlap with the row
+     * range to copy, skip it */
+    if (i1_ <= i0 || i1 <= i0_)
+      continue;
+
+    BfSize j0_ = COL_OFFSET(matBlockDiag, k);
+    BfSize m_ = NUM_BLOCK_ROWS(matBlockDiag, k);
+    BfMat const *block = BLOCK(matBlockDiag, k);
+
+    /* The range of rows which should be copied from `block` with
+     * respect to `block`'s index system. */
+    BfSize i0__ = i0_ < i0 ? i0 - i0_ : 0;
+    BfSize i1__ = m_ - (i1 < i1_ ? i1_ - i1 : 0);
+
+    /* Copy the row range---the whole point here is that this can
+     * easily be a subset of the rows of `block`! */
+    BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
+    HANDLE_ERROR();
+
+    BfIndexedMat *indexedRowBlock = malloc(sizeof(BfIndexedMat));
+    if (indexedRowBlock == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    indexedRowBlock->i0 = i0_ < i0 ? 0 : i0_ - i0;
+    indexedRowBlock->j0 = j0_;
+    indexedRowBlock->mat = blockRowRange;
+
+    assert(indexedRowBlock->i0 <= m_);
+    assert(indexedRowBlock->mat != NULL);
+
+    bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
+    HANDLE_ERROR();
+  }
+
+  BfSize m = i1 - i0;
+  BfSize n = bfMatGetNumCols(bfMatBlockDiagConstToMatConst(matBlockDiag));
+
+  blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfMatBlockCooDeinitAndDealloc(&blockRow);
+
+    assert(false); // ???
+  }
+
+  /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
+  for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
+    free(bfPtrArrayGet(&indexedRowBlocks, k));
+
+  bfPtrArrayDeinit(&indexedRowBlocks);
+
+  return bfMatBlockCooToMat(blockRow);
+}
+
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
 
   BfMatBlock *matBlock = bfMatToMatBlock(mat);
+  HANDLE_ERROR();
+
+  BfMatBlockDiag *matBlockDiag = bfMatToMatBlockDiag(mat);
   HANDLE_ERROR();
 
   BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);

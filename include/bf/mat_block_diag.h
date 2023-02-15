@@ -11,6 +11,7 @@ BfType bfMatBlockDiagGetType(BfMat const *mat);
 bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfType type);
 BfSize bfMatBlockDiagGetNumRows(BfMat const *mat);
 BfSize bfMatBlockDiagGetNumCols(BfMat const *mat);
+BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1);
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec);
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other);
 void bfMatBlockDiagNegate(BfMat *mat);
