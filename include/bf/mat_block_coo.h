@@ -11,6 +11,7 @@ BfType bfMatBlockCooGetType(BfMat const *mat);
 BfSize bfMatBlockCooNumBytes(BfMat const *mat);
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat);
 BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
+BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1);
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2);
 void bfMatBlockCooNegate(BfMat *mat);
 

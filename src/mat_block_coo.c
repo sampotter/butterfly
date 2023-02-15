@@ -27,6 +27,7 @@ static BfMatVtable MAT_VTABLE = {
   .NumBytes = (__typeof__(&bfMatBlockCooNumBytes))bfMatBlockCooNumBytes,
   .GetNumRows = (__typeof__(&bfMatBlockCooGetNumRows))bfMatBlockCooGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockCooGetNumCols))bfMatBlockCooGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
   .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
   .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
 };
@@ -214,6 +215,83 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
   return bfMatIsTransposed(mat) ?
     matBlock->rowOffset[bfMatBlockGetNumRowBlocks(matBlock)] :
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
+}
+
+BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+  BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
+
+  BfMatBlockCoo *blockRow = NULL;
+
+  BfPtrArray indexedRowBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&indexedRowBlocks);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
+
+    BfSize m_ = bfMatGetNumRows(block);
+
+    /* The range [i0_, i1_) is the row index range of `block` with
+     * respect to `matBlockCoo`'s index system. */
+    BfSize i0_ = BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize i1_ = i0_ + m_;
+
+    /* The starting column index of `block` with respect to
+     * `matBlockCoo`'s index system. */
+    BfSize j0_ = BLOCK_COL_OFFSET(matBlockCoo, k);
+
+    /* Skip blocks which don't overlap with the row range [i0, i1). */
+    assert(i0 <= i1 && i0_ <= i1_);
+    if (i1_ <= i0 || i1 <= i0_)
+      continue;
+
+    /* The range of rows which should be copied from `block` with
+     * respect to `block`'s index system. */
+    BfSize i0__ = i0_ < i0 ? i0 - i0_ : 0;
+    BfSize i1__ = m_ - (i1 < i1_ ? i1_ - i1 : 0);
+
+    /* Copy the row range---the whole point here is that this can
+     * easily be a subset of the rows of `block`! */
+    BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
+    HANDLE_ERROR();
+
+    BfIndexedMat *indexedRowBlock = malloc(sizeof(BfIndexedMat));
+    if (indexedRowBlock == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    indexedRowBlock->i0 = i0_ < i0 ? 0 : i0_ - i0;
+    indexedRowBlock->j0 = j0_;
+    indexedRowBlock->mat = blockRowRange;
+
+    assert(indexedRowBlock->i0 <= m_);
+    assert(indexedRowBlock->mat != NULL);
+
+    bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
+    HANDLE_ERROR();
+  }
+
+  BfSize m = i1 - i0;
+  BfSize n = bfMatGetNumCols(mat);
+
+  blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfMatBlockCooDeinitAndDealloc(&blockRow);
+  }
+
+  /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
+  for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
+    free(bfPtrArrayGet(&indexedRowBlocks, k));
+
+  bfPtrArrayDeinit(&indexedRowBlocks);
+
+  return bfMatBlockCooToMat(blockRow);
 }
 
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
