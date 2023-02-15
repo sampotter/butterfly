@@ -223,6 +223,9 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
 BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
 
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
   BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
 
@@ -244,14 +247,13 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
     BfSize i0_ = BLOCK_ROW_OFFSET(matBlockCoo, k);
     BfSize i1_ = i0_ + m_;
 
+    /* Skip blocks which don't overlap with the row range [i0, i1). */
+    if (i1_ <= i0 || i1 <= i0_)
+      continue;
+
     /* The starting column index of `block` with respect to
      * `matBlockCoo`'s index system. */
     BfSize j0_ = BLOCK_COL_OFFSET(matBlockCoo, k);
-
-    /* Skip blocks which don't overlap with the row range [i0, i1). */
-    assert(i0 <= i1 && i0_ <= i1_);
-    if (i1_ <= i0 || i1 <= i0_)
-      continue;
 
     /* The range of rows which should be copied from `block` with
      * respect to `block`'s index system. */
