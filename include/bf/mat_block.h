@@ -69,4 +69,3 @@ void bfMatBlockDealloc(BfMatBlock **mat);
 void bfMatBlockDeinitAndDealloc(BfMatBlock **mat);
 void bfMatBlockDelete(BfMat **mat);
 BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i);
-BfSize bfMatBlockFindColBlock(BfMatBlock const *mat, BfSize j);
