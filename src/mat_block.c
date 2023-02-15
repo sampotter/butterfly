@@ -105,30 +105,6 @@ void bfMatBlockInit(BfMatBlock *mat,
     bfMatBlockDeinit(mat);
 }
 
-void bfMatBlockDelete(BfMat **mat) {
-  bfMatBlockDeinitAndDealloc((BfMatBlock **)mat);
-}
-
-BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i) {
-  return mat->rowOffset[i + 1] - mat->rowOffset[i];
-}
-
-BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j) {
-  return mat->colOffset[j + 1] - mat->colOffset[j];
-}
-
-BfSize bfMatBlockNumBlocks(BfMatBlock const *mat) {
-  return mat->vtbl->NumBlocks(mat);
-}
-
-BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat) {
-  return mat->super.numRows;
-}
-
-BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat) {
-  return mat->super.numCols;
-}
-
 void bfMatBlockDeinit(BfMatBlock *mat) {
   bfMatDeinit(&mat->super);
 
