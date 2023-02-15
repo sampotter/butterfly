@@ -29,6 +29,15 @@ BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat) {
   }
 }
 
+void bfMatBlockInvalidate(BfMatBlock *matBlock) {
+  bfMatInvalidate(&matBlock->super);
+
+  matBlock->vtbl = NULL;
+  matBlock->block = NULL;
+  matBlock->rowOffset = NULL;
+  matBlock->colOffset = NULL;
+}
+
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols)

@@ -209,6 +209,16 @@ BfMat *bfMatCholesky(BfMat const *mat) {
 
 /** Implementation: Mat */
 
+void bfMatInvalidate(BfMat *mat) {
+  mat->vtbl = NULL;
+  mat->props = BF_MAT_PROPS_NONE; // TODO: need a default bad value here
+  mat->numRows = BF_SIZE_BAD_VALUE;
+  mat->numCols = BF_SIZE_BAD_VALUE;
+#if BF_DEBUG
+  mat->aux = NULL;
+#endif
+}
+
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
   mat->vtbl = vtbl;
   mat->props = BF_MAT_PROPS_NONE;

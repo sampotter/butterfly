@@ -58,6 +58,7 @@ BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock);
 BfMatBlock *bfMatToMatBlock(BfMat *mat);
 BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat);
 
+void bfMatBlockInvalidate(BfMatBlock *matBlock);
 void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *MAT_BLOCK_VTABLE,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);

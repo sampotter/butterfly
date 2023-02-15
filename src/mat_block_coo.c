@@ -319,6 +319,14 @@ BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBloc
 
 /** Implementation: MatBlockCoo */
 
+void bfMatBlockCooInvalidate(BfMatBlockCoo *matBlockCoo) {
+  bfMatBlockInvalidate(&matBlockCoo->super);
+
+  matBlockCoo->numBlocks = BF_SIZE_BAD_VALUE;
+  matBlockCoo->rowInd = NULL;
+  matBlockCoo->colInd = NULL;
+}
+
 BfMatBlockCoo *bfMatBlockCooNew() {
   return malloc(sizeof(BfMatBlockCoo));
 }

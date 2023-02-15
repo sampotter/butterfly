@@ -133,6 +133,7 @@ struct BfMat {
 #endif
 };
 
+void bfMatInvalidate(BfMat *mat);
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);
 BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype dtype);
