@@ -310,11 +310,17 @@ BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, 
   return block;
 }
 
-/** Upcasting: */
+/** Upcasting: MatBlockDiag -> Mat */
 
 BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag) {
   return &matBlockDiag->super.super;
 }
+
+BfMat const *bfMatBlockDiagConstToMatConst(BfMatBlockDiag const *matBlockDiag) {
+  return &matBlockDiag->super.super;
+}
+
+/** Upcasting: MatBlockDiag -> MatBlock */
 
 BfMatBlock *bfMatBlockDiagToMatBlock(BfMatBlockDiag *matBlockDiag) {
   return &matBlockDiag->super;
@@ -324,7 +330,7 @@ BfMatBlock const *bfMatBlockDiagConstToMatBlockConst(BfMatBlockDiag const *matBl
   return &matBlockDiag->super;
 }
 
-/** Downcasting: */
+/** Downcasting: Mat -> MatBlockDiag */
 
 BfMatBlockDiag *bfMatToMatBlockDiag(BfMat *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_DIAG)) {

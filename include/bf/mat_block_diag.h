@@ -24,14 +24,22 @@ struct BfMatBlockDiag {
   BfMatBlock super;
 };
 
-/* Upcasting: */
+/** Upcasting: MatBlockDiag -> Mat */
+
 BfMat *bfMatBlockDiagToMat(BfMatBlockDiag *matBlockDiag);
+BfMat const *bfMatBlockDiagConstToMatConst(BfMatBlockDiag const *matBlockDiag);
+
+/** Upcasting: MatBlockDiag -> MatBlock */
+
 BfMatBlock *bfMatBlockDiagToMatBlock(BfMatBlockDiag *);
 BfMatBlock const *bfMatBlockDiagConstToMatBlockConst(BfMatBlockDiag const *);
 
-/* Downcasting: */
+/** Downcasting: Mat -> MatBlockDiag */
+
 BfMatBlockDiag *bfMatToMatBlockDiag(BfMat *mat);
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
+
+/** Implementation: MatBlockDiag */
 
 BfMatBlockDiag *bfMatBlockDiagNew();
 BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks);
