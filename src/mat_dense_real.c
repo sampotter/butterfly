@@ -390,12 +390,12 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
   HANDLE_ERROR();
 
   for (BfSize j = j0; j < j1; ++j) {
-    BfReal const *readPtr = matDenseReal->data + (j - j0)*matDense->colStride;
-    BfReal *writePtr = matDenseRealCopy->data + j*matDenseCopy->colStride;
+    BfReal const *readPtr = matDenseReal->data + j*matDense->colStride;
+    BfReal *writePtr = matDenseRealCopy->data + (j - j0)*matDenseCopy->colStride;
     for (BfSize i = 0; i < m; ++i) {
       *writePtr = *readPtr;
       readPtr += matDense->rowStride;
-      writePtr += matDenseCopy->colStride;
+      writePtr += matDenseCopy->rowStride;
     }
   }
 
