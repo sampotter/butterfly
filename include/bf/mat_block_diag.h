@@ -18,6 +18,7 @@ void bfMatBlockDiagNegate(BfMat *mat);
 /** Interface: MatBlock */
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock);
+BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, BfSize j);
 
 struct BfMatBlockDiag {
   BfMatBlock super;

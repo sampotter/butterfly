@@ -7,6 +7,10 @@
 #include <bf/error_macros.h>
 #include <bf/util.h>
 
+BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *matBlock, BfSize i, BfSize j) {
+  return matBlock->vtbl->GetBlockCopy(matBlock, i, j);
+}
+
 BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock) {
   return &matBlock->super;
 }

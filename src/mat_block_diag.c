@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_zero.h>
 #include <bf/vec_zero.h>
 
 /** Helper macros: */
@@ -262,11 +263,48 @@ void bfMatBlockDiagNegate(BfMat *mat) {
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
   .NumBlocks = (__typeof__(&bfMatBlockDiagNumBlocks))bfMatBlockDiagNumBlocks,
+  .GetBlockCopy = (__typeof__(&bfMatBlockGetBlockCopy))bfMatBlockDiagGetBlockCopy,
 };
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock) {
   BfMat const *mat = bfMatBlockConstToMatConst(matBlock);
   return mat->numRows < mat->numCols ? mat->numRows : mat->numCols;
+}
+
+BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
+  HANDLE_ERROR();
+
+  BfMat *block = NULL;
+
+  BfSize m = bfMatBlockGetNumBlockRows(matBlock, i);
+  BfSize n = bfMatBlockGetNumBlockCols(matBlock, j);
+
+  /* Copy the ith block if this is a diagonal block. */
+  if (i == j) {
+    if (matBlock->block[i] == NULL)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    block = bfMatCopy(matBlock->block[i]);
+    HANDLE_ERROR();
+  }
+
+  /* Otherwise, return a new zero block. */
+  else {
+    BfMatZero *matZero = bfMatZeroNew();
+    HANDLE_ERROR();
+
+    bfMatZeroInit(matZero, m, n);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDelete(&block);
+  }
+
+  return block;
 }
 
 /** Upcasting: */
