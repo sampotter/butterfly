@@ -74,7 +74,8 @@ static void printBlocksRec(BfMat const *mat,
 
   else if (type == BF_TYPE_MAT_BLOCK_DIAG) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+    BfMatBlockDiag const *matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
+    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
     for (BfSize k = 0; k < numBlocks; ++k) {
       BfMat const *block = matBlock->block[k];
       BfSize di = matBlock->rowOffset[k];

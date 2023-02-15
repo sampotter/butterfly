@@ -50,7 +50,7 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
   matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
   HANDLE_ERROR();
 
-  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
 
   matBlockDiagCopy = bfMatBlockDiagNew();
   HANDLE_ERROR();
@@ -190,7 +190,7 @@ void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
   BfMatBlock *matBlock = bfMatToMatBlock(mat);
   HANDLE_ERROR();
 
-  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
 
   for (BfSize k = 0; k < numBlocks; ++k) {
     BfSize j0 = matBlock->colOffset[k];
@@ -208,10 +208,11 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
   BEGIN_ERROR_HANDLING();
 
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+  BfMatBlockDiag const *matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
 
   BfSize numRows = bfMatGetNumRows(mat);
   BfSize numCols = bfMatGetNumCols(other);
-  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
 
   BfMat *result = NULL;
   BfMat *block = NULL;
@@ -264,12 +265,12 @@ void bfMatBlockDiagNegate(BfMat *mat) {
 /** Interface: MatBlock */
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
-  .NumBlocks = (__typeof__(&bfMatBlockDiagNumBlocks))bfMatBlockDiagNumBlocks,
+  .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockDiagNumBlocks,
   .GetBlockCopy = (__typeof__(&bfMatBlockGetBlockCopy))bfMatBlockDiagGetBlockCopy,
 };
 
-BfSize bfMatBlockDiagNumBlocks(BfMatBlock const *matBlock) {
-  BfMat const *mat = bfMatBlockConstToMatConst(matBlock);
+BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *matBlockDiag) {
+  BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
   return mat->numRows < mat->numCols ? mat->numRows : mat->numCols;
 }
 
