@@ -11,6 +11,7 @@ typedef struct BfFacStreamerSpec {
   BfSize rowTreeInitDepth;
   BfSize colTreeInitDepth;
   BfReal tol;
+  BfSize minNumRows;
   BfSize minNumCols;
 } BfFacStreamerSpec;
 

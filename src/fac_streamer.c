@@ -2,10 +2,13 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/linalg.h>
+#include <bf/mat_block_coo.h>
+#include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_diag_real.h>
 #include <bf/mat_identity.h>
@@ -18,6 +21,54 @@
 #undef BF_ARRAY_DEFAULT_CAPACITY
 #define BF_ARRAY_DEFAULT_CAPACITY 32
 
+typedef struct {
+  BfTreeNode const *colNode;
+
+  BfConstPtrArray rowNodes;
+
+  BfMat *Psi;
+
+  BfSize numW;
+  BfMat **W;
+} PartialFac;
+
+static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
+                                          BfPtrArray *PsiBlocks,
+                                          BfPtrArray *WBlocks) {
+  BEGIN_ERROR_HANDLING();
+
+  PartialFac *partialFac = malloc(sizeof(PartialFac));
+  if (partialFac == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  partialFac->colNode = colNode;
+
+  bfConstPtrArrayInitWithDefaultCapacity(&partialFac->rowNodes);
+  HANDLE_ERROR();
+
+  BfMatBlockDiag *Psi = bfMatBlockDiagNewFromBlocks(PsiBlocks);
+  HANDLE_ERROR();
+
+  partialFac->Psi = bfMatBlockDiagToMat(Psi);
+
+  partialFac->numW = 1;
+
+  partialFac->W = malloc(sizeof(BfMatBlockCoo *));
+  if (partialFac->W == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfMatBlockCoo *W0 = bfMatBlockCooNewColFromBlocks(WBlocks);
+  HANDLE_ERROR();
+
+  partialFac->W[0] = bfMatBlockCooToMat(W0);
+
+  END_ERROR_HANDLING() {
+    partialFac = NULL;
+  }
+
+  return partialFac;
+}
+
 struct BfFacStreamer {
   BfSize rowTreeInitDepth;
   BfSize colTreeInitDepth;
@@ -27,11 +78,38 @@ struct BfFacStreamer {
 
   BfTreeIter *colTreeIter;
 
+  /* The tolerance used to compute truncated SVDs of blocks when
+   * streaming the butterfly factorization. */
   BfReal tol;
+
+  /* The minimum number of rows in a block needed before a truncated
+   * SVD is attempted. This is used to bottom out when finding
+   * epsilon-rank cuts in the row tree. */
+  BfSize minNumRows;
+
+  /* The minimum number of columns in a block needed before trying a
+   * truncated SVD. This is used to prevent us from starting to low in
+   * the column tree. */
   BfSize minNumCols;
 
-  BfTreeNode *currentColNode;
+  /* This is basically an association list which maps from column tree
+   * nodes to lists of Psi and W blocks. We use this to track blocks
+   * as we traverse the column tree, merging and splitting blocks. */
+  BfPtrArray partialFacs;
 };
+
+static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
+  BEGIN_ERROR_HANDLING();
+
+  printf("reminder: do a sorted insert in addPartialFac\n");
+
+  bfPtrArrayAppend(&facStreamer->partialFacs, partialFac);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
 
 BfFacStreamer *bfFacStreamerNew() {
   BEGIN_ERROR_HANDLING();
@@ -56,6 +134,7 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec
   facStreamer->colTreeInitDepth = spec->colTreeInitDepth;
 
   facStreamer->tol = spec->tol;
+  facStreamer->minNumRows = spec->minNumRows;
   facStreamer->minNumCols = spec->minNumCols;
 
   BfTreeIterPostOrder *iter = bfTreeIterPostOrderNew();
@@ -66,9 +145,11 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec
 
   facStreamer->colTreeIter = bfTreeIterPostOrderToTreeIter(iter);
 
-  facStreamer->currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
-  if (facStreamer->currentColNode == NULL)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  facStreamer->partialFacs = bfGetUninitializedPtrArray();
+  HANDLE_ERROR();
+
+  bfInitPtrArrayWithDefaultCapacity(&facStreamer->partialFacs);
+  HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
     bfFacStreamerDeinit(facStreamer);
@@ -112,25 +193,15 @@ static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) 
 static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
-  bool success = true;
-
-  BfSize m = bfMatGetNumRows(block);
-  BfSize n = bfMatGetNumCols(block);
-
-  BfSize kmax = m < n ? m : n;
-
   /* Compute truncated SVD of the block. */
   BfMat *Psi = NULL;
   BfMatDiagReal *S = NULL;
   BfMat *W = NULL;
   BfTruncSpec truncSpec = {.usingTol = true, .tol = tol};
-  bfGetTruncatedSvd(block, &Psi, &S, &W, truncSpec, BF_BACKEND_LAPACK);
+  bool success = bfGetTruncatedSvd(block, &Psi, &S, &W, truncSpec, BF_BACKEND_LAPACK);
   HANDLE_ERROR();
 
-  BfSize k = bfMatGetNumCols(Psi);
-
   /* Scale W if we successfully compressed this block. */
-  success = k < kmax;
   if (success)
     bfMatMulInplace(W, bfMatDiagRealToMat(S));
 
@@ -185,46 +256,861 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
   return success;
 }
 
-static void continueFactorizing(BfFacStreamer *facStreamer) {
-  BfTreeNode *currentColNode = NULL;
+/* Find the current partial factorizations associated with each of the
+ * children of the current column node and return them in PtrArray. */
+static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
+  BEGIN_ERROR_HANDLING();
 
+  BfTreeNode const *currentColNode = bfFacStreamerGetCurrentColumnNode(facStreamer);
+  assert(!bfTreeNodeIsLeaf(currentColNode));
+
+  BfPtrArray currentPartialFacs;
+  bfInitPtrArrayWithDefaultCapacity(&currentPartialFacs);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
+    BfTreeNode const *childColNode = currentColNode->child[k];
+    if (childColNode == NULL)
+      continue;
+
+    PartialFac *partialFac = NULL;
+    for (BfSize l = 0; l < bfPtrArraySize(&facStreamer->partialFacs); ++l) {
+      partialFac = bfPtrArrayGet(&facStreamer->partialFacs, l);
+      if (partialFac->colNode == childColNode)
+        break;
+      partialFac = NULL;
+    }
+    assert(partialFac != NULL);
+
+    bfPtrArrayAppend(&currentPartialFacs, partialFac);
+    HANDLE_ERROR();
+  }
+
+  assert(!bfPtrArrayIsEmpty(&currentPartialFacs));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return currentPartialFacs;
+}
+
+static bool partialFacHasContiguousRowSpan(PartialFac const *partialFac) {
+  BfSize numRowNodes = bfConstPtrArraySize(&partialFac->rowNodes);
+  if (numRowNodes <= 1)
+    return true;
+  BfTreeNode const *rowNode = bfConstPtrArrayGet(&partialFac->rowNodes, 0);
+  BfSize i1Prev = bfTreeNodeGetLastIndex(rowNode);
+  for (BfSize k = 1; k < numRowNodes; ++k) {
+    rowNode = bfConstPtrArrayGet(&partialFac->rowNodes, k);
+    BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
+    if (i0 != i1Prev)
+      return false;
+    i1Prev = bfTreeNodeGetLastIndex(rowNode);
+  }
+  return true;
+}
+
+static bool partialFacsHaveContinguousRowSpans(BfPtrArray const *partialFacs) {
+  for (BfSize k = 0; k < bfPtrArraySize(partialFacs); ++k) {
+    PartialFac const *partialFac = bfPtrArrayGet(partialFacs, k);
+    if (!partialFacHasContiguousRowSpan(partialFac))
+      return false;
+  }
+  return true;
+}
+
+static bool partialFacsHaveSameRowSpan(BfPtrArray const *partialFacs) {
+  assert(bfPtrArraySize(partialFacs) >= 2);
+
+  if (!partialFacsHaveContinguousRowSpans(partialFacs)) {
+    // TODO: this case is a little annoying and complicated and
+    // doesn't matter for us right now. Handle it later if we need to
+    // for some reason.
+    assert(false);
+  }
+
+  PartialFac *partialFac;
+  BfTreeNode const *rowNode;
+
+  BfSize i0, i1;
+
+  bfPtrArrayGetFirst(partialFacs, (BfPtr *)&partialFac);
+
+  rowNode = bfConstPtrArrayGetFirst(&partialFac->rowNodes);
+  i0 = bfTreeNodeGetFirstIndex(rowNode);
+
+  rowNode = bfConstPtrArrayGetLast(&partialFac->rowNodes);
+  i1 = bfTreeNodeGetLastIndex(rowNode);
+
+  for (BfSize k = 1; k < bfPtrArraySize(partialFacs); ++k) {
+    BfSize i0_, i1_;
+
+    bfPtrArrayGetFirst(partialFacs, (BfPtr *)&partialFac);
+
+    rowNode = bfConstPtrArrayGetFirst(&partialFac->rowNodes);
+    i0_ = bfTreeNodeGetFirstIndex(rowNode);
+
+    rowNode = bfConstPtrArrayGetLast(&partialFac->rowNodes);
+    i1_ = bfTreeNodeGetLastIndex(rowNode);
+
+    if (i0 != i0_ || i1 != i1_)
+      return false;
+  }
+
+  return true;
+}
+
+/* Given a `PtrArray` filled with `PartialFac`s, get the first row
+ * tree node in each `PartialFac`, collect them together into a
+ * `ConstPtrArray`, and return it. */
+static BfConstPtrArray getFirstRowNodes(BfPtrArray const *partialFacs) {
+  BEGIN_ERROR_HANDLING();
+
+  BfConstPtrArray rowNodes;
+  bfConstPtrArrayInitWithDefaultCapacity(&rowNodes);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < bfPtrArraySize(partialFacs); ++k) {
+    PartialFac const *partialFac = bfPtrArrayGet(partialFacs, k);
+
+    if (bfConstPtrArrayIsEmpty(&partialFac->rowNodes))
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    BfTreeNode const *rowNode = bfConstPtrArrayGetFirst(&partialFac->rowNodes);
+
+    bfConstPtrArrayAppend(&rowNodes, rowNode);
+  }
+
+  END_ERROR_HANDLING() {
+    bfConstPtrArrayDeinit(&rowNodes);
+  }
+
+  return rowNodes;
+}
+
+/* Given a `PtrArray` filled with `PartialFac`s, get the last row
+ * tree node in each `PartialFac`, collect them together into a
+ * `ConstPtrArray`, and return it. */
+static BfConstPtrArray getLastRowNodes(BfPtrArray const *partialFacs) {
+  BEGIN_ERROR_HANDLING();
+
+  BfConstPtrArray rowNodes;
+  bfConstPtrArrayInitWithDefaultCapacity(&rowNodes);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < bfPtrArraySize(partialFacs); ++k) {
+    PartialFac const *partialFac = bfPtrArrayGet(partialFacs, k);
+
+    if (bfConstPtrArrayIsEmpty(&partialFac->rowNodes))
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    BfTreeNode const *rowNode = bfConstPtrArrayGetLast(&partialFac->rowNodes);
+
+    bfConstPtrArrayAppend(&rowNodes, rowNode);
+  }
+
+  END_ERROR_HANDLING() {
+    bfConstPtrArrayDeinit(&rowNodes);
+  }
+
+  return rowNodes;
+}
+
+static bool nodesHaveSameFirstIndex(BfConstPtrArray const *nodes) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numNodes = bfConstPtrArraySize(nodes);
+
+  if (numNodes == 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  bool sameFirstIndex = true;
+
+  BfTreeNode const *node = bfConstPtrArrayGetFirst(nodes);
+  BfSize i0 = bfTreeNodeGetFirstIndex(node);
+  for (BfSize k = 1; k < numNodes; ++k) {
+    node = bfConstPtrArrayGet(nodes, k);
+    if (bfTreeNodeGetFirstIndex(node) != i0) {
+      sameFirstIndex = false;
+      break;
+    }
+  }
+
+  END_ERROR_HANDLING() {}
+
+  return sameFirstIndex;
+}
+
+static BfSize getMaxLastIndexForRowNodes(BfConstPtrArray const *nodes,
+                                         BfTreeNode const **argmaxNodePtr) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize i1Max = BF_SIZE_BAD_VALUE;
+  BfTreeNode const *argmaxNode = NULL;
+
+  BfSize numNodes = bfConstPtrArraySize(nodes);
+  if (numNodes == 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  argmaxNode = bfConstPtrArrayGetFirst(nodes);
+  i1Max = bfTreeNodeGetLastIndex(argmaxNode);
+  for (BfSize k = 1; k < numNodes; ++k) {
+    BfTreeNode const *node = bfConstPtrArrayGet(nodes, k);
+    BfSize i1 = bfTreeNodeGetLastIndex(node);
+    if (i1 > i1Max) {
+      i1Max = i1;
+      argmaxNode = node;
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    i1Max = BF_SIZE_BAD_VALUE;
+    argmaxNode = NULL;
+  }
+
+  if (argmaxNodePtr != NULL)
+    *argmaxNodePtr = argmaxNode;
+
+  return i1Max;
+}
+
+static BfTreeNode const *getNodeByFirstIndex(BfConstPtrArray const *nodes, BfSize i0) {
+  BfTreeNode const *node = NULL;
+  for (BfSize k = 0; k < bfConstPtrArraySize(nodes); ++k) {
+    node = bfConstPtrArrayGet(nodes, k);
+    if (bfTreeNodeGetFirstIndex(node) == i0)
+      break;
+  }
+  return node;
+}
+
+static BfConstPtrArray getRowNodesByFirstIndex(BfPtrArray const *partialFacs, BfSize i0) {
+  BEGIN_ERROR_HANDLING();
+
+  BfConstPtrArray rowNodes;
+  bfConstPtrArrayInitWithDefaultCapacity(&rowNodes);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < bfPtrArraySize(partialFacs); ++k) {
+    PartialFac const *partialFac = bfPtrArrayGet(partialFacs, k);
+
+    BfTreeNode const *rowNode = getNodeByFirstIndex(&partialFac->rowNodes, i0);
+    if (rowNode == NULL)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    bfConstPtrArrayAppend(&rowNodes, rowNode);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    bfConstPtrArrayDeinit(&rowNodes);
+  }
+
+  return rowNodes;
+}
+
+static BfConstPtrArray getMergeCut(BfPtrArray const *partialFacs) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numPartialFacs = bfPtrArraySize(partialFacs);
+
+  if (numPartialFacs == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* For the "merge cut" operation to be well defined, each of the
+   * factorizations must have the same row span. */
+  if (!partialFacsHaveSameRowSpan(partialFacs))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfConstPtrArray mergeCut;
+  bfConstPtrArrayInitWithDefaultCapacity(&mergeCut);
+  HANDLE_ERROR();
+
+  BfConstPtrArray rowNodes = getFirstRowNodes(partialFacs);
+  HANDLE_ERROR();
+
+  assert(bfConstPtrArraySize(&rowNodes) == numPartialFacs);
+  assert(nodesHaveSameFirstIndex(&rowNodes));
+
+  BfConstPtrArray lastRowNodes = getLastRowNodes(partialFacs);
+  HANDLE_ERROR();
+
+  BfTreeNode const *rowNode = NULL;
+  BfSize i1 = getMaxLastIndexForRowNodes(&rowNodes, &rowNode);
+
+  bfConstPtrArrayAppend(&mergeCut, rowNode);
+  HANDLE_ERROR();
+
+  BfSize i1Final = getMaxLastIndexForRowNodes(&lastRowNodes, NULL);
+
+  while (i1 != i1Final) {
+    bfConstPtrArrayDeinit(&rowNodes);
+
+    rowNodes = getRowNodesByFirstIndex(partialFacs, i1);
+    HANDLE_ERROR();
+
+    i1 = getMaxLastIndexForRowNodes(&rowNodes, &rowNode);
+    HANDLE_ERROR();
+
+    bfConstPtrArrayAppend(&mergeCut, rowNode);
+    HANDLE_ERROR();
+
+    assert(bfConstPtrArraySize(&rowNodes) == numPartialFacs);
+  }
+
+  END_ERROR_HANDLING() {
+    bfConstPtrArrayDeinit(&mergeCut);
+  }
+
+  return mergeCut;
+}
+
+static void
+getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
+                                        BfTreeNode const *rowNode,
+                                        BfMat **PsiBlockPtr,
+                                        BfMat **W0BlockPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  if (PsiBlockPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (W0BlockPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlock const *Psi = bfMatToMatBlock(partialFac->Psi);
+  HANDLE_ERROR();
+
+  BfMat const *W0 = partialFac->W[0];
+
+  BfMat *PsiBlock = NULL;
+  BfMat *W0Block = NULL;
+
+  BfPtrArray PsiSubblocks;
+  bfInitPtrArrayWithDefaultCapacity(&PsiSubblocks);
+  HANDLE_ERROR();
+
+  BfPtrArray W0Subblocks;
+  bfInitPtrArrayWithDefaultCapacity(&W0Subblocks);
+  HANDLE_ERROR();
+
+  BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
+  BfSize i1 = bfTreeNodeGetLastIndex(rowNode);
+
+  /* Verify that `rowNode` is the common parent for the subspan of
+   * nodes in `partialFac->rowNodes` whose index ranges are a subset
+   * of [i0, i1). */
+#if BF_DEBUG
+  for (BfSize k = 0; k < bfConstPtrArraySize(&partialFac->rowNodes); ++k) {
+    BfTreeNode const *otherRowNode = bfConstPtrArrayGet(&partialFac->rowNodes, k);
+    BfSize i0_ = bfTreeNodeGetFirstIndex(otherRowNode);
+    BfSize i1_ = bfTreeNodeGetLastIndex(otherRowNode);
+    if (i0 <= i0_ && i1_ <= i1 && rowNode != otherRowNode)
+      assert(bfTreeNodeIsDescendant(otherRowNode, rowNode));
+  }
+#endif
+
+  BfSize numSubblocks = 0;
+
+  for (BfSize k = 0; k < bfMatBlockDiagNumBlocks(Psi); ++k) {
+    /* Get row offsets for current block of Psi */
+    BfSize i0_ = Psi->rowOffset[k];
+    BfSize i1_ = Psi->rowOffset[k + 1];
+
+    /* Skip blocks which aren't indexed by [i0, i1) */
+    if (!(i0 <= i0_ && i1_ <= i1))
+      continue;
+
+    ++numSubblocks;
+
+    /* Get a copy of the current diagonal Psi block */
+    BfMat *PsiSubblock = bfMatBlockGetBlockCopy(Psi, k, k);
+    HANDLE_ERROR();
+
+    /* ... and append it to the running array of Psi subblocks */
+    bfPtrArrayAppend(&PsiSubblocks, PsiSubblock);
+    HANDLE_ERROR();
+
+    /* Get column offsets for current block of Psi */
+    BfSize j0_ = Psi->colOffset[k];
+    BfSize j1_ = Psi->colOffset[k + 1];
+
+    /* Get a copy of the current W row subblock */
+    BfMat *W0Subblock = bfMatGetRowRangeCopy(W0, j0_, j1_);
+    HANDLE_ERROR();
+
+    /* .. and append it to the running array of W subblocks */
+    bfPtrArrayAppend(&W0Subblocks, W0Subblock);
+    HANDLE_ERROR();
+  }
+
+  assert(numSubblocks > 0);
+  assert(bfPtrArraySize(&PsiSubblocks) == numSubblocks);
+  assert(bfPtrArraySize(&W0Subblocks) == numSubblocks);
+
+  /* If we only found one Psi and W subblock each, we should just
+   * return these directly instead of wrapping them in a MatBlockDiag
+   * and MatBlockCoo, respectively (what is done otherwise). */
+  if (numSubblocks == 1) {
+    bfPtrArrayGetFirst(&PsiSubblocks, (BfPtr *)&PsiBlock);
+    bfPtrArrayGetFirst(&W0Subblocks, (BfPtr *)&W0Block);
+  } else {
+    /* Diagonally concatenate the Psi subblocks we found */
+    PsiBlock = bfMatBlockDiagToMat(bfMatBlockDiagNewFromBlocks(&PsiSubblocks));
+    HANDLE_ERROR();
+
+    /* ... and vertically concatenate the W row subblocks */
+    W0Block = bfMatBlockCooToMat(bfMatBlockCooNewColFromBlocks(&W0Subblocks));
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false); // T_T
+  }
+
+  bfPtrArrayDeinit(&PsiSubblocks);
+  bfPtrArrayDeinit(&W0Subblocks);
+
+  assert(PsiBlock != NULL);
+  assert(W0Block != NULL);
+  assert(bfTreeNodeGetNumPoints(rowNode) == bfMatGetNumRows(PsiBlock));
+  assert(bfMatGetNumCols(PsiBlock) == bfMatGetNumRows(W0Block));
+  assert(bfMatGetNumCols(W0Block) == bfMatGetNumCols(partialFac->W[0]));
+
+  *PsiBlockPtr = PsiBlock;
+  *W0BlockPtr = W0Block;
+}
+
+static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
+                                      BfTreeNode const *rowNode,
+                                      BfMat **PsiPtr,
+                                      BfMat **WPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  if (PsiPtr == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  if (WPtr == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfPtrArray PsiBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&PsiBlocks);
+  HANDLE_ERROR();
+
+  BfPtrArray W0Blocks;
+  bfInitPtrArrayWithDefaultCapacity(&W0Blocks);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < bfPtrArraySize(currentPartialFacs); ++k) {
+    PartialFac const *partialFac = bfPtrArrayGet(currentPartialFacs, k);
+
+    /* Get diagonal psi blocks for kth partial fac and corresponding
+     * index range by indexing with rowNode */
+    BfMat *PsiBlock = NULL;
+    BfMat *W0Block = NULL;
+    getPsiAndW0BlocksByRowNodeForPartialFac(partialFac, rowNode, &PsiBlock, &W0Block);
+
+    /* Append the new Psi block */
+    bfPtrArrayAppend(&PsiBlocks, PsiBlock);
+    HANDLE_ERROR();
+
+    /* Append the new W block */
+    bfPtrArrayAppend(&W0Blocks, W0Block);
+    HANDLE_ERROR();
+  }
+
+  /* Horizontally concatenate together the Psi blocks we found to get
+   * the leading "Psi*" block. */
+  BfMatBlockCoo *Psi = bfMatBlockCooNewRowFromBlocks(&PsiBlocks);
+  HANDLE_ERROR();
+
+  /* Diagonally concatenate together the W row blocks we found to get
+   * the first column block of the permuted W factor. */
+  BfMatBlockDiag *W = bfMatBlockDiagNewFromBlocks(&W0Blocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {}
+
+  *PsiPtr = bfMatBlockCooToMat(Psi);
+  *WPtr = bfMatBlockDiagToMat(W);
+
+  assert(bfMatGetNumCols(*PsiPtr) == bfMatGetNumRows(*WPtr));
+}
+
+static void
+findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
+                                  BfTreeNode const *rootRowNode,
+                                  BfMat const *PsiStarBlock,
+                                  BfConstPtrArray **epsRankCutPtr,
+                                  BfMat **PsiBlockPtr,
+                                  BfMat **W0BlockPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockDiag *PsiBlock = NULL;
+  BfMatBlockCoo *W0Block = NULL;
+
+  if (epsRankCutPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (PsiBlockPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (W0BlockPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (bfMatGetNumRows(PsiStarBlock) != bfTreeNodeGetNumPoints(rootRowNode))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* The row nodes in the epsilon-rank cut. */
+  BfConstPtrArray *epsRankCut = bfConstPtrArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  /* Array used to accumulate the diagonal subblocks of `PsiBlock`. */
+  BfPtrArray PsiSubblocks;
+  bfInitPtrArrayWithDefaultCapacity(&PsiSubblocks);
+  HANDLE_ERROR();
+
+  /* Array used to accumulate column subblocks of `W0Block`. */
+  BfPtrArray W0Subblocks;
+  bfInitPtrArrayWithDefaultCapacity(&W0Subblocks);
+  HANDLE_ERROR();
+
+  /* Stack used to find the epsilon-rank cut. */
+  BfConstPtrArray stack;
+  bfConstPtrArrayInitWithDefaultCapacity(&stack);
+  HANDLE_ERROR();
+
+  /* Compute index range of the root row node for use below. */
+  BfSize i0 = bfTreeNodeGetFirstIndex(rootRowNode);
+  BfSize i1 = bfTreeNodeGetLastIndex(rootRowNode);
+
+  /* Push the root row tree node onto the stack to start. */
+  bfConstPtrArrayAppend(&stack, rootRowNode);
+  HANDLE_ERROR();
+
+  while (!bfConstPtrArrayIsEmpty(&stack)) {
+    bool success = true;
+
+    BfTreeNode const *rowNode = bfConstPtrArrayPopLast(&stack);
+
+    /* Get index range of current row node. */
+    BfSize i0_ = bfTreeNodeGetFirstIndex(rowNode);
+    BfSize i1_ = bfTreeNodeGetLastIndex(rowNode);
+    assert(i0 <= i0_ && i0_ < i1_ && i1_ <= i1);
+
+    /* Index range for the rows to copy: */
+    BfSize i0__ = i0_ - i0;
+    BfSize i1__ = i1_ - i0;
+    assert(i0__ < i1__ && i1__ <= bfMatGetNumRows(PsiStarBlock));
+
+    BfMat *PsiStarSubblock = bfMatGetRowRangeCopy(PsiStarBlock, i0__, i1__);
+    HANDLE_ERROR();
+
+    BfSize numRowsPsiStarSubblock = bfMatGetNumRows(PsiStarSubblock);
+    BfSize numColsPsiStarSubblock = bfMatGetNumCols(PsiStarSubblock);
+
+    /* If the new Psi subblock has too few rows, we omit an identity
+     * matrix for the Psi subblock and pass Psi through as the W0
+     * subblock. */
+    if (numRowsPsiStarSubblock < facStreamer->minNumRows) {
+      // TODO: I think what I said above is the right thing to do,
+      // anyway... need to double check before implementing when we
+      // trip this case eventually
+      assert(false);
+    }
+
+    BfMat *PsiSubblock = NULL;
+    BfMat *W0Subblock = NULL;
+
+    /* If the new Psi subblock has too few columns, we omit an
+     * identity matrix for the W0 subblock, and pass the diagonal Psi
+     * subblock through as-is.
+     *
+     * TODO: can we do this before slicing above to save a bit of time? */
+    if (numColsPsiStarSubblock < facStreamer->minNumCols) {
+      BfMatIdentity *identity = bfMatIdentityNew();
+      HANDLE_ERROR();
+
+      PsiSubblock = PsiStarSubblock;
+
+      bfMatIdentityInit(identity, numColsPsiStarSubblock);
+      HANDLE_ERROR();
+
+      W0Subblock = bfMatIdentityToMat(identity);
+
+      goto next;
+    }
+
+    /* Compute truncated SVD. */
+    assert(false);
+
+    /* If we failed to compute a truncated SVD (i.e., we didn't drop
+     * any terms), we push `rowNode`'s children onto the stack, moving
+     * deeper into the row tree. */
+    if (!success) {
+      /* Push nodes onto the stack in the correct order to make sure
+       * we continue traversing rows from top to bottom. */
+      for (BfSize k = rowNode->maxNumChildren - 1; k >= 0; --k)
+        if (rowNode->child[k] != NULL)
+          bfConstPtrArrayAppend(&stack, rowNode->child[k]);
+      continue;
+    }
+
+    /* Fix the sparsity of W. */
+    assert(false);
+
+  next:
+    /* Append the current row node to the epsilon-rank cut. */
+    bfConstPtrArrayAppend(epsRankCut, rowNode);
+    HANDLE_ERROR();
+
+    /* Append the Psi subblock. */
+    bfPtrArrayAppend(&PsiSubblocks, PsiSubblock);
+    HANDLE_ERROR();
+
+    /* Append the W0 subblock. */
+    bfPtrArrayAppend(&W0Subblocks, W0Subblock);
+    HANDLE_ERROR();
+  }
+
+  /* Diagonally concatenate the Psi subblocks. */
+  PsiBlock = bfMatBlockDiagNewFromBlocks(&PsiSubblocks);
+  HANDLE_ERROR();
+
+  /* Vertically concatenate the W0 subblocks. */
+  W0Block = bfMatBlockCooNewColFromBlocks(&W0Subblocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfConstPtrArrayDeinitAndDealloc(&epsRankCut);
+
+    // TODO: free blocks
+    assert(false);
+  }
+
+  bfPtrArrayDeinit(&PsiSubblocks);
+  bfPtrArrayDeinit(&W0Subblocks);
+  bfConstPtrArrayDeinit(&stack);
+
+  *epsRankCutPtr = epsRankCut;
+  *PsiBlockPtr = bfMatBlockDiagToMat(PsiBlock);
+  *W0BlockPtr = bfMatBlockCooToMat(W0Block);
+}
+
+static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
+  BEGIN_ERROR_HANDLING();
+
+  PartialFac *mergedFac = NULL;
+
+  BfMatBlockDiag *Psi = NULL;
+  BfMatBlockDiag *W0 = NULL;
+  BfMatBlockCoo *W1 = NULL; // TODO: change this to BfMatBlockDense
+
+  // get PartialFacs for children of colNode
+  BfPtrArray currentPartialFacs = getCurrentPartialFacs(facStreamer);
+  HANDLE_ERROR();
+
+  assert(!bfPtrArrayIsEmpty(&currentPartialFacs));
+
+  /* TODO: For now, we assume that all current partial factorizations
+   * have the same number of W factors. This can be relaxed by filling
+   * in with identity matrices below when we concatenate together the
+   * trailing W factors. */
+  BfSize maxNumW;
+  { PartialFac *fac = bfPtrArrayGet(&currentPartialFacs, 0);
+    maxNumW = fac->numW;
+    for (BfSize k = 1; k < bfPtrArraySize(&currentPartialFacs); ++k) {
+      PartialFac *otherFac = bfPtrArrayGet(&currentPartialFacs, k);
+      if (fac->numW != otherFac->numW)
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+    } }
+
+  // compute merge cut...
+  BfConstPtrArray mergeCut = getMergeCut(&currentPartialFacs);
+  HANDLE_ERROR();
+
+  /* Array used to accumulate row nodes from each of the epsilon rank
+   * cuts found when merging the current partial factorizations
+   * starting from the merge cut. The resulting span of nodes should
+   * be beneath the merge cut and compatible with it. */
+  BfConstPtrArray rowNodes;
+  bfConstPtrArrayInitWithDefaultCapacity(&rowNodes);
+  HANDLE_ERROR();
+
+  /* Array used to accumulate diagonal Psi blocks obtained by merging
+   * and splitting all of the current partial factorizations using the
+   * merge cut. */
+  BfPtrArray PsiBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&PsiBlocks);
+  HANDLE_ERROR();
+
+  BfPtrArray W0Blocks;
+  bfInitPtrArrayWithDefaultCapacity(&W0Blocks);
+  HANDLE_ERROR();
+
+  BfPtrArray W1Blocks;
+  bfInitPtrArrayWithDefaultCapacity(&W1Blocks);
+  HANDLE_ERROR();
+
+  /* Iterate over each of the row tree nodes in the merge cut, and do
+   * the following:
+   * - extract merged Psi blocks
+   * - correctly sift the blocks from leading W factors
+   * - find the epsilon rank cuts of the Psi blocks
+   * - emit the new Psi and W blocks
+   *
+   * Note that we take care to ensure that we take full advantage of
+   * the sparsity of the new W blocks here to compress the
+   * factorization as much as possible. */
+  for (BfSize k = 0; k < bfConstPtrArraySize(&mergeCut); ++k) {
+    BfTreeNode const *rowNode = bfConstPtrArrayGet(&mergeCut, k);
+
+    BfConstPtrArray *epsRankCut = NULL;
+    BfMat *PsiStarBlock = NULL;
+    BfMat *PsiBlock = NULL;
+    BfMat *W0Block = NULL;
+    BfMat *W1Block = NULL;
+
+    /* Get current row block of Psi. We simultaneously get the column
+     * index ranges corresponding to each column subblock. */
+    getPsiAndWBlocksByRowNode(&currentPartialFacs, rowNode, &PsiStarBlock, &W1Block);
+
+    bfPtrArrayAppend(&W1Blocks, W1Block);
+    HANDLE_ERROR();
+
+    /* Find the epsilon-rank cut and compute the correspond blocks of
+     * the new Psi and W0 factors while simultaneously sifting the W0
+     * blocks from the current partial factorizations together to get
+     * the next block of the W1 factor. */
+    findEpsilonRankCutAndGetNewBlocks(
+      facStreamer,
+      rowNode,
+      PsiStarBlock,
+      &epsRankCut,
+      &PsiBlock,
+      &W0Block);
+    HANDLE_ERROR();
+
+    bfConstPtrArrayExtend(&rowNodes, epsRankCut);
+    HANDLE_ERROR();
+
+    bfPtrArrayAppend(&PsiBlocks, PsiBlock);
+    HANDLE_ERROR();
+
+    bfPtrArrayAppend(&W0Blocks, W0Block);
+    HANDLE_ERROR();
+
+    bfConstPtrArrayDeinitAndDealloc(&epsRankCut);
+  }
+
+  /* Diagonally concatenate the new Psi blocks to get the leading
+   * factor of the merged butterfly factorization. */
+  Psi = bfMatBlockDiagNewFromBlocks(&PsiBlocks);
+  HANDLE_ERROR();
+
+  /* Diagonally concatenate together the new W0 blocks. */
+  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks);
+  HANDLE_ERROR();
+
+  /* Vertically concatenate the collected W1 blocks. */
+  W1 = bfMatBlockCooNewColFromBlocks(&W1Blocks);
+  HANDLE_ERROR();
+
+  /* Create and initialize the merged factorization. */
+  // TODO: should really break this out into a separate function once
+  // we refactor PartialFac into an honest ButterflyFactorization
+  {
+    mergedFac = malloc(sizeof(PartialFac));
+    if (mergedFac == NULL)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    mergedFac->colNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+
+    mergedFac->rowNodes = rowNodes;
+
+    mergedFac->Psi = bfMatBlockDiagToMat(Psi);
+
+    mergedFac->numW = maxNumW + 1;
+    assert(mergedFac->numW >= 2);
+
+    mergedFac->W = malloc(mergedFac->numW*sizeof(BfMat *));
+    if (mergedFac->W == NULL)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    mergedFac->W[0] = bfMatBlockDiagToMat(W0);
+    mergedFac->W[1] = bfMatBlockCooToMat(W1);
+
+    /* Block together trailing W factors from the current partial
+     * butterfly factorizations to get the trailing W factors for the
+     * newly merged butterfly factorization */
+    for (BfSize k = 1; k < maxNumW; ++k) {
+      BfPtrArray WkBlocks;
+      bfInitPtrArrayWithDefaultCapacity(&WkBlocks);
+      HANDLE_ERROR();
+
+      for (BfSize l = 0; l < bfPtrArraySize(&currentPartialFacs); ++l) {
+        PartialFac const *partialFac = bfPtrArrayGet(&currentPartialFacs, l);
+
+        bfPtrArrayAppend(&WkBlocks, partialFac->W[k]);
+        HANDLE_ERROR();
+      }
+
+      BfMatBlockDiag *Wk = bfMatBlockDiagNewFromBlocks(&WkBlocks);
+      HANDLE_ERROR();
+
+      mergedFac->W[k] = bfMatBlockDiagToMat(Wk);
+
+      bfPtrArrayDeinit(&WkBlocks);
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  bfPtrArrayDeinit(&PsiBlocks);
+  bfPtrArrayDeinit(&W0Blocks);
+  bfPtrArrayDeinit(&W1Blocks);
+
+  return mergedFac;
+}
+
+static void continueFactorizing(BfFacStreamer *facStreamer) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Continue the post-order traversal until the next leaf node */
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
     bfTreeIterNext(facStreamer->colTreeIter);
+    HANDLE_ERROR();
 
-    currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+    BfTreeNode const *currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
     if (bfTreeNodeIsLeaf(currentColNode))
       break;
 
-    BfSize currentDepth = currentColNode->depth;
-    BfSize numChildren = currentColNode->maxNumChildren;
+    PartialFac *mergedFac = mergeAndSplit(facStreamer);
+    HANDLE_ERROR();
 
-    (void)currentDepth;
-    (void)numChildren;
-
-    assert(false);
-
-    // get Psi blocks for children
-
-    // merge
-
-    // split
-
-    // emit
-
+    bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
+    HANDLE_ERROR();
   }
 
-  facStreamer->currentColNode = currentColNode;
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 }
 
 /* Notes:
  * - The rows and columns of `mat` should already be permuted into the
  *   orders defined by `facStreamer->rowTree` and
- *   `facStreamer->colTree`. */
+ *   `facStreamer->colTree`.
+ *
+ * TODO: this function is a mess! should be cleaned up! */
 void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal const *Lam) {
   BEGIN_ERROR_HANDLING();
 
   /* Get the current column tree leaf node */
-  BfTreeNode const *colNode = facStreamer->currentColNode;
+  BfTreeNode const *colNode = bfFacStreamerGetCurrentColumnNode(facStreamer);
   assert(bfTreeNodeIsLeaf(colNode));
 
   /* Make sure `mat` has the right number of rows */
@@ -235,14 +1121,16 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal c
   if (bfMatGetNumCols(Phi) != bfTreeNodeGetNumPoints(colNode))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  /* Array used to accumulate blocks for block diagonal Psi factor */
-  BfPtrArray Psi_blocks;
-  bfInitPtrArray(&Psi_blocks, BF_ARRAY_DEFAULT_CAPACITY);
+  BfPtrArray PsiBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&PsiBlocks);
   HANDLE_ERROR();
 
-  /* Array for blocks making up the W factor */
-  BfPtrArray W_blocks;
-  bfInitPtrArray(&W_blocks, BF_ARRAY_DEFAULT_CAPACITY);
+  BfPtrArray WBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&WBlocks);
+  HANDLE_ERROR();
+
+  BfConstPtrArray rowNodes;
+  bfConstPtrArrayInitWithDefaultCapacity(&rowNodes);
   HANDLE_ERROR();
 
   /* Create the stack used to adaptively find the cut through the row
@@ -266,8 +1154,15 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal c
     /* Accumulate the Psi and W blocks and continue if we successfully
      * compressed the current block */
     if (metTol) {
-      bfPtrArrayAppend(&Psi_blocks, Psi);
-      bfPtrArrayAppend(&W_blocks, W);
+      bfPtrArrayAppend(&PsiBlocks, Psi);
+      HANDLE_ERROR();
+
+      bfPtrArrayAppend(&WBlocks, W);
+      HANDLE_ERROR();
+
+      bfConstPtrArrayAppend(&rowNodes, rowNode);
+      HANDLE_ERROR();
+
       continue;
     }
 
@@ -277,12 +1172,26 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal c
       bfPtrArrayAppend(&stack, rowNode->child[i - 1]);
   }
 
+  PartialFac *partialFac = makeLeafNodePartialFac(colNode, &PsiBlocks, &WBlocks);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < bfConstPtrArraySize(&rowNodes); ++i) {
+    bfConstPtrArrayAppend(&partialFac->rowNodes, bfConstPtrArrayGet(&rowNodes, i));
+    HANDLE_ERROR();
+  }
+
+  addPartialFac(facStreamer, partialFac);
+  HANDLE_ERROR();
+
   continueFactorizing(facStreamer);
 
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 
-  bfPtrArrayDeinit(&W_blocks);
-  bfPtrArrayDeinit(&Psi_blocks);
+  bfPtrArrayDeinit(&PsiBlocks);
+  bfPtrArrayDeinit(&WBlocks);
+  bfConstPtrArrayDeinit(&rowNodes);
   bfPtrArrayDeinit(&stack);
 }
 
@@ -297,5 +1206,5 @@ BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 }
 
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) {
-  return facStreamer->currentColNode;
+  return bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
 }
