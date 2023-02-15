@@ -206,6 +206,10 @@ int main(int argc, char const *argv[]) {
   while (!bfFacStreamerIsDone(facStreamer)) {
     feedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     HANDLE_ERROR();
+
+    // TODO: for testing, should be able to stop here, extract what I
+    // have so far, and check that I have a correct factorization of
+    // the columns that I've streamed
   }
 
   BfMat *fac = bfFacStreamerGetFac(facStreamer);
