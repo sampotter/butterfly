@@ -238,7 +238,7 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = malloc(ncv*sizeof(a_int));
+  a_int *select = calloc(ncv, sizeof(a_int));
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
@@ -386,7 +386,7 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = malloc(ncv*sizeof(a_int));
+  a_int *select = calloc(ncv, sizeof(a_int));
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
