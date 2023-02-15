@@ -33,18 +33,33 @@ struct BfMatBlockCoo {
   BfSize *colInd;
 };
 
-/* Upcasting: */
+/** Upcasting: MatBlockCoo -> Mat */
+
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo);
 BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo);
 
-/* Downcasting: */
+/** Upcasting: MatBlockCoo -> MatBlock */
+
+BfMatBlock *bfMatBlockCooToMatBlock(BfMatBlockCoo *matBlockCoo);
+BfMatBlock const *bfMatBlockCooConstToMatBlockConst(BfMatBlockCoo const *matBlockCoo);
+
+/** Downcasting: Mat -> MatBlockCoo */
+
 BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat);
 BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat);
+
+/** Downcasting: MatBlock -> MatBlockCoo */
+
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock);
 
+/** Implementation: MatBlockCoo */
+
 BfMatBlockCoo *bfMatBlockCooNew();
-void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
-                       BfSize numBlockCols, BfSize numBlocks);
+BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets, BfSizeArray const *colOffsets, BfSizeArray const *rowInds, BfSizeArray const *colInds, BfPtrArray const *blocks);
+BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks);
+BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks);
+BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks);
+void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows, BfSize numBlockCols, BfSize numBlocks);
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat);
 void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat);
