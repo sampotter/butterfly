@@ -10,6 +10,7 @@
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
+#include <bf/mat_dense_real.h>
 #include <bf/mat_diag_real.h>
 #include <bf/mat_identity.h>
 #include <bf/ptr_array.h>
@@ -738,6 +739,44 @@ static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
   assert(bfMatGetNumCols(*PsiPtr) == bfMatGetNumRows(*WPtr));
 }
 
+static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
+                                    BfMat const *PsiStarSubblock,
+                                    BfMat **PsiSubblockPtr,
+                                    BfMat **W0SubblockPtr) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *U = NULL;
+  BfMatDiagReal *S = NULL;
+  BfMat *VTrans = NULL;
+
+  BfTruncSpec truncSpec = {
+    .usingTol = true,
+    .tol = facStreamer->tol
+  };
+
+  BfBackend backend = BF_BACKEND_LAPACK;
+
+  bool success = bfGetTruncatedSvd(PsiStarSubblock, &U, &S, &VTrans, truncSpec, backend);
+  HANDLE_ERROR();
+
+  BfMat *V = bfMatTrans(VTrans);
+
+  BfMat *W0Subblock = bfMatMul(V, bfMatDiagRealToMat(S));
+  HANDLE_ERROR();
+
+  /* Fix the sparsity of W0. */
+  assert(false);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  *PsiSubblockPtr = U;
+  *W0SubblockPtr = W0Subblock;
+
+  return success;
+}
+
 static void
 findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
                                   BfTreeNode const *rootRowNode,
@@ -842,8 +881,9 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
       goto next;
     }
 
-    /* Compute truncated SVD. */
-    assert(false);
+    success = getLowRankApproximation(
+      facStreamer, PsiStarSubblock, &PsiSubblock, &W0Subblock);
+    HANDLE_ERROR();
 
     /* If we failed to compute a truncated SVD (i.e., we didn't drop
      * any terms), we push `rowNode`'s children onto the stack, moving
@@ -856,9 +896,6 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
           bfConstPtrArrayAppend(&stack, rowNode->child[k]);
       continue;
     }
-
-    /* Fix the sparsity of W. */
-    assert(false);
 
   next:
     /* Append the current row node to the epsilon-rank cut. */
