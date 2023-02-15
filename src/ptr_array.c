@@ -193,6 +193,17 @@ void bfPtrArrayReverse(BfPtrArray *arr) {
     SWAP(arr->data[i], arr->data[n - i - 1]);
 }
 
+void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst) {
+  BEGIN_ERROR_HANDLING();
+
+  if (dst == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(dst, ptrArray->data, ptrArray->num_elts*sizeof(BfPtr));
+
+  END_ERROR_HANDLING() {}
+}
+
 /** Implementation: ConstPtrArray */
 
 void bfConstPtrArrayDeinit(BfConstPtrArray *arr) {

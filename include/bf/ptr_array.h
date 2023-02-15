@@ -37,6 +37,7 @@ void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);
 void bfPtrArrayReverse(BfPtrArray *arr);
+void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst);
 
 struct BfConstPtrArray {
   enum BfPtrArrayFlags flags;
