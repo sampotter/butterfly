@@ -1,5 +1,6 @@
 #include <bf/mat_block.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,6 +9,30 @@
 #include <bf/util.h>
 
 /** Interface: MatBlock */
+
+BfSize bfMatBlockNumBlocks(BfMatBlock const *mat) {
+  return mat->vtbl->NumBlocks(mat);
+}
+
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat) {
+  assert(mat->vtbl->GetNumRowBlocks == NULL); // TODO: safeguard
+  return mat->super.numRows;
+}
+
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat) {
+  assert(mat->vtbl->GetNumColBlocks == NULL); // TODO: safeguard
+  return mat->super.numCols;
+}
+
+BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i) {
+  assert(mat->vtbl->GetNumBlockRows == NULL); // TODO: safeguard
+  return mat->rowOffset[i + 1] - mat->rowOffset[i];
+}
+
+BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j) {
+  assert(mat->vtbl->GetNumBlockCols == NULL); // TODO: safeguard
+  return mat->colOffset[j + 1] - mat->colOffset[j];
+}
 
 BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *matBlock, BfSize i, BfSize j) {
   return matBlock->vtbl->GetBlockCopy(matBlock, i, j);
