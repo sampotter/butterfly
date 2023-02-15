@@ -30,6 +30,8 @@ typedef struct BfVecComplex BfVecComplex;
 typedef struct BfVecReal BfVecReal;
 typedef struct BfVecZero BfVecZero;
 
+typedef struct BfIndexedMat BfIndexedMat;
+
 typedef struct BfLu BfLu;
 
 typedef struct BfTree BfTree;
