@@ -603,7 +603,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   return numFactors;
 }
 
-BfMatProduct * bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
+BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
   BEGIN_ERROR_HANDLING();
 
   /* allocate space for the butterfly factors
