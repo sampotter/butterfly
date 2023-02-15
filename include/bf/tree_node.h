@@ -65,3 +65,4 @@ BfSize const *bfTreeNodeGetIndexPtrConst(BfTreeNode const *treeNode, BfTree cons
 BfTree *bfTreeNodeGetTree(BfTreeNode *treeNode);
 BfTree const *bfTreeNodeGetTreeConst(BfTreeNode const *treeNode);
 bool bfTreeNodeIsEmpty(BfTreeNode const *treeNode);
+bool bfTreeNodeIsDescendant(BfTreeNode const *treeNode, BfTreeNode const *otherTreeNode);

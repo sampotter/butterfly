@@ -148,3 +148,31 @@ BfTree const *bfTreeNodeGetTreeConst(BfTreeNode const *node) {
 bool bfTreeNodeIsEmpty(BfTreeNode const *treeNode) {
   return bfTreeNodeGetNumPoints(treeNode) == 0;
 }
+
+bool bfTreeNodeIsDescendant(BfTreeNode const *treeNode, BfTreeNode const *otherTreeNode) {
+  BEGIN_ERROR_HANDLING();
+
+  bool isDescendant = false;
+
+  if (treeNode == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (otherTreeNode == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (bfTreeNodeGetType(treeNode) != bfTreeNodeGetType(otherTreeNode))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  isDescendant = treeNode->parent == otherTreeNode;
+repeat:
+  if (!isDescendant && !treeNode->isRoot) {
+    treeNode = treeNode->parent;
+    goto repeat;
+  }
+
+  END_ERROR_HANDLING() {
+    isDescendant = false;
+  }
+
+  return isDescendant;
+}
