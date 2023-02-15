@@ -14,20 +14,21 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
-  .Copy = (__typeof__(&bfMatDenseRealCopy))bfMatDenseRealCopy,
-  .GetView = (__typeof__(&bfMatDenseRealGetView))bfMatDenseRealGetView,
-  .GetColView = (__typeof__(&bfMatDenseRealGetColView))bfMatDenseRealGetColView,
-  .Delete = (__typeof__(&bfMatDenseRealDelete))bfMatDenseRealDelete,
-  .GetType = (__typeof__(&bfMatDenseRealGetType))bfMatDenseRealGetType,
-  .Save = (__typeof__(&bfMatDenseRealSave))bfMatDenseRealSave,
-  .Print = (__typeof__(&bfMatDenseRealPrint))bfMatDenseRealPrint,
-  .GetNumRows = (__typeof__(&bfMatDenseRealGetNumRows))bfMatDenseRealGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatDenseRealGetNumCols))bfMatDenseRealGetNumCols,
-  .SetRow = (__typeof__(&bfMatDenseRealSetRow))bfMatDenseRealSetRow,
-  .SetCol = (__typeof__(&bfMatDenseRealSetCol))bfMatDenseRealSetCol,
-  .GetRowRange = (__typeof__(&bfMatDenseRealGetRowRange))bfMatDenseRealGetRowRange,
-  .GetColRangeCopy = (__typeof__(&bfMatDenseRealGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
-  .PermuteRows = (__typeof__(&bfMatDenseRealPermuteRows))bfMatDenseRealPermuteRows,
+  .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
+  .GetView = (__typeof__(&bfMatGetView))bfMatDenseRealGetView,
+  .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
+  .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
+  .GetType = (__typeof__(&bfMatGetType))bfMatDenseRealGetType,
+  .Save = (__typeof__(&bfMatSave))bfMatDenseRealSave,
+  .Print = (__typeof__(&bfMatPrint))bfMatDenseRealPrint,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDenseRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatDenseRealGetNumCols,
+  .SetRow = (__typeof__(&bfMatSetRow))bfMatDenseRealSetRow,
+  .SetCol = (__typeof__(&bfMatSetCol))bfMatDenseRealSetCol,
+  .GetRowRange = (__typeof__(&bfMatGetRowRange))bfMatDenseRealGetRowRange,
+  .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatDenseRealGetRowRangeCopy,
+  .GetColRangeCopy = (__typeof__(&bfMatGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
+  .PermuteRows = (__typeof__(&bfMatPermuteRows))bfMatDenseRealPermuteRows,
 };
 
 BfMat *bfMatDenseRealCopy(BfMat const *mat) {
