@@ -2,6 +2,9 @@
 
 #include <stdbool.h>
 
+typedef struct BfPtrArray BfPtrArray;
+typedef struct BfConstPtrArray BfConstPtrArray;
+
 typedef struct BfMat BfMat;
 typedef struct BfMatBlock BfMatBlock;
 typedef struct BfMatBlockCoo BfMatBlockCoo;

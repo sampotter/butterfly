@@ -2,6 +2,7 @@
 
 #include "def.h"
 #include "error.h"
+#include "types.h"
 
 static BfSize const BF_ARRAY_DEFAULT_CAPACITY = 1024;
 
@@ -10,11 +11,11 @@ enum BfPtrArrayFlags {
   BF_PTR_ARRAY_FLAG_VIEW = 1 << 0
 };
 
-typedef struct BfPtrArray {
+struct BfPtrArray {
   enum BfPtrArrayFlags flags;
   BfPtr *data;
   BfSize capacity, num_elts;
-} BfPtrArray;
+};
 
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 typedef int (*BfPtrCmp)(BfPtr, BfPtr);
@@ -37,11 +38,11 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);
 void bfPtrArrayReverse(BfPtrArray *arr);
 
-typedef struct BfConstPtrArray {
+struct BfConstPtrArray {
   enum BfPtrArrayFlags flags;
   BfConstPtr *data;
   BfSize capacity, num_elts;
-} BfConstPtrArray;
+};
 
 void bfConstPtrArrayDeinit(BfConstPtrArray *arr);
 bool bfConstPtrArrayIsEmpty(BfConstPtrArray const *arr);
