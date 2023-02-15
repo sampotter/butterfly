@@ -69,6 +69,7 @@ butterfly_lib_src = [
   'src/quadtree.c',
   'src/quadtree_node.c',
   'src/rand.c',
+  'src/size_array.c',
   'src/splitmix64.c',
   'src/tree.c',
   'src/tree_iter.c',
