@@ -34,6 +34,7 @@ BfMatBlockDiag *bfMatToMatBlockDiag(BfMat *mat);
 BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
 
 BfMatBlockDiag *bfMatBlockDiagNew();
+BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks);
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
 void bfMatBlockDiagDealloc(BfMatBlockDiag **mat);

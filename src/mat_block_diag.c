@@ -6,6 +6,8 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_zero.h>
+#include <bf/ptr_array.h>
+#include <bf/util.h>
 #include <bf/vec_zero.h>
 
 /** Helper macros: */
@@ -353,6 +355,39 @@ BfMatBlockDiag *bfMatBlockDiagNew() {
   END_ERROR_HANDLING() {}
 
   return mat;
+}
+
+BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockDiag *matBlockDiag = bfMatBlockDiagNew();
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfPtrArraySize(blocks);
+
+  bfMatBlockInit(&matBlockDiag->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
+                 numBlocks, numBlocks, numBlocks);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    BLOCK(matBlockDiag, i) = bfPtrArrayGet(blocks, i);
+  }
+
+  ROW_OFFSET(matBlockDiag, 0) = 0;
+  COL_OFFSET(matBlockDiag, 0) = 0;
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    BfMat const *block = bfPtrArrayGet(blocks, i);
+    ROW_OFFSET(matBlockDiag, i + 1) = bfMatGetNumRows(block);
+    COL_OFFSET(matBlockDiag, i + 1) = bfMatGetNumCols(block);
+  }
+  bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockDiag, 0));
+  bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDiag, 0));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matBlockDiag;
 }
 
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numRows, BfSize numCols) {
