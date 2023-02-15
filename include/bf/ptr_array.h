@@ -45,7 +45,17 @@ struct BfConstPtrArray {
   BfSize capacity, num_elts;
 };
 
+BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity();
+void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity);
+void bfConstPtrArrayInitWithDefaultCapacity(BfConstPtrArray *arr);
 void bfConstPtrArrayDeinit(BfConstPtrArray *arr);
+void bfConstPtrArrayDealloc(BfConstPtrArray **arr);
+void bfConstPtrArrayDeinitAndDealloc(BfConstPtrArray **arr);
 bool bfConstPtrArrayIsEmpty(BfConstPtrArray const *arr);
+BfSize bfConstPtrArraySize(BfConstPtrArray const *arr);
 void bfConstPtrArrayAppend(BfConstPtrArray *arr, BfConstPtr ptr);
+void bfConstPtrArrayExtend(BfConstPtrArray *arr, BfConstPtrArray const *otherArr);
+BfConstPtr bfConstPtrArrayGet(BfConstPtrArray const *arr, BfSize pos);
 BfConstPtr bfConstPtrArrayPopLast(BfConstPtrArray *arr);
+BfConstPtr bfConstPtrArrayGetFirst(BfConstPtrArray const *arr);
+BfConstPtr bfConstPtrArrayGetLast(BfConstPtrArray const *arr);
