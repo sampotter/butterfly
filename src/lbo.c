@@ -41,7 +41,7 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
 
     /* Find the position of i in vv */
     BfSize kmid = trimesh->vvOffset[i];
-    while (trimesh->vv[kmid] < i && kmid < trimesh->vvOffset[i + 1])
+    while (kmid < trimesh->vvOffset[i + 1] && trimesh->vv[kmid] < i)
       ++kmid;
 
     /* Copy over vv, inserting i into the correct sorted order */
