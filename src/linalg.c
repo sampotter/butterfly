@@ -651,7 +651,7 @@ get_shifted_eigs:
   }
 }
 
-bool bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V,
+bool bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **VTrans,
                        BfTruncSpec truncSpec, BfBackend backend) {
   BEGIN_ERROR_HANDLING();
 
@@ -663,7 +663,7 @@ bool bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V
   (void)mat;
   (void)U;
   (void)S;
-  (void)V;
+  (void)VTrans;
   (void)truncSpec;
   (void)backend;
 
