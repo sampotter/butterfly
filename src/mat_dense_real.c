@@ -318,7 +318,51 @@ BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   return matView;
 }
 
-BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1) {
+BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  HANDLE_ERROR();
+
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
+  HANDLE_ERROR();
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  if (i0 >= i1)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  if (i1 > m)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(matDenseRealCopy, i1 - i0, n);
+  HANDLE_ERROR();
+
+  BfMatDense *matDenseCopy = bfMatDenseRealToMatDense(matDenseRealCopy);
+  HANDLE_ERROR();
+
+  for (BfSize i = i0; i < i1; ++i) {
+    BfReal const *readPtr = matDenseReal->data + (i - i0)*matDense->rowStride;
+    BfReal *writePtr = matDenseRealCopy->data + i*matDenseCopy->rowStride;
+    for (BfSize j = 0; j < n; ++j) {
+      *writePtr = *readPtr;
+      readPtr += matDense->colStride;
+      writePtr += matDenseCopy->colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
+  }
+
+  return bfMatDenseRealToMat(matDenseRealCopy);
+}
+
+BfMat *bfMatDenseRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
   BEGIN_ERROR_HANDLING();
 
   BfMatDense const *matDense = bfMatConstToMatDenseConst(mat);
