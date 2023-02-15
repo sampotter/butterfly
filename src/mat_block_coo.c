@@ -361,7 +361,7 @@ BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
   return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
 }
 
-/** Upcasting: */
+/** Upcasting: MatBlockCoo -> Mat */
 
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo) {
   return &matBlockCoo->super.super;
@@ -371,7 +371,9 @@ BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo) {
   return &matBlockCoo->super.super;
 }
 
-/** Downcasting: */
+/** Upcasting: MatBlockCoo -> MatBlock */
+
+/** Downcasting: Mat -> MatBlockCoo */
 
 BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_COO)) {
@@ -390,6 +392,8 @@ BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat) {
     return (BfMatBlockCoo const *)mat;
   }
 }
+
+/** Downcasting: MatBlockCoo -> MatBlock */
 
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock) {
   return bfMatConstToMatBlockCooConst(&matBlock->super);
