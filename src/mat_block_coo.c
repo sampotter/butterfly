@@ -418,7 +418,21 @@ void bfMatBlockCooInvalidate(BfMatBlockCoo *matBlockCoo) {
 }
 
 BfMatBlockCoo *bfMatBlockCooNew() {
-  return malloc(sizeof(BfMatBlockCoo));
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockCoo *matBlockCoo = malloc(sizeof(BfMatBlockCoo));
+  if (matBlockCoo == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  bfMatBlockCooInvalidate(matBlockCoo);
+
+  END_ERROR_HANDLING() {
+    matBlockCoo = NULL;
+  }
+
+  return matBlockCoo;
+}
+
 }
 
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
