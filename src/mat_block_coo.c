@@ -373,6 +373,14 @@ BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo) {
 
 /** Upcasting: MatBlockCoo -> MatBlock */
 
+BfMatBlock *bfMatBlockCooToMatBlock(BfMatBlockCoo *matBlockCoo) {
+  return &matBlockCoo->super;
+}
+
+BfMatBlock const *bfMatBlockCooConstToMatBlockConst(BfMatBlockCoo const *matBlockCoo) {
+  return &matBlockCoo->super;
+}
+
 /** Downcasting: Mat -> MatBlockCoo */
 
 BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat) {
