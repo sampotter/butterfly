@@ -416,10 +416,10 @@ BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCo
     BfSize j1 = j0;
     while (j1 < n && nonzero[j1]) ++j1;
 
-    assert(j0 < j1);
-
-    bfSizeArrayAppend(nonzeroColumnRanges, j0);
-    bfSizeArrayAppend(nonzeroColumnRanges, j1);
+    if (j0 < j1) {
+      bfSizeArrayAppend(nonzeroColumnRanges, j0);
+      bfSizeArrayAppend(nonzeroColumnRanges, j1);
+    }
 
     j0Next = j1;
   }
