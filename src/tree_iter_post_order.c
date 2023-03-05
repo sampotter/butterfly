@@ -107,7 +107,7 @@ static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING();
+  END_ERROR_HANDLING() {}
 }
 
 void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
