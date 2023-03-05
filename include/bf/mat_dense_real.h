@@ -19,6 +19,7 @@ BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
 BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize i0, BfSize i1);
 BfMat *bfMatDenseRealGetColRangeCopy (BfMat const *mat, BfSize j0, BfSize j1);
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
+void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 struct BfMatDenseReal {
   BfMatDense super;
