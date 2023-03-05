@@ -90,6 +90,8 @@ typedef struct {
 } WriteBoxesWkspc;
 
 static void writeBoxes(BfTree const *tree, BfTreeNode const *treeNode, WriteBoxesWkspc *wkspc) {
+  (void)tree;
+
   FILE *fp = wkspc->fp;
 
   BfSize depth = bfTreeNodeGetDepth(treeNode);
