@@ -20,6 +20,9 @@ void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, Bf
 /** Interface: MatBlock */
 
 BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo);
+BfSize bfMatBlockCooGetRowOffset(BfMatBlockCoo const *matBlockCoo, BfSize i);
+BfSize bfMatBlockCooGetColOffset(BfMatBlockCoo const *matBlockCoo, BfSize j);
+BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize i, BfSize j);
 
 struct BfMatBlockCoo {
   BfMatBlock super;

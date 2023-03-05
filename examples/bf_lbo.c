@@ -193,7 +193,8 @@ int main(int argc, char const *argv[]) {
     .rowTreeInitDepth = 1,
     .colTreeInitDepth = colTreeMaxDepth - freqTreeOffset,
     .tol = tol,
-    .minNumCols = 20
+    .minNumRows = 20,
+    .minNumCols = 20,
   };
 
   /* Set up the depth-first butterfly factorization streamer. We'll
