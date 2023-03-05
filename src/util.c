@@ -49,7 +49,7 @@ static void printBlocksRec(BfMat const *mat,
   if (type == BF_TYPE_MAT_BLOCK_COO) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
     BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
-    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
+    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
     for (BfSize k = 0; k < numBlocks; ++k) {
       BfMat const *block = matBlock->block[k];
       BfSize di = matBlock->rowOffset[matBlockCoo->rowInd[k]];

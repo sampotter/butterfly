@@ -19,7 +19,7 @@ void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, Bf
 
 /** Interface: MatBlock */
 
-BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat);
+BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo);
 
 struct BfMatBlockCoo {
   BfMatBlock super;

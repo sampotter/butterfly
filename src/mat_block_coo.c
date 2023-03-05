@@ -310,7 +310,7 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
   BfSize numRows = bfMatGetNumRows(op1);
   BfSize numCols = bfMatGetNumCols(op2);
-  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock1);
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo1);
 
   BfMat *result = NULL;
   BfMat *block = NULL;
