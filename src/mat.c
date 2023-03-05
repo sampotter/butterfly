@@ -207,6 +207,10 @@ BfMat *bfMatCholesky(BfMat const *mat) {
   return mat->vtbl->Cholesky(mat);
 }
 
+BfSizeArray *bfMatGetNonzeroColumnRanges(BfMat const *mat) {
+  return mat->vtbl->GetNonzeroColumnRanges(mat);
+}
+
 void bfMatPrintBlocksDeep(BfMat const *mat, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
   mat->vtbl->PrintBlocksDeep(mat, fp, i0, j0, depth);
 }

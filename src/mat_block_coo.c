@@ -357,6 +357,58 @@ void bfMatBlockCooNegate(BfMat *mat) {
   END_ERROR_HANDLING() {}
 }
 
+BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *nonzeroColumnRanges = bfSizeArrayNew();
+  HANDLE_ERROR();
+
+  bfSizeArrayInitWithDefaultCapacity(nonzeroColumnRanges);
+  HANDLE_ERROR();
+
+  BfSize n = bfMatGetNumCols(bfMatBlockCooConstToMatConst(matBlockCoo));
+
+  bool *nonzero = calloc(n, sizeof(bool));
+  if (nonzero == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+    BfSize j1 = j0 + bfMatGetNumCols(BLOCK(matBlockCoo, k));
+    for (BfSize j = j0; j < j1; ++j)
+      nonzero[j] = true;
+  }
+
+  BfSize j0Next = 0;
+
+  while (j0Next < n) {
+    BfSize j0 = j0Next;
+    while (j0 < n && !nonzero[j0])
+      ++j0;
+
+    BfSize j1 = j0;
+    while (j1 < n && nonzero[j1])
+      ++j1;
+
+    assert(j0 < j1);
+
+    bfSizeArrayAppend(nonzeroColumnRanges, j0);
+    bfSizeArrayAppend(nonzeroColumnRanges, j1);
+
+    j0Next = j1;
+  }
+
+  assert(j0Next == n);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return nonzeroColumnRanges;
+}
+
 void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
   BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
 
