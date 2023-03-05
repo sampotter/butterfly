@@ -156,7 +156,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
 
   assert(i0 <= i1);
 
-  BfPoint3 *point = points->data;
+  BfPoint3 const *point = (BfPoint3 const *)points->data;
   BfReal const *split = node->split;
   BfTreeNode **child = &node->super.child[0];
   BfSize *offset = &node->super.offset[0];
