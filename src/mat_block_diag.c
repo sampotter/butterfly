@@ -233,7 +233,6 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
     indexedRowBlock->j0 = j0_;
     indexedRowBlock->mat = blockRowRange;
 
-    assert(indexedRowBlock->i0 <= m_);
     assert(indexedRowBlock->mat != NULL);
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
@@ -469,6 +468,12 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks) {
   HANDLE_ERROR();
 
   BfSize numBlocks = bfPtrArraySize(blocks);
+
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    BfMat const *block = bfPtrArrayGet(blocks, i);
+    if (block == NULL)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  }
 
   bfMatBlockInit(&matBlockDiag->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
                  numBlocks, numBlocks, numBlocks);
