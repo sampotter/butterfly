@@ -110,7 +110,7 @@ struct BfFacStreamer {
 static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
   BEGIN_ERROR_HANDLING();
 
-  printf("reminder: do a sorted insert in addPartialFac\n");
+  // printf("reminder: do a sorted insert in addPartialFac\n");
 
   bfPtrArrayAppend(&facStreamer->partialFacs, partialFac);
   HANDLE_ERROR();
@@ -784,7 +784,7 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
     bfSizeArrayGet(nonzeroColumnRanges, 1) < bfMatGetNumCols(PsiStarSubblock);
 
   if (shouldFixSparsity) {
-    puts("WARN: make sure to check that remaining columns are actually zero!");
+    // puts("WARN: make sure to check that remaining columns are actually zero!");
 
     BfPtrArray blocks;
     bfInitPtrArrayWithDefaultCapacity(&blocks);
@@ -1213,7 +1213,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
       printf(", W%lu=%lu", k, bfMatBlockGetMaxDepth(bfMatToMatBlock(mergedFac->W[k])));
     printf("\n");
 
-    puts("writing to Psi.txt");
+    // printf("writing to Psi.txt");
 
     FILE *fp = fopen("Psi.txt", "w");
     bfMatPrintBlocksDeep(mergedFac->Psi, fp, 0, 0, 0);
@@ -1223,12 +1223,14 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
       char path[256];
       sprintf(path, "W%lu.txt", k);
 
-      printf("writing to %s\n", path);
+      // printf(", %s", path);
 
       fp = fopen(path, "w");
       bfMatPrintBlocksDeep(mergedFac->W[k], fp, 0, 0, 0);
       fclose(fp);
     }
+
+    // printf("\n");
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
@@ -1313,6 +1315,16 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
 
   PartialFac *partialFac = makeLeafNodePartialFac(colNode, &PsiBlocks, &WBlocks);
   HANDLE_ERROR();
+
+
+  printf("streamed [%lu, %lu)",
+         bfTreeNodeGetFirstIndex(colNode),
+         bfTreeNodeGetLastIndex(colNode));
+  printf(" -> depths: Psi=%lu", bfMatBlockGetMaxDepth(bfMatToMatBlock(partialFac->Psi)));
+  for (BfSize k = 0; k < partialFac->numW; ++k)
+    printf(", W%lu=%lu", k, bfMatBlockGetMaxDepth(bfMatToMatBlock(partialFac->W[k])));
+  printf("\n");
+
 
   for (BfSize i = 0; i < bfConstPtrArraySize(&rowNodes); ++i) {
     bfConstPtrArrayAppend(&partialFac->rowNodes, bfConstPtrArrayGet(&rowNodes, i));
