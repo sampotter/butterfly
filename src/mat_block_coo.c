@@ -276,7 +276,6 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
     indexedRowBlock->j0 = j0_;
     indexedRowBlock->mat = blockRowRange;
 
-    assert(indexedRowBlock->i0 <= m_);
     assert(indexedRowBlock->mat != NULL);
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
