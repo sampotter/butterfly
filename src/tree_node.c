@@ -163,10 +163,11 @@ bool bfTreeNodeIsDescendant(BfTreeNode const *treeNode, BfTreeNode const *otherT
   if (bfTreeNodeGetType(treeNode) != bfTreeNodeGetType(otherTreeNode))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  isDescendant = treeNode->parent == otherTreeNode;
+  isDescendant = treeNode == otherTreeNode;
 repeat:
   if (!isDescendant && !treeNode->isRoot) {
     treeNode = treeNode->parent;
+    isDescendant = treeNode == otherTreeNode;
     goto repeat;
   }
 
