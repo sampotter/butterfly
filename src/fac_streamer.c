@@ -1143,7 +1143,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
  *   `facStreamer->colTree`.
  *
  * TODO: this function is a mess! should be cleaned up! */
-void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi, BfVecReal const *Lam) {
+void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   BEGIN_ERROR_HANDLING();
 
   /* Get the current column tree leaf node */

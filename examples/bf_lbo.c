@@ -98,8 +98,8 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   if (bfTreeNodeGetNumPoints(treeNode) != Lam->super.size)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  /* Feed the factorization streamed the eigenband */
-  bfFacStreamerFeed(facStreamer, Phi, Lam);
+  /* Feed the factorization the streamed band of eigenvectors */
+  bfFacStreamerFeed(facStreamer, Phi);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {}
