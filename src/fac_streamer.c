@@ -206,7 +206,7 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
   BfMatDiagReal *S = NULL;
   BfMat *W = NULL;
   BfTruncSpec truncSpec = {.usingTol = true, .tol = tol};
-  bool success = bfGetTruncatedSvd(block, &Psi, &S, &W, truncSpec, BF_BACKEND_LAPACK);
+  bool success = bfGetTruncatedSvd(block, &Psi, &S, &W, &truncSpec, BF_BACKEND_LAPACK);
   HANDLE_ERROR();
 
   /* Scale W if we successfully compressed this block. */
@@ -762,7 +762,7 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
 
   BfBackend backend = BF_BACKEND_LAPACK;
 
-  bool success = bfGetTruncatedSvd(PsiStarSubblock, &U, &S, &VT, truncSpec, backend);
+  bool truncated = bfGetTruncatedSvd(PsiStarSubblock, &U, &S, &VT, &truncSpec, backend);
   HANDLE_ERROR();
 
   BfMat *W0Subblock = VT;
@@ -797,7 +797,7 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
   bfVecDelete(&s);
   bfMatDiagRealDeinitAndDealloc(&S);
 
-  return success;
+  return truncated;
 }
 
 static void
@@ -911,11 +911,13 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
       goto next;
     }
 
-    success = getLowRankApproximation(
+    bool truncated = getLowRankApproximation(
       facStreamer, PsiStarSubblock, &PsiSubblock, &W0Subblock);
     HANDLE_ERROR();
 
-    assert(bfMatNumBytes(W0Subblock) < bfMatNumBytes(PsiStarSubblock));
+    bool compressed = bfMatNumBytes(W0Subblock) < bfMatNumBytes(PsiStarSubblock);
+
+    success = truncated && compressed;
 
     /* If we failed to compute a truncated SVD (i.e., we didn't drop
      * any terms), we push `rowNode`'s children onto the stack, moving

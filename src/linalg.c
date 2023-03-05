@@ -14,6 +14,17 @@
 
 #include <arpack.h>
 
+BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const *S) {
+  BfSize k = 0;
+  if (truncSpec->usingTol) {
+    while (k < S->numElts && S->data[k] >= truncSpec->tol*S->data[0])
+      ++k;
+  } else {
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
+  return k;
+}
+
 BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
                        BfReal tol, BfSize maxNumIter, BfSize *numIter) {
   BEGIN_ERROR_HANDLING();
@@ -652,7 +663,7 @@ get_shifted_eigs:
 }
 
 bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfMat **VTPtr,
-                       BfTruncSpec truncSpec, BfBackend backend) {
+                       BfTruncSpec const *truncSpec, BfBackend backend) {
   BEGIN_ERROR_HANDLING();
 
   bool truncated = true;
@@ -680,13 +691,7 @@ bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfM
   HANDLE_ERROR();
 
   /* Find the number of terms in the truncated SVD: */
-  BfSize k = 0;
-  if (truncSpec.usingTol) {
-    while (k < S->numElts && S->data[k] >= truncSpec.tol*S->data[0])
-      ++k;
-  } else {
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
-  }
+  BfSize k = bfTruncSpecGetNumTerms(truncSpec, S);
 
   /* Should actually truncate? If so, do it: */
   truncated = k < S->numElts;
