@@ -149,9 +149,9 @@ static __typeof__(&inOctant1) inOctant[NUM_CHILDREN_] = {
  * `perm`: an array of `points->size` indices indexing `points`.
  * `currentDepth`: `node`'s depth */
 static void octreeNodeInitRecursive(BfOctreeNode *node,
-                                      BfPoints3 const *points, BfBoundingBox3 boundingBox,
-                                      BfSize i0, BfSize i1, BfSize *perm,
-                                      BfSize currentDepth) {
+                                    BfPoints3 const *points, BfBoundingBox3 boundingBox,
+                                    BfSize i0, BfSize i1, BfSize *perm,
+                                    BfSize currentDepth) {
   BEGIN_ERROR_HANDLING();
 
   assert(i0 <= i1);
