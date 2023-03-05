@@ -6,6 +6,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
+#include <bf/mat_zero.h>
 #include <bf/ptr_array.h>
 #include <bf/size_array.h>
 #include <bf/util.h>
