@@ -9,12 +9,36 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatCopy))bfMatIdentityCopy,
   .Delete = (__typeof__(&bfMatDelete))bfMatIdentityDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatIdentityGetType,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatIdentityNumBytes,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatIdentityGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatIdentityGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatIdentityGetRowRangeCopy,
 };
+
+BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numRows = bfMatIdentityGetNumRows(matIdentity);
+  BfSize numCols = bfMatIdentityGetNumCols(matIdentity);
+
+  if (numRows != numCols)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfMatIdentity *copy = bfMatIdentityNew();
+  HANDLE_ERROR();
+
+  bfMatIdentityInit(copy, numRows);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfMatIdentityToMat(copy);
+}
 
 void bfMatIdentityDelete(BfMatIdentity **matIdentity) {
   bfMatIdentityDeinitAndDealloc(matIdentity);
@@ -23,6 +47,11 @@ void bfMatIdentityDelete(BfMatIdentity **matIdentity) {
 BfType bfMatIdentityGetType(BfMatIdentity const *matIdentity) {
   (void)matIdentity;
   return BF_TYPE_MAT_IDENTITY;
+}
+
+BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity) {
+  (void)matIdentity;
+  return 0;
 }
 
 BfSize bfMatIdentityGetNumRows(BfMatIdentity const *matIdentity) {

@@ -4,8 +4,10 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity);
 void bfMatIdentityDelete(BfMatIdentity **matIdentity);
 BfType bfMatIdentityGetType(BfMatIdentity const *matIdentity);
+BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityGetNumRows(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityGetNumCols(BfMatIdentity const *matIdentity);
 BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0, BfSize i1);
