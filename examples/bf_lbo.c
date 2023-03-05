@@ -14,6 +14,34 @@
 #include <bf/octree.h>
 #include <bf/vec_real.h>
 
+BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints1 *freqs = bfPoints1New();
+  HANDLE_ERROR();
+
+  bfPoints1InitEmpty(freqs, BF_ARRAY_DEFAULT_CAPACITY);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < Lam->super.size; ++i) {
+    /* Clamp eigenvalues to be nonnegative if we find any that are
+     * negative due to roundoff */
+    if (Lam->data[i] < 0) {
+      assert(Lam->data[i] > -1e-13);
+      Lam->data[i] = 0;
+    }
+
+    bfPoints1Append(freqs, sqrt(Lam->data[i]));
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return freqs;
+}
+
 void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
                                   BfMat const *L, BfMat const *M) {
   BEGIN_ERROR_HANDLING();
@@ -61,22 +89,9 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   bfGetEigenband(L, M, lam0, lam1, sigma, &Phi, &Lam);
   HANDLE_ERROR();
 
-  newFreqs = bfPoints1New();
+  /* Convert the new eigenvalues to frequencies: */
+  newFreqs = convertEigsToFreqs(Lam);
   HANDLE_ERROR();
-
-  bfPoints1InitEmpty(newFreqs, BF_ARRAY_DEFAULT_CAPACITY);
-  HANDLE_ERROR();
-
-  for (BfSize i = 0; i < Lam->super.size; ++i) {
-    /* Clamp eigenvalues to be nonnegative if we find any that are
-     * negative due to roundoff */
-    if (Lam->data[i] < 0) {
-      assert(Lam->data[i] > -1e-13);
-      Lam->data[i] = 0;
-    }
-
-    bfPoints1Append(newFreqs, sqrt(Lam->data[i]));
-  }
 
   /* Sort the new frequencies into the existing set of frequencies
    *
