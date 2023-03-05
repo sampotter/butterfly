@@ -68,6 +68,10 @@ void bfMatDenseInit(BfMatDense *matDense, BfMatVtable *matVtable,
     bfMatDeinit(mat);
 }
 
+void bfMatDenseDeinit(BfMatDense *matDense) {
+  bfMatDeinit(&matDense->super);
+}
+
 BfSize bfMatDenseGetRowStride(BfMatDense const *matDense) {
   return matDense->rowStride;
 }
