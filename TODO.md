@@ -116,3 +116,7 @@ Once this is set up, it should be possible to set a flag to strip all of this ou
 # Better interface for constructing objects
 
 Add `Alloc` function which does what `New` does now. Create `New*` versions of `Init*` functions which do the same thing but also allocate. Then `Alloc`:`Init`:`New`::`Dealloc`:`Deinit`:`Delete` works as an anlogy, which should make things a little more regular and intuitive.
+
+# Less error-handling noise
+
+Realistically, it isn't possible to recover from an OOM. We should wrap malloc and catch this there, if anything. Getting rid of `BF_ERROR_MEMORY_ERROR` would remove a significant amount of error handling line noise, leaving errors which are more significant.
