@@ -16,7 +16,7 @@ endif
 
 cc = meson.get_compiler('c')
 
-cblas_dep = cc.find_library('openblas', required : true)
+openblas_dep = cc.find_library('openblas', required : true)
 cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
@@ -91,10 +91,10 @@ butterfly_inc = include_directories('include')
 
 butterfly_dependencies = [
   arpack_ng_dep,
-  cblas_dep,
   cholmod_dep,
   gsl_dep,
   m_dep,
+  openblas_dep,
   umfpack_dep
 ]
 
