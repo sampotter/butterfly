@@ -143,3 +143,4 @@ bool bfMatInstanceOf(BfMat const *mat, BfType type);
 bool bfMatIsTransposed(BfMat const *mat);
 BfMat *bfMatTrans(BfMat *mat);
 BfMat *bfMatConjTrans(BfMat *mat);
+bool bfMatIsBlock(BfMat const *mat);

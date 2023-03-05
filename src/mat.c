@@ -272,3 +272,8 @@ BfMat *bfMatConjTrans(BfMat *mat) {
   mat->props ^= (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ);
   return mat;
 }
+
+bool bfMatIsBlock(BfMat const *mat) {
+  BfType type = bfMatGetType(mat);
+  return bfTypeDerivedFrom(type, BF_TYPE_MAT_BLOCK);
+}
