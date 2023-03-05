@@ -6,6 +6,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/indexed_mat.h>
 #include <bf/linalg.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
@@ -783,8 +784,30 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
     bfSizeArrayGet(nonzeroColumnRanges, 1) < bfMatGetNumCols(PsiStarSubblock);
 
   if (shouldFixSparsity) {
-    assert(false); // make sure those rows are all zero in W0Subblock, too
-    assert(false); // zero them out by making W0Subblock a block matrix
+    puts("WARN: make sure to check that remaining columns are actually zero!");
+
+    BfPtrArray blocks;
+    bfInitPtrArrayWithDefaultCapacity(&blocks);
+    HANDLE_ERROR();
+
+    for (BfSize k = 0; k < numNonzeroColumnRanges; ++k) {
+      BfSize j0 = bfSizeArrayGet(nonzeroColumnRanges, 2*k);
+      BfSize j1 = bfSizeArrayGet(nonzeroColumnRanges, 2*k + 1);
+      BfMat *block = bfMatGetColRangeCopy(W0Subblock, j0, j1);
+      BfIndexedMat *indexedBlock = malloc(sizeof(BfIndexedMat));
+      indexedBlock->i0 = 0;
+      indexedBlock->j0 = j0;
+      indexedBlock->mat = block;
+      bfPtrArrayAppend(&blocks, indexedBlock);
+    }
+
+    BfMatBlockCoo *W0SubblockSparsified = bfMatBlockCooNewFromIndexedBlocks(
+      bfMatGetNumRows(W0Subblock), bfMatGetNumCols(W0Subblock), &blocks);
+    HANDLE_ERROR();
+
+    bfMatDelete(&W0Subblock);
+
+    W0Subblock = bfMatBlockCooToMat(W0SubblockSparsified);
   }
 
   END_ERROR_HANDLING() {
