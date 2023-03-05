@@ -20,6 +20,7 @@ struct BfPtrArray {
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 typedef int (*BfPtrCmp)(BfPtr, BfPtr);
 
+BfPtrArray *bfPtrArrayNewWithDefaultCapacity();
 BfPtrArray bfGetUninitializedPtrArray();
 void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);

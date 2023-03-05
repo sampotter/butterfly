@@ -11,6 +11,23 @@
 
 /** Implementation: PtrArray */
 
+BfPtrArray *bfPtrArrayNewWithDefaultCapacity() {
+  BEGIN_ERROR_HANDLING();
+
+  BfPtrArray *ptrArray = malloc(sizeof(BfPtrArray));
+  if (ptrArray == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  bfInitPtrArrayWithDefaultCapacity(ptrArray);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    ptrArray = NULL;
+  }
+
+  return ptrArray;
+}
+
 BfPtrArray bfGetUninitializedPtrArray() {
   return (BfPtrArray) {
     .flags = BF_PTR_ARRAY_FLAG_NONE,
