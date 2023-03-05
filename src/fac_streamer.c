@@ -1165,6 +1165,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
       bfPtrArrayDeinit(&WkBlocks);
     }
 
+    /* Make sure everything was set successfully: */
 #if BF_DEBUG
     assert(mergedFac->Psi != NULL);
     for (BfSize i = 0; i < bfConstPtrArraySize(&mergedFac->rowNodes); ++i)
