@@ -25,7 +25,7 @@ void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
 
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
-  arr->data = malloc(capacity*sizeof(BfPtr));
+  arr->data = calloc(capacity, sizeof(BfPtr));
   if (arr->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -58,7 +58,7 @@ BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
 
   BfPtrArray arrCopy = {
     .flags = BF_PTR_ARRAY_FLAG_NONE,
-    .data = malloc(arr->capacity*sizeof(BfPtr)),
+    .data = calloc(arr->capacity, sizeof(BfPtr)),
     .capacity = arr->capacity,
     .num_elts = arr->num_elts
   };
@@ -228,7 +228,7 @@ void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity) {
 
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
-  arr->data = malloc(capacity*sizeof(BfPtr));
+  arr->data = calloc(capacity, sizeof(BfPtr));
   if (arr->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
