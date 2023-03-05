@@ -358,6 +358,33 @@ void bfMatBlockCooNegate(BfMat *mat) {
   END_ERROR_HANDLING() {}
 }
 
+static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
+  BfSize m = bfMatGetNumCols(mat);
+  BfSize n = bfMatGetNumCols(mat);
+  BfType type = bfMatGetType(mat);
+  switch (type) {
+  case BF_TYPE_MAT_BLOCK_COO: {
+    BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
+    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+    for (BfSize k = 0; k < numBlocks; ++k) {
+      BfMat const *block = BLOCK(matBlockCoo, k);
+      BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+      setColumnNonzerosForBlock(block, &nonzero[j0]);
+    }
+    break;
+  }
+  case BF_TYPE_MAT_IDENTITY:
+    assert(m == n);
+  case BF_TYPE_MAT_DENSE_REAL: {
+    for (BfSize j = 0; j < n; ++j) nonzero[j] = true;
+    break;
+  }
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
+}
+
+
 BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo) {
   BEGIN_ERROR_HANDLING();
 
@@ -374,24 +401,20 @@ BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCo
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
-
   for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
     BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
-    BfSize j1 = j0 + bfMatGetNumCols(BLOCK(matBlockCoo, k));
-    for (BfSize j = j0; j < j1; ++j)
-      nonzero[j] = true;
+    setColumnNonzerosForBlock(block, &nonzero[j0]);
   }
 
   BfSize j0Next = 0;
 
   while (j0Next < n) {
     BfSize j0 = j0Next;
-    while (j0 < n && !nonzero[j0])
-      ++j0;
+    while (j0 < n && !nonzero[j0]) ++j0;
 
     BfSize j1 = j0;
-    while (j1 < n && nonzero[j1])
-      ++j1;
+    while (j1 < n && nonzero[j1]) ++j1;
 
     assert(j0 < j1);
 
