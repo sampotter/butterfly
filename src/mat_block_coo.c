@@ -33,6 +33,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
   .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
   .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
+  .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockCooGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockCooPrintBlocksDeep,
 };
 
