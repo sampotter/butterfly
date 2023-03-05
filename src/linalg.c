@@ -651,25 +651,90 @@ get_shifted_eigs:
   }
 }
 
-bool bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **VTrans,
+bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfMat **VTPtr,
                        BfTruncSpec truncSpec, BfBackend backend) {
   BEGIN_ERROR_HANDLING();
 
-  bool success = true;
+  bool truncated = true;
 
   if (backend != BF_BACKEND_LAPACK)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  (void)mat;
-  (void)U;
-  (void)S;
-  (void)VTrans;
-  (void)truncSpec;
-  (void)backend;
+  /* Cast to `MatDenseReal` if we can, otherwise we'll need to convert
+   * and allocate later. */
+  BfMatDenseReal const *matDenseReal = NULL;
+  bool shouldDeleteMatDenseReal = false;
+  if (bfMatGetType(mat) == BF_TYPE_MAT_DENSE_REAL) {
+    matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  } else {
+    matDenseReal = bfMatDenseRealNewFromMatrix(mat);
+    HANDLE_ERROR();
 
-  assert(false);
+    shouldDeleteMatDenseReal = true;
+  }
 
-  END_ERROR_HANDLING() {}
+  BfMatDenseReal *U = NULL;
+  BfMatDiagReal *S = NULL;
+  BfMatDenseReal *VT = NULL;
+  bfMatDenseRealSvd(matDenseReal, &U, &S, &VT);
+  HANDLE_ERROR();
 
-  return success;
+  /* Find the number of terms in the truncated SVD: */
+  BfSize k = 0;
+  if (truncSpec.usingTol) {
+    while (k < S->numElts && S->data[k] >= truncSpec.tol*S->data[0])
+      ++k;
+  } else {
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  /* Should actually truncate? If so, do it: */
+  truncated = k < S->numElts;
+  if (truncated) {
+    /** Truncate U: */
+
+    BfMatDenseReal *Uk = bfMatToMatDenseReal(bfMatDenseRealGetColRangeCopy(U, 0, k));
+    HANDLE_ERROR();
+
+    bfMatDenseRealDeinitAndDealloc(&U);
+
+    U = Uk;
+
+    /** Truncate S: */
+
+    BfMatDiagReal *Sk = bfMatDiagRealNew();
+    HANDLE_ERROR();
+
+    bfMatDiagRealInit(Sk, k, k);
+    HANDLE_ERROR();
+
+    for (BfSize i = 0; i < k; ++i)
+      Sk->data[i] = S->data[i];
+
+    bfMatDiagRealDeinitAndDealloc(&S);
+
+    S = Sk;
+
+    /** Truncate VT: */
+
+    BfMatDenseReal *VkT = bfMatToMatDenseReal(bfMatDenseRealGetRowRangeCopy(VT, 0, k));
+    HANDLE_ERROR();
+
+    bfMatDenseRealDeinitAndDealloc(&VT);
+
+    VT = VkT;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  if (shouldDeleteMatDenseReal)
+    bfMatDenseRealDeinitAndDealloc((BfMatDenseReal **)&matDenseReal);
+
+  *UPtr = bfMatDenseRealToMat(U);
+  *SPtr = S;
+  *VTPtr = bfMatDenseRealToMat(VT);
+
+  return truncated;
 }
