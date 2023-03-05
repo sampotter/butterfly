@@ -14,6 +14,7 @@
 #include <bf/mat_diag_real.h>
 #include <bf/mat_identity.h>
 #include <bf/ptr_array.h>
+#include <bf/size_array.h>
 #include <bf/tree.h>
 #include <bf/tree_node.h>
 #include <bf/tree_iter_post_order.h>
@@ -68,6 +69,12 @@ static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   }
 
   return partialFac;
+}
+
+void setPartialFacWBlock(PartialFac *partialFac, BfSize k, BfMat *W) {
+  assert(k < partialFac->numW);
+  assert(W != NULL);
+  partialFac->W[k] = W;
 }
 
 struct BfFacStreamer {
@@ -224,7 +231,6 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
 }
 
 static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
-                       BfTreeNode const *colNode,
                        BfReal tol, BfSize minNumCols,
                        BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
@@ -747,7 +753,7 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
 
   BfMat *U = NULL;
   BfMatDiagReal *S = NULL;
-  BfMat *VTrans = NULL;
+  BfMat *VT = NULL;
 
   BfTruncSpec truncSpec = {
     .usingTol = true,
@@ -756,16 +762,30 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
 
   BfBackend backend = BF_BACKEND_LAPACK;
 
-  bool success = bfGetTruncatedSvd(PsiStarSubblock, &U, &S, &VTrans, truncSpec, backend);
+  bool success = bfGetTruncatedSvd(PsiStarSubblock, &U, &S, &VT, truncSpec, backend);
   HANDLE_ERROR();
 
-  BfMat *V = bfMatTrans(VTrans);
+  BfMat *W0Subblock = VT;
 
-  BfMat *W0Subblock = bfMatMul(V, bfMatDiagRealToMat(S));
+  BfVec *s = bfMatDiagRealGetVecView(S);
   HANDLE_ERROR();
 
-  /* Fix the sparsity of W0. */
-  assert(false);
+  bfMatScaleRows(W0Subblock, s);
+  HANDLE_ERROR();
+
+  BfSizeArray *nonzeroColumnRanges = bfMatGetNonzeroColumnRanges(PsiStarSubblock);
+  HANDLE_ERROR();
+
+  BfSize numNonzeroColumnRanges = bfSizeArrayGetSize(nonzeroColumnRanges)/2;
+
+  bool shouldFixSparsity = numNonzeroColumnRanges > 1 ||
+    bfSizeArrayGet(nonzeroColumnRanges, 0) > 0 ||
+    bfSizeArrayGet(nonzeroColumnRanges, 1) < bfMatGetNumCols(PsiStarSubblock);
+
+  if (shouldFixSparsity) {
+    assert(false); // make sure those rows are all zero in W0Subblock, too
+    assert(false); // zero them out by making W0Subblock a block matrix
+  }
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -773,6 +793,9 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
 
   *PsiSubblockPtr = U;
   *W0SubblockPtr = W0Subblock;
+
+  bfVecDelete(&s);
+  bfMatDiagRealDeinitAndDealloc(&S);
 
   return success;
 }
@@ -849,18 +872,25 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
     BfSize numRowsPsiStarSubblock = bfMatGetNumRows(PsiStarSubblock);
     BfSize numColsPsiStarSubblock = bfMatGetNumCols(PsiStarSubblock);
 
+    BfMat *PsiSubblock = NULL;
+    BfMat *W0Subblock = NULL;
+
     /* If the new Psi subblock has too few rows, we omit an identity
      * matrix for the Psi subblock and pass Psi through as the W0
      * subblock. */
     if (numRowsPsiStarSubblock < facStreamer->minNumRows) {
-      // TODO: I think what I said above is the right thing to do,
-      // anyway... need to double check before implementing when we
-      // trip this case eventually
-      assert(false);
-    }
+      BfMatIdentity *identity = bfMatIdentityNew();
+      HANDLE_ERROR();
 
-    BfMat *PsiSubblock = NULL;
-    BfMat *W0Subblock = NULL;
+      bfMatIdentityInit(identity, numRowsPsiStarSubblock);
+      HANDLE_ERROR();
+
+      PsiSubblock = bfMatIdentityToMat(identity);
+
+      W0Subblock = PsiStarSubblock;
+
+      goto next;
+    }
 
     /* If the new Psi subblock has too few columns, we omit an
      * identity matrix for the W0 subblock, and pass the diagonal Psi
@@ -868,10 +898,10 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
      *
      * TODO: can we do this before slicing above to save a bit of time? */
     if (numColsPsiStarSubblock < facStreamer->minNumCols) {
+      PsiSubblock = PsiStarSubblock;
+
       BfMatIdentity *identity = bfMatIdentityNew();
       HANDLE_ERROR();
-
-      PsiSubblock = PsiStarSubblock;
 
       bfMatIdentityInit(identity, numColsPsiStarSubblock);
       HANDLE_ERROR();
@@ -885,15 +915,19 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
       facStreamer, PsiStarSubblock, &PsiSubblock, &W0Subblock);
     HANDLE_ERROR();
 
+    assert(bfMatNumBytes(W0Subblock) < bfMatNumBytes(PsiStarSubblock));
+
     /* If we failed to compute a truncated SVD (i.e., we didn't drop
      * any terms), we push `rowNode`'s children onto the stack, moving
      * deeper into the row tree. */
     if (!success) {
       /* Push nodes onto the stack in the correct order to make sure
        * we continue traversing rows from top to bottom. */
-      for (BfSize k = rowNode->maxNumChildren - 1; k >= 0; --k)
-        if (rowNode->child[k] != NULL)
-          bfConstPtrArrayAppend(&stack, rowNode->child[k]);
+      for (BfSize k = 0; k < rowNode->maxNumChildren; ++k) {
+        BfTreeNode const *child = rowNode->child[rowNode->maxNumChildren - k - 1];
+        if (child != NULL)
+          bfConstPtrArrayAppend(&stack, child);
+      }
       continue;
     }
 
@@ -936,6 +970,8 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
 }
 
 static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
+  static int CALL_NUMBER = 0;
+
   BEGIN_ERROR_HANDLING();
 
   PartialFac *mergedFac = NULL;
@@ -1071,12 +1107,12 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
     mergedFac->numW = maxNumW + 1;
     assert(mergedFac->numW >= 2);
 
-    mergedFac->W = malloc(mergedFac->numW*sizeof(BfMat *));
+    mergedFac->W = calloc(mergedFac->numW, sizeof(BfMat *));
     if (mergedFac->W == NULL)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-    mergedFac->W[0] = bfMatBlockDiagToMat(W0);
-    mergedFac->W[1] = bfMatBlockCooToMat(W1);
+    setPartialFacWBlock(mergedFac, 0, bfMatBlockDiagToMat(W0));
+    setPartialFacWBlock(mergedFac, 1, bfMatBlockCooToMat(W1));
 
     /* Block together trailing W factors from the current partial
      * butterfly factorizations to get the trailing W factors for the
@@ -1089,17 +1125,29 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
       for (BfSize l = 0; l < bfPtrArraySize(&currentPartialFacs); ++l) {
         PartialFac const *partialFac = bfPtrArrayGet(&currentPartialFacs, l);
 
-        bfPtrArrayAppend(&WkBlocks, partialFac->W[k]);
+        BfMat *WkBlock = partialFac->W[k];
+        assert(WkBlock != NULL);
+
+        bfPtrArrayAppend(&WkBlocks, WkBlock);
         HANDLE_ERROR();
       }
 
       BfMatBlockDiag *Wk = bfMatBlockDiagNewFromBlocks(&WkBlocks);
       HANDLE_ERROR();
 
-      mergedFac->W[k] = bfMatBlockDiagToMat(Wk);
+      setPartialFacWBlock(mergedFac, k + 1, bfMatBlockDiagToMat(Wk));
 
       bfPtrArrayDeinit(&WkBlocks);
     }
+
+#if BF_DEBUG
+    assert(mergedFac->Psi != NULL);
+    for (BfSize i = 0; i < bfConstPtrArraySize(&mergedFac->rowNodes); ++i)
+      assert(bfConstPtrArrayGet(&mergedFac->rowNodes, i) != NULL);
+    assert(mergedFac->colNode != NULL);
+    for (BfSize k = 0; k < mergedFac->numW; ++k)
+      assert(mergedFac->W[k] != NULL);
+#endif
   }
 
   END_ERROR_HANDLING() {
@@ -1109,6 +1157,8 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
   bfPtrArrayDeinit(&PsiBlocks);
   bfPtrArrayDeinit(&W0Blocks);
   bfPtrArrayDeinit(&W1Blocks);
+
+  ++CALL_NUMBER;
 
   return mergedFac;
 }
@@ -1125,8 +1175,34 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     if (bfTreeNodeIsLeaf(currentColNode))
       break;
 
+    printf("merging [%lu, %lu)",
+           bfTreeNodeGetFirstIndex(currentColNode),
+           bfTreeNodeGetLastIndex(currentColNode));
+
     PartialFac *mergedFac = mergeAndSplit(facStreamer);
     HANDLE_ERROR();
+
+    printf(" -> depths: Psi=%lu", bfMatBlockGetMaxDepth(bfMatToMatBlock(mergedFac->Psi)));
+    for (BfSize k = 0; k < mergedFac->numW; ++k)
+      printf(", W%lu=%lu", k, bfMatBlockGetMaxDepth(bfMatToMatBlock(mergedFac->W[k])));
+    printf("\n");
+
+    puts("writing to Psi.txt");
+
+    FILE *fp = fopen("Psi.txt", "w");
+    bfMatPrintBlocksDeep(mergedFac->Psi, fp, 0, 0, 0);
+    fclose(fp);
+
+    for (BfSize k = 0; k < mergedFac->numW; ++k) {
+      char path[256];
+      sprintf(path, "W%lu.txt", k);
+
+      printf("writing to %s\n", path);
+
+      fp = fopen(path, "w");
+      bfMatPrintBlocksDeep(mergedFac->W[k], fp, 0, 0, 0);
+      fclose(fp);
+    }
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
@@ -1185,7 +1261,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
 
     BfMat *Psi = NULL, *W = NULL;
     bool metTol = getPsiAndW(
-      Phi, rowNode, colNode, facStreamer->tol, facStreamer->minNumCols, &Psi, &W);
+      Phi, rowNode, facStreamer->tol, facStreamer->minNumCols, &Psi, &W);
     HANDLE_ERROR();
 
     /* Accumulate the Psi and W blocks and continue if we successfully
