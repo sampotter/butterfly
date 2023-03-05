@@ -429,11 +429,67 @@ void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, Bf
 /** Interface: MatBlock */
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
-  .NumBlocks = (__typeof__(&bfMatBlockCooNumBlocks))bfMatBlockCooNumBlocks
+  .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockCooNumBlocks,
+  .GetRowOffset = (__typeof__(&bfMatBlockGetRowOffset))bfMatBlockCooGetRowOffset,
+  .GetColOffset = (__typeof__(&bfMatBlockGetColOffset))bfMatBlockCooGetColOffset,
+  .GetBlockConst = (__typeof__(&bfMatBlockGetBlockConst))bfMatBlockCooGetBlockConst,
 };
 
-BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
-  return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
+BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return matBlockCoo->numBlocks;
+}
+
+BfSize bfMatBlockCooGetRowOffset(BfMatBlockCoo const *matBlockCoo, BfSize i) {
+  return ROW_OFFSET(matBlockCoo, i);
+}
+
+BfSize bfMatBlockCooGetColOffset(BfMatBlockCoo const *matBlockCoo, BfSize j) {
+  return COL_OFFSET(matBlockCoo, j);
+}
+
+BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  BfMat const *block = NULL;
+
+  BfSize k = 0;
+  for (; k < numBlocks; ++k) {
+    if (ROW_IND(matBlockCoo, k) == i && COL_IND(matBlockCoo, k) == j) {
+      block = BLOCK(matBlockCoo, k);
+      break;
+    }
+  }
+
+  BfSize i0 = ROW_OFFSET(matBlockCoo, i);
+  BfSize m = ROW_OFFSET(matBlockCoo, i + 1) - i0;
+
+  BfSize j0 = COL_OFFSET(matBlockCoo, j);
+  BfSize n = COL_OFFSET(matBlockCoo, j + 1) - j0;
+
+  BfMatZero *zeroBlock = NULL;
+
+  if (block == NULL) {
+    zeroBlock = bfMatZeroNew();
+    HANDLE_ERROR();
+
+    bfMatZeroInit(zeroBlock, m, n);
+    HANDLE_ERROR();
+
+    block = bfMatZeroConstToMatConst((BfMatZero const *)zeroBlock);
+  } else {
+    if (bfMatGetNumRows(block) != m || bfMatGetNumCols(block) != n)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatZeroDeinitAndDealloc(&zeroBlock);
+  }
+
+  return block;
 }
 
 /** Upcasting: MatBlockCoo -> Mat */

@@ -34,6 +34,18 @@ BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j) {
   return mat->colOffset[j + 1] - mat->colOffset[j];
 }
 
+BfSize bfMatBlockGetRowOffset(BfMatBlock const *matBlock, BfSize i) {
+  return matBlock->vtbl->GetRowOffset(matBlock, i);
+}
+
+BfSize bfMatBlockGetColOffset(BfMatBlock const *matBlock, BfSize j) {
+  return matBlock->vtbl->GetColOffset(matBlock, j);
+}
+
+BfMat const *bfMatBlockGetBlockConst(BfMatBlock const *matBlock, BfSize i, BfSize j) {
+  return matBlock->vtbl->GetBlockConst(matBlock, i, j);
+}
+
 BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *matBlock, BfSize i, BfSize j) {
   return matBlock->vtbl->GetBlockCopy(matBlock, i, j);
 }
@@ -141,4 +153,24 @@ BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i0) {
   return mat->rowOffset[p] <= i0 && i0 < mat->rowOffset[p + 1] ?
     p :
     BF_SIZE_BAD_VALUE;
+}
+
+BfSize getMaxDepthRec(BfMatBlock const *matBlock, BfSize maxDepth) {
+  BfSize newMaxDepth = maxDepth;
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+  for (BfSize i = 0; i < numBlocks; ++i) {
+    if (bfMatIsBlock(matBlock->block[i])) {
+      BfMatBlock const *childBlock = bfMatConstToMatBlockConst(matBlock->block[i]);
+      BfSize depth = getMaxDepthRec(childBlock, maxDepth + 1);
+      if (depth > newMaxDepth)
+        newMaxDepth = depth;
+    }
+  }
+
+  return newMaxDepth;
+}
+
+BfSize bfMatBlockGetMaxDepth(BfMatBlock const *matBlock) {
+  return getMaxDepthRec(matBlock, 0);
 }
