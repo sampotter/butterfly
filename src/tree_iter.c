@@ -21,7 +21,7 @@ bool bfTreeIterIsDone(BfTreeIter const *iter) {
 }
 
 void bfTreeIterNext(BfTreeIter *iter) {
-  return iter->vtable->Next(iter);
+  iter->vtable->Next(iter);
 }
 
 /** Implementation: TreeIter */
