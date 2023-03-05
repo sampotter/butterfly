@@ -14,6 +14,7 @@ foreach example : examples
 endforeach
 
 scripts = [
+  'bf_lbo_plot_blocks.py',
   'ellipse.py',
   'make_circle_test_data.py',
   'make_ellipse_test_data.py',
