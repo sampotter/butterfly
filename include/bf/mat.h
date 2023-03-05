@@ -68,6 +68,7 @@ bool bfMatIsZero(BfMat const *);
 void bfMatNegate(BfMat *);
 BfMat *bfMatToType(BfMat const *, BfType);
 BfMat *bfMatCholesky(BfMat const *);
+void bfMatPrintBlocksDeep(BfMat const *, FILE *, BfSize, BfSize, BfSize);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatCopy) Copy;
@@ -119,6 +120,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatNegate) Negate;
   __typeof__(&bfMatToType) ToType;
   __typeof__(&bfMatCholesky) Cholesky;
+  __typeof__(&bfMatPrintBlocksDeep) PrintBlocksDeep;
 } BfMatVtable;
 
 /** Implementation: Mat */

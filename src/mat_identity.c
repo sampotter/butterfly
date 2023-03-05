@@ -16,6 +16,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatIdentityGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatIdentityGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatIdentityGetRowRangeCopy,
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatIdentityPrintBlocksDeep,
 };
 
 BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
@@ -86,6 +87,15 @@ BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0,
   END_ERROR_HANDLING() {}
 
   return rowRangeCopy;
+}
+
+void bfMatIdentityPrintBlocksDeep(BfMatIdentity const *matIdentity, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
+  BfMat const *mat = bfMatIdentityConstToMatConst(matIdentity);
+
+  BfSize i1 = i0 + bfMatGetNumRows(mat);
+  BfSize j1 = j0 + bfMatGetNumCols(mat);
+
+  fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_IDENTITY, i0, i1, j0, j1, depth);
 }
 
 /** Upcasting: MatIdentity -> Mat */

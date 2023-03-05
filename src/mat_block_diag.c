@@ -36,6 +36,7 @@ static BfMatVtable MAT_VTABLE = {
   .ScaleCols = (__typeof__(&bfMatBlockDiagScaleCols))bfMatBlockDiagScaleCols,
   .Mul = (__typeof__(&bfMatBlockDiagMul))bfMatBlockDiagMul,
   .Negate = (__typeof__(&bfMatBlockDiagNegate))bfMatBlockDiagNegate,
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDiagPrintBlocksDeep,
 };
 
 BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
@@ -339,6 +340,24 @@ void bfMatBlockDiagNegate(BfMat *mat) {
     bfMatNegate(bfMatBlockDiagGetBlock(matBlockDiag, i));
 
   END_ERROR_HANDLING() {}
+}
+
+void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
+                                   BfSize i0, BfSize j0, BfSize depth) {
+  BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
+
+  BfSize i1 = i0 + bfMatGetNumRows(mat);
+  BfSize j1 = j0 + bfMatGetNumCols(mat);
+
+  fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_BLOCK_DIAG, i0, i1, j0, j1, depth);
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize i0_ = i0 + ROW_OFFSET(matBlockDiag, k);
+    BfSize j0_ = j0 + COL_OFFSET(matBlockDiag, k);
+    BfMat const *block = matBlockDiag->super.block[k];
+    bfMatPrintBlocksDeep(block, fp, i0_, j0_, depth + 1);
+  }
 }
 
 /** Interface: MatBlock */

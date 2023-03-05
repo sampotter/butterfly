@@ -11,6 +11,7 @@ BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityGetNumRows(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityGetNumCols(BfMatIdentity const *matIdentity);
 BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0, BfSize i1);
+void bfMatIdentityPrintBlocksDeep(BfMatIdentity const *matIdentity, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 /** Upcasting: MatIdentity -> Mat */
 

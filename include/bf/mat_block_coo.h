@@ -14,6 +14,7 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1);
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2);
 void bfMatBlockCooNegate(BfMat *mat);
+void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 /** Interface: MatBlock */
 

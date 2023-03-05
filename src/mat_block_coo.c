@@ -33,6 +33,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
   .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
   .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockCooPrintBlocksDeep,
 };
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat) {
@@ -354,6 +355,23 @@ void bfMatBlockCooNegate(BfMat *mat) {
     bfMatNegate(matBlock->block[i]);
 
   END_ERROR_HANDLING() {}
+}
+
+void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+
+  BfSize i1 = i0 + bfMatGetNumRows(mat);
+  BfSize j1 = j0 + bfMatGetNumCols(mat);
+
+  fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_BLOCK_COO, i0, i1, j0, j1, depth);
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize i0_ = i0 + BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize j0_ = j0 + BLOCK_COL_OFFSET(matBlockCoo, k);
+    BfMat const *block = BLOCK(matBlockCoo, k);
+    bfMatPrintBlocksDeep(block, fp, i0_, j0_, depth + 1);
+  }
 }
 
 /** Interface: MatBlock */

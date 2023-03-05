@@ -29,6 +29,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatDenseRealGetRowRangeCopy,
   .GetColRangeCopy = (__typeof__(&bfMatGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatPermuteRows))bfMatDenseRealPermuteRows,
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
 };
 
 BfMat *bfMatDenseRealCopy(BfMat const *mat) {
@@ -660,4 +661,13 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal *U,
 
   free(dataCopy);
   free(superb);
+}
+
+void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+
+  BfSize i1 = i0 + bfMatGetNumRows(mat);
+  BfSize j1 = j0 + bfMatGetNumCols(mat);
+
+  fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_DENSE_REAL, i0, i1, j0, j1, depth);
 }
