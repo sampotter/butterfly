@@ -8,6 +8,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_block.h>
 #include <bf/mat_diag_real.h>
 #include <bf/vec_real.h>
 
@@ -19,6 +20,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatDenseRealGetType,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatDenseRealNumBytes,
   .Save = (__typeof__(&bfMatSave))bfMatDenseRealSave,
   .Print = (__typeof__(&bfMatPrint))bfMatDenseRealPrint,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDenseRealGetNumRows,
@@ -29,54 +31,24 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatDenseRealGetRowRangeCopy,
   .GetColRangeCopy = (__typeof__(&bfMatGetColRangeCopy))bfMatDenseRealGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatPermuteRows))bfMatDenseRealPermuteRows,
+  .ScaleRows = (__typeof__(&bfMatScaleRows))bfMatDenseRealScaleRows,
+  .Mul = (__typeof__(&bfMatMul))bfMatDenseRealMul,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
 };
 
-BfMat *bfMatDenseRealCopy(BfMat const *mat) {
+BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDense const *matDense = NULL;
-  BfMatDense *matDenseCopy = NULL;
-  BfMatDenseReal const *matDenseReal = NULL;
-  BfMatDenseReal *copy = NULL;
-
-  matDense = bfMatConstToMatDenseConst(mat);
+  BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
   HANDLE_ERROR();
 
-  matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  bfMatDenseRealInitCopy(matDenseRealCopy, matDenseReal);
   HANDLE_ERROR();
-
-  BfSize m = bfMatGetNumRows(mat);
-  BfSize n = bfMatGetNumCols(mat);
-
-  copy = bfMatDenseRealNew();
-  HANDLE_ERROR();
-
-  bfMatDenseRealInit(copy, m, n);
-  HANDLE_ERROR();
-
-  matDenseCopy = bfMatDenseRealToMatDense(copy);
-
-  BfSize rowStride = bfMatDenseGetRowStride(matDense);
-  BfSize colStride = bfMatDenseGetColStride(matDense);
-
-  BfSize rowStrideCopy = bfMatDenseGetRowStride(matDenseCopy);
-  BfSize colStrideCopy = bfMatDenseGetColStride(matDenseCopy);
-
-  for (BfSize i = 0; i < m; ++i) {
-    BfReal *outPtr = copy->data + i*rowStrideCopy;
-    BfReal const *inPtr = matDenseReal->data + i*rowStride;
-    for (BfSize j = 0; j < n; ++j) {
-      *outPtr = *inPtr;
-      outPtr += colStrideCopy;
-      inPtr += colStride;
-    }
-  }
 
   END_ERROR_HANDLING()
-    bfMatDenseRealDeinitAndDealloc(&copy);
+    bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
 
-  return bfMatDenseRealToMat(copy);
+  return bfMatDenseRealToMat(matDenseRealCopy);
 }
 
 BfMat *bfMatDenseRealGetView(BfMat *mat) {
@@ -134,6 +106,13 @@ void bfMatDenseRealDelete(BfMat **mat) {
 BfType bfMatDenseRealGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_DENSE_REAL;
+}
+
+BfSize bfMatDenseRealNumBytes(BfMatDenseReal const *matDenseReal) {
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+  return sizeof(BfReal)*numRows*numCols;
 }
 
 void bfMatDenseRealSave(BfMat const *mat, char const *path) {
@@ -347,8 +326,8 @@ BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
   HANDLE_ERROR();
 
   for (BfSize i = i0; i < i1; ++i) {
-    BfReal const *readPtr = matDenseReal->data + (i - i0)*matDense->rowStride;
-    BfReal *writePtr = matDenseRealCopy->data + i*matDenseCopy->rowStride;
+    BfReal const *readPtr = matDenseReal->data + i*matDense->rowStride;
+    BfReal *writePtr = matDenseRealCopy->data + (i - i0)*matDenseCopy->rowStride;
     for (BfSize j = 0; j < n; ++j) {
       *writePtr = *readPtr;
       readPtr += matDense->colStride;
@@ -363,13 +342,12 @@ BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
   return bfMatDenseRealToMat(matDenseRealCopy);
 }
 
-BfMat *bfMatDenseRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
+BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize j0, BfSize j1) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDense const *matDense = bfMatConstToMatDenseConst(mat);
-  HANDLE_ERROR();
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
 
-  BfMatDenseReal const *matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
   HANDLE_ERROR();
 
   BfSize m = bfMatGetNumRows(mat);
@@ -506,6 +484,95 @@ BfMatDenseReal *bfMatDenseRealNew() {
   return mat;
 }
 
+BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseReal *matDenseReal = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  BfType matType = bfMatGetType(mat);
+
+  /* If `mat` is some kind of block matrix, then a reasonable thing to
+   * do is iterate over each of its blocks and set the corresponding
+   * blocks of `matDenseReal` one at a time.
+   *
+   * NOTE: we can do a little better here by specializing on the type
+   * of block matrix, but this is a reasonble and simple way to get
+   * this conversion working. */
+  if (bfTypeDerivedFrom(matType, BF_TYPE_MAT_BLOCK)) {
+    bfMatDenseRealInit(matDenseReal, numRows, numCols);
+    HANDLE_ERROR();
+
+    BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+
+    BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+    BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+
+    for (BfSize i = 0; i < numRowBlocks; ++i) {
+      BfSize i0 = bfMatBlockGetRowOffset(matBlock, i);
+      BfSize i1 = i0 + bfMatBlockGetNumBlockRows(matBlock, i);
+
+      for (BfSize j = 0; j < numColBlocks; ++j) {
+        BfSize j0 = bfMatBlockGetColOffset(matBlock, j);
+        BfSize j1 = j0 + bfMatBlockGetNumBlockCols(matBlock, j);
+
+        BfMat const *block = bfMatBlockGetBlockConst(matBlock, i, j);
+
+        BfMatDenseReal *block_ = bfMatDenseRealNewFromMatrix(block);
+        HANDLE_ERROR();
+
+        bfMatDenseRealSetBlock(matDenseReal, i0, i1, j0, j1, block_);
+
+        bfMatDenseRealDeinitAndDealloc(&block_);
+      }
+    }
+  }
+
+  else if (matType == BF_TYPE_MAT_DENSE_REAL) {
+    bfMatDenseRealInit(matDenseReal, numRows, numCols);
+    HANDLE_ERROR();
+
+    BfMatDenseReal const *matDenseReal_ = bfMatConstToMatDenseRealConst(mat);
+    bfMatDenseRealSetBlock(matDenseReal, 0, numRows, 0, numCols, matDenseReal_);
+  }
+
+  else if (matType == BF_TYPE_MAT_ZERO) {
+    bfMatDenseRealInitWithValue(matDenseReal, numRows, numCols, 0.0);
+    HANDLE_ERROR();
+  }
+
+  else if (matType == BF_TYPE_MAT_IDENTITY) {
+    if (numRows != numCols)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+    bfMatDenseRealInitWithValue(matDenseReal, numRows, numCols, 0.0);
+    HANDLE_ERROR();
+
+    for (BfSize i = 0; i < numRows; ++i) {
+      *(matDenseReal->data + i*matDenseReal->super.rowStride
+        + i*matDenseReal->super.colStride) = 1.0;
+    }
+  }
+
+  /* TODO: Haven't implemented the conversion to `MatDenseReal` for
+   * this type of matrix yet... */
+  else {
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatDenseRealDeinitAndDealloc(&matDenseReal);
+
+    assert(false);
+  }
+
+  return matDenseReal;
+}
+
+
 BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
@@ -563,8 +630,37 @@ void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
     bfMatDenseDeinit(&mat->super);
 }
 
-void bfMatDenseDeinit(BfMatDense *matDense) {
-  bfMatDeinit(&matDense->super);
+void bfMatDenseRealInitCopy(BfMatDenseReal *matDenseReal,
+                            BfMatDenseReal const *otherMatDenseReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *otherMat = bfMatDenseRealConstToMatConst(otherMatDenseReal);
+
+  BfSize m = bfMatGetNumRows(otherMat);
+  BfSize n = bfMatGetNumCols(otherMat);
+
+  bfMatDenseRealInit(matDenseReal, m, n);
+  HANDLE_ERROR();
+
+  BfMatDense *matDense = bfMatDenseRealToMatDense(matDenseReal);
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  BfMatDense const *otherMatDense = bfMatDenseRealConstToMatDenseConst(otherMatDenseReal);
+  BfSize otherRowStride = bfMatDenseGetRowStride(otherMatDense);
+  BfSize otherColStride = bfMatDenseGetColStride(otherMatDense);
+
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal *outPtr = matDenseReal->data + i*rowStride;
+    BfReal const *inPtr = otherMatDenseReal->data + i*otherRowStride;
+    for (BfSize j = 0; j < n; ++j) {
+      *outPtr = *inPtr;
+      outPtr += colStride;
+      inPtr += otherColStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {}
 }
 
 void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
@@ -614,14 +710,33 @@ void bfMatDenseRealDeinitAndDealloc(BfMatDenseReal **mat) {
   bfMatDenseRealDealloc(mat);
 }
 
-void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal *U,
-                          BfMatDiagReal *S, BfMatDenseReal *VH) {
+void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
+                       BfMatDiagReal **SPtr, BfMatDenseReal **VTPtr) {
   BEGIN_ERROR_HANDLING();
 
   BfMat const *super = bfMatDenseRealConstToMatConst(mat);
 
   BfSize m = super->numRows;
   BfSize n = super->numCols;
+  BfSize k = m < n ? m : n;
+
+  BfMatDenseReal *U = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(U, m, k);
+  HANDLE_ERROR();
+
+  BfMatDiagReal *S = bfMatDiagRealNew();
+  HANDLE_ERROR();
+
+  bfMatDiagRealInit(S, k, k);
+  HANDLE_ERROR();
+
+  BfMatDenseReal *VT = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(VT, k, n);
+  HANDLE_ERROR();
 
   BfReal *superb = NULL;
 
@@ -643,8 +758,8 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal *U,
 
   /* compute the SVD */
   lapack_int info = LAPACKE_dgesvd(
-    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, m, S->data, U->data, m,
-    VH->data, n, superb);
+    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, n, S->data,
+    U->data, m < n ? m : n, VT->data, n, superb);
 
   /* check for invalid arguments */
   if (info < 0)
@@ -654,13 +769,146 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal *U,
   if (info > 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {}
-
+  /* Make these both orthogonal: */
   bfMatDenseRealToMat(U)->props |= BF_MAT_PROPS_ORTHO;
-  bfMatDenseRealToMat(VH)->props |= BF_MAT_PROPS_ORTHO;
+  bfMatDenseRealToMat(VT)->props |= BF_MAT_PROPS_ORTHO;
+
+  /* Update out pointers: */
+  *UPtr = U;
+  *SPtr = S;
+  *VTPtr = VT;
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 
   free(dataCopy);
   free(superb);
+}
+
+void bfMatDenseRealSetBlock(BfMatDenseReal *matDenseReal,
+                            BfSize i0, BfSize i1, BfSize j0, BfSize j1,
+                            BfMatDenseReal const *block) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (j0 > j1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  { BfMat *mat = bfMatDenseRealToMat(matDenseReal);
+
+    if (bfMatGetNumRows(mat) < i1)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+    if (bfMatGetNumCols(mat) < j1)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS); }
+
+  BfSize numBlockRows = i1 - i0;
+  BfSize numBlockCols = j1 - j0;
+
+  { BfMat const *mat = bfMatDenseRealConstToMatConst(block);
+
+    if (bfMatGetNumRows(mat) != numBlockRows)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+    if (bfMatGetNumCols(mat) != numBlockCols)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS); }
+
+  for (BfSize i = i0; i < i1; ++i) {
+    BfReal *writePtr = matDenseReal->data
+      + i*matDenseReal->super.rowStride + j0*matDenseReal->super.colStride;
+    BfReal const *readPtr = block->data + (i - i0)*block->super.rowStride;
+    for (BfSize j = 0; j < numBlockCols; ++j) {
+      *writePtr = *readPtr;
+      writePtr += matDenseReal->super.colStride;
+      readPtr += block->super.colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
+static void scaleRows_vecReal(BfMatDenseReal *matDenseReal, BfVecReal const *vecReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatDenseRealToMat(matDenseReal);
+
+  BfSize m = bfMatGetNumRows(mat);
+  if (m != vecReal->super.size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize n = bfMatGetNumCols(mat);
+
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal *outPtr = matDenseReal->data + i*matDenseReal->super.rowStride;
+    for (BfSize j = 0; j < n; ++j) {
+      *outPtr *= vecReal->data[i];
+      outPtr += matDenseReal->super.colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec) {
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    scaleRows_vecReal(matDenseReal, bfVecConstToVecRealConst(vec));
+    break;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    break;
+  }
+}
+
+static BfMat *mul_matDiagReal(BfMatDenseReal const *matDenseReal,
+                              BfMatDiagReal const *otherMatDiagReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfMat const *otherMat = bfMatDiagRealConstToMatConst(otherMatDiagReal);
+  BfMatDenseReal *newMatDenseReal = NULL;
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+  BfSize p = bfMatGetNumCols(otherMat);
+
+  if (n != bfMatGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  newMatDenseReal = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInit(newMatDenseReal, m, p);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal const *inPtr = matDenseReal->data + i*matDenseReal->super.rowStride;
+    BfReal *outPtr = newMatDenseReal->data + i*newMatDenseReal->super.rowStride;
+    for (BfSize j = 0; j < p; ++j) {
+      *outPtr = *inPtr * otherMatDiagReal->data[j];
+      inPtr += matDenseReal->super.colStride;
+      outPtr += newMatDenseReal->super.colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfMatDenseRealToMat(newMatDenseReal);
+}
+
+BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherMat) {
+  switch (bfMatGetType(otherMat)) {
+  case BF_TYPE_MAT_DIAG_REAL:
+    return mul_matDiagReal(matDenseReal, bfMatConstToMatDiagRealConst(otherMat));
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
