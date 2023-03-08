@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
