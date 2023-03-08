@@ -14,6 +14,7 @@ BfSize bfMatBlockDiagGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1);
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec);
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other);
+BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec);
 void bfMatBlockDiagNegate(BfMat *mat);
 void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
