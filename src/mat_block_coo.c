@@ -10,6 +10,7 @@
 #include <bf/ptr_array.h>
 #include <bf/size_array.h>
 #include <bf/util.h>
+#include <bf/vec_real.h>
 
 /** Helper macros: */
 
@@ -33,6 +34,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumCols = (__typeof__(&bfMatBlockCooGetNumCols))bfMatBlockCooGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
   .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
+  .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockCooMulVec,
   .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockCooGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockCooPrintBlocksDeep,
@@ -340,6 +342,53 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
   return result;
 
+}
+
+BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+
+  if (bfMatGetNumCols(mat) != vec->size)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfSize resultSize = bfMatGetNumRows(mat);
+
+  BfVec *result = NULL;
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = bfVecRealToVec(bfVecRealNewWithValue(resultSize, 0));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
+
+    BfSize i0 = BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    /* Multiply the current block with the relevant part of `vec`: */
+    BfVec const *subvecView = bfVecGetSubvecViewConst(vec, j0, j1);
+    BfVec *tmp = bfMatMulVec(block, subvecView);
+    bfVecDelete((BfVec **)&subvecView);
+
+    /* Assign the result to the relevant part of `result`: */
+    BfVec *resultSubvecView = bfVecGetSubvecView(result, i0, i1);
+    bfVecAddInplace(resultSubvecView, tmp);
+    bfVecDelete(&resultSubvecView);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return result;
 }
 
 void bfMatBlockCooNegate(BfMat *mat) {
