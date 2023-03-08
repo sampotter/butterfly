@@ -1046,8 +1046,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
     for (BfSize k = 1; k < bfPtrArraySize(&currentPartialFacs); ++k) {
       PartialFac *otherFac = bfPtrArrayGet(&currentPartialFacs, k);
       if (fac->numW != otherFac->numW)
-        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-    } }
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR); } }
 
   // compute merge cut...
   BfConstPtrArray mergeCut = getMergeCut(&currentPartialFacs);
