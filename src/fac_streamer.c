@@ -1326,6 +1326,11 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
+
+    // TODO: throw out old partial facs
+#if BF_DEBUG
+    // TODO: throw out old prevPhis
+#endif
   }
 
   END_ERROR_HANDLING() {
