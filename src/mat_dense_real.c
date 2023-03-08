@@ -6,11 +6,26 @@
 
 #include <openblas/lapacke.h>
 
+#include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block.h>
 #include <bf/mat_diag_real.h>
 #include <bf/vec_real.h>
+
+static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseReal const *mat) {
+  BfMat const *super = bfMatDenseRealConstToMatConst(mat);
+  if (super->props & (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ))
+    return CblasConjTrans;
+  else if (super->props & BF_MAT_PROPS_TRANS)
+    return CblasTrans;
+  else
+    return CblasNoTrans;
+}
+
+static BfSize getLeadingDimension(BfMatDenseReal const *mat) {
+  return mat->super.rowStride;
+}
 
 /** Interface: Mat */
 
@@ -33,6 +48,7 @@ static BfMatVtable MAT_VTABLE = {
   .PermuteRows = (__typeof__(&bfMatPermuteRows))bfMatDenseRealPermuteRows,
   .ScaleRows = (__typeof__(&bfMatScaleRows))bfMatDenseRealScaleRows,
   .Mul = (__typeof__(&bfMatMul))bfMatDenseRealMul,
+  .MulVec = (__typeof__(&bfMatMulVec))bfMatDenseRealMulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
 };
 
@@ -484,6 +500,31 @@ BfMatDenseReal *bfMatDenseRealNew() {
   return mat;
 }
 
+BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseReal *matDenseReal = malloc(sizeof(BfMatDenseReal));
+  if (matDenseReal == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  bfMatDenseRealInit(matDenseReal, numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal *writePtr = matDenseReal->data + i*matDenseReal->super.rowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      *writePtr = value;
+      writePtr += matDenseReal->super.colStride;
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matDenseReal;
+}
+
 BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
@@ -909,6 +950,79 @@ BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherM
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
   }
+}
+
+static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
+                             BfVecReal const *vecReal,
+                             BfSize m, BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  enum CBLAS_TRANSPOSE trans = getCblasTranspose(matDenseReal);
+
+  BfVecReal *result = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(result, m);
+  HANDLE_ERROR();
+
+  BfSize lda = getLeadingDimension(matDenseReal);
+
+  BfReal alpha = 1, beta = 0;
+
+  cblas_dgemv(CblasRowMajor, trans, m, n, alpha,
+              matDenseReal->data, lda, vecReal->data,
+              vecReal->stride, beta, result->data,
+              result->stride);
+// void cblas_dgemv(OPENBLAS_CONST enum CBLAS_ORDER order,
+//                  OPENBLAS_CONST enum CBLAS_TRANSPOSE trans,
+//                  OPENBLAS_CONST blasint m,
+//                  OPENBLAS_CONST blasint n,
+//                  OPENBLAS_CONST double alpha,
+//                  OPENBLAS_CONST double  *a,
+//                  OPENBLAS_CONST blasint lda,
+//                  OPENBLAS_CONST double  *x,
+//                  OPENBLAS_CONST blasint incx,
+//                  OPENBLAS_CONST double beta,
+//                  double  *y,
+//                  OPENBLAS_CONST blasint incy)
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfVecRealToVec(result);
+}
+
+BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfVec *result = NULL;
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+  if (n != vec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  HANDLE_ERROR();
+
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = mulVec_vecReal(
+      matDenseReal, bfVecConstToVecRealConst(vec), m, n);
+    break;
+  default:
+    result = NULL;
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    break;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return result;
 }
 
 void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {

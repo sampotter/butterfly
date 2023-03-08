@@ -22,6 +22,7 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
 void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec);
 BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherMat);
+BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);
 void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 struct BfMatDenseReal {
@@ -39,6 +40,7 @@ BfMatDenseReal *bfMatToMatDenseReal(BfMat *mat);
 BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat);
 
 BfMatDenseReal *bfMatDenseRealNew();
+BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value);
 BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat);
 BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize numCols);
 void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols);
