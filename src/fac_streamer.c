@@ -82,6 +82,11 @@ void setPartialFacWBlock(PartialFac *partialFac, BfSize k, BfMat *W) {
   partialFac->W[k] = W;
 }
 
+typedef struct {
+  BfTreeNode const *treeNode;
+  BfMat const *mat;
+} MatWithTreeNodeKey;
+
 struct BfFacStreamer {
   BfSize rowTreeInitDepth;
   BfSize colTreeInitDepth;
@@ -109,6 +114,13 @@ struct BfFacStreamer {
    * nodes to lists of Psi and W blocks. We use this to track blocks
    * as we traverse the column tree, merging and splitting blocks. */
   BfPtrArray partialFacs;
+
+#if BF_DEBUG
+  /* An association list mapping from column tree nodes to contiguous
+   * blocks of Phi. We use this to check how accurate each partial
+   * factorization is as we stream them. */
+  BfPtrArray *prevPhis;
+#endif
 };
 
 static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
@@ -177,6 +189,9 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec
   facStreamer->colTreeIter = bfTreeIterPostOrderToTreeIter(iter);
 
   facStreamer->partialFacs = bfGetUninitializedPtrArray();
+  HANDLE_ERROR();
+
+  facStreamer->prevPhis = bfPtrArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
 
   bfInitPtrArrayWithDefaultCapacity(&facStreamer->partialFacs);
@@ -1214,6 +1229,54 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
   return mergedFac;
 }
 
+static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
+                                    BfTreeNode const *treeNode) {
+  BfMat const *mat = NULL;
+  for (BfSize k = 0; k < bfPtrArraySize(facStreamer->prevPhis); ++k) {
+    MatWithTreeNodeKey const *entry = bfPtrArrayGet(facStreamer->prevPhis, k);
+    if (entry->treeNode == treeNode) {
+      mat = entry->mat;
+      break;
+    }
+  }
+  return mat;
+}
+
+static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat const *Phi) {
+  MatWithTreeNodeKey *entry = malloc(sizeof(MatWithTreeNodeKey));
+  entry->treeNode = treeNode;
+  entry->mat = bfMatCopy(Phi);
+  bfPtrArrayAppend(facStreamer->prevPhis, entry);
+}
+
+static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
+  BfSize m = bfFacStreamerGetNumRows(facStreamer);
+  BfSize n = bfTreeNodeGetNumPoints(currentColNode);
+  BfMatDenseReal *Phi = bfMatDenseRealNewWithValue(m, n, BF_NAN);
+
+  /** Concatenate together children of the current colum node: */
+  for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
+    BfTreeNode const *childColNode = currentColNode->child[k];
+
+    if (childColNode == NULL)
+      continue;
+
+    /* The column node offsets give us the offset into the array of
+     * points backing the column tree. To get column indices into
+     * `Phi`, we need to offset them appropriately. */
+    BfSize jOffset = currentColNode->offset[0];
+    BfSize j0 = currentColNode->offset[k] - jOffset;
+    BfSize j1 = currentColNode->offset[k + 1] - jOffset;
+
+    BfMatDenseReal const *PhiBlock = bfMatConstToMatDenseRealConst(
+      getPhiByColNode(facStreamer, childColNode));
+
+    bfMatDenseRealSetBlock(Phi, 0, m, j0, j1, PhiBlock);
+  }
+
+  addPrevPhi(facStreamer, currentColNode, bfMatDenseRealToMat(Phi));
+}
+
 static void continueFactorizing(BfFacStreamer *facStreamer) {
   BEGIN_ERROR_HANDLING();
 
@@ -1229,6 +1292,10 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     printf("merging [%lu, %lu)",
            bfTreeNodeGetFirstIndex(currentColNode),
            bfTreeNodeGetLastIndex(currentColNode));
+
+#if BF_DEBUG
+    addPrevPhiForChildNodes(facStreamer, currentColNode);
+#endif
 
     PartialFac *mergedFac = mergeAndSplit(facStreamer);
     HANDLE_ERROR();
@@ -1343,6 +1410,10 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
 
 
   printf("streamed [%lu, %lu)",
+#if BF_DEBUG
+  addPrevPhi(facStreamer, colNode, Phi);
+#endif
+
          bfTreeNodeGetFirstIndex(colNode),
          bfTreeNodeGetLastIndex(colNode));
   printf(" -> depths: Psi=%lu", bfMatBlockGetMaxDepth(bfMatToMatBlock(partialFac->Psi)));
