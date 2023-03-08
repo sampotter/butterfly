@@ -123,6 +123,21 @@ static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
   }
 }
 
+static BfVec *partialFacMulVec(PartialFac *partialFac, BfVec const *x) {
+  assert(partialFac->numW > 0);
+  BfSize k = partialFac->numW - 1;
+  BfVec *y = NULL;
+  BfVec *yPrev = bfMatMulVec(partialFac->W[k], x);
+  while (k > 0) {
+    y = bfMatMulVec(partialFac->W[--k], yPrev);
+    bfVecDelete(&yPrev);
+    yPrev = y;
+  }
+  y = bfMatMulVec(partialFac->Psi, yPrev);
+  bfVecDelete(&yPrev);
+  return y;
+}
+
 // END PARTIAL FAC STUFF...
 ////////////////////////////////////////////////////////////////////////
 
