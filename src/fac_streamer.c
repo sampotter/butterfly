@@ -1347,7 +1347,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   assert(bfTreeNodeIsLeaf(colNode));
 
   /* Make sure `mat` has the right number of rows */
-  if (bfMatGetNumRows(Phi) != bfTreeGetNumPoints(facStreamer->rowTree))
+  if (bfMatGetNumRows(Phi) != bfFacStreamerGetNumRows(facStreamer))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* Make sure `mat` has the right number of columns */
