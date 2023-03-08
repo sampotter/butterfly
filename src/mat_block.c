@@ -160,12 +160,12 @@ BfSize getMaxDepthRec(BfMatBlock const *matBlock, BfSize maxDepth) {
 
   BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
   for (BfSize i = 0; i < numBlocks; ++i) {
+    BfSize depth = maxDepth + 1;
     if (bfMatIsBlock(matBlock->block[i])) {
       BfMatBlock const *childBlock = bfMatConstToMatBlockConst(matBlock->block[i]);
-      BfSize depth = getMaxDepthRec(childBlock, maxDepth + 1);
-      if (depth > newMaxDepth)
-        newMaxDepth = depth;
+      depth = getMaxDepthRec(childBlock, maxDepth + 1);
     }
+    if (depth > newMaxDepth) newMaxDepth = depth;
   }
 
   return newMaxDepth;
