@@ -18,6 +18,7 @@ typedef struct BfFacStreamerSpec {
 BfFacStreamer *bfFacStreamerNew();
 void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec);
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer);
+BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer);
 void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi);
 bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer);
 BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer);

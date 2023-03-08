@@ -170,6 +170,10 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
   assert(false);
 }
 
+BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer) {
+  return bfTreeGetNumPoints(facStreamer->rowTree);
+}
+
 static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
