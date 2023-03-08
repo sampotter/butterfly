@@ -1414,6 +1414,9 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   HANDLE_ERROR();
 
 
+  addPartialFac(facStreamer, partialFac);
+  HANDLE_ERROR();
+
   printf("streamed [%lu, %lu)",
 #if BF_DEBUG
   addPrevPhi(facStreamer, colNode, Phi);
@@ -1431,9 +1434,6 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
     bfConstPtrArrayAppend(&partialFac->rowNodes, bfConstPtrArrayGet(&rowNodes, i));
     HANDLE_ERROR();
   }
-
-  addPartialFac(facStreamer, partialFac);
-  HANDLE_ERROR();
 
   continueFactorizing(facStreamer);
 
