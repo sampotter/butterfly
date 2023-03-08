@@ -24,6 +24,9 @@
 #undef BF_ARRAY_DEFAULT_CAPACITY
 #define BF_ARRAY_DEFAULT_CAPACITY 32
 
+////////////////////////////////////////////////////////////////////////
+// BEGIN PARTIAL FAC STUFF...
+
 typedef struct {
   BfTreeNode const *colNode;
 
@@ -119,6 +122,9 @@ static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
     assert(false);
   }
 }
+
+// END PARTIAL FAC STUFF...
+////////////////////////////////////////////////////////////////////////
 
 BfFacStreamer *bfFacStreamerNew() {
   BEGIN_ERROR_HANDLING();
