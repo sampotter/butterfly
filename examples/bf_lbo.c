@@ -12,6 +12,7 @@
 #include <bf/linalg.h>
 #include <bf/mat.h>
 #include <bf/octree.h>
+#include <bf/rand.h>
 #include <bf/vec_real.h>
 
 BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
@@ -131,6 +132,8 @@ int main(int argc, char const *argv[]) {
     printf("usage: %s objPath tol freqTreeOffset\n", argv[0]);
     exit(EXIT_FAILURE);
   }
+
+  bfSeed(0);
 
   char const *objPath = argv[1];
   BfReal tol = strtod(argv[2], NULL);
