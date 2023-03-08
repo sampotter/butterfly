@@ -311,6 +311,10 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
   BfSize numRows = bfMatGetNumRows(op1);
   BfSize numCols = bfMatGetNumCols(op2);
+
+  if (bfMatGetNumCols(op1) != bfMatGetNumRows(op2))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo1);
 
   BfMat *result = NULL;
