@@ -117,6 +117,8 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
 
 #if BF_DEBUG
   assert(bfSizeArrayIsSorted(sizeArray));
+
+  BfSize prevSize = sizeArray->size;
 #endif
 
   if (sizeArray->size == sizeArray->capacity) {
@@ -139,6 +141,10 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   END_ERROR_HANDLING() {
     assert(false);
   }
+
+#if BF_DEBUG
+  assert(sizeArray->size == prevSize + 1);
+#endif
 }
 
 BfSize bfSizeArrayFindFirst(BfSizeArray const *sizeArray, BfSize elt) {
