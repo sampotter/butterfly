@@ -18,9 +18,12 @@
 #define NUM_BLOCKS(mat) NUM_ROW_BLOCKS(mat)*NUM_COL_BLOCKS(mat)
 #define ROW_OFFSET(mat, i) mat->super.rowOffset[i]
 #define COL_OFFSET(mat, j) mat->super.colOffset[j]
+#define BLOCK_ROW_OFFSET(mat, k) ROW_OFFSET(mat, k/NUM_COL_BLOCKS(mat))
+#define BLOCK_COL_OFFSET(mat, k) COL_OFFSET(mat, k % NUM_COL_BLOCKS(mat))
 #define NUM_BLOCK_ROWS(mat, i) ROW_OFFSET(mat, i + 1) - ROW_OFFSET(mat, i)
 #define NUM_BLOCK_COLS(mat, j) COL_OFFSET(mat, j + 1) - COL_OFFSET(mat, j)
 #define BLOCK(mat, i, j) mat->super.block[i*NUM_COL_BLOCKS(mat) + j]
+#define LINEAR_BLOCK(mat, k) mat->super.block[k]
 
 /** Interface: Mat */
 
