@@ -655,6 +655,88 @@ static BfConstPtrArray getMergeCut(BfPtrArray const *partialFacs) {
   return mergeCut;
 }
 
+static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
+                                     BfSize i0, BfSize j0, BfMat *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfIndexedMat *indexedMat = malloc(sizeof(BfIndexedMat));
+  if (indexedMat == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  indexedMat->i0 = i0;
+  indexedMat->j0 = j0;
+  indexedMat->mat = mat;
+
+  bfPtrArrayAppend(indexedPsiSubblocks, indexedMat);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+static void
+getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
+                                    BfSize i0Sel, BfSize i1Sel,
+                                    BfSize i0Parent, BfSize j0Parent,
+                                    BfPtrArray *indexedPsiSubblocks) {
+  BEGIN_ERROR_HANDLING();
+
+  BfType type = bfMatGetType(mat);
+
+  if (type == BF_TYPE_MAT_BLOCK_DIAG) {
+    BfMatBlockDiag const *matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
+    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+    for (BfSize k = 0; k < numBlocks; ++k) {
+      BfMat *block = matBlockDiag->super.block[k];
+
+      /* Compute row range for current block */
+      BfSize i0 = i0Parent + matBlockDiag->super.rowOffset[k];
+      BfSize i1 = i0 + bfMatGetNumRows(block);
+
+      /* Get column offset for current block */
+      BfSize j0 = j0Parent + matBlockDiag->super.colOffset[k];
+
+      /* If there's some overlap, continue recursively for this block: */
+      if (!(i1Sel <= i0 || i1 <= i0Sel)) {
+        getIndexedPsiSubblocksInRowRangeRec(
+          block, i0Sel, i1Sel, i0, j0, indexedPsiSubblocks);
+        HANDLE_ERROR();
+      }
+    }
+  }
+
+  else if (type == BF_TYPE_MAT_DENSE_REAL ||
+           type == BF_TYPE_MAT_BLOCK_COO ||
+           type == BF_TYPE_MAT_IDENTITY)
+    appendIndexedPsiSubblock(indexedPsiSubblocks, i0Parent, j0Parent, mat);
+
+  else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+static BfPtrArray *
+getIndexedPsiSubblocksInRowRange(PartialFac const *partialFac,
+                                 BfSize i0Sel, BfSize i1Sel) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPtrArray *indexedPsiSubblocks = bfPtrArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  getIndexedPsiSubblocksInRowRangeRec(
+    partialFac->Psi, i0Sel, i1Sel, 0, 0, indexedPsiSubblocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return indexedPsiSubblocks;
+}
+
 static void
 getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
                                         BfTreeNode const *rowNode,
@@ -667,9 +749,6 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
 
   if (W0BlockPtr == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  BfMatBlockDiag const *Psi = bfMatToMatBlockDiag(partialFac->Psi);
-  HANDLE_ERROR();
 
   BfMat const *W0 = partialFac->W[0];
 
@@ -700,30 +779,46 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
   }
 #endif
 
-  BfSize numSubblocks = 0;
+  /* Find all of the leaf subblocks in Psi and their offsets. */
+  BfPtrArray *indexedPsiSubblocks =
+    getIndexedPsiSubblocksInRowRange(partialFac, i0, i1);
 
-  for (BfSize k = 0; k < bfMatBlockDiagNumBlocks(Psi); ++k) {
-    /* Get row offsets for current block of Psi */
-    BfSize i0_ = Psi->super.rowOffset[k];
-    BfSize i1_ = Psi->super.rowOffset[k + 1];
+  BfSize numSubblocks = bfPtrArraySize(indexedPsiSubblocks);
+  assert(numSubblocks > 0);
 
-    /* Skip blocks which aren't indexed by [i0, i1) */
-    if (!(i0 <= i0_ && i1_ <= i1))
-      continue;
+  BfSize i1Prev = BF_SIZE_BAD_VALUE;
+  BfSize j1Prev = BF_SIZE_BAD_VALUE;
 
-    ++numSubblocks;
+  /* Iterate over each leaf Psi subblock, grab a copy of it an the
+   * corresponding W0 row range to our running lists of blocks */
+  for (BfSize k = 0; k < numSubblocks; ++k) {
+    BfIndexedMat *indexedMat = bfPtrArrayGet(indexedPsiSubblocks, k);
+    BfMat *PsiSubblock = indexedMat->mat;
+
+    /* Get row span for block */
+    BfSize i0_ = indexedMat->i0;
+    BfSize i1_ = i0_ + bfMatGetNumRows(PsiSubblock);
+    assert(i0 <= i0_ && i1_ <= i1);
+
+    /* Row spans should be adjacent */
+    assert(i1Prev == BF_SIZE_BAD_VALUE || i0_ == i1Prev);
+    i1Prev = i1_;
+
+    /* Get column space for block */
+    BfSize j0_ = indexedMat->j0;
+    BfSize j1_ = j0_ + bfMatGetNumCols(PsiSubblock);
+
+    /* Column spaces should be adjacent */
+    assert(j1Prev == BF_SIZE_BAD_VALUE || j0_ == j1Prev);
+    j1Prev = j1_;
 
     /* Get a copy of the current diagonal Psi block */
-    BfMat *PsiSubblock = bfMatBlockDiagGetBlockCopy(Psi, k, k);
+    BfMat *PsiSubblockCopy = bfMatCopy(PsiSubblock);
     HANDLE_ERROR();
 
     /* ... and append it to the running array of Psi subblocks */
-    bfPtrArrayAppend(&PsiSubblocks, PsiSubblock);
+    bfPtrArrayAppend(&PsiSubblocks, PsiSubblockCopy);
     HANDLE_ERROR();
-
-    /* Get column offsets for current block of Psi */
-    BfSize j0_ = Psi->super.colOffset[k];
-    BfSize j1_ = Psi->super.colOffset[k + 1];
 
     /* Get a copy of the current W row subblock */
     BfMat *W0Subblock = bfMatGetRowRangeCopy(W0, j0_, j1_);
@@ -734,7 +829,6 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
     HANDLE_ERROR();
   }
 
-  assert(numSubblocks > 0);
   assert(bfPtrArraySize(&PsiSubblocks) == numSubblocks);
   assert(bfPtrArraySize(&W0Subblocks) == numSubblocks);
 
@@ -760,6 +854,12 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
 
   bfPtrArrayDeinit(&PsiSubblocks);
   bfPtrArrayDeinit(&W0Subblocks);
+
+  for (BfSize k = 0; k < numSubblocks; ++k) {
+    BfIndexedMat *indexedMat = bfPtrArrayGet(indexedPsiSubblocks, k);
+    free(indexedMat);
+  }
+  bfPtrArrayDelete(&indexedPsiSubblocks);
 
   assert(PsiBlock != NULL);
   assert(W0Block != NULL);
