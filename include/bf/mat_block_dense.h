@@ -12,16 +12,19 @@ BfSize bfMatBlockDenseNumBytes(BfMat const *mat);
 BfSize bfMatBlockDenseGetNumRows(BfMat const *mat);
 BfSize bfMatBlockDenseGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
-void bfMatBlockDenseScaleCols(BfMat *mat, BfVec const *vec);
-void bfMatBlockDenseAddInplace(BfMat *mat, BfMat const *otherMat);
+BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense, BfSize i0, BfSize i1);
+void bfMatBlockDenseScaleCols(BfMatBlockDense *matBlockDense, BfVec const *vec);
+void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *otherMat);
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat);
+BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
 BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type);
+void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 /** Interface: MatBlock */
 
-BfSize bfMatBlockDenseNumBlocks(BfMatBlock const *matBlock);
-BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlock const *matBlock);
-BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlock const *matBlock);
+BfSize bfMatBlockDenseNumBlocks(BfMatBlockDense const *matBlockDense);
+BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlockDense const *matBlockDense);
+BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense);
 
 /** Implementation: MatBlockDense */
 
@@ -39,6 +42,8 @@ BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
 BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
 
 BfMatBlockDense *bfMatBlockDenseNew();
+BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks);
+BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks);
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
                          BfSize numBlockCols);
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
