@@ -252,9 +252,6 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
   BfMatBlock const *matBlock = &matBlockDense->super;
 
-  if (i0 >= i1)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
   BfSize numRows = bfMatBlockDenseGetNumRows(mat);
 
   if (i0 >= numRows)
