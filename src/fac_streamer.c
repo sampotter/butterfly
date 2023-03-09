@@ -1543,10 +1543,15 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
       continue;
     }
 
+    assert(!bfTreeNodeIsLeaf(rowNode));
+
     /* Push the children of the current row node onto the stack in
      * reverse order so that we traverse `mat` top to bottom */
-    for (BfSize i = rowNode->maxNumChildren; i > 0; --i)
-      bfPtrArrayAppend(&stack, rowNode->child[i - 1]);
+    for (BfSize i = rowNode->maxNumChildren; i > 0; --i) {
+      BfTreeNode const *childRowNode = rowNode->child[i - 1];
+      if (childRowNode != NULL)
+        bfPtrArrayAppend(&stack, (BfPtr)childRowNode);
+    }
   }
 
   PartialFac *partialFac = makeLeafNodePartialFac(colNode, &PsiBlocks, &WBlocks);
