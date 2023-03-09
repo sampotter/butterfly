@@ -283,8 +283,8 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
   return success;
 }
 
-static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
-                       BfReal tol, BfSize minNumCols,
+static bool getPsiAndW(BfFacStreamer const *facStreamer,
+                       BfMat const *mat, BfTreeNode const *rowNode,
                        BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
@@ -301,14 +301,37 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
   BfMat *block = bfMatGetRowRange((BfMat *)mat, i0, i1);
   HANDLE_ERROR();
 
+  bool success = false;
+
   /* If there are too few columns in the current block, we don't
    * bother trying to compress. Instead, we just pass the current
    * block through for the Psi block and emit an identity matrix for
-   * the new W block. Otherwise, we compute a truncated SVD of the
-   * current block. We emit Psi := U and W := S*V'. */
-  bool success = bfMatGetNumCols(mat) < minNumCols ?
-    getPsiAndW_skinny(block, PsiPtr, WPtr) :
-    getPsiAndW_normal(block, tol, PsiPtr, WPtr);
+   * the new W block. */
+  if (bfMatGetNumCols(mat) < facStreamer->minNumCols)
+    success = getPsiAndW_skinny(block, PsiPtr, WPtr);
+
+  /* If there are too few rows, we pass through the current block as W
+   * and emit an identity matrix for Psi. */
+  else if (i1 - i0 < facStreamer->minNumRows) {
+    BfMatIdentity *Psi = bfMatIdentityNew();
+    HANDLE_ERROR();
+
+    bfMatIdentityInit(Psi, i1 - i0);
+    HANDLE_ERROR();
+
+    BfMat *W = bfMatCopy(block);
+    HANDLE_ERROR();
+
+    *PsiPtr = bfMatIdentityToMat(Psi);
+    *WPtr = W;
+
+    success = true;
+  }
+
+  /* In the normal mode of operation, we compute a truncated SVD of
+   * the current block. We emit Psi := U and W := S*V'. */
+  else
+    success = getPsiAndW_normal(block, facStreamer->tol, PsiPtr, WPtr);
 
   END_ERROR_HANDLING() {
     success = false;
@@ -1402,8 +1425,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
     BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
 
     BfMat *Psi = NULL, *W = NULL;
-    bool metTol = getPsiAndW(
-      Phi, rowNode, facStreamer->tol, facStreamer->minNumCols, &Psi, &W);
+    bool metTol = getPsiAndW(facStreamer, Phi, rowNode, &Psi, &W);
     HANDLE_ERROR();
 
     /* Accumulate the Psi and W blocks and continue if we successfully
