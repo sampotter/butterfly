@@ -64,10 +64,10 @@ static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   if (partialFac->W == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfMatBlockCoo *W0 = bfMatBlockCooNewColFromBlocks(WBlocks);
+  BfMatBlockDense *W0 = bfMatBlockDenseNewColFromBlocks(WBlocks);
   HANDLE_ERROR();
 
-  partialFac->W[0] = bfMatBlockCooToMat(W0);
+  partialFac->W[0] = bfMatBlockDenseToMat(W0);
 
   END_ERROR_HANDLING() {
     partialFac = NULL;
