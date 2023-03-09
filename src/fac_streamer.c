@@ -288,6 +288,12 @@ static bool getPsiAndW(BfMat const *mat, BfTreeNode const *rowNode,
                        BfMat **PsiPtr, BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
+  /** NOTE! This function is actually a bit redundant... The other
+   * place in this file where we check the extreme cases of having too
+   * few rows or columns is `findEpsilonRankCutAndGetNewBlocks`. We
+   * should do what we need to do to replace `getPsiAndW` with that
+   * function. (I think this is the right idea, anyway...) */
+
   BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
   BfSize i1 = bfTreeNodeGetLastIndex(rowNode);
 
