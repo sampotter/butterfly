@@ -196,5 +196,10 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
 
   bfTreeLevelIterDeinit(&iter);
 
+#if BF_DEBUG
+  for (BfSize k = 0; k < bfPtrArraySize(&levelNodes); ++k)
+    assert(bfPtrArrayGet(&levelNodes, k) != NULL);
+#endif
+
   return levelNodes;
 }
