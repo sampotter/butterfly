@@ -123,8 +123,14 @@ struct BfFacStreamer {
 #endif
 };
 
+static BfSize partialFacGetNumRows(PartialFac const *partialFac) {
+  return bfMatGetNumRows(partialFac->Psi);
+}
+
 static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
   BEGIN_ERROR_HANDLING();
+
+  assert(bfFacStreamerGetNumRows(facStreamer) == partialFacGetNumRows(partialFac));
 
   // printf("reminder: do a sorted insert in addPartialFac\n");
 
