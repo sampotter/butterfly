@@ -369,9 +369,6 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
-  if (j0 >= j1)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
   if (j1 > n)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
