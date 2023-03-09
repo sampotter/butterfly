@@ -788,9 +788,6 @@ BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols,
 
   BfSize numBlocks = bfPtrArraySize(indexedBlocks);
 
-  if (numBlocks == 0)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
   /* Extract the blocks from the array of indexed blocks */
 
   BfPtrArray blocks;
