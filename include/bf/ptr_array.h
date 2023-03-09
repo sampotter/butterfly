@@ -26,6 +26,8 @@ void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
 void bfPtrArrayDeinit(BfPtrArray *arr);
+void bfPtrArrayDealloc(BfPtrArray **arr);
+void bfPtrArrayDelete(BfPtrArray **arr);
 BfPtrArray bfPtrArrayCopy(BfPtrArray *arr);
 BfSize bfPtrArraySize(BfPtrArray const *arr);
 bool bfPtrArrayIsEmpty(BfPtrArray const *arr);

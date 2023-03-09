@@ -70,6 +70,16 @@ void bfPtrArrayDeinit(BfPtrArray *arr) {
   memset(arr, 0x0, sizeof(BfPtrArray));
 }
 
+void bfPtrArrayDealloc(BfPtrArray **arr) {
+  free(*arr);
+  *arr = NULL;
+}
+
+void bfPtrArrayDelete(BfPtrArray **arr) {
+  bfPtrArrayDeinit(*arr);
+  bfPtrArrayDealloc(arr);
+}
+
 BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
   BEGIN_ERROR_HANDLING();
 
