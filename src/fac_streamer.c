@@ -258,8 +258,13 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
   HANDLE_ERROR();
 
   /* Scale W if we successfully compressed this block. */
-  if (success)
-    bfMatMulInplace(W, bfMatDiagRealToMat(S));
+  if (success) {
+    BfVec *s = bfMatDiagRealGetVecView(S);
+    HANDLE_ERROR();
+
+    bfMatScaleRows(W, s);
+    HANDLE_ERROR();
+  }
 
   END_ERROR_HANDLING() {
     success = false;
