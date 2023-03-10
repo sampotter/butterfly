@@ -695,6 +695,65 @@ BfMatBlockDense *bfMatBlockDenseNew() {
   return matBlockDense;
 }
 
+BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
+                                              BfSize numColBlocks,
+                                              BfPtrArray *blocks) {
+  BEGIN_ERROR_HANDLING();
+
+  if (bfPtrArrayIsEmpty(blocks))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockDense *matBlockDense = bfMatBlockDenseNew();
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfPtrArraySize(blocks);
+  assert(numBlocks == numRowBlocks*numColBlocks);
+
+  bfMatBlockInit(&matBlockDense->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
+                 numBlocks, numRowBlocks, numColBlocks);
+  HANDLE_ERROR();
+
+  /* Compute the row and column offsets */
+
+  ROW_OFFSET(matBlockDense, 0) = 0;
+  for (BfSize p = 0; p < numRowBlocks; ++p)
+    ROW_OFFSET(matBlockDense, p + 1) = BF_SIZE_BAD_VALUE;
+
+  COL_OFFSET(matBlockDense, 0) = 0;
+  for (BfSize q = 0; q < numColBlocks; ++q)
+    COL_OFFSET(matBlockDense, q + 1) = BF_SIZE_BAD_VALUE;
+
+  for (BfSize p = 0; p < numRowBlocks; ++p) {
+    for (BfSize q = 0; q < numColBlocks; ++q) {
+      BfSize k = numColBlocks*p + q;
+
+      BfMat *block = bfPtrArrayGet(blocks, k);
+
+      BLOCK(matBlockDense, p, q) = block;
+
+      BfSize numRows = bfMatGetNumRows(block);
+      BfSize numCols = bfMatGetNumCols(block);
+
+      if (ROW_OFFSET(matBlockDense, p + 1) != BF_SIZE_BAD_VALUE)
+        assert(ROW_OFFSET(matBlockDense, p + 1) == numRows);
+      ROW_OFFSET(matBlockDense, p + 1) = numRows;
+
+      if (COL_OFFSET(matBlockDense, q + 1) != BF_SIZE_BAD_VALUE)
+        assert(COL_OFFSET(matBlockDense, q + 1) == numCols);
+      COL_OFFSET(matBlockDense, q + 1) = numCols;
+    }
+  }
+
+  bfSizeRunningSum(numRowBlocks + 1, &ROW_OFFSET(matBlockDense, 0));
+  bfSizeRunningSum(numColBlocks + 1, &COL_OFFSET(matBlockDense, 0));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matBlockDense;
+}
+
 BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks) {
   BEGIN_ERROR_HANDLING();
 

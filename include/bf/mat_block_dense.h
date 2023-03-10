@@ -42,6 +42,7 @@ BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
 BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
 
 BfMatBlockDense *bfMatBlockDenseNew();
+BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks);
 BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks);
 BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks);
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
