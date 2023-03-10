@@ -844,7 +844,7 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
     HANDLE_ERROR();
 
     /* ... and vertically concatenate the W row subblocks */
-    W0Block = bfMatBlockCooToMat(bfMatBlockCooNewColFromBlocks(&W0Subblocks));
+    W0Block = bfMatBlockDenseToMat(bfMatBlockDenseNewColFromBlocks(&W0Subblocks));
     HANDLE_ERROR();
   }
 
