@@ -249,50 +249,67 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
                                       BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
 
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  BfMatBlock const *matBlock = &matBlockDense->super;
 
   BfSize numRows = bfMatBlockDenseGetNumRows(mat);
 
-  if (i0 >= numRows)
+  /* Check whether i0 <= i1 index a valid row range: */
+  if (i0 == i1 && i0 > numRows)
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
   if (i1 > numRows)
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
 
-  /* Find the offset of each row of blocks. For now, we require that
-   * i0 and i1 exactly correspond to the start of two distinct block
-   * rows.
+  /** Seek through the row offsets to find i0 and i1. Since there
+   * could be repeat row offsets, we need to search from above and
+   * below here since we want to make sure to capture *all* row
+   * offsets bracketed by i0 and i1.
    *
-   * In the future, we could relax this assumption and allow block
-   * matrices to get partitioned when i0 and i1 don't exactly align
-   * with the block partitions. But probably it would be better to
-   * just do that in a separate function. */
+   * Afterwards, [p0, p1) indexed the block range corresponding to the
+   * row range [i0, i1). */
 
-  BfSize p0 = bfMatBlockFindRowBlock(matBlock, i0);
-  if (p0 == BF_SIZE_BAD_VALUE || i0 != matBlock->rowOffset[p0])
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  BfSize p0 = 0;
+  while (p0 < NUM_ROW_BLOCKS(matBlockDense) &&
+         ROW_OFFSET(matBlockDense, p0) < i0)
+    ++p0;
 
-  BfSize p1 = p0 + 1;
-  if (matBlock->rowOffset[p1] != i1)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  BfSize p1 = NUM_ROW_BLOCKS(matBlockDense);
+  while (p1 > 0 && ROW_OFFSET(matBlockDense, p1 - 1) > i0)
+    --p1;
 
+  assert(p0 < p1);
+  assert(ROW_OFFSET(matBlockDense, p0) == i0);
+  assert(ROW_OFFSET(matBlockDense, p1) == i1);
+
+  /** Copy all blocks in the row range and assemble the resulting
+   * dense block matrix containing the row range. */
+
+  /* Array holding all `(p1 - p0)*NUM_COL_BLOCKS(matBlockDense)`
+   * blocks in row major order. */
   BfPtrArray *blocks = bfPtrArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
 
-  for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q) {
-    BfMat const *block = BLOCK(matBlockDense, p0, q);
+  for (BfSize p = p0; p < p1; ++p) {
+    for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q) {
+      BfMat const *block = BLOCK(matBlockDense, p, q);
 
-    BfMat *blockCopy = bfMatCopy(block);
-    HANDLE_ERROR();
+      BfMat *blockCopy = bfMatCopy(block);
+      HANDLE_ERROR();
 
-    bfPtrArrayAppend(blocks, blockCopy);
+      bfPtrArrayAppend(blocks, blockCopy);
+      HANDLE_ERROR();
+    }
   }
 
-  BfMatBlockDense *result = bfMatBlockDenseNewRowFromBlocks(blocks);
+  BfMatBlockDense *result = bfMatBlockDenseNewFromBlocks(
+    p1 - p0, NUM_COL_BLOCKS(matBlockDense), blocks);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 
   bfPtrArrayDelete(&blocks);
 
