@@ -804,7 +804,7 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
     assert(i1Prev == BF_SIZE_BAD_VALUE || i0_ == i1Prev);
     i1Prev = i1_;
 
-    /* Get column space for block */
+    /* Get column range for block */
     BfSize j0_ = indexedMat->j0;
     BfSize j1_ = j0_ + bfMatGetNumCols(PsiSubblock);
 
