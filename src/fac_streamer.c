@@ -61,7 +61,7 @@ static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
 
   partialFac->numW = 1;
 
-  partialFac->W = malloc(sizeof(BfMatBlockCoo *));
+  partialFac->W = malloc(sizeof(BfMat *));
   if (partialFac->W == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
