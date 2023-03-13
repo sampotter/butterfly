@@ -1423,9 +1423,6 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
   /* Continue the post-order traversal until the next leaf node */
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
-    bfTreeIterNext(facStreamer->colTreeIter);
-    HANDLE_ERROR();
-
     BfTreeNode const *currentColNode = bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
     if (bfTreeNodeIsLeaf(currentColNode))
       break;
@@ -1487,6 +1484,9 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 #if BF_DEBUG
     // TODO: throw out old prevPhis
 #endif
+
+    bfTreeIterNext(facStreamer->colTreeIter);
+    HANDLE_ERROR();
   }
 
   END_ERROR_HANDLING() {
@@ -1619,6 +1619,11 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
     }
   }
 #endif
+
+  /* We're done with this node---move to the next one before
+   * continuing to factorize. */
+  bfTreeIterNext(facStreamer->colTreeIter);
+  HANDLE_ERROR();
 
   continueFactorizing(facStreamer);
 
