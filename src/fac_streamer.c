@@ -1461,18 +1461,20 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     }
     // printf("\n");
 
-
     {
       BfMat const *Phi = getPhiByColNode(facStreamer, currentColNode);
-      assert(Phi != NULL);
       BfSize n = bfMatGetNumCols(Phi);
-      BfVec *x = bfVecRealToVec(bfVecRealNewRandn(n));
-      BfVec *y_gt = bfMatMulVec(Phi, x);
-      BfVec *y = partialFacMulVec(mergedFac, x);
-      BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
-      printf("- rel max error for random MVP: %g\n", rel_error);
+      if (n > 0) {
+        assert(Phi != NULL);
+        BfVec *x = bfVecRealToVec(bfVecRealNewRandn(n));
+        BfVec *y_gt = bfMatMulVec(Phi, x);
+        BfVec *y = partialFacMulVec(mergedFac, x);
+        BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
+        printf("- rel max error for random MVP: %g\n", rel_error);
+      } else {
+        printf("- merged fac has no columns---skipping\n");
+      }
     }
-
 
 #endif
 
