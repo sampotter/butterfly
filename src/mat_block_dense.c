@@ -278,12 +278,35 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
     ++p0;
 
   BfSize p1 = NUM_ROW_BLOCKS(matBlockDense);
-  while (p1 > 0 && ROW_OFFSET(matBlockDense, p1 - 1) > i0)
+  while (p1 > p0 && ROW_OFFSET(matBlockDense, p1 - 1) > i0)
     --p1;
 
-  assert(p0 < p1);
-  assert(ROW_OFFSET(matBlockDense, p0) == i0);
-  assert(ROW_OFFSET(matBlockDense, p1) == i1);
+  assert(p0 <= p1);
+
+  if (p0 == p1) {
+    --p0;
+    assert(ROW_OFFSET(matBlockDense, p0) <= i0
+           && i1 <= ROW_OFFSET(matBlockDense, p1));
+  }
+
+  /* The range [i0_, i1) is the row index range of every block in the
+   * row with respect to `matBlockDense`'s index system. */
+  BfSize i0_ = ROW_OFFSET(matBlockDense, p0);
+  BfSize i1_ = ROW_OFFSET(matBlockDense, p1);
+
+  if (i0_ == i1_) {
+    assert(i0 <= i0_ && i0_ <= i1);
+  } else {
+    assert(i1_ >= i0 || i0_ <= i1);
+  }
+
+  BfSize m_ = i1_ - i0_;
+
+  /* The range of rows which should be copied from each block in the
+   * row with respect to the block row index system. */
+  BfSize i0__ = i0_ < i0 ? i0 - i0_ : 0;
+  BfSize i1__ = m_ - (i1 < i1_ ? i1_ - i1 : 0);
+  assert(i0__ <= i1__ && i1__ <= m_);
 
   /** Copy all blocks in the row range and assemble the resulting
    * dense block matrix containing the row range. */
@@ -297,10 +320,12 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
     for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q) {
       BfMat const *block = BLOCK(matBlockDense, p, q);
 
-      BfMat *blockCopy = bfMatCopy(block);
+      assert(bfMatGetNumRows(block) == m_);
+
+      BfMat *blockRowRangeCopy = bfMatGetRowRangeCopy(block, i0__, i1__);
       HANDLE_ERROR();
 
-      bfPtrArrayAppend(blocks, blockCopy);
+      bfPtrArrayAppend(blocks, blockRowRangeCopy);
       HANDLE_ERROR();
     }
   }
