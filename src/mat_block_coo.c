@@ -14,6 +14,8 @@
 
 /** Helper macros: */
 
+#define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
+#define NUM_COL_BLOCKS(mat) mat->super.super.numCols
 #define ROW_IND(mat, k) mat->rowInd[k]
 #define COL_IND(mat, k) mat->colInd[k]
 #define ROW_OFFSET(mat, i) mat->super.rowOffset[i]
@@ -507,6 +509,8 @@ void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, Bf
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
   .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockCooNumBlocks,
+  .GetNumRowBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockCooGetNumRowBlocks,
+  .GetNumColBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockCooGetNumColBlocks,
   .GetRowOffset = (__typeof__(&bfMatBlockGetRowOffset))bfMatBlockCooGetRowOffset,
   .GetColOffset = (__typeof__(&bfMatBlockGetColOffset))bfMatBlockCooGetColOffset,
   .GetBlockConst = (__typeof__(&bfMatBlockGetBlockConst))bfMatBlockCooGetBlockConst,
@@ -514,6 +518,14 @@ static BfMatBlockVtable MAT_BLOCK_VTABLE = {
 
 BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo) {
   return matBlockCoo->numBlocks;
+}
+
+BfSize bfMatBlockCooGetNumRowBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return NUM_ROW_BLOCKS(matBlockCoo);
+}
+
+BfSize bfMatBlockCooGetNumColBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return NUM_COL_BLOCKS(matBlockCoo);
 }
 
 BfSize bfMatBlockCooGetRowOffset(BfMatBlockCoo const *matBlockCoo, BfSize i) {

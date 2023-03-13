@@ -14,14 +14,12 @@ BfSize bfMatBlockNumBlocks(BfMatBlock const *mat) {
   return mat->vtbl->NumBlocks(mat);
 }
 
-BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *mat) {
-  assert(mat->vtbl->GetNumRowBlocks == NULL); // TODO: safeguard
-  return mat->super.numRows;
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *matBlock) {
+  return matBlock->vtbl->GetNumRowBlocks(matBlock);
 }
 
-BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *mat) {
-  assert(mat->vtbl->GetNumColBlocks == NULL); // TODO: safeguard
-  return mat->super.numCols;
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *matBlock) {
+  return matBlock->vtbl->GetNumColBlocks(matBlock);
 }
 
 BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i) {

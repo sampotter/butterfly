@@ -21,6 +21,8 @@ void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
 /** Interface: MatBlock */
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *matBlockDiag);
+BfSize bfMatBlockDiagGetNumRowBlocks(BfMatBlockDiag const *matBlockDiag);
+BfSize bfMatBlockDiagGetNumColBlocks(BfMatBlockDiag const *matBlockDiag);
 BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, BfSize j);
 
 struct BfMatBlockDiag {

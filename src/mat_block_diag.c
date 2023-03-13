@@ -415,12 +415,22 @@ void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
   .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockDiagNumBlocks,
+  .GetNumRowBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockDiagGetNumRowBlocks,
+  .GetNumColBlocks = (__typeof__(&bfMatBlockGetNumColBlocks))bfMatBlockDiagGetNumColBlocks,
   .GetBlockCopy = (__typeof__(&bfMatBlockGetBlockCopy))bfMatBlockDiagGetBlockCopy,
 };
 
 BfSize bfMatBlockDiagNumBlocks(BfMatBlockDiag const *matBlockDiag) {
   BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
   return mat->numRows < mat->numCols ? mat->numRows : mat->numCols;
+}
+
+BfSize bfMatBlockDiagGetNumRowBlocks(BfMatBlockDiag const *matBlockDiag) {
+  return NUM_ROW_BLOCKS(matBlockDiag);
+}
+
+BfSize bfMatBlockDiagGetNumColBlocks(BfMatBlockDiag const *matBlockDiag) {
+  return NUM_COL_BLOCKS(matBlockDiag);
 }
 
 BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, BfSize j) {
