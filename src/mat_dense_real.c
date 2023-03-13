@@ -991,7 +991,11 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
 
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
+
   if (n != vec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (n == 0)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   matDenseReal = bfMatConstToMatDenseRealConst(mat);
