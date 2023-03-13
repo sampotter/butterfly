@@ -18,6 +18,7 @@ void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *othe
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
 BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type);
+BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense);
 void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 /** Interface: MatBlock */

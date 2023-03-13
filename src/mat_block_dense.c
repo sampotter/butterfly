@@ -9,6 +9,7 @@
 #include <bf/mat_coo_complex.h>
 #include <bf/mat_sum.h>
 #include <bf/mat_zero.h>
+#include <bf/size_array.h>
 #include <bf/util.h>
 #include <bf/vec_complex.h>
 #include <bf/vec_real.h>
@@ -44,6 +45,7 @@ static BfMatVtable MAT_VTABLE = {
   .Mul = (__typeof__(&bfMatBlockDenseMul))bfMatBlockDenseMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDenseMulVec,
   .ToType = (__typeof__(&bfMatBlockDenseToType))bfMatBlockDenseToType,
+  .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep
 };
 
@@ -591,6 +593,33 @@ BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type) {
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
   }
+}
+
+BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *nonzeroColumnRanges = bfSizeArrayNew();
+  HANDLE_ERROR();
+
+  bfSizeArrayInitWithDefaultCapacity(nonzeroColumnRanges);
+  HANDLE_ERROR();
+
+  /* TODO: for now just assume there are *no* zero blocks. We can fix
+   * this later. */
+  for (BfSize p = 0; p < NUM_ROW_BLOCKS(matBlockDense); ++p)
+    for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q)
+      assert(bfMatGetType(BLOCK(matBlockDense, p, q)) != BF_TYPE_MAT_ZERO);
+
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
+
+  bfSizeArrayAppend(nonzeroColumnRanges, 0);
+  bfSizeArrayAppend(nonzeroColumnRanges, bfMatGetNumCols(mat));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return nonzeroColumnRanges;
 }
 
 void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense,
