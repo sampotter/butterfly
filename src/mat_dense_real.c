@@ -361,6 +361,9 @@ BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
 BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize j0, BfSize j1) {
   BEGIN_ERROR_HANDLING();
 
+  if (j0 > j1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
 
   BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);

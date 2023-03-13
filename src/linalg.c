@@ -625,14 +625,14 @@ get_shifted_eigs:
   assert(j0 < k);
 
   /* Find the last eigenpair in the band */
-  BfSize j1 = 0;
+  BfSize j1 = k;
   if (useRight) {
-    while (j1 < k && lam[j1] <= lam1)
-      ++j1;
+    while (j1 > j0 && lam1 <= lam[j1 - 1])
+      --j1;
     assert(lam[j1 - 1] < lam1);
     assert(j1 == k || lam1 <= lam[j1]);
   }
-  assert(j1 <= k);
+  assert(j0 <= j1 && j1 <= k);
 
   if (0 < j0 || j1 < k) {
     /* Prune unnecessary eigenvectors */
