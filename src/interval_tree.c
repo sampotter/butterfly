@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/interval_tree_node.h>
@@ -105,8 +106,8 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
 
     BfIntervalTreeNode *child = bfTreeNodeToIntervalTreeNode(treeNode->child[k]);
 
-    BfReal a = child->a;
-    BfReal b = child->b;
+    BfReal a = child->isLeftmost ? -BF_INFINITY : child->a;
+    BfReal b = child->isRightmost ? BF_INFINITY : child->b;
 
     /* Skip over leading points which are already in position */
     while (i < i1 && a <= x[P[i]] && x[P[i]] < b)
