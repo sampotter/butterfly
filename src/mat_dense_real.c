@@ -969,10 +969,12 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
 
   BfReal alpha = 1, beta = 0;
 
-  cblas_dgemv(CblasRowMajor, trans, m, n, alpha,
-              matDenseReal->data, lda, vecReal->data,
-              vecReal->stride, beta, result->data,
-              result->stride);
+  if (lda > 0) {
+    cblas_dgemv(CblasRowMajor, trans, m, n, alpha,
+                matDenseReal->data, lda, vecReal->data,
+                vecReal->stride, beta, result->data,
+                result->stride);
+  }
 
   END_ERROR_HANDLING() {
     assert(false);
