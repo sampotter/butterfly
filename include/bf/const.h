@@ -10,4 +10,5 @@
 #define BF_SQRT_EPS   1.4901161193847656e-08
 #define BF_ROOT5_EPS  7.4009597974140505e-04
 
+static BfReal const BF_INFINITY = INFINITY;
 static BfReal const BF_NAN = NAN;
