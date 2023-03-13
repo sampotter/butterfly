@@ -1186,7 +1186,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
 
   BfMatBlockDiag *Psi = NULL;
   BfMatBlockDiag *W0 = NULL;
-  BfMatBlockCoo *W1 = NULL; // TODO: change this to BfMatBlockDense
+  BfMatBlockDense *W1 = NULL; // TODO: change this to BfMatBlockDense
 
   // get PartialFacs for children of colNode
   BfPtrArray currentPartialFacs = getCurrentPartialFacs(facStreamer);
@@ -1294,7 +1294,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
   HANDLE_ERROR();
 
   /* Vertically concatenate the collected W1 blocks. */
-  W1 = bfMatBlockCooNewColFromBlocks(&W1Blocks);
+  W1 = bfMatBlockDenseNewColFromBlocks(&W1Blocks);
   HANDLE_ERROR();
 
   /* Create and initialize the merged factorization. */
@@ -1319,7 +1319,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
     setPartialFacWBlock(mergedFac, 0, bfMatBlockDiagToMat(W0));
-    setPartialFacWBlock(mergedFac, 1, bfMatBlockCooToMat(W1));
+    setPartialFacWBlock(mergedFac, 1, bfMatBlockDenseToMat(W1));
 
     /* Block together trailing W factors from the current partial
      * butterfly factorizations to get the trailing W factors for the
