@@ -128,8 +128,8 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
 int main(int argc, char const *argv[]) {
   BEGIN_ERROR_HANDLING() {}
 
-  if (argc != 4) {
-    printf("usage: %s objPath tol freqTreeOffset\n", argv[0]);
+  if (argc != 5) {
+    printf("usage: %s objPath tol rowTreeOffset freqTreeOffset\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -137,7 +137,8 @@ int main(int argc, char const *argv[]) {
 
   char const *objPath = argv[1];
   BfReal tol = strtod(argv[2], NULL);
-  BfSize freqTreeOffset = strtoull(argv[3], NULL, 10);
+  BfSize rowTreeOffset = strtoull(argv[3], NULL, 10);
+  BfSize freqTreeOffset = strtoull(argv[4], NULL, 10);
 
   /* Load triangle mesh from binary files */
   BfTrimesh trimesh;
@@ -208,7 +209,7 @@ int main(int argc, char const *argv[]) {
   BfFacStreamerSpec spec = {
     .rowTree = rowTree,
     .colTree = colTree,
-    .rowTreeInitDepth = 1,
+    .rowTreeInitDepth = rowTreeOffset,
     .colTreeInitDepth = colTreeMaxDepth - freqTreeOffset,
     .tol = tol,
     .minNumRows = 20,
