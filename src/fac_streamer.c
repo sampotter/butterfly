@@ -15,6 +15,7 @@
 #include <bf/mat_dense_real.h>
 #include <bf/mat_diag_real.h>
 #include <bf/mat_identity.h>
+#include <bf/mat_product.h>
 #include <bf/ptr_array.h>
 #include <bf/size_array.h>
 #include <bf/tree.h>
@@ -1644,9 +1645,36 @@ bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer) {
 }
 
 BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
-  (void)facStreamer;
+  BEGIN_ERROR_HANDLING();
 
-  assert(false);
+  /* TODO: handle this case by taking the direct sum of the current
+   * partial factorizations... easy enough */
+  if (!bfTreeIterIsDone(facStreamer->colTreeIter))
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  PartialFac *partialFac = NULL;
+  bfPtrArrayGetLast(&facStreamer->partialFacs, (BfPtr *)&partialFac);
+  HANDLE_ERROR();
+
+  BfMatProduct *fac = bfMatProductNew();
+  HANDLE_ERROR();
+
+  bfMatProductInit(fac);
+  HANDLE_ERROR();
+
+  bfMatProductPostMultiply(fac, partialFac->Psi);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < partialFac->numW; ++k) {
+    bfMatProductPostMultiply(fac, partialFac->W[k]);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfMatProductToMat(fac);
 }
 
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) {
