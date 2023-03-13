@@ -483,6 +483,10 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
     BfSize i0 = ROW_OFFSET(matBlockDense, i);
     BfSize i1 = ROW_OFFSET(matBlockDense, i + 1);
 
+    /* If this is a degenerate block row, skip it */
+    if (i0 == i1)
+      continue;
+
     BfVec *resultSubvecView = bfVecGetSubvecView(result, i0, i1);
     HANDLE_ERROR();
 
@@ -491,6 +495,10 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
 
       BfSize j0 = COL_OFFSET(matBlockDense, j);
       BfSize j1 = COL_OFFSET(matBlockDense, j + 1);
+
+      /* Skip degenerate block columns */
+      if (j0 == j1)
+        continue;
 
       /* Sanity check... basically unnecessary, but whatever */
       assert(bfMatGetNumRows(block) == i1 - i0);
