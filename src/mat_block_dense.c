@@ -619,6 +619,9 @@ static BfMatBlockVtable MAT_BLOCK_VTABLE = {
   .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockDenseNumBlocks,
   .GetNumRowBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockDenseGetNumRowBlocks,
   .GetNumColBlocks = (__typeof__(&bfMatBlockGetNumColBlocks))bfMatBlockDenseGetNumColBlocks,
+  .GetRowOffset = (__typeof__(&bfMatBlockGetRowOffset))bfMatBlockDenseGetRowOffset,
+  .GetColOffset = (__typeof__(&bfMatBlockGetColOffset))bfMatBlockDenseGetColOffset,
+  .GetBlockConst = (__typeof__(&bfMatBlockGetBlockConst))bfMatBlockDenseGetBlockConst,
 };
 
 BfSize bfMatBlockDenseNumBlocks(BfMatBlockDense const *matBlock) {
@@ -644,6 +647,32 @@ BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense) {
   } else {
     return mat->numCols;
   }
+}
+
+BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize i) {
+  return ROW_OFFSET(matBlockDense, i);
+}
+
+BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize j) {
+  return COL_OFFSET(matBlockDense, j);
+}
+
+BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *block = NULL;
+
+  if (i >= NUM_ROW_BLOCKS(mat))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (j >= NUM_COL_BLOCKS(mat))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  block = mat->super.block[i*NUM_COL_BLOCKS(mat) + j];
+
+  END_ERROR_HANDLING() {}
+
+  return block;
 }
 
 /** Upcasting: */
@@ -862,24 +891,6 @@ void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
 }
 
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
-
-  BfMat *block = NULL;
-
-  if (i >= NUM_ROW_BLOCKS(mat))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  if (j >= NUM_COL_BLOCKS(mat))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  block = mat->super.block[i*NUM_COL_BLOCKS(mat) + j];
-
-  END_ERROR_HANDLING() {}
-
-  return block;
-}
-
-BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
   BEGIN_ERROR_HANDLING();
 
   BfMat *block = NULL;

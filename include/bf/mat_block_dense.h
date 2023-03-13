@@ -25,6 +25,9 @@ void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense, FILE *
 BfSize bfMatBlockDenseNumBlocks(BfMatBlockDense const *matBlockDense);
 BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlockDense const *matBlockDense);
 BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense);
+BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize i);
+BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize j);
+BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *matBlockDense, BfSize i, BfSize j);
 
 /** Implementation: MatBlockDense */
 
