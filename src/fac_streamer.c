@@ -708,6 +708,7 @@ getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
 
   else if (type == BF_TYPE_MAT_DENSE_REAL ||
            type == BF_TYPE_MAT_BLOCK_COO ||
+           type == BF_TYPE_MAT_BLOCK_DENSE ||
            type == BF_TYPE_MAT_IDENTITY)
     appendIndexedPsiSubblock(indexedPsiSubblocks, i0Parent, j0Parent, mat);
 
@@ -911,7 +912,7 @@ static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
 
   /* Horizontally concatenate together the Psi blocks we found to get
    * the leading "Psi*" block. */
-  BfMatBlockCoo *Psi = bfMatBlockCooNewRowFromBlocks(&PsiBlocks);
+  BfMatBlockDense *Psi = bfMatBlockDenseNewRowFromBlocks(&PsiBlocks);
   HANDLE_ERROR();
 
   /* Diagonally concatenate together the W row blocks we found to get
@@ -921,7 +922,7 @@ static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
 
   END_ERROR_HANDLING() {}
 
-  *PsiPtr = bfMatBlockCooToMat(Psi);
+  *PsiPtr = bfMatBlockDenseToMat(Psi);
   *WPtr = bfMatBlockDiagToMat(W);
 
   assert(bfMatGetNumCols(*PsiPtr) == bfMatGetNumRows(*WPtr));
