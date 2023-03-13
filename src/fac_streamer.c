@@ -1016,7 +1016,7 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
   BEGIN_ERROR_HANDLING();
 
   BfMatBlockDiag *PsiBlock = NULL;
-  BfMatBlockCoo *W0Block = NULL;
+  BfMatBlockDense *W0Block = NULL;
 
   if (epsRankCutPtr == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -1158,7 +1158,7 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
   HANDLE_ERROR();
 
   /* Vertically concatenate the W0 subblocks. */
-  W0Block = bfMatBlockCooNewColFromBlocks(&W0Subblocks);
+  W0Block = bfMatBlockDenseNewColFromBlocks(&W0Subblocks);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -1174,7 +1174,7 @@ findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer,
 
   *epsRankCutPtr = epsRankCut;
   *PsiBlockPtr = bfMatBlockDiagToMat(PsiBlock);
-  *W0BlockPtr = bfMatBlockCooToMat(W0Block);
+  *W0BlockPtr = bfMatBlockDenseToMat(W0Block);
 }
 
 static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
