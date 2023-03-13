@@ -973,18 +973,6 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
               matDenseReal->data, lda, vecReal->data,
               vecReal->stride, beta, result->data,
               result->stride);
-// void cblas_dgemv(OPENBLAS_CONST enum CBLAS_ORDER order,
-//                  OPENBLAS_CONST enum CBLAS_TRANSPOSE trans,
-//                  OPENBLAS_CONST blasint m,
-//                  OPENBLAS_CONST blasint n,
-//                  OPENBLAS_CONST double alpha,
-//                  OPENBLAS_CONST double  *a,
-//                  OPENBLAS_CONST blasint lda,
-//                  OPENBLAS_CONST double  *x,
-//                  OPENBLAS_CONST blasint incx,
-//                  OPENBLAS_CONST double beta,
-//                  double  *y,
-//                  OPENBLAS_CONST blasint incy)
 
   END_ERROR_HANDLING() {
     assert(false);
