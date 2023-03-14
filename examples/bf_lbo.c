@@ -128,8 +128,8 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
 int main(int argc, char const *argv[]) {
   BEGIN_ERROR_HANDLING() {}
 
-  if (argc != 5) {
-    printf("usage: %s objPath tol rowTreeOffset freqTreeOffset\n", argv[0]);
+  if (argc != 6) {
+    printf("usage: %s objPath tol p rowTreeOffset freqTreeDepth\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -137,13 +137,20 @@ int main(int argc, char const *argv[]) {
 
   char const *objPath = argv[1];
   BfReal tol = strtod(argv[2], NULL);
-  BfSize rowTreeOffset = strtoull(argv[3], NULL, 10);
-  BfSize freqTreeOffset = strtoull(argv[4], NULL, 10);
+  BfReal p = strtod(argv[3], NULL);
+  BfSize rowTreeOffset = strtoull(argv[4], NULL, 10);
+  BfSize freqTreeDepth = strtoull(argv[5], NULL, 10);
 
   /* Load triangle mesh from binary files */
   BfTrimesh trimesh;
   bfTrimeshInitFromObjFile(&trimesh, objPath);
   HANDLE_ERROR();
+
+  BfSize numVerts = bfTrimeshGetNumVerts(&trimesh);
+  BfSize numEigs = (BfSize)(p*numVerts);
+
+  printf("- mesh with %lu vertices\n", numVerts);
+  printf("- streaming %lu eigenpairs\n", numEigs);
 
   // TODO: implement
 //   /* Build fiedler tree */
@@ -191,14 +198,11 @@ int main(int argc, char const *argv[]) {
    * frequency scale as opposed to the eigenvalue scale to preserve
    * the time-frequency product in the butterfly factorization. */
   BfIntervalTree *freqTree = bfIntervalTreeNew();
-  bfIntervalTreeInitEmpty(freqTree, 0, freqMax, 2, rowTreeMaxDepth);
+  bfIntervalTreeInitEmpty(freqTree, 0, freqMax, 2, freqTreeDepth);
   HANDLE_ERROR();
 
   /* Upcast frequency tree to get the column tree */
   BfTree *colTree = bfIntervalTreeToTree(freqTree);
-  BfSize colTreeMaxDepth = bfTreeGetMaxDepth(colTree);
-  assert(colTreeMaxDepth == rowTreeMaxDepth);
-  assert(colTreeMaxDepth > freqTreeOffset);
 
   BfPoints1 *freqs = bfPoints1New();
   HANDLE_ERROR();
@@ -210,7 +214,7 @@ int main(int argc, char const *argv[]) {
     .rowTree = rowTree,
     .colTree = colTree,
     .rowTreeInitDepth = rowTreeOffset,
-    .colTreeInitDepth = colTreeMaxDepth - freqTreeOffset,
+    .colTreeInitDepth = freqTreeDepth, // TODO: this is unused!
     .tol = tol,
     .minNumRows = 20,
     .minNumCols = 20,
@@ -226,7 +230,11 @@ int main(int argc, char const *argv[]) {
   while (!bfFacStreamerIsDone(facStreamer)) {
     feedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     HANDLE_ERROR();
+
+    if (freqs->size >= numEigs) break;
   }
+
+  /* TODO: prune factorization */
 
   END_ERROR_HANDLING() {}
 
