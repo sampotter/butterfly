@@ -2,6 +2,15 @@
 
 *Overview to come...*
 
+## Documentation
+
+Until this library gets some traction, there will be no documentation.
+
+*In the mean time*:
+
+1. Check out the [examples](./examples) directory to see demonstrations of the library.
+2. If nothing fits, contact [me](https://sampotter.github.io) by email, or create a GitHub issue. I'm happy to work with you to make this library suit your needs.
+
 ## Compilation
 
 Use [Meson](https://mesonbuild.com/) to compile this library:
