@@ -242,6 +242,7 @@ int main(int argc, char const *argv[]) {
   END_ERROR_HANDLING() {}
 
   /* Clean up */
+  bfMatDelete(&fac);
   bfTreeDelete(&rowTree);
   bfOctreeDeinit(&octree);
   bfMatDelete(&M);
