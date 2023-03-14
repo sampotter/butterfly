@@ -97,6 +97,8 @@ struct BfFacStreamer {
 
   BfTreeIter *colTreeIter;
 
+  BfPerm rowTreeReversePerm;
+
   /* The tolerance used to compute truncated SVDs of blocks when
    * streaming the butterfly factorization. */
   BfReal tol;
@@ -179,6 +181,10 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacStreamerSpec const *spec
 
   facStreamer->rowTree = spec->rowTree;
   facStreamer->colTree = spec->colTree;
+
+  facStreamer->rowTreeReversePerm =
+    bfPermGetReversePerm(&facStreamer->rowTree->perm);
+  HANDLE_ERROR();
 
   facStreamer->rowTreeInitDepth = spec->rowTreeInitDepth;
   facStreamer->colTreeInitDepth = spec->colTreeInitDepth;
@@ -1679,4 +1685,8 @@ BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) {
   return bfTreeIterGetCurrentNode(facStreamer->colTreeIter);
+}
+
+BfPerm const *bfFacStreamerGetRowTreeReversePerm(BfFacStreamer const *facStreamer) {
+  return &facStreamer->rowTreeReversePerm;
 }

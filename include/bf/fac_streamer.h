@@ -23,3 +23,4 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi);
 bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer);
 BfMat *bfFacStreamerGetFac(BfFacStreamer const *facStreamer);
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer);
+BfPerm const *bfFacStreamerGetRowTreeReversePerm(BfFacStreamer const *facStreamer);

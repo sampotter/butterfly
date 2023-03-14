@@ -90,6 +90,9 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   bfGetEigenband(L, M, lam0, lam1, sigma, &Phi, &Lam);
   HANDLE_ERROR();
 
+  /* Permute the rows of Phi, putting them into row tree order */
+  bfMatPermuteRows(Phi, bfFacStreamerGetRowTreeReversePerm(facStreamer));
+
   /* Convert the new eigenvalues to frequencies: */
   newFreqs = convertEigsToFreqs(Lam);
   HANDLE_ERROR();
