@@ -9,6 +9,7 @@
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
 #include <bf/linalg.h>
+#include <bf/logging.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
@@ -135,7 +136,7 @@ static void addPartialFac(BfFacStreamer *facStreamer, PartialFac *partialFac) {
 
   assert(bfFacStreamerGetNumRows(facStreamer) == partialFacGetNumRows(partialFac));
 
-  // printf("reminder: do a sorted insert in addPartialFac\n");
+  bfLogTodo("reminder: do a sorted insert in addPartialFac\n");
 
   bfPtrArrayAppend(&facStreamer->partialFacs, partialFac);
   HANDLE_ERROR();
@@ -1434,9 +1435,9 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     if (bfTreeNodeIsLeaf(currentColNode))
       break;
 
-    printf("merging [%lu, %lu)\n",
-           bfTreeNodeGetFirstIndex(currentColNode),
-           bfTreeNodeGetLastIndex(currentColNode));
+    bfLogInfo("merging [%lu, %lu)\n",
+              bfTreeNodeGetFirstIndex(currentColNode),
+              bfTreeNodeGetLastIndex(currentColNode));
 
 #if BF_DEBUG
     addPrevPhiForChildNodes(facStreamer, currentColNode);
@@ -1448,25 +1449,16 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
 #if BF_DEBUG
 
-
-    printf("- depths: Psi=%lu", bfMatBlockGetMaxDepth(bfMatToMatBlock(mergedFac->Psi)));
-    for (BfSize k = 0; k < mergedFac->numW; ++k)
-      printf(", W%lu=%lu", k, bfMatBlockGetMaxDepth(bfMatToMatBlock(mergedFac->W[k])));
-    printf("\n");
-
-    // printf("writing to Psi.txt");
     FILE *fp = fopen("Psi.txt", "w");
     bfMatPrintBlocksDeep(mergedFac->Psi, fp, 0, 0, 0);
     fclose(fp);
     for (BfSize k = 0; k < mergedFac->numW; ++k) {
       char path[256];
       sprintf(path, "W%lu.txt", k);
-      // printf(", %s", path);
       fp = fopen(path, "w");
       bfMatPrintBlocksDeep(mergedFac->W[k], fp, 0, 0, 0);
       fclose(fp);
     }
-    // printf("\n");
 
     {
       BfMat const *Phi = getPhiByColNode(facStreamer, currentColNode);
@@ -1477,9 +1469,9 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
         BfVec *y_gt = bfMatMulVec(Phi, x);
         BfVec *y = partialFacMulVec(mergedFac, x);
         BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
-        printf("- rel max error for random MVP: %g\n", rel_error);
+        bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
       } else {
-        printf("- merged fac has no columns---skipping\n");
+        bfLogInfo("- merged fac has no columns---skipping\n");
       }
     }
 
@@ -1598,22 +1590,16 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   /* Some logging and sanity checks to do before continuing on with
    * the factorization. */
 
-  printf("streamed [%lu, %lu)\n",
+  bfLogInfo("streamed [%lu, %lu)\n",
          bfTreeNodeGetFirstIndex(colNode),
          bfTreeNodeGetLastIndex(colNode));
-  printf("- depths: Psi=%lu", bfMatBlockGetMaxDepth(bfMatToMatBlock(partialFac->Psi)));
-  for (BfSize k = 0; k < partialFac->numW; ++k)
-    printf(", W%lu=%lu", k, bfMatBlockGetMaxDepth(bfMatToMatBlock(partialFac->W[k])));
-  printf("\n");
 
-  // printf("writing to Psi.txt");
   FILE *fp = fopen("Psi.txt", "w");
   bfMatPrintBlocksDeep(partialFac->Psi, fp, 0, 0, 0);
   fclose(fp);
   fp = fopen("W0.txt", "w");
   bfMatPrintBlocksDeep(partialFac->W[0], fp, 0, 0, 0);
   fclose(fp);
-  // printf("\n");
 
   {
     BfSize n = bfMatGetNumCols(Phi);
@@ -1622,9 +1608,9 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
       BfVec *y_gt = bfMatMulVec(Phi, x);
       BfVec *y = partialFacMulVec(partialFac, x);
       BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
-      printf("- rel max error for random MVP: %g\n", rel_error);
+      bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
     } else {
-      printf("- empty band---not checking error\n");
+      bfLogInfo("- empty band---not checking error\n");
     }
   }
 #endif

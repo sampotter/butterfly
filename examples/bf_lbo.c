@@ -10,6 +10,7 @@
 #include <bf/interval_tree_node.h>
 #include <bf/lbo.h>
 #include <bf/linalg.h>
+#include <bf/logging.h>
 #include <bf/mat.h>
 #include <bf/octree.h>
 #include <bf/rand.h>
@@ -17,6 +18,8 @@
 
 BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   BEGIN_ERROR_HANDLING();
+
+  bfSetLogLevel(BF_LOG_LEVEL_INFO);
 
   BfPoints1 *freqs = bfPoints1New();
   HANDLE_ERROR();
