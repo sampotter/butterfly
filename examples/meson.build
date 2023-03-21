@@ -4,6 +4,7 @@ examples = [
   'bf_lbo',
   'helm2_bie',
   'test_hankel_evaluator',
+  'test_helm2_adapt_fac'
 ]
 
 foreach example : examples
