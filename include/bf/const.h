@@ -12,3 +12,4 @@
 
 static BfReal const BF_INFINITY = INFINITY;
 static BfReal const BF_NAN = NAN;
+static BfReal const BF_PI_OVER_TWO = 1.5707963267948966;
