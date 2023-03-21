@@ -2,14 +2,15 @@ examples = [
   'bf_one_block',
   'bf_all_blocks',
   'bf_lbo',
-  'helm2_bie'
+  'helm2_bie',
+  'test_hankel_evaluator',
 ]
 
 foreach example : examples
   executable(
     example,
     example + '.c',
-    dependencies : [butterfly_dep, m_dep]
+    dependencies : [argtable3_dep, butterfly_dep, m_dep]
   )
 endforeach
 
