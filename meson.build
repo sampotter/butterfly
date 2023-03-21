@@ -33,6 +33,7 @@ butterfly_lib_src = [
   'src/cholmod.c',
   'src/dtype.c',
   'src/error.c',
+  'src/eval_tree.c',
   'src/fac.c',
   'src/fac_streamer.c',
 # 'src/fiedler_tree.c',

@@ -1,18 +1,116 @@
 #include <bf/cheb.h>
 
-BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
-  BfReal d  = 0.0;
-  BfReal dd = 0.0;
+#include <math.h>
+#include <stdlib.h>
 
-  for (int j = cheb->order; j >= 1; j--) {
-    BfReal temp = d;
-    d = 2*x*d - dd + cheb->c[j];
-    dd = temp;
+#include <bf/const.h>
+
+/** Utilities: */
+
+void bfGetChebPts(BfSize n, BfReal *x) {
+  for (int i = 0; i < (int)n; ++i)
+    x[i] = sin((BF_PI_OVER_TWO*(2*i + 1 - (int)n))/n);
+}
+
+/** Implementation: ChebStd */
+
+BfChebStd *bfChebStdNewWithDegree(BfSize d) {
+  BfChebStd *cheb = malloc(sizeof(BfChebStd));
+  cheb->order = d + 1;
+  cheb->c = malloc(cheb->order*sizeof(BfReal));
+  return cheb;
+}
+
+void bfChebStdDeinit(BfChebStd *cheb) {
+  cheb->order = BF_SIZE_BAD_VALUE;
+  free(cheb->c);
+  cheb->c = NULL;
+}
+
+void bfChebStdDealloc(BfChebStd **cheb) {
+  free(*cheb);
+  *cheb = NULL;
+}
+
+void bfChebStdDelete(BfChebStd **cheb) {
+  bfChebStdDeinit(*cheb);
+  bfChebStdDealloc(cheb);
+}
+
+BfReal bfChebStdGetErrorEstimate(BfChebStd const *cheb) {
+  return fabs(cheb->c[cheb->order - 1]);
+}
+
+/* This function simultaneously constructs the transpose of the
+ * pseudo-Vandermonde for the Chebyshev polynomials and projects onto
+ * them, returning the Chebysehv coefficients for f transformed to the
+ * domain [-1, 1]. */
+void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, BfReal const *x) {
+  BfSize n = cheb->order;
+  BfReal *c = cheb->c;
+
+  BfReal *y = malloc(n*sizeof(BfReal));
+  for (BfSize j = 0; j < n; ++j)
+    y[j] = f((b - a)*(x[j] + 1)/2 + a);
+
+  BfReal *v0 = malloc(n*sizeof(BfReal));
+  for (BfSize j = 0; j < n; ++j)
+    v0[j] = 1;
+
+  BfReal *v1 = malloc(n*sizeof(BfReal));
+  for (BfSize j = 0; j < n; ++j)
+    v1[j] = x[j];
+
+  BfReal *v = malloc(n*sizeof(BfReal));
+
+  c[0] = 0;
+  for (BfSize j = 0; j < n; ++j)
+    c[0] += y[j];
+
+  c[1] = 0;
+  for (BfSize j = 0; j < n; ++j)
+    c[1] += x[j]*y[j];
+
+  for (BfSize i = 2; i < n; ++i) {
+    c[i] = 0;
+    for (BfSize j = 0; j < n; ++j) {
+      v[j] = 2*v1[j]*x[j] - v0[j];
+      c[i] += v[j]*y[j];
+      v0[j] = v1[j];
+      v1[j] = v[j];
+    }
   }
 
-  d = x*d - dd + 0.5 * cheb->c[0];
+  c[0] /= n;
+  for (BfSize i = 1; i < n; ++i) c[i] *= 2.0/n;
 
-  return d;
+  free(v);
+  free(v1);
+  free(v0);
+  free(y);
+}
+
+BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
+  BfSize n = cheb->order;
+  BfReal const *c = cheb->c;
+
+  BfReal c0, c1, tmp;
+  if (n == 1) {
+    c0 = c[0];
+    c1 = 0;
+  } else if (n == 2) {
+    c0 = c[0];
+    c1 = c[1];
+  } else {
+    c0 = c[n - 2];
+    c1 = c[n - 1];
+    for (BfSize i = 3; i <= n; ++i) {
+      tmp = c0;
+      c0 = c[n - i] - c1;
+      c1 = tmp + 2*c1*x;
+    }
+  }
+  return c0 + c1*x;
 }
 
 BfReal bfChebEval(BfCheb const *cheb, BfReal x) {

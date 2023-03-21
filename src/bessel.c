@@ -112,6 +112,21 @@ static const BfChebStd _amp_phase_bth0_cs = {
   .order = 23,
 };
 
+BfReal chebEvalGsl(BfChebStd const *cheb, BfReal x) {
+  BfReal d  = 0.0;
+  BfReal dd = 0.0;
+
+  for (int j = cheb->order; j >= 1; j--) {
+    BfReal temp = d;
+    d = 2*x*d - dd + cheb->c[j];
+    dd = temp;
+  }
+
+  d = x*d - dd + 0.5 * cheb->c[0];
+
+  return d;
+}
+
 static BfReal cos_pi4_plus_eps(BfReal y, BfReal eps) {
   BfReal sy = sin(y);
   BfReal cy = cos(y);
@@ -176,11 +191,11 @@ BfReal bf_j0(BfReal x) {
     return 1.0;
 
   if (y <= 4.0)
-    return bfChebStdEval(&bj0_cs, 0.125*y*y - 1.0);
+    return chebEvalGsl(&bj0_cs, 0.125*y*y - 1.0);
 
   BfReal z = 32.0/(y*y) - 1.0;
-  BfReal ca = bfChebStdEval(&_amp_phase_bm0_cs, z);
-  BfReal ct = bfChebStdEval(&_amp_phase_bth0_cs, z);
+  BfReal ca = chebEvalGsl(&_amp_phase_bm0_cs, z);
+  BfReal ct = chebEvalGsl(&_amp_phase_bth0_cs, z);
   BfReal cp = cos_pi4_plus_eps(y, ct/y);
   BfReal sqrty = sqrt(y);
   BfReal ampl  = (0.75 + ca) / sqrty;
@@ -195,7 +210,7 @@ BfReal bf_y0(BfReal x) {
 
   if (x < 4.0) {
     BfReal J0 = bf_j0(x);
-    BfReal c = bfChebStdEval(&by0_cs, 0.125*x*x-1.0);
+    BfReal c = chebEvalGsl(&by0_cs, 0.125*x*x-1.0);
     return two_over_pi*(-BF_LN2 + log(x))*J0 + 0.375 + c;
   }
 
@@ -204,8 +219,8 @@ BfReal bf_y0(BfReal x) {
      * so the error is bounded.
      */
     BfReal z  = 32.0/(x*x) - 1.0;
-    BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
-    BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
+    BfReal c1 = chebEvalGsl(&_amp_phase_bm0_cs, z);
+    BfReal c2 = chebEvalGsl(&_amp_phase_bth0_cs, z);
     BfReal sp = sin_pi4_plus_eps(x, c2/x);
     BfReal sqrtx = sqrt(x);
     BfReal ampl  = (0.75 + c1) / sqrtx;
@@ -219,16 +234,16 @@ BfReal bf_y0(BfReal x) {
 static BfComplex _H0_small_arg(BfReal x) {
   BfReal two_over_pi = 2.0/BF_PI;
   BfReal z = 0.125*x*x - 1.0;
-  BfReal j0 = x < 2.0*BF_SQRT_EPS ? 1.0 : bfChebStdEval(&bj0_cs, z);
-  BfReal c = bfChebStdEval(&by0_cs, z);
+  BfReal j0 = x < 2.0*BF_SQRT_EPS ? 1.0 : chebEvalGsl(&bj0_cs, z);
+  BfReal c = chebEvalGsl(&by0_cs, z);
   BfReal y0 = two_over_pi*(-BF_LN2 + log(x))*j0 + 0.375 + c;
   return j0 + I*y0;
 }
 
 static BfComplex _H0_large_arg(BfReal x) {
   BfReal z  = 32.0/(x*x) - 1.0;
-  BfReal c1 = bfChebStdEval(&_amp_phase_bm0_cs, z);
-  BfReal c2 = bfChebStdEval(&_amp_phase_bth0_cs, z);
+  BfReal c1 = chebEvalGsl(&_amp_phase_bm0_cs, z);
+  BfReal c2 = chebEvalGsl(&_amp_phase_bth0_cs, z);
   BfReal cp, sp; _cos_sin_pi4_plus_eps(x, c2/x, &cp, &sp);
   BfReal sqrtx = sqrt(x);
   BfReal ampl  = (0.75 + c1) / sqrtx;

@@ -2,12 +2,23 @@
 
 #include "def.h"
 
+void bfGetChebPts(BfSize n, BfReal *x);
+
 /* Chebyshev series defined on the interval [-1, 1]. */
 typedef struct {
-  BfReal *c;
+  /* The order of the Chebyshev polynomial (equal to deg(p) + 1). */
   BfSize order;
+
+  /* The Chebyshev coefficients (a length `order` array). */
+  BfReal *c;
 } BfChebStd;
 
+BfChebStd *bfChebStdNewWithDegree(BfSize d);
+void bfChebStdDeinit(BfChebStd *cheb);
+void bfChebStdDealloc(BfChebStd **cheb);
+void bfChebStdDelete(BfChebStd **cheb);
+BfReal bfChebStdGetErrorEstimate(BfChebStd const *cheb);
+void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, BfReal const *x);
 BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x);
 
 /* Chebyshev series defined on the interval [a, b]. */

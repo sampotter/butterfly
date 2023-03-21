@@ -1,10 +1,14 @@
+#define _DEFAULT_SOURCE
+
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <bf/bessel.h>
+#include <bf/cheb.h>
 #include <bf/const.h>
+#include <bf/eval_tree.h>
 #include <bf/fac_streamer.h>
 #include <bf/rand.h>
 #include <bf/util.h>
@@ -83,215 +87,6 @@ exit:
   return code;
 }
 
-BfReal clenshaw_spoof(BfReal const *c, BfReal x) {
-  BfReal x2 = 2*x;
-  BfReal c0 = c[0];
-  BfReal c1 = c[1];
-  for (int i = 2; i < 10; ++i) {
-    BfReal tmp = c1;
-    c1 = c[i] - c0;
-    c0 = tmp + c0*x2;
-  }
-  return c1 + c0*x;
-}
-
-////////////////////////////////////////////////////////////////////////////
-
-static BfReal clenshaw(BfReal const *c, BfSize n, BfReal x) {
-  BfReal c0, c1, tmp;
-  if (n == 1) {
-    c0 = c[0];
-    c1 = 0;
-  } else if (n == 2) {
-    c0 = c[0];
-    c1 = c[1];
-  } else {
-    c0 = c[n - 2];
-    c1 = c[n - 1];
-    for (BfSize i = 3; i <= n; ++i) {
-      tmp = c0;
-      c0 = c[n - i] - c1;
-      c1 = tmp + 2*c1*x;
-    }
-  }
-  return c0 + c1*x;
-}
-
-static void getChebyshevPoints(BfSize n, BfReal *x) {
-  for (int i = 0; i < (int)n; ++i)
-    x[i] = sin((BF_PI_OVER_TWO*(2*i + 1 - (int)n))/n);
-
-//   for (BfSize i = 0; i < n; ++i)
-//     x[i] = BF_NAN;
-//   for (BfSize i = 0; i < n/2; ++i) {
-//     BfReal t = i + 1;
-//     t /= n + 1;
-//     x[i] = -cos(BF_PI*t);
-//     x[n - i - 1] = -x[i];
-//   }
-//   if (n % 2 == 1)
-//     x[n/2] = 0;
-
-//   BfReal w = BF_PI/(n - 1);
-//   BfSize i = 0;
-//   for (; i < (n + 1)/2; ++i)
-//     x[i] = cos(w*i);
-//   for (; i < n; ++i)
-//     x[i] = -x[n - i - 1];
-}
-
-/* This function simultaneously constructs the transpose of the
- * pseudo-Vandermonde for the Chebyshev polynomials and projects onto
- * them, returning the Chebysehv coefficients for f transformed to the
- * domain [-1, 1]. */
-static void getChebyshevCoefs(BfReal (*f)(BfReal), BfReal a, BfReal b, BfSize n, BfReal const *x, BfReal *c) {
-  BfReal *y = malloc(n*sizeof(BfReal));
-  for (BfSize j = 0; j < n; ++j)
-    y[j] = f((b - a)*(x[j] + 1)/2 + a);
-
-  BfReal *v0 = malloc(n*sizeof(BfReal));
-  for (BfSize j = 0; j < n; ++j)
-    v0[j] = 1;
-
-  BfReal *v1 = malloc(n*sizeof(BfReal));
-  for (BfSize j = 0; j < n; ++j)
-    v1[j] = x[j];
-
-  BfReal *v = malloc(n*sizeof(BfReal));
-
-  c[0] = 0;
-  for (BfSize j = 0; j < n; ++j)
-    c[0] += y[j];
-
-  c[1] = 0;
-  for (BfSize j = 0; j < n; ++j)
-    c[1] += x[j]*y[j];
-
-  for (BfSize i = 2; i < n; ++i) {
-    c[i] = 0;
-    for (BfSize j = 0; j < n; ++j) {
-      v[j] = 2*v1[j]*x[j] - v0[j];
-      c[i] += v[j]*y[j];
-      v0[j] = v1[j];
-      v1[j] = v[j];
-    }
-  }
-
-  c[0] /= n;
-  for (BfSize i = 1; i < n; ++i) c[i] *= 2.0/n;
-
-  free(v);
-  free(v1);
-  free(v0);
-  free(y);
-}
-
-/* rough draft of tree interpolator follows */
-
-typedef struct EvalTree EvalTree;
-typedef struct EvalTreeNode EvalTreeNode;
-
-// NOTE: a better way to do these is to allocate a pool of coefficient
-// vectors and EvalTreeNodes in EvalTree... can use bitfields to
-// combine "isLeaf" and the index into one. The idea here is that
-// since every internal node has the same number of children, we only
-// need the index to the starting position.
-
-struct EvalTreeNode {
-  BfReal a, b;
-  bool isLeaf;
-  BfReal *c;
-  EvalTreeNode *children;
-};
-
-struct EvalTree {
-  BfReal (*f)(BfReal);
-  BfReal a, b;
-  BfSize d;
-  BfSize k;
-  BfReal tol;
-  BfReal *x; // chebyshev points
-
-  EvalTreeNode *root;
-};
-
-void evalTreeNodeInitRec(EvalTreeNode *node, EvalTree const *tree) {
-  BfSize n = tree->d + 1;
-
-  node->c = malloc(n*sizeof(BfReal));
-  getChebyshevCoefs(tree->f, node->a, node->b, n, tree->x, node->c);
-
-  node->isLeaf = fabs(node->c[tree->d]) <= tree->tol;
-
-  if (node->isLeaf) {
-    node->children = NULL;
-    return;
-  }
-
-  free(node->c);
-  node->c = NULL;
-
-  node->children = malloc(tree->k*sizeof(EvalTreeNode));
-
-  BfReal delta = node->b - node->a;
-  delta /= tree->k;
-  for (BfSize i = 0; i < tree->k; ++i) {
-    node->children[i].a = i == 0 ? node->a : node->a + i*delta;
-    node->children[i].b = i == tree->k - 1 ? node->b : node->a + (i + 1)*delta;
-    evalTreeNodeInitRec(&node->children[i], tree);
-  }
-
-  if (node->isLeaf) {
-    assert(node->c != NULL);
-    assert(node->children == NULL);
-  } else {
-    assert(node->c == NULL);
-    assert(node->children != NULL);
-  }
-}
-
-BfReal evalTreeNodeGetValueRec(EvalTreeNode const *node, EvalTree const *tree, BfReal x) {
-  if (node->isLeaf) {
-    assert(node->a <= x && x <= node->b);
-    return clenshaw(node->c, tree->d + 1, 2*(x - node->a)/(node->b - node->a) - 1);
-  } else {
-    for (BfSize i = 0; i < tree->k; ++i) {
-      EvalTreeNode const *child = &node->children[i];
-      if (child->a <= x && x <= child->b)
-        return evalTreeNodeGetValueRec(child, tree, x);
-    }
-  }
-  assert(false);
-}
-
-static EvalTree *
-makeEvalTree(BfReal (*f)(BfReal), BfReal a, BfReal b, BfSize d, BfSize k, BfReal tol) {
-  EvalTree *tree = malloc(sizeof(EvalTree));
-  tree->f = f;
-  tree->a = a;
-  tree->b = b;
-  tree->d = d;
-  tree->k = k;
-
-  tree->tol = tol;
-
-  tree->x = malloc((tree->d + 1)*sizeof(BfReal));
-  getChebyshevPoints(tree->d + 1, tree->x);
-
-  tree->root = malloc(sizeof(EvalTreeNode));
-  tree->root->a = a;
-  tree->root->b = b;
-  evalTreeNodeInitRec(tree->root, tree);
-
-  return tree;
-}
-
-BfReal evalTreeGetValue(EvalTree const *tree, BfReal x) {
-  return evalTreeNodeGetValueRec(tree->root, tree, x);
-}
-
-////////////////////////////////////////////////////////////////////////////
-
 int compar(void const *x, void const *y) {
   return (int)(*(BfReal const *)x - *(BfReal const *)y);
 }
@@ -304,9 +99,10 @@ int main(int argc, char *argv[]) {
   printf("approximation interval: [%g, %g]\n", opts.r0, opts.r1);
   printf("number of evaluation points: %lu\n", opts.numPoints);
 
+  bfSeed(0);
+
   BfReal *X = malloc(opts.numPoints*sizeof(BfReal));
   if (!strcmp(opts.pointsType, "random")) {
-    bfSeed(0);
     bfRealUniform(opts.numPoints, X);
     for (BfSize i = 0; i < opts.numPoints; ++i)
       X[i] = (opts.r1 - opts.r0)*X[i] + opts.r0;
@@ -321,6 +117,30 @@ int main(int argc, char *argv[]) {
   } else {
     assert(false);
   }
+
+  /* check sqrt timings */
+
+  BfReal *sqrtX = malloc(opts.numPoints*sizeof(BfReal));
+
+  bfToc();
+  for (BfSize i = 0; i < opts.numPoints; ++i)
+    sqrtX[i] = sqrt(X[i]);
+  BfReal time_sqrt = bfToc();
+
+  printf("C std lib sqrt eval time: %g s\n", time_sqrt);
+  printf("C std lib sqrt eval rate: %g pps\n", opts.numPoints/time_sqrt);
+
+  /* check current C std library timings for j0 */
+
+  BfReal *J0_std = malloc(opts.numPoints*sizeof(BfReal));
+
+  bfToc();
+  for (BfSize i = 0; i < opts.numPoints; ++i)
+    J0_std[i] = j0(X[i]);
+  BfReal time_std = bfToc();
+
+  printf("C std lib J0 eval time: %g s\n", time_std);
+  printf("C std lib J0 eval rate: %g pps\n", opts.numPoints/time_std);
 
   /* check current GSL timings */
 
@@ -338,30 +158,42 @@ int main(int argc, char *argv[]) {
 
   BfReal *tmp = malloc(opts.numPoints*sizeof(BfReal));
 
-  BfReal const c[10] = {
-    -1.26700706,  1.07870778, -0.32287527,  0.60970485, -1.33727439, -1.87921393,
-    1.05588976, -0.91636183,  1.15975378,  0.82640578
+  BfChebStd randCheb = {
+    .c = malloc((opts.degree + 1)*sizeof(BfReal)),
+    .order = opts.degree + 1
   };
+  bfRealRandn(randCheb.order, randCheb.c);
 
   bfToc();
-  for (BfSize i = 0; i < opts.numPoints; ++i)
-    tmp[i] = clenshaw_spoof(c, X[i]);
-  BfReal time_clenshaw10 = bfToc();
+  for (BfSize i = 0; i < opts.numPoints; ++i) {
+    BfReal t = 2*(X[i] - opts.r0)/(opts.r1 - opts.r0) - 1;
+    tmp[i] = bfChebStdEval(&randCheb, t);
+  }
+  BfReal time_clenshaw = bfToc();
 
-  printf("degree 10 Clenshaw eval time: %g s\n", time_clenshaw10);
-  printf("degree 10 Clenshaw eval rate: %g pps\n", opts.numPoints/time_clenshaw10);
+  printf("degree %lu Clenshaw eval time: %g s\n", opts.degree, time_clenshaw);
+  printf("degree %lu Clenshaw eval rate: %g pps\n", opts.degree, opts.numPoints/time_clenshaw);
 
   /* tree evaluator */
 
   bfToc();
-  EvalTree *evalTree = makeEvalTree(bf_j0, opts.r0, opts.r1, opts.degree, opts.valence, opts.tol);
+  BfEvalTree *evalTree = bfEvalTreeNew();
+  BfEvalTreeSpec spec = {
+    .f = j0,
+    .a = opts.r0,
+    .b = opts.r1,
+    .d = opts.degree,
+    .k = opts.valence,
+    .tol = opts.tol
+  };
+  bfEvalTreeInit(evalTree, &spec);
   BfReal time_makeEvalTree = bfToc();
 
   BfReal *J0_evalTree = malloc(opts.numPoints*sizeof(BfReal));
 
   bfToc();
   for (BfSize i = 0; i < opts.numPoints; ++i)
-    J0_evalTree[i] = evalTreeGetValue(evalTree, X[i]);
+    J0_evalTree[i] = bfEvalTreeGetValue(evalTree, X[i]);
   BfReal time_evalTree = bfToc();
 
   printf("time to build eval tree: %g s\n", time_makeEvalTree);
