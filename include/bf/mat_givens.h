@@ -2,6 +2,12 @@
 
 #include "mat.h"
 
+/** Interface: Mat */
+
+BfType bfMatGivensComplexGetType(BfMat const *mat);
+BfSize bfMatGivensComplexGetNumRows(BfMat const *mat);
+BfSize bfMatGivensComplexGetNumCols(BfMat const *mat);
+
 struct BfMatGivensComplex {
   BfMat super;
   BfSize srcInd;
@@ -9,10 +15,6 @@ struct BfMatGivensComplex {
   BfReal c;
   BfComplex s;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatGivensComplex)
-#undef INTERFACE
 
 BfMat *bfMatGivensComplexToMat(BfMatGivensComplex *mat);
 

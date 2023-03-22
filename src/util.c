@@ -1,15 +1,34 @@
 #include <bf/util.h>
 
+#include <time.h>
+
+#include <bf/error.h>
+#include <bf/error_macros.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_diag.h>
 
-#include <time.h>
+#include "macros.h"
 
 BfReal bfToc() {
   static clock_t t1 = 0;
   clock_t t0 = t1;
   t1 = clock();
   return ((double)t1 - (double)t0)/CLOCKS_PER_SEC;
+}
+
+void bfRealArgsort(BfReal const *values, BfSize n, BfSize *perm) {
+  for (BfSize i = 0; i < n; ++i)
+    perm[i] = i;
+
+  /* TODO: just using selection sort here for now... should upgrade to
+   * something better later */
+  for (BfSize i = 0; i < n - 1; ++i) {
+    BfSize k = i;
+    for (BfSize j = i + 1; j < n; ++j)
+      if (values[perm[j]] < values[perm[k]])
+        k = j;
+    SWAP(perm[i], perm[k]);
+  }
 }
 
 void bfSizeSetConstant(BfSize numSizes, BfSize *size, BfSize value) {
@@ -30,7 +49,7 @@ static void printBlocksRec(BfMat const *mat,
   if (type == BF_TYPE_MAT_BLOCK_COO) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
     BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
-    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock);
+    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
     for (BfSize k = 0; k < numBlocks; ++k) {
       BfMat const *block = matBlock->block[k];
       BfSize di = matBlock->rowOffset[matBlockCoo->rowInd[k]];
@@ -55,7 +74,8 @@ static void printBlocksRec(BfMat const *mat,
 
   else if (type == BF_TYPE_MAT_BLOCK_DIAG) {
     BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlock);
+    BfMatBlockDiag const *matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
+    BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
     for (BfSize k = 0; k < numBlocks; ++k) {
       BfMat const *block = matBlock->block[k];
       BfSize di = matBlock->rowOffset[k];
@@ -73,4 +93,37 @@ static void printBlocksRec(BfMat const *mat,
 
 void bfPrintBlocks(BfMat const *mat, BfSize level, FILE *fp) {
   printBlocksRec(mat, level, 0, 0, fp);
+}
+
+BfSize bfGetFileSizeInBytes(char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numBytes = BF_SIZE_BAD_VALUE;
+
+  FILE *fp = fopen(path, "rb");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fseek(fp, SEEK_END, 0);
+  numBytes = ftell(fp);
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
+
+  return numBytes;
+}
+
+void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "rb");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fread(ptr, numBytes, sizeof(BfByte), fp);
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
 }

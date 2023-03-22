@@ -127,6 +127,14 @@ BfVec *bfMatColNorms(BfMat const *mat) {
   return mat->vtbl->ColNorms(mat);
 }
 
+void bfMatScale(BfMat *mat, BfReal scalar) {
+  mat->vtbl->Scale(mat, scalar);
+}
+
+void bfMatScaleRows(BfMat *mat, BfVec const *vec) {
+  mat->vtbl->ScaleRows(mat, vec);
+}
+
 void bfMatScaleCols(BfMat *mat, BfVec const *vec) {
   mat->vtbl->ScaleCols(mat, vec);
 }
@@ -175,6 +183,10 @@ bool bfMatIsUpperTri(BfMat const *mat) {
   return mat->vtbl->IsUpperTri(mat);
 }
 
+BfVec *bfMatForwardSolveVec(BfMat const *mat, BfVec const *vec) {
+  return mat->vtbl->ForwardSolveVec(mat, vec);
+}
+
 BfVec *bfMatBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
   return mat->vtbl->BackwardSolveVec(mat, vec);
 }
@@ -191,7 +203,29 @@ BfMat *bfMatToType(BfMat const *mat, BfType type) {
   return mat->vtbl->ToType(mat, type);
 }
 
+BfMat *bfMatCholesky(BfMat const *mat) {
+  return mat->vtbl->Cholesky(mat);
+}
+
+BfSizeArray *bfMatGetNonzeroColumnRanges(BfMat const *mat) {
+  return mat->vtbl->GetNonzeroColumnRanges(mat);
+}
+
+void bfMatPrintBlocksDeep(BfMat const *mat, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
+  mat->vtbl->PrintBlocksDeep(mat, fp, i0, j0, depth);
+}
+
 /** Implementation: Mat */
+
+void bfMatInvalidate(BfMat *mat) {
+  mat->vtbl = NULL;
+  mat->props = BF_MAT_PROPS_NONE; // TODO: need a default bad value here
+  mat->numRows = BF_SIZE_BAD_VALUE;
+  mat->numCols = BF_SIZE_BAD_VALUE;
+#if BF_DEBUG
+  mat->aux = NULL;
+#endif
+}
 
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
   mat->vtbl = vtbl;
@@ -233,7 +267,17 @@ bool bfMatIsTransposed(BfMat const *mat) {
   return mat->props & BF_MAT_PROPS_TRANS;
 }
 
+BfMat *bfMatTrans(BfMat *mat) {
+  mat->props ^= BF_MAT_PROPS_TRANS;
+  return mat;
+}
+
 BfMat *bfMatConjTrans(BfMat *mat) {
   mat->props ^= (BF_MAT_PROPS_TRANS | BF_MAT_PROPS_CONJ);
   return mat;
+}
+
+bool bfMatIsBlock(BfMat const *mat) {
+  BfType type = bfMatGetType(mat);
+  return bfTypeDerivedFrom(type, BF_TYPE_MAT_BLOCK);
 }

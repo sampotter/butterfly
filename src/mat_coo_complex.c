@@ -9,32 +9,27 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatCooComplex)
-#undef INTERFACE
-
-BF_STUB(BfMat *, MatCooComplexCopy, BfMat const *)
-BF_STUB(BfMat *, MatCooComplexGetView, BfMat *)
-BF_STUB(BfVec *, MatCooComplexGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatCooComplexGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCooComplexGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCooComplexGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
+static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatCooComplexDelete))bfMatCooComplexDelete,
+  .GetType = (__typeof__(&bfMatCooComplexGetType))bfMatCooComplexGetType,
+  .GetNumRows = (__typeof__(&bfMatCooComplexGetNumRows))bfMatCooComplexGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatCooComplexGetNumCols))bfMatCooComplexGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatCooComplexGetRowRangeCopy))bfMatCooComplexGetRowRangeCopy,
+  .GetColRangeCopy = (__typeof__(&bfMatCooComplexGetColRangeCopy))bfMatCooComplexGetColRangeCopy,
+  .PermuteRows = (__typeof__(&bfMatCooComplexPermuteRows))bfMatCooComplexPermuteRows,
+  .PermuteCols = (__typeof__(&bfMatCooComplexPermuteCols))bfMatCooComplexPermuteCols,
+  .Mul = (__typeof__(&bfMatCooComplexMul))bfMatCooComplexMul,
+  .IsZero = (__typeof__(&bfMatCooComplexIsZero))bfMatCooComplexIsZero,
+};
 
 void bfMatCooComplexDelete(BfMat **mat) {
   bfMatCooComplexDeinitAndDealloc((BfMatCooComplex **)mat);
 }
 
-BF_STUB(BfMat *, MatCooComplexEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCooComplexZerosLike, BfMat const *, BfSize, BfSize)
-
 BfType bfMatCooComplexGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_COO_COMPLEX;
 }
-
-BF_STUB(BfSize, MatCooComplexNumBytes, BfMat const *)
-BF_STUB(void, MatCooComplexSave, BfMat const *, char const *)
-BF_STUB(void, MatCooComplexPrint, BfMat const *, FILE *)
 
 BfSize bfMatCooComplexGetNumRows(BfMat const *mat) {
   if (bfMatGetType(mat) != BF_TYPE_MAT_COO_COMPLEX) {
@@ -53,12 +48,6 @@ BfSize bfMatCooComplexGetNumCols(BfMat const *mat) {
     return mat->numCols;
   }
 }
-
-BF_STUB(void, MatCooComplexSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCooComplexSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCooComplexSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatCooComplexGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCooComplexGetColRange, BfMat *, BfSize, BfSize)
 
 BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
@@ -146,8 +135,6 @@ BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
   return bfMatCooComplexToMat(colRange);
 }
 
-BF_STUB(void, MatCooComplexSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-
 void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
@@ -214,17 +201,6 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
   bfPermDeinit(&revPerm);
 }
 
-BF_STUB(BfVec *, MatCooComplexRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooComplexColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooComplexColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooComplexColNorms, BfMat const *)
-BF_STUB(void, MatCooComplexScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatCooComplexSumCols, BfMat const *)
-BF_STUB(void, MatCooComplexAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatCooComplexAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooComplexSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatCooComplexSubInplace, BfMat *, BfMat const *)
-
 static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
 
@@ -287,19 +263,9 @@ BfMat *bfMatCooComplexMul(BfMat const *mat, BfMat const *otherMat) {
   }
 }
 
-BF_STUB(BfVec *, MatCooComplexMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatCooComplexMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooComplexSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatCooComplexLstSq, BfMat const *, BfMat const *)
-BF_STUB(bool, MatCooComplexIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatCooComplexBackwardSolveVec, BfMat const *, BfVec const *)
-
 bool bfMatCooComplexIsZero(BfMat const *mat) {
   return bfMatConstToMatCooComplexConst(mat)->numElts == 0;
 }
-
-BF_STUB(void, MatCooComplexNegate, BfMat *)
-BF_STUB(BfMat *, MatCooComplexToType, BfMat const *, BfType)
 
 /** Upcasting: */
 
@@ -349,7 +315,7 @@ void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows,
                               BfSize numCols, BfSize numElts) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->numElts = numElts;

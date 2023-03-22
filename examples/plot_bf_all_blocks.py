@@ -21,17 +21,21 @@ A_BF_dense = A_BF_dense.reshape(num_points, num_points)
 
 error = A_dense - A_BF_dense
 
+log_error = -np.log10(np.maximum(1e-16, abs(error)))
+
+print(f'minimum log10 error: {log_error.min()}')
+
 plt.figure()
-plt.imshow(complex_to_hsv(A_BF_dense))
+plt.imshow(complex_to_hsv(A_BF_dense), interpolation='none')
 plt.title('BF')
 plt.show()
 
 plt.figure()
-plt.imshow(complex_to_hsv(A_dense))
+plt.imshow(complex_to_hsv(A_dense), interpolation='none')
 plt.title('Dense')
 plt.show()
 
 plt.figure()
-plt.imshow(-np.log10(np.maximum(1e-16, abs(error))), cmap=cc.cm.rainbow)
+plt.imshow(log_error, cmap=cc.cm.rainbow, interpolation='none')
 plt.colorbar()
 plt.show(block=True)

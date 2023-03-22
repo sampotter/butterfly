@@ -2,6 +2,31 @@
 
 #include "mat_block.h"
 
+/** Interface: Mat */
+
+BfMat *bfMatBlockCooCopy(BfMat const *mat);
+BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i);
+void bfMatBlockCooDelete(BfMat **mat);
+BfType bfMatBlockCooGetType(BfMat const *mat);
+BfSize bfMatBlockCooNumBytes(BfMat const *mat);
+BfSize bfMatBlockCooGetNumRows(BfMat const *mat);
+BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
+BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1);
+BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2);
+BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec);
+void bfMatBlockCooNegate(BfMat *mat);
+BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo);
+void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
+
+/** Interface: MatBlock */
+
+BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo);
+BfSize bfMatBlockCooGetNumRowBlocks(BfMatBlockCoo const *matBlockCoo);
+BfSize bfMatBlockCooGetNumColBlocks(BfMatBlockCoo const *matBlockCoo);
+BfSize bfMatBlockCooGetRowOffset(BfMatBlockCoo const *matBlockCoo, BfSize i);
+BfSize bfMatBlockCooGetColOffset(BfMatBlockCoo const *matBlockCoo, BfSize j);
+BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize i, BfSize j);
+
 struct BfMatBlockCoo {
   BfMatBlock super;
 
@@ -16,26 +41,33 @@ struct BfMatBlockCoo {
   BfSize *colInd;
 };
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlockCoo)
-#undef INTERFACE
+/** Upcasting: MatBlockCoo -> Mat */
 
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlockCoo)
-#undef INTERFACE
-
-/* Upcasting: */
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo);
 BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo);
 
-/* Downcasting: */
+/** Upcasting: MatBlockCoo -> MatBlock */
+
+BfMatBlock *bfMatBlockCooToMatBlock(BfMatBlockCoo *matBlockCoo);
+BfMatBlock const *bfMatBlockCooConstToMatBlockConst(BfMatBlockCoo const *matBlockCoo);
+
+/** Downcasting: Mat -> MatBlockCoo */
+
 BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat);
 BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat);
+
+/** Downcasting: MatBlock -> MatBlockCoo */
+
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock);
 
+/** Implementation: MatBlockCoo */
+
 BfMatBlockCoo *bfMatBlockCooNew();
-void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
-                       BfSize numBlockCols, BfSize numBlocks);
+BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets, BfSizeArray const *colOffsets, BfSizeArray const *rowInds, BfSizeArray const *colInds, BfPtrArray const *blocks);
+BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks);
+BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks);
+BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks);
+void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows, BfSize numBlockCols, BfSize numBlocks);
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat);
 void bfMatBlockCooDeinitAndDealloc(BfMatBlockCoo **mat);

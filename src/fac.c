@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <bf/circle.h>
 #include <bf/error_macros.h>
@@ -13,9 +14,10 @@
 #include <bf/mat_block_diag.h>
 #include <bf/mat_product.h>
 #include <bf/points.h>
+#include <bf/quadtree_node.h>
 #include <bf/util.h>
 
-#define MAX_DENSE_MATRIX_SIZE 16384 // == 128*128
+static BfSize const MAX_DENSE_MATRIX_SIZE = 128*128;
 
 static BfSize
 getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
@@ -24,16 +26,8 @@ getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
 
   BfSize numChildren = 0;
   for (BfSize i = 0; i < 4; ++i)
-    if (node->child[i] != NULL)
-      child[numChildren++] = node->child[i];
-  return numChildren;
-}
-
-static BfSize
-getNumChildren(BfQuadtreeNode const *node) {
-  BfSize numChildren = 0;
-  for (BfSize i = 0; i < 4; ++i)
-    numChildren += node->child[i] != NULL;
+    if (node->super.child[i] != NULL)
+      child[numChildren++] = bfTreeNodeConstToQuadtreeNodeConst(node->super.child[i]);
   return numChildren;
 }
 
@@ -57,7 +51,7 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
 
   /* get the lone target node and its bounding circle */
   bfPtrArrayGetFirst(tgtLevelNodes, (BfPtr *)&tgtNode);
-  BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+  BfCircle tgtCirc = bfQuadtreeNodeGetBoundingCircle(tgtNode);
 
   /* the number of diagonal blocks in the first factor equals the
    * number of nodes at the current depth in the source tree */
@@ -80,10 +74,10 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
     srcNode = bfPtrArrayGet(srcLevelNodes, i);
-    BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+    BfCircle srcCirc = bfQuadtreeNodeGetBoundingCircle(srcNode);
 
     /* get the original points in the current source node box */
-    bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
+    srcPts = bfQuadtreeNodeGetPoints(srcNode, tree);
     HANDLE_ERROR();
 
     /* verify that the source bounding circle contains the points */
@@ -143,12 +137,16 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
 static BfSize getTotalNumChildren(BfPtrArray const *levelNodes) {
   BfSize totalNumChildren = 0;
   for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i) {
-    BfQuadtreeNode const *node = bfPtrArrayGet(levelNodes, i);
-    totalNumChildren += getNumChildren(node);
+    BfTreeNode const *node = bfPtrArrayGet(levelNodes, i);
+    totalNumChildren += bfTreeNodeGetNumChildren(node);
   }
   return totalNumChildren;
 }
 
+/* An iterator which makes it easy to iterate over an array of
+ * internal nodes and their children. The nodes contained in
+ * `levelNodes` are the parents, and a precondition is that they are
+ * all internal nodes (i.e., have children/aren't leaves). */
 typedef struct {
   BfPtrArray const *levelNodes;
   BfSize nodeIndex;
@@ -157,42 +155,37 @@ typedef struct {
   BfQuadtreeNode const *node;
   BfQuadtreeNode const *children[4];
   BfQuadtreeNode const *child;
-  BfCircle2 circ;
-  BfCircle2 childCirc;
+  BfCircle circ;
+  BfCircle childCirc;
 } MakeFactorIter;
 
 static void resetMakeFactorIter(MakeFactorIter *iter, BfPtrArray const *levelNodes) {
+#if BF_DEBUG
+  for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i)
+    assert(!bfTreeNodeIsLeaf(bfPtrArrayGet(levelNodes, i)));
+#endif
+
   iter->levelNodes = levelNodes;
-
   iter->nodeIndex = iter->childIndex = 0;
-
   iter->node = bfPtrArrayGet(iter->levelNodes, iter->nodeIndex);
   iter->numChildren = getChildren(iter->node, iter->children);
   iter->child = iter->children[iter->childIndex];
-
-  iter->circ = bfGetQuadtreeNodeBoundingCircle(iter->node);
-  iter->childCirc = bfGetQuadtreeNodeBoundingCircle(iter->child);
+  iter->circ = bfQuadtreeNodeGetBoundingCircle(iter->node);
+  iter->childCirc = bfQuadtreeNodeGetBoundingCircle(iter->child);
 }
 
 static bool makeFactorIterNext(MakeFactorIter *iter) {
   if (++iter->childIndex == iter->numChildren) {
     if (++iter->nodeIndex == bfPtrArraySize(iter->levelNodes))
       return false;
-
     iter->childIndex = 0;
-
     iter->node = bfPtrArrayGet(iter->levelNodes, iter->nodeIndex);
-
     iter->numChildren = getChildren(iter->node, iter->children);
-
-    iter->circ = bfGetQuadtreeNodeBoundingCircle(iter->node);
+    iter->circ = bfQuadtreeNodeGetBoundingCircle(iter->node);
   }
-
   assert(iter->childIndex < iter->numChildren);
   iter->child = iter->children[iter->childIndex];
-
-  iter->childCirc = bfGetQuadtreeNodeBoundingCircle(iter->child);
-
+  iter->childCirc = bfQuadtreeNodeGetBoundingCircle(iter->child);
   return true;
 }
 
@@ -390,7 +383,7 @@ static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential la
 
   /* get the lone source node and its bounding circle */
   bfPtrArrayGetFirst(srcLevelNodes, (BfPtr *)&srcNode);
-  BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+  BfCircle srcCirc = bfQuadtreeNodeGetBoundingCircle(srcNode);
 
   /* initialize the last butterfly factor */
   BfMatBlockDiag *mat = bfMatBlockDiagNew();
@@ -419,12 +412,12 @@ static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential la
     HANDLE_ERROR();
 
     /* get the current set of target points */
-    bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
+    tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tree);
     HANDLE_ERROR();
 
     /* get the current target points' unit normals */
     if (usingTgtNormals)
-      bfQuadtreeNodeGetUnitNormals(tree, tgtNode, &tgtNormals);
+      tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tree);
 
     BfVectors2 *tgtNormalsPtr = usingTgtNormals ? &tgtNormals : NULL;
 
@@ -473,13 +466,13 @@ static bool
 allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
                       BfPtrArray const *srcLevelNodes)
 {
-  BfCircle2 tgtCirc = bfGetQuadtreeNodeBoundingCircle(tgtNode);
+  BfCircle tgtCirc = bfQuadtreeNodeGetBoundingCircle(tgtNode);
 
   for (BfSize i = 0; i < bfPtrArraySize(srcLevelNodes); ++i) {
     BfQuadtreeNode *srcNode = bfPtrArrayGet(srcLevelNodes, i);
 
-    BfSize numSrcPoints = bfQuadtreeNodeNumPoints(srcNode);
-    BfCircle2 srcCirc = bfGetQuadtreeNodeBoundingCircle(srcNode);
+    BfSize numSrcPoints = bfTreeNodeGetNumPoints(&srcNode->super);
+    BfCircle srcCirc = bfQuadtreeNodeGetBoundingCircle(srcNode);
     BfSize rank = bfHelm2RankEstForTwoCircles(&tgtCirc, &srcCirc, K, 1, 1e-15);
 
     if (rank > numSrcPoints)
@@ -503,56 +496,89 @@ allRankEstimatesAreOK(BfQuadtreeNode const *tgtNode, BfReal K,
  *
  * (NOTE: the algorithm used to determine whether or not a kernel
  * matrix is butterfliable is very crude at the moment, and may result
- * in false negatives.) */
+ * in false negatives.)
+ *
+ * TODO: this algorithm is a mess---we should carefully define what we
+ * need to do here and implement it more concisely. This function has
+ * been a big source of bugs and nuisances. */
 BfSize
 bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
                   BfQuadtreeNode const *tgtNode,
                   BfReal K,
-                  BfQuadtreeLevelIter *srcLevelIter,
-                  BfQuadtreeLevelIter *tgtLevelIter)
+                  BfTreeLevelIter *srcLevelIter,
+                  BfTreeLevelIter *tgtLevelIter)
 {
   BEGIN_ERROR_HANDLING();
 
   BfSize numFactors = 0;
 
-  BfSize numSrcNodes = bfQuadtreeNodeNumPoints(srcNode);
-  BfSize numTgtNodes = bfQuadtreeNodeNumPoints(tgtNode);
+  BfSize numSrcNodes = bfTreeNodeGetNumPoints(&srcNode->super);
+  BfSize numTgtNodes = bfTreeNodeGetNumPoints(&tgtNode->super);
 
   /* set up the level iterator for the source tree---this iterator
    * goes from the leaves of the tree to the root (in reverse) */
-  *srcLevelIter = bfInitQuadtreeLevelIter(
-    BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER, (BfQuadtreeNode *)srcNode);
+  bfTreeLevelIterInit(
+    srcLevelIter,
+    BF_TREE_TRAVERSAL_LR_REVERSE_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)srcNode));
   HANDLE_ERROR();
 
   /* set up the level iterator for the target tree, which goes from
    * the root to the leaves */
-  *tgtLevelIter = bfInitQuadtreeLevelIter(
-    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tgtNode);
+  bfTreeLevelIterInit(
+    tgtLevelIter,
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)tgtNode));
   HANDLE_ERROR();
 
-  assert(bfQuadtreeLevelIterNumPoints(tgtLevelIter) == numTgtNodes);
+  /* find the deepest, complete, internal level of the target tree
+   * using the target level iterator */
+  BfSize maxAllowableDepthBelowTgtNode = bfTreeLevelIterCurrentDepth(tgtLevelIter);
+  assert(bfTreeLevelIterCurrentLevelIsInternal(tgtLevelIter));
+  bfTreeLevelIterNext(tgtLevelIter);
+  HANDLE_ERROR();
+  while (bfTreeLevelIterCurrentLevelIsInternal(tgtLevelIter)) {
+    ++maxAllowableDepthBelowTgtNode;
+    bfTreeLevelIterNext(tgtLevelIter);
+    HANDLE_ERROR();
+  }
+
+  /* reset the target tree level iterator */
+  bfTreeLevelIterDeinit(tgtLevelIter);
+  bfTreeLevelIterInit(
+    tgtLevelIter,
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)tgtNode));
+  HANDLE_ERROR();
+
+  assert(bfTreeLevelIterGetNumPoints(tgtLevelIter) == numTgtNodes);
 
   /* get the current source and target depths and make sure they're
    * compatible */
-  BfSize currentSrcDepth = bfQuadtreeLevelIterCurrentDepth(srcLevelIter);
-  BfSize currentTgtDepth = bfQuadtreeLevelIterCurrentDepth(tgtLevelIter);
+  BfSize currentSrcDepth =
+    bfTreeLevelIterCurrentDepth(srcLevelIter);
+  BfSize currentTgtDepth = bfTreeLevelIterCurrentDepth(tgtLevelIter);
   assert(currentTgtDepth <= currentSrcDepth);
 
   /* skip source levels until we're no deeper than the maximum depth
    * beneath the target node */
-  BfSize maxDepthBelowTgtNode = bfGetMaxDepthBelowQuadtreeNode(tgtNode);
-  while (currentSrcDepth > maxDepthBelowTgtNode) {
-    bfQuadtreeLevelIterNext(srcLevelIter);
+  while (currentSrcDepth > maxAllowableDepthBelowTgtNode) {
+    bfTreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
 
-  /* the quadtree can be ragged---we need to skip levels until we are
-   * on a complete level of tree */
-  while (bfQuadtreeLevelIterNumPoints(srcLevelIter) != numSrcNodes) {
-    bfQuadtreeLevelIterNext(srcLevelIter);
+  /* Skip levels until we're on a complete level of tree */
+  while (bfTreeLevelIterGetNumPoints(srcLevelIter) != numSrcNodes) {
+    bfTreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
-  assert(bfQuadtreeLevelIterNumPoints(srcLevelIter) == numSrcNodes);
+  assert(bfTreeLevelIterGetNumPoints(srcLevelIter) == numSrcNodes);
+
+  /* Skip levels until we're on an "internal" level of the tree */
+  while (!bfTreeLevelIterCurrentLevelIsInternal(srcLevelIter)) {
+    bfTreeLevelIterNext(srcLevelIter);
+    --currentSrcDepth;
+  }
 
   /* TODO: step the source level iterator until:
    * - the rank estimate between the first target node and each source
@@ -560,7 +586,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
 
   while (currentSrcDepth > currentTgtDepth &&
          !allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes)) {
-    bfQuadtreeLevelIterNext(srcLevelIter);
+    bfTreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
 
@@ -570,14 +596,14 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
       currentSrcDepth - currentTgtDepth + 2 : 0;
 
   END_ERROR_HANDLING() {
-    bfFreeQuadtreeLevelIter(srcLevelIter);
-    bfFreeQuadtreeLevelIter(tgtLevelIter);
+    bfTreeLevelIterDeinit(srcLevelIter);
+    bfTreeLevelIterDeinit(tgtLevelIter);
   }
 
   return numFactors;
 }
 
-BfMatProduct * bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfQuadtreeLevelIter *srcLevelIter, BfQuadtreeLevelIter *tgtLevelIter, BfSize numFactors) {
+BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
   BEGIN_ERROR_HANDLING();
 
   /* allocate space for the butterfly factors
@@ -598,7 +624,7 @@ BfMatProduct * bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
     /* go up a level on the source tree */
-    bfQuadtreeLevelIterNext(srcLevelIter);
+    bfTreeLevelIterNext(srcLevelIter);
 
     /* make the next factor */
     factor[i] = makeFactor(
@@ -607,7 +633,7 @@ BfMatProduct * bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
-    bfQuadtreeLevelIterNext(tgtLevelIter);
+    bfTreeLevelIterNext(tgtLevelIter);
   }
 
   /* make the last factor in the butterfly factorization: this is the
@@ -635,8 +661,8 @@ static BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
   BfPtrArray childNodes;
   bfInitPtrArray(&childNodes, 4);
   for (BfSize i = 0; i < 4; ++i)
-    if (node->child[i])
-      bfPtrArrayAppend(&childNodes, node->child[i]);
+    if (node->super.child[i])
+      bfPtrArrayAppend(&childNodes, node->super.child[i]);
   return childNodes;
 }
 
@@ -649,11 +675,11 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfL
 
   BfMat *Z = NULL;
 
-  bfGetQuadtreeNodePoints(tree, srcNode, &srcPts);
-  bfGetQuadtreeNodePoints(tree, tgtNode, &tgtPts);
+  srcPts = bfQuadtreeNodeGetPoints(srcNode, tree);
+  tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tree);
 
   if (usingTgtNormals) {
-    bfQuadtreeNodeGetUnitNormals(tree, tgtNode, &tgtNormals);
+    tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tree);
     tgtNormalsPtr = &tgtNormals;
   }
 
@@ -672,7 +698,7 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
                                  BfLayerPotential layerPot,
                                  BfQuadtreeNode const *srcNode,
                                  BfQuadtreeNode const *tgtNode) {
-  BfQuadtreeLevelIter srcLevelIter, tgtLevelIter;
+  BfTreeLevelIter srcLevelIter, tgtLevelIter;
   BfSize numFactors = bfFacHelm2Prepare(
     srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
 
@@ -702,6 +728,8 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   BEGIN_ERROR_HANDLING();
 
   BfPtrArray srcChildNodes, tgtChildNodes;
+
+  BfMat *mat = NULL;
   BfMatBlockDense *childBlockMat = NULL;
 
   srcChildNodes = getChildrenAsPtrArray(srcNode);
@@ -713,6 +741,8 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   childBlockMat = bfMatBlockDenseNew();
   HANDLE_ERROR();
 
+  mat = bfMatBlockDenseToMat(childBlockMat);
+
   BfSize numBlockRows = bfPtrArraySize(&tgtChildNodes);
   BfSize numBlockCols = bfPtrArraySize(&srcChildNodes);
   bfMatBlockDenseInit(childBlockMat, numBlockRows, numBlockCols);
@@ -722,10 +752,13 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
                              level + 1, childBlockMat);
   HANDLE_ERROR();
 
+  assert(bfMatGetNumRows(mat) == bfTreeNodeGetNumPoints(&tgtNode->super));
+  assert(bfMatGetNumCols(mat) == bfTreeNodeGetNumPoints(&srcNode->super));
+
   END_ERROR_HANDLING() {}
 
-  bfFreePtrArray(&srcChildNodes);
-  bfFreePtrArray(&tgtChildNodes);
+  bfPtrArrayDeinit(&srcChildNodes);
+  bfPtrArrayDeinit(&tgtChildNodes);
 
   return bfMatBlockDenseToMat(childBlockMat);
 }
@@ -749,11 +782,11 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
 
   for (BfSize i = 0; i < numRowBlocks; ++i) {
     BfQuadtreeNode *tgtNode = bfPtrArrayGet(tgtNodes, i);
-    BfSize numRows = bfQuadtreeNodeNumPoints(tgtNode);
+    BfSize numRows = bfTreeNodeGetNumPoints(&tgtNode->super);
 
     for (BfSize j = 0; j < numColBlocks; ++j) {
       BfQuadtreeNode *srcNode = bfPtrArrayGet(srcNodes, j);
-      BfSize numCols = bfQuadtreeNodeNumPoints(srcNode);
+      BfSize numCols = bfTreeNodeGetNumPoints(&srcNode->super);
 
       bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
 
@@ -816,13 +849,15 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K,
 
   /* Iterate over the quadtree level by level to generate pairs of
    * nodes to compress */
-  BfQuadtreeLevelIter levelIter = bfInitQuadtreeLevelIter(
-    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfQuadtreeNode *)tree->root);
+  BfTreeLevelIter levelIter;
+  bfTreeLevelIterInit(
+    &levelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)tree->super.root));
   HANDLE_ERROR();
 
   /* Skip to level 2 of quadtree */
-  bfQuadtreeLevelIterNext(&levelIter);
-  bfQuadtreeLevelIterNext(&levelIter);
+  bfTreeLevelIterNext(&levelIter);
+  bfTreeLevelIterNext(&levelIter);
   HANDLE_ERROR();
 
   /* Get the nodes at the current level along with their count */
@@ -840,7 +875,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K,
   END_ERROR_HANDLING()
     bfMatBlockDenseDeinitAndDealloc(&mat);
 
-  bfFreeQuadtreeLevelIter(&levelIter);
+  bfTreeLevelIterDeinit(&levelIter);
 
   return bfMatBlockDenseToMat(mat);
 }

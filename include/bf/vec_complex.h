@@ -2,15 +2,25 @@
 
 #include "vec.h"
 
+/** Interface: Vec */
+
+BfVec *bfVecComplexCopy(BfVec const *vec);
+void bfVecComplexDelete(BfVec **mat);
+BfType bfVecComplexGetType(BfVec const *vec);
+BfVec *bfVecComplexGetSubvecView(BfVec *vec, BfSize i0, BfSize i1);
+void bfVecComplexPrint(BfVec const *vec, FILE *fp);
+BfReal bfVecComplexNormMax(BfVec const *vec);
+void bfVecComplexAddInplace(BfVec *vec, BfVec const *otherVec);
+void bfVecComplexMulInplace(BfVec *vec, BfMat const *mat);
+void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat);
+BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd);
+BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec);
+
 struct BfVecComplex {
   BfVec super;
   BfSize stride;
   BfComplex *data;
 };
-
-#define INTERFACE BF_INTERFACE_Vec
-BF_DECLARE_INTERFACE(VecComplex)
-#undef INTERFACE
 
 BfVec *bfVecComplexToVec(BfVecComplex *vecComplex);
 

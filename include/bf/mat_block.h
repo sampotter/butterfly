@@ -2,17 +2,31 @@
 
 #include "mat.h"
 
-#define BF_INTERFACE_MatBlock(Type, Subtype, _)                         \
-  _(Type, Subtype, BfSize, NumBlocks, BfMatBlock const *)               \
-  _(Type, Subtype, BfSize, GetNumRowBlocks, BfMatBlock const *)         \
-  _(Type, Subtype, BfSize, GetNumColBlocks, BfMatBlock const *)         \
-  _(Type, Subtype, BfSize, GetNumBlockRows, BfMatBlock const *, BfSize) \
-  _(Type, Subtype, BfSize, GetNumBlockCols, BfMatBlock const *, BfSize)
+/** Interface: MatBlock */
 
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE_STRUCT(MatBlock)
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
+BfSize bfMatBlockNumBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumRowBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *);
+BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *, BfSize);
+BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *, BfSize);
+BfSize bfMatBlockGetRowOffset(BfMatBlock const *, BfSize);
+BfSize bfMatBlockGetColOffset(BfMatBlock const *, BfSize);
+BfMat const *bfMatBlockGetBlockConst(BfMatBlock const *, BfSize, BfSize);
+BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *, BfSize, BfSize);
+
+typedef struct BfMatBlockVtable {
+  __typeof__(&bfMatBlockNumBlocks) NumBlocks;
+  __typeof__(&bfMatBlockGetNumRowBlocks) GetNumRowBlocks;
+  __typeof__(&bfMatBlockGetNumColBlocks) GetNumColBlocks;
+  __typeof__(&bfMatBlockGetNumBlockRows) GetNumBlockRows;
+  __typeof__(&bfMatBlockGetNumBlockCols) GetNumBlockCols;
+  __typeof__(&bfMatBlockGetRowOffset) GetRowOffset;
+  __typeof__(&bfMatBlockGetColOffset) GetColOffset;
+  __typeof__(&bfMatBlockGetBlockConst) GetBlockConst;
+  __typeof__(&bfMatBlockGetBlockCopy) GetBlockCopy;
+} BfMatBlockVtable;
+
+/** Implementation: MatBlock */
 
 /* An abstract block matrix type. Shouldn't be instantiated
  * directly. */
@@ -40,18 +54,10 @@ struct BfMatBlock {
   /* Array of `numBlockCols + 1` entries containing the offset in
    * columns of each block column in the matrix (i.e., `block[i]`
    * starts on column `colOffset[colInd[i]]`). The final entry,
-   * `colOffset[numBlockCols]`, contains a sentinel value indicating
+   * `coloffset[numBlockCols]`, contains a sentinel value indicating
    * the total number of columns in the block matrix. */
   BfSize *colOffset;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
-
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DECLARE_INTERFACE(MatBlock)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock);
@@ -60,11 +66,13 @@ BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock);
 BfMatBlock *bfMatToMatBlock(BfMat *mat);
 BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat);
 
+void bfMatBlockInvalidate(BfMatBlock *matBlock);
 void bfMatBlockInit(BfMatBlock *mat,
-                    BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
+                    BfMatVtable *matVtbl, BfMatBlockVtable *MAT_BLOCK_VTABLE,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDeinit(BfMatBlock *mat);
 void bfMatBlockDealloc(BfMatBlock **mat);
 void bfMatBlockDeinitAndDealloc(BfMatBlock **mat);
+void bfMatBlockDelete(BfMat **mat);
 BfSize bfMatBlockFindRowBlock(BfMatBlock const *mat, BfSize i);
-BfSize bfMatBlockFindColBlock(BfMatBlock const *mat, BfSize j);
+BfSize bfMatBlockGetMaxDepth(BfMatBlock const *);

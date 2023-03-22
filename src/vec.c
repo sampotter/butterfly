@@ -36,13 +36,29 @@ BfVec *bfVecGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
   return vec->vtbl->GetSubvecView(vec, i0, i1);
 }
 
+BfVec const *bfVecGetSubvecViewConst(BfVec const *vec, BfSize i0, BfSize i1) {
+  return vec->vtbl->GetSubvecViewConst(vec, i0, i1);
+}
+
 void bfVecPrint(BfVec const *vec, FILE *fp) {
   vec->vtbl->Print(vec, fp);
+}
+
+/* Set the elements of `vec` in the index range [i0, i1) to the values
+ * given by `otherVec`. Sets `BF_ERROR_INVALID_ARGUMENTS` if
+ * `otherVec` is the wrong size. */
+void bfVecSetRange(BfVec *vec, BfSize i0, BfSize i1, BfVec const *otherVec) {
+  vec->vtbl->SetRange(vec, i0, i1, otherVec);
 }
 
 /* Compute the Euclidean distance between `vec` and `otherVec`. */
 BfReal bfVecDist(BfVec const *vec, BfVec const *otherVec) {
   return vec->vtbl->Dist(vec, otherVec);
+}
+
+/* Compute the $\ell_\infty$ distance between `vec` and `otherVec`. */
+BfReal bfVecDistMax(BfVec const *vec, BfVec const *otherVec) {
+  return vec->vtbl->DistMax(vec, otherVec);
 }
 
 /* Compute the Euclidean norm of `vec`. */

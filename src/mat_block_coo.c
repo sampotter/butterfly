@@ -5,10 +5,17 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/indexed_mat.h>
+#include <bf/mat_zero.h>
 #include <bf/ptr_array.h>
+#include <bf/size_array.h>
+#include <bf/util.h>
+#include <bf/vec_real.h>
 
 /** Helper macros: */
 
+#define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
+#define NUM_COL_BLOCKS(mat) mat->super.super.numCols
 #define ROW_IND(mat, k) mat->rowInd[k]
 #define COL_IND(mat, k) mat->colInd[k]
 #define ROW_OFFSET(mat, i) mat->super.rowOffset[i]
@@ -19,9 +26,21 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatBlockCoo)
-#undef INTERFACE
+static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatBlockCooCopy))bfMatBlockCooCopy,
+  .GetRowCopy = (__typeof__(&bfMatBlockCooGetRowCopy))bfMatBlockCooGetRowCopy,
+  .Delete = (__typeof__(&bfMatBlockCooDelete))bfMatBlockCooDelete,
+  .GetType = (__typeof__(&bfMatBlockCooGetType))bfMatBlockCooGetType,
+  .NumBytes = (__typeof__(&bfMatBlockCooNumBytes))bfMatBlockCooNumBytes,
+  .GetNumRows = (__typeof__(&bfMatBlockCooGetNumRows))bfMatBlockCooGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatBlockCooGetNumCols))bfMatBlockCooGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
+  .Mul = (__typeof__(&bfMatBlockCooMul))bfMatBlockCooMul,
+  .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockCooMulVec,
+  .Negate = (__typeof__(&bfMatBlockCooNegate))bfMatBlockCooNegate,
+  .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockCooGetNonzeroColumnRanges,
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockCooPrintBlocksDeep,
+};
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -71,8 +90,6 @@ BfMat *bfMatBlockCooCopy(BfMat const *mat) {
 
   return bfMatBlockCooToMat(matBlockCooCopy);
 }
-
-BF_STUB(BfMat *, MatBlockCooGetView, BfMat *)
 
 typedef struct {
   BfSize i0, j0;
@@ -165,25 +182,13 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   return rowCopy;
 }
 
-BF_STUB(BfVec *, MatBlockCooGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatBlockCooGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatBlockCooGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-
 void bfMatBlockCooDelete(BfMat **mat) {
   bfMatBlockCooDeinitAndDealloc((BfMatBlockCoo **)mat);
 }
 
-BF_STUB(BfMat *, MatBlockCooEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooZerosLike, BfMat const *, BfSize, BfSize)
-
 BfType bfMatBlockCooGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_BLOCK_COO;
-}
-
-bool bfMatBlockCooInstanceOf(BfMat const *mat, BfType type) {
-  BfMat const *parent = bfMatBlockCooConstToMatConst((BfMatBlockCoo const *)mat);
-  return bfTypeDerivedFrom(bfMatGetType(parent), type);
 }
 
 BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
@@ -208,9 +213,6 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
   return num_bytes;
 }
 
-BF_STUB(void, MatBlockCooSave, BfMat const *, char const *)
-BF_STUB(void, MatBlockCooPrint, BfMat const *, FILE *)
-
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat) {
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
   return bfMatIsTransposed(mat) ?
@@ -225,26 +227,83 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
     matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
 }
 
-BF_STUB(void, MatBlockCooSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatBlockCooSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatBlockCooSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatBlockCooGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatBlockCooGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatBlockCooSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatBlockCooPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatBlockCooPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatBlockCooRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooColNorms, BfMat const *)
-BF_STUB(void, MatBlockCooScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatBlockCooSumCols, BfMat const *)
-BF_STUB(void, MatBlockCooAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatBlockCooAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatBlockCooSubInplace, BfMat *, BfMat const *)
+BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+  BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
+
+  BfMatBlockCoo *blockRow = NULL;
+
+  BfPtrArray indexedRowBlocks;
+  bfInitPtrArrayWithDefaultCapacity(&indexedRowBlocks);
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
+
+    BfSize m_ = bfMatGetNumRows(block);
+
+    /* The range [i0_, i1_) is the row index range of `block` with
+     * respect to `matBlockCoo`'s index system. */
+    BfSize i0_ = BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize i1_ = i0_ + m_;
+
+    /* Skip blocks which don't overlap with the row range [i0, i1). */
+    if (i1_ <= i0 || i1 <= i0_)
+      continue;
+
+    /* The starting column index of `block` with respect to
+     * `matBlockCoo`'s index system. */
+    BfSize j0_ = BLOCK_COL_OFFSET(matBlockCoo, k);
+
+    /* The range of rows which should be copied from `block` with
+     * respect to `block`'s index system. */
+    BfSize i0__ = i0_ < i0 ? i0 - i0_ : 0;
+    BfSize i1__ = m_ - (i1 < i1_ ? i1_ - i1 : 0);
+
+    /* Copy the row range---the whole point here is that this can
+     * easily be a subset of the rows of `block`! */
+    BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
+    HANDLE_ERROR();
+
+    BfIndexedMat *indexedRowBlock = malloc(sizeof(BfIndexedMat));
+    if (indexedRowBlock == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    indexedRowBlock->i0 = i0_ < i0 ? 0 : i0_ - i0;
+    indexedRowBlock->j0 = j0_;
+    indexedRowBlock->mat = blockRowRange;
+
+    assert(indexedRowBlock->mat != NULL);
+
+    bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
+    HANDLE_ERROR();
+  }
+
+  BfSize m = i1 - i0;
+  BfSize n = bfMatGetNumCols(mat);
+
+  blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfMatBlockCooDeinitAndDealloc(&blockRow);
+  }
+
+  /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
+  for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
+    free(bfPtrArrayGet(&indexedRowBlocks, k));
+
+  bfPtrArrayDeinit(&indexedRowBlocks);
+
+  return bfMatBlockCooToMat(blockRow);
+}
 
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
   BEGIN_ERROR_HANDLING();
@@ -254,7 +313,11 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
   BfSize numRows = bfMatGetNumRows(op1);
   BfSize numCols = bfMatGetNumCols(op2);
-  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlock1);
+
+  if (bfMatGetNumCols(op1) != bfMatGetNumRows(op2))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo1);
 
   BfMat *result = NULL;
   BfMat *block = NULL;
@@ -287,14 +350,52 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 
 }
 
-BF_STUB(BfVec *, MatBlockCooMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatBlockCooMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooLstSq, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatBlockCooGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(bool, MatBlockCooIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatBlockCooBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatBlockCooIsZero, BfMat const *)
+BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+
+  if (bfMatGetNumCols(mat) != vec->size)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfSize resultSize = bfMatGetNumRows(mat);
+
+  BfVec *result = NULL;
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = bfVecRealToVec(bfVecRealNewWithValue(resultSize, 0));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
+
+    BfSize i0 = BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    /* Multiply the current block with the relevant part of `vec`: */
+    BfVec const *subvecView = bfVecGetSubvecViewConst(vec, j0, j1);
+    BfVec *tmp = bfMatMulVec(block, subvecView);
+    bfVecDelete((BfVec **)&subvecView);
+
+    /* Assign the result to the relevant part of `result`: */
+    BfVec *resultSubvecView = bfVecGetSubvecView(result, i0, i1);
+    bfVecAddInplace(resultSubvecView, tmp);
+    bfVecDelete(&resultSubvecView);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return result;
+}
 
 void bfMatBlockCooNegate(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
@@ -312,24 +413,175 @@ void bfMatBlockCooNegate(BfMat *mat) {
   END_ERROR_HANDLING() {}
 }
 
-BF_STUB(BfMat *, MatBlockCooToType, BfMat const *, BfType)
+static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
+  BfSize m = bfMatGetNumCols(mat);
+  BfSize n = bfMatGetNumCols(mat);
+  BfType type = bfMatGetType(mat);
+  switch (type) {
+  case BF_TYPE_MAT_BLOCK_COO: {
+    BfMatBlockCoo const *matBlockCoo = bfMatConstToMatBlockCooConst(mat);
+    BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+    for (BfSize k = 0; k < numBlocks; ++k) {
+      BfMat const *block = BLOCK(matBlockCoo, k);
+      BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+      setColumnNonzerosForBlock(block, &nonzero[j0]);
+    }
+    break;
+  }
+  case BF_TYPE_MAT_IDENTITY:
+    assert(m == n);
+  case BF_TYPE_MAT_DENSE_REAL: {
+    for (BfSize j = 0; j < n; ++j) nonzero[j] = true;
+    break;
+  }
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
+}
+
+
+BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *nonzeroColumnRanges = bfSizeArrayNew();
+  HANDLE_ERROR();
+
+  bfSizeArrayInitWithDefaultCapacity(nonzeroColumnRanges);
+  HANDLE_ERROR();
+
+  BfSize n = bfMatGetNumCols(bfMatBlockCooConstToMatConst(matBlockCoo));
+
+  bool *nonzero = calloc(n, sizeof(bool));
+  if (nonzero == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockCoo, k);
+    BfSize j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
+    setColumnNonzerosForBlock(block, &nonzero[j0]);
+  }
+
+  BfSize j0Next = 0;
+
+  while (j0Next < n) {
+    BfSize j0 = j0Next;
+    while (j0 < n && !nonzero[j0]) ++j0;
+
+    BfSize j1 = j0;
+    while (j1 < n && nonzero[j1]) ++j1;
+
+    if (j0 < j1) {
+      bfSizeArrayAppend(nonzeroColumnRanges, j0);
+      bfSizeArrayAppend(nonzeroColumnRanges, j1);
+    }
+
+    j0Next = j1;
+  }
+
+  assert(j0Next == n);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return nonzeroColumnRanges;
+}
+
+void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
+  BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
+
+  BfSize i1 = i0 + bfMatGetNumRows(mat);
+  BfSize j1 = j0 + bfMatGetNumCols(mat);
+
+  fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_BLOCK_COO, i0, i1, j0, j1, depth);
+
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfSize i0_ = i0 + BLOCK_ROW_OFFSET(matBlockCoo, k);
+    BfSize j0_ = j0 + BLOCK_COL_OFFSET(matBlockCoo, k);
+    BfMat const *block = BLOCK(matBlockCoo, k);
+    bfMatPrintBlocksDeep(block, fp, i0_, j0_, depth + 1);
+  }
+}
 
 /** Interface: MatBlock */
 
-#define INTERFACE BF_INTERFACE_MatBlock
-BF_DEFINE_VTABLE(MatBlock, MatBlockCoo)
-#undef INTERFACE
+static BfMatBlockVtable MAT_BLOCK_VTABLE = {
+  .NumBlocks = (__typeof__(&bfMatBlockNumBlocks))bfMatBlockCooNumBlocks,
+  .GetNumRowBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockCooGetNumRowBlocks,
+  .GetNumColBlocks = (__typeof__(&bfMatBlockGetNumRowBlocks))bfMatBlockCooGetNumColBlocks,
+  .GetRowOffset = (__typeof__(&bfMatBlockGetRowOffset))bfMatBlockCooGetRowOffset,
+  .GetColOffset = (__typeof__(&bfMatBlockGetColOffset))bfMatBlockCooGetColOffset,
+  .GetBlockConst = (__typeof__(&bfMatBlockGetBlockConst))bfMatBlockCooGetBlockConst,
+};
 
-BfSize bfMatBlockCooNumBlocks(BfMatBlock const *mat) {
-  return bfMatBlockConstToMatBlockCooConst(mat)->numBlocks;
+BfSize bfMatBlockCooNumBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return matBlockCoo->numBlocks;
 }
 
-BF_STUB(BfSize, MatBlockCooGetNumRowBlocks, BfMatBlock const *)
-BF_STUB(BfSize, MatBlockCooGetNumColBlocks, BfMatBlock const *)
-BF_STUB(BfSize, MatBlockCooGetNumBlockRows, BfMatBlock const *, BfSize)
-BF_STUB(BfSize, MatBlockCooGetNumBlockCols, BfMatBlock const *, BfSize)
+BfSize bfMatBlockCooGetNumRowBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return NUM_ROW_BLOCKS(matBlockCoo);
+}
 
-/** Upcasting: */
+BfSize bfMatBlockCooGetNumColBlocks(BfMatBlockCoo const *matBlockCoo) {
+  return NUM_COL_BLOCKS(matBlockCoo);
+}
+
+BfSize bfMatBlockCooGetRowOffset(BfMatBlockCoo const *matBlockCoo, BfSize i) {
+  return ROW_OFFSET(matBlockCoo, i);
+}
+
+BfSize bfMatBlockCooGetColOffset(BfMatBlockCoo const *matBlockCoo, BfSize j) {
+  return COL_OFFSET(matBlockCoo, j);
+}
+
+BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize i, BfSize j) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
+
+  BfSize numBlocks = bfMatBlockNumBlocks(matBlock);
+
+  BfMat const *block = NULL;
+
+  BfSize k = 0;
+  for (; k < numBlocks; ++k) {
+    if (ROW_IND(matBlockCoo, k) == i && COL_IND(matBlockCoo, k) == j) {
+      block = BLOCK(matBlockCoo, k);
+      break;
+    }
+  }
+
+  BfSize i0 = ROW_OFFSET(matBlockCoo, i);
+  BfSize m = ROW_OFFSET(matBlockCoo, i + 1) - i0;
+
+  BfSize j0 = COL_OFFSET(matBlockCoo, j);
+  BfSize n = COL_OFFSET(matBlockCoo, j + 1) - j0;
+
+  BfMatZero *zeroBlock = NULL;
+
+  if (block == NULL) {
+    zeroBlock = bfMatZeroNew();
+    HANDLE_ERROR();
+
+    bfMatZeroInit(zeroBlock, m, n);
+    HANDLE_ERROR();
+
+    block = bfMatZeroConstToMatConst((BfMatZero const *)zeroBlock);
+  } else {
+    if (bfMatGetNumRows(block) != m || bfMatGetNumCols(block) != n)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  }
+
+  END_ERROR_HANDLING() {
+    bfMatZeroDeinitAndDealloc(&zeroBlock);
+  }
+
+  return block;
+}
+
+/** Upcasting: MatBlockCoo -> Mat */
 
 BfMat *bfMatBlockCooToMat(BfMatBlockCoo *matBlockCoo) {
   return &matBlockCoo->super.super;
@@ -339,7 +591,17 @@ BfMat const *bfMatBlockCooConstToMatConst(BfMatBlockCoo const *matBlockCoo) {
   return &matBlockCoo->super.super;
 }
 
-/** Downcasting: */
+/** Upcasting: MatBlockCoo -> MatBlock */
+
+BfMatBlock *bfMatBlockCooToMatBlock(BfMatBlockCoo *matBlockCoo) {
+  return &matBlockCoo->super;
+}
+
+BfMatBlock const *bfMatBlockCooConstToMatBlockConst(BfMatBlockCoo const *matBlockCoo) {
+  return &matBlockCoo->super;
+}
+
+/** Downcasting: Mat -> MatBlockCoo */
 
 BfMatBlockCoo *bfMatToMatBlockCoo(BfMat *mat) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_BLOCK_COO)) {
@@ -359,14 +621,306 @@ BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat) {
   }
 }
 
+/** Downcasting: MatBlockCoo -> MatBlock */
+
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock) {
   return bfMatConstToMatBlockCooConst(&matBlock->super);
 }
 
 /** Implementation: MatBlockCoo */
 
+void bfMatBlockCooInvalidate(BfMatBlockCoo *matBlockCoo) {
+  bfMatBlockInvalidate(&matBlockCoo->super);
+
+  matBlockCoo->numBlocks = BF_SIZE_BAD_VALUE;
+  matBlockCoo->rowInd = NULL;
+  matBlockCoo->colInd = NULL;
+}
+
 BfMatBlockCoo *bfMatBlockCooNew() {
-  return malloc(sizeof(BfMatBlockCoo));
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockCoo *matBlockCoo = malloc(sizeof(BfMatBlockCoo));
+  if (matBlockCoo == NULL)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  bfMatBlockCooInvalidate(matBlockCoo);
+
+  END_ERROR_HANDLING() {
+    matBlockCoo = NULL;
+  }
+
+  return matBlockCoo;
+}
+
+BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets,
+                                          BfSizeArray const *colOffsets,
+                                          BfSizeArray const *rowInds,
+                                          BfSizeArray const *colInds,
+                                          BfPtrArray const *blocks) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockCoo *matBlockCoo = bfMatBlockCooNew();
+  HANDLE_ERROR();
+
+  BfMatBlock *matBlock = bfMatBlockCooToMatBlock(matBlockCoo);
+
+  BfSize numBlockRows = bfSizeArrayGetSize(rowOffsets) - 1;
+  BfSize numBlockCols = bfSizeArrayGetSize(colOffsets) - 1;
+  BfSize numBlocks = bfPtrArraySize(blocks);
+
+  bfMatBlockCooInit(matBlockCoo, numBlockRows, numBlockCols, numBlocks);
+  HANDLE_ERROR();
+
+  bfPtrArrayCopyData(blocks, (BfPtr *)matBlock->block);
+  bfSizeArrayCopyData(rowOffsets, matBlock->rowOffset);
+  bfSizeArrayCopyData(colOffsets, matBlock->colOffset);
+  bfSizeArrayCopyData(rowInds, matBlockCoo->rowInd);
+  bfSizeArrayCopyData(colInds, matBlockCoo->colInd);
+
+  END_ERROR_HANDLING() {
+    bfMatBlockCooDeinitAndDealloc(&matBlockCoo);
+  }
+
+  return matBlockCoo;
+}
+
+BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks) {
+  BEGIN_ERROR_HANDLING();
+
+  if (bfPtrArrayIsEmpty(blocks))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockCoo *matBlockCoo = bfMatBlockCooNew();
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfPtrArraySize(blocks);
+
+  bfMatBlockInit(&matBlockCoo->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
+                 numBlocks, numBlocks, 1);
+  HANDLE_ERROR();
+
+  matBlockCoo->numBlocks = numBlocks;
+
+  BfMat *block = bfPtrArrayGet(blocks, 0);
+
+  /* Compute the row and column offsets */
+
+  COL_OFFSET(matBlockCoo, 0) = 0;
+  COL_OFFSET(matBlockCoo, 1) = bfMatGetNumCols(block);
+
+  ROW_OFFSET(matBlockCoo, 0) = 0;
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    block = bfPtrArrayGet(blocks, k);
+    BLOCK(matBlockCoo, k) = block;
+    ROW_OFFSET(matBlockCoo, k + 1) = bfMatGetNumRows(block);
+  }
+  bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockCoo, 0));
+
+  /* Set up the row and column indices */
+
+  matBlockCoo->rowInd = malloc(numBlocks*sizeof(BfSize));
+  if (matBlockCoo->rowInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  matBlockCoo->colInd = malloc(numBlocks*sizeof(BfSize));
+  if (matBlockCoo->colInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    ROW_IND(matBlockCoo, k) = k;
+    COL_IND(matBlockCoo, k) = 0;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matBlockCoo;
+}
+
+BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks) {
+  BEGIN_ERROR_HANDLING();
+
+  if (bfPtrArrayIsEmpty(blocks))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockCoo *matBlockCoo = bfMatBlockCooNew();
+  HANDLE_ERROR();
+
+  BfSize numBlocks = bfPtrArraySize(blocks);
+
+  bfMatBlockInit(&matBlockCoo->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
+                 numBlocks, 1, numBlocks);
+  HANDLE_ERROR();
+
+  matBlockCoo->numBlocks = numBlocks;
+
+  BfMat *block = bfPtrArrayGet(blocks, 0);
+
+  /* Compute the row and column offsets */
+
+  ROW_OFFSET(matBlockCoo, 0) = 0;
+  ROW_OFFSET(matBlockCoo, 1) = bfMatGetNumRows(block);
+
+  COL_OFFSET(matBlockCoo, 0) = 0;
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    block = bfPtrArrayGet(blocks, k);
+    BLOCK(matBlockCoo, k) = block;
+    COL_OFFSET(matBlockCoo, k + 1) = bfMatGetNumCols(block);
+  }
+  bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockCoo, 0));
+
+  /* Set up the row and column indices */
+
+  matBlockCoo->rowInd = malloc(numBlocks*sizeof(BfSize));
+  if (matBlockCoo->rowInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  matBlockCoo->colInd = malloc(numBlocks*sizeof(BfSize));
+  if (matBlockCoo->colInd == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    ROW_IND(matBlockCoo, k) = 0;
+    COL_IND(matBlockCoo, k) = k;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matBlockCoo;
+}
+
+BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatBlockCoo *matBlockCoo = NULL;
+
+  BfSize numBlocks = bfPtrArraySize(indexedBlocks);
+
+  /* Extract the blocks from the array of indexed blocks */
+
+  BfPtrArray blocks;
+  bfInitPtrArrayWithDefaultCapacity(&blocks);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfIndexedMat *indexedBlock = bfPtrArrayGet(indexedBlocks, k);
+    BfMat *block = indexedBlock->mat;
+
+    bfPtrArrayAppend(&blocks, block);
+    HANDLE_ERROR();
+  }
+
+  /* Build and accumulate arrays containing the row and column offsets
+   * determined by `indexedBlocks`. */
+
+  BfSizeArray rowOffsets;
+  bfSizeArrayInitWithDefaultCapacity(&rowOffsets);
+  HANDLE_ERROR();
+
+  BfSizeArray colOffsets;
+  bfSizeArrayInitWithDefaultCapacity(&colOffsets);
+  HANDLE_ERROR();
+
+  bfSizeArrayAppend(&rowOffsets, 0);
+  bfSizeArrayAppend(&rowOffsets, numRows);
+
+  bfSizeArrayAppend(&colOffsets, 0);
+  bfSizeArrayAppend(&colOffsets, numCols);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfIndexedMat const *indexedBlock = bfPtrArrayGet(indexedBlocks, k);
+    BfMat const *block = indexedBlock->mat;
+
+    BfSize i0 = indexedBlock->i0;
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = indexedBlock->j0;
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    if (!bfSizeArrayContains(&rowOffsets, i0)) {
+      bfSizeArrayInsertSorted(&rowOffsets, i0);
+      HANDLE_ERROR();
+    }
+
+    if (!bfSizeArrayContains(&rowOffsets, i1)) {
+      bfSizeArrayInsertSorted(&rowOffsets, i1);
+      HANDLE_ERROR();
+    }
+
+    if (!bfSizeArrayContains(&colOffsets, j0)) {
+      bfSizeArrayInsertSorted(&colOffsets, j0);
+      HANDLE_ERROR();
+    }
+
+    if (!bfSizeArrayContains(&colOffsets, j1)) {
+      bfSizeArrayInsertSorted(&colOffsets, j1);
+      HANDLE_ERROR();
+    }
+  }
+
+  /* Find rowInd and colInd for each block. */
+
+  BfSizeArray rowInds;
+  bfSizeArrayInitWithDefaultCapacity(&rowInds);
+  HANDLE_ERROR();
+
+  BfSizeArray colInds;
+  bfSizeArrayInitWithDefaultCapacity(&colInds);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfIndexedMat const *indexedBlock = bfPtrArrayGet(indexedBlocks, k);
+    BfMat const *block = indexedBlock->mat;
+
+    BfSize i0 = indexedBlock->i0;
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = indexedBlock->j0;
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    BfSize rowInd = bfSizeArrayFindFirst(&rowOffsets, i0);
+    if (rowInd == BF_SIZE_BAD_VALUE)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    assert(bfSizeArrayGet(&rowOffsets, rowInd + 1) == i1);
+
+    bfSizeArrayAppend(&rowInds, rowInd);
+    HANDLE_ERROR();
+
+    BfSize colInd = bfSizeArrayFindFirst(&colOffsets, j0);
+    if (colInd == BF_SIZE_BAD_VALUE)
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+    assert(bfSizeArrayGet(&colOffsets, colInd + 1) == j1);
+
+    bfSizeArrayAppend(&colInds, colInd);
+    HANDLE_ERROR();
+  }
+
+  /* Create and initialize MatBlockCoo instance using inds and
+   * offsets: */
+
+  matBlockCoo = bfMatBlockCooNewFromArrays(
+    &rowOffsets, &colOffsets, &rowInds, &colInds, &blocks);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    bfMatBlockCooDeinitAndDealloc(&matBlockCoo);
+  }
+
+  bfPtrArrayDeinit(&blocks);
+
+  bfSizeArrayDeinit(&rowOffsets);
+  bfSizeArrayDeinit(&colOffsets);
+
+  bfSizeArrayDeinit(&rowInds);
+  bfSizeArrayDeinit(&colInds);
+
+  return matBlockCoo;
 }
 
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
@@ -375,7 +929,7 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
   BEGIN_ERROR_HANDLING();
 
   bfMatBlockInit(&mat->super,
-                 &MatVtbl, &MatBlockVtbl,
+                 &MAT_VTABLE, &MAT_BLOCK_VTABLE,
                  numBlocks, numBlockRows, numBlockCols);
   HANDLE_ERROR();
 

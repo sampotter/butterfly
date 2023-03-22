@@ -6,28 +6,19 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatSum)
-#undef INTERFACE
+/** Interface: Mat */
 
-BF_STUB(BfMat *, MatSumCopy, BfMat const *)
-BF_STUB(BfMat *, MatSumGetView, BfMat *)
-BF_STUB(BfVec *, MatSumGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatSumGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatSumGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatSumGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-BF_STUB(void, MatSumDelete, BfMat **)
-BF_STUB(BfMat *, MatSumEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatSumZerosLike, BfMat const *, BfSize, BfSize)
+static BfMatVtable MAT_VTABLE = {
+  .GetType = (__typeof__(&bfMatSumGetType))bfMatSumGetType,
+  .GetNumRows = (__typeof__(&bfMatSumGetNumRows))bfMatSumGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatSumGetNumCols))bfMatSumGetNumCols,
+  .Mul = (__typeof__(&bfMatSumMul))bfMatSumMul,
+};
 
 BfType bfMatSumGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_SUM;
 }
-
-BF_STUB(BfSize, MatSumNumBytes, BfMat const *)
-BF_STUB(void, MatSumSave, BfMat const *, char const *)
-BF_STUB(void, MatSumPrint, BfMat const *, FILE *)
 
 BfSize bfMatSumGetNumRows(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -59,27 +50,6 @@ BfSize bfMatSumGetNumCols(BfMat const *mat) {
   return numCols;
 }
 
-BF_STUB(void, MatSumSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatSumSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatSumSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatSumGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatSumGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatSumGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatSumGetColRangeCopy , BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatSumSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatSumPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatSumPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatSumRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatSumColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatSumColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatSumColNorms, BfMat const *)
-BF_STUB(void, MatSumScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatSumSumCols, BfMat const *)
-BF_STUB(void, MatSumAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatSumAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatSumSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatSumSubInplace, BfMat *, BfMat const *)
-
 BfMat *bfMatSumMul(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
 
@@ -110,16 +80,6 @@ BfMat *bfMatSumMul(BfMat const *mat, BfMat const *otherMat) {
 
   return result;
 }
-
-BF_STUB(BfVec *, MatSumMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatSumMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatSumSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatSumLstSq, BfMat const *, BfMat const *)
-BF_STUB(bool, MatSumIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatSumBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatSumIsZero, BfMat const *)
-BF_STUB(void, MatSumNegate, BfMat *)
-BF_STUB(BfMat *, MatSumToType, BfMat const *, BfType)
 
 /** Upcasting: */
 
@@ -158,7 +118,7 @@ void bfMatSumInit(BfMatSum *mat) {
   /* We don't store the number of rows or columns in `mat->super`
    * since we always look up the number of rows and columns from the
    * terms at runtime. */
-  bfMatInit(&mat->super, &MatVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
+  bfMatInit(&mat->super, &MAT_VTABLE, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
 
   mat->termArr = bfGetUninitializedPtrArray();
 

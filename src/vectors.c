@@ -1,9 +1,37 @@
 #include <bf/vectors.h>
 
+#include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+
+void bfVector3Copy(BfVector3 u, BfVector3 const v) {
+  u[0] = v[0];
+  u[1] = v[1];
+  u[2] = v[2];
+}
+
+void bfVector3Scale(BfVector3 u, BfReal alpha) {
+  u[0] *= alpha;
+  u[1] *= alpha;
+  u[2] *= alpha;
+}
+
+BfReal bfVector3Norm(BfVector3 const u) {
+  return sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
+}
+
+BfReal bfVector3Dot(BfVector3 const u, BfVector3 const v) {
+  return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+}
+
+void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
+  w[0] = u[1]*v[2] - u[2]*v[1];
+  w[1] = u[2]*v[0] - u[0]*v[2];
+  w[2] = u[0]*v[1] - u[1]*v[0];
+}
 
 BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat) {
   return bfVectors2ConstViewFromMatDenseReal(bfMatConstToMatDenseRealConst(mat));
@@ -15,11 +43,12 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
   BfVectors2 *vectors = NULL;
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
 
   if (bfMatDenseRealGetNumCols(mat) != 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  if (matDenseReal->colStride != 1)
+  if (bfMatDenseGetColStride(matDense) != 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   vectors = malloc(sizeof(BfVectors2));
@@ -127,4 +156,36 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
+  if (numVectors == 0) {
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+    return;
+  }
+
+  vectors->size = numVectors;
+
+  vectors->data = malloc(numVectors*sizeof(BfVector3));
+  if (vectors->data == NULL)
+    bfSetError(BF_ERROR_MEMORY_ERROR);
+}
+
+void bfVectors3Deinit(BfVectors3 *vectors) {
+  (void)vectors;
+  assert(false);
+}
+
+void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors) {
+  BEGIN_ERROR_HANDLING();
+
+  bfVectors3InitEmpty(indexedVectors, numInds);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numInds; ++i)
+    bfVector3Copy(indexedVectors->data[i], vectors->data[inds[i]]);
+
+  END_ERROR_HANDLING() {
+    bfVectors3Deinit(indexedVectors);
+  }
 }

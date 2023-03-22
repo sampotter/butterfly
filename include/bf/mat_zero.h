@@ -2,13 +2,16 @@
 
 #include "mat.h"
 
+/** Interface: MatZero */
+
+BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i);
+BfType bfMatZeroGetType(BfMat const *mat);
+BfSize bfMatZeroGetNumRows(BfMat const *mat);
+BfSize bfMatZeroGetNumCols(BfMat const *mat);
+
 struct BfMatZero {
   BfMat super;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatZero)
-#undef INTERFACE
 
 BfMat *bfMatZeroToMat(BfMatZero *mat);
 BfMat const *bfMatZeroConstToMatConst(BfMatZero const *mat);

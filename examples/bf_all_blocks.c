@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <bf/error_macros.h>
@@ -10,7 +11,6 @@
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_dense_complex.h>
-#include <bf/mat_util.h>
 #include <bf/points.h>
 #include <bf/quadtree.h>
 #include <bf/rand.h>
@@ -89,12 +89,15 @@ int main(int argc, char const *argv[]) {
   }
 
   bfToc();
-  BfQuadtree tree;
-  bfInitQuadtreeFromPoints(&tree, points, normalsPtr);
+  BfQuadtree quadtree;
+  bfQuadtreeInit(&quadtree, points, normalsPtr);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
-  BfPerm revPerm = bfPermGetReversePerm(&tree.perm);
+  BfTree *tree = bfQuadtreeToTree(&quadtree);
+
+  BfPerm const *perm = bfTreeGetPermConst(tree);
+  BfPerm revPerm = bfPermGetReversePerm(perm);
 
 #if PERM_DENSE
   BfMat *pointsPermMat = bfMatCopy(pointsMat);
@@ -121,7 +124,7 @@ int main(int argc, char const *argv[]) {
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #endif
 
-  BfMat *A_BF = bfFacHelm2MakeMultilevel(&tree, K, layerPot);
+  BfMat *A_BF = bfFacHelm2MakeMultilevel(&quadtree, K, layerPot);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMat *x; {
@@ -192,7 +195,7 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&x);
   bfMatDelete(&A_BF);
   bfMatDelete(&A_dense);
-  bfFreeQuadtree(&tree);
+  bfQuadtreeDeinit(&quadtree);
 #if PERM_DENSE
   bfMatDelete(&pointsPermMat);
 #endif

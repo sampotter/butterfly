@@ -4,7 +4,6 @@
 
 #include "def.h"
 #include "dtype.h"
-#include "interface.h"
 #include "perm.h"
 #include "types.h"
 
@@ -13,39 +12,61 @@ typedef enum BfVecProps {
   BF_VEC_PROPS_VIEW = (1 << 0)
 } BfVecProps;
 
-#define BF_INTERFACE_Vec(Type, Subtype, _)                               \
-  _(Type, Subtype, BfVec *, Copy, BfVec const *)                         \
-  _(Type, Subtype, void, Delete, BfVec **)                               \
-  _(Type, Subtype, BfType, GetType, BfVec const *)                       \
-  _(Type, Subtype, bool, InstanceOf, BfVec const *, BfType)              \
-  _(Type, Subtype, BfPtr, GetEltPtr, BfVec *, BfSize)                    \
-  _(Type, Subtype, BfVec *, GetSubvecCopy, BfVec const *, BfSize, BfSize) \
-  _(Type, Subtype, BfVec *, GetSubvecView, BfVec *, BfSize, BfSize)      \
-  _(Type, Subtype, void, Print, BfVec const *, FILE *)                   \
-  _(Type, Subtype, BfReal, Dist, BfVec const *, BfVec const *)           \
-  _(Type, Subtype, BfReal, NormMax, BfVec const *)                       \
-  _(Type, Subtype, void, ScaleByReal, BfVec *, BfReal)                   \
-  _(Type, Subtype, void, AddInplace, BfVec *, BfVec const *)             \
-  _(Type, Subtype, void, MulInplace, BfVec *, BfMat const *)             \
-  _(Type, Subtype, void, SolveInplace, BfVec *, BfMat const *)           \
-  _(Type, Subtype, void, RecipInplace, BfVec *)                          \
-  _(Type, Subtype, BfMat *, GetGivensRotation, BfVec const *, BfSize, BfSize) \
-  _(Type, Subtype, void, Permute, BfVec *, BfPerm const *)               \
-  _(Type, Subtype, BfVec *, Concat, BfVec const *, BfVec const *)
+/** Interface: Vec */
 
-#define INTERFACE BF_INTERFACE_Vec
-BF_DEFINE_VTABLE_STRUCT(Vec)
-#undef INTERFACE
+BfVec *bfVecCopy(BfVec const *);
+void bfVecDelete(BfVec **);
+BfType bfVecGetType(BfVec const *);
+bool bfVecInstanceOf(BfVec const *, BfType);
+BfPtr bfVecGetEltPtr(BfVec *, BfSize);
+BfVec *bfVecGetSubvecCopy(BfVec const *, BfSize, BfSize);
+BfVec *bfVecGetSubvecView(BfVec *, BfSize, BfSize);
+BfVec const *bfVecGetSubvecViewConst(BfVec const *, BfSize, BfSize);
+void bfVecSetRange(BfVec *, BfSize, BfSize, BfVec const *);
+void bfVecPrint(BfVec const *, FILE *);
+BfReal bfVecDist(BfVec const *, BfVec const *);
+BfReal bfVecDistMax(BfVec const *, BfVec const *);
+BfReal bfVecNormMax(BfVec const *);
+void bfVecScaleByReal(BfVec *, BfReal);
+void bfVecAddInplace(BfVec *, BfVec const *);
+void bfVecMulInplace(BfVec *, BfMat const *);
+void bfVecSolveInplace(BfVec *, BfMat const *);
+void bfVecRecipInplace(BfVec *);
+BfMat *bfVecGetGivensRotation(BfVec const *, BfSize, BfSize);
+void bfVecPermute(BfVec *, BfPerm const *);
+BfVec *bfVecConcat(BfVec const *, BfVec const *);
+
+typedef struct BfVecVtable {
+  __typeof__(&bfVecCopy) Copy;
+  __typeof__(&bfVecDelete) Delete;
+  __typeof__(&bfVecGetType) GetType;
+  __typeof__(&bfVecInstanceOf) InstanceOf;
+  __typeof__(&bfVecGetEltPtr) GetEltPtr;
+  __typeof__(&bfVecGetSubvecCopy) GetSubvecCopy;
+  __typeof__(&bfVecGetSubvecView) GetSubvecView;
+  __typeof__(&bfVecGetSubvecViewConst) GetSubvecViewConst;
+  __typeof__(&bfVecSetRange) SetRange;
+  __typeof__(&bfVecPrint) Print;
+  __typeof__(&bfVecDist) Dist;
+  __typeof__(&bfVecDistMax) DistMax;
+  __typeof__(&bfVecNormMax) NormMax;
+  __typeof__(&bfVecScaleByReal) ScaleByReal;
+  __typeof__(&bfVecAddInplace) AddInplace;
+  __typeof__(&bfVecMulInplace) MulInplace;
+  __typeof__(&bfVecSolveInplace) SolveInplace;
+  __typeof__(&bfVecRecipInplace) RecipInplace;
+  __typeof__(&bfVecGetGivensRotation) GetGivensRotation;
+  __typeof__(&bfVecPermute) Permute;
+  __typeof__(&bfVecConcat) Concat;
+} BfVecVtable;
+
+/** Implementation: Vec */
 
 struct BfVec {
   BfVecVtable *vtbl;
   BfVecProps props;
   BfSize size;
 };
-
-#define INTERFACE BF_INTERFACE_Vec
-BF_DECLARE_INTERFACE(Vec)
-#undef INTERFACE
 
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size);
 void bfVecDeinit(BfVec *vec);

@@ -6,9 +6,17 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatProduct)
-#undef INTERFACE
+/** Interface: MatProduct */
+
+static BfMatVtable MAT_VTABLE = {
+  .Copy = (__typeof__(&bfMatProductCopy))bfMatProductCopy,
+  .Delete = (__typeof__(&bfMatProductDelete))bfMatProductDelete,
+  .GetType = (__typeof__(&bfMatProductGetType))bfMatProductGetType,
+  .GetNumRows = (__typeof__(&bfMatProductGetNumRows))bfMatProductGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
+  .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
+  .Mul = (__typeof__(&bfMatProductMul))bfMatProductMul,
+};
 
 BfMat *bfMatProductCopy(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -44,18 +52,9 @@ BfMat *bfMatProductCopy(BfMat const *mat) {
   return bfMatProductToMat(matProductCopy);
 }
 
-BF_STUB(BfMat *, MatProductGetView, BfMat *)
-BF_STUB(BfVec *, MatProductGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatProductGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatProductGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatProductGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
-
 void bfMatProductDelete(BfMat **mat) {
   bfMatProductDeinitAndDealloc((BfMatProduct **)mat);
 }
-
-BF_STUB(BfMat *, MatProductEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatProductZerosLike, BfMat const *, BfSize, BfSize)
 
 BfType bfMatProductGetType(BfMat const *mat) {
   (void)mat;
@@ -65,10 +64,6 @@ BfType bfMatProductGetType(BfMat const *mat) {
 bool bfMatProductInstanceOf(BfMat const *mat, BfType type) {
   return bfTypeDerivedFrom(bfMatGetType(mat), type);
 }
-
-BF_STUB(BfSize, MatProductNumBytes, BfMat const *)
-BF_STUB(void, MatProductSave, BfMat const *, char const *)
-BF_STUB(void, MatProductPrint, BfMat const *, FILE *)
 
 BfSize bfMatProductGetNumRows(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
@@ -114,21 +109,6 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
   return numCols;
 }
 
-BF_STUB(void, MatProductSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatProductSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatProductSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatProductGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatProductGetColRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatProductGetRowRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatProductGetColRangeCopy, BfMat const *, BfSize, BfSize)
-BF_STUB(void, MatProductSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-BF_STUB(void, MatProductPermuteRows, BfMat *, BfPerm const *)
-BF_STUB(void, MatProductPermuteCols, BfMat *, BfPerm const *)
-BF_STUB(BfVec *, MatProductRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatProductColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatProductColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatProductColNorms, BfMat const *)
-
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
   BEGIN_ERROR_HANDLING();
 
@@ -145,12 +125,6 @@ void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
 
   END_ERROR_HANDLING() {}
 }
-
-BF_STUB(BfVec *, MatProductSumCols, BfMat const *)
-BF_STUB(void, MatProductAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatProductAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatProductSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatProductSubInplace, BfMat *, BfMat const *)
 
 BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
   BEGIN_ERROR_HANDLING();
@@ -190,17 +164,6 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
 
   return result;
 }
-
-BF_STUB(BfVec *, MatProductMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatProductMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatProductSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatProductLstSq, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatProductGetGivensRotation, BfVec const *, BfSize, BfSize)
-BF_STUB(bool, MatProductIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatProductBackwardSolveVec, BfMat const *, BfVec const *)
-BF_STUB(bool, MatProductIsZero, BfMat const *)
-BF_STUB(void, MatProductNegate, BfMat *)
-BF_STUB(BfMat *, MatProductToType, BfMat const *, BfType)
 
 /** Upcasting: */
 
@@ -248,7 +211,7 @@ void bfMatProductInit(BfMatProduct *mat) {
   /* We don't store the number of rows or columns in `mat->super`
    * since we always look up the number of rows and columns from the
    * leftmost and rightmost factors at runtime. */
-  bfMatInit(&mat->super, &MatVtbl, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
+  bfMatInit(&mat->super, &MAT_VTABLE, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
 
   mat->factorArr = bfGetUninitializedPtrArray();
 

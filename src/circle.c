@@ -8,7 +8,7 @@
 #include <bf/points.h>
 #include <bf/vectors.h>
 
-BfPoints2 bfCircle2SamplePoints(BfCircle2 const *circ, BfSize numPoints) {
+BfPoints2 bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints) {
   BfPoints2 points;
   bfInitEmptyPoints2(&points, numPoints);
 
@@ -24,7 +24,7 @@ BfPoints2 bfCircle2SamplePoints(BfCircle2 const *circ, BfSize numPoints) {
   return points;
 }
 
-BfVectors2 bfCircle2SampleUnitNormals(BfCircle2 const *circ, BfSize n) {
+BfVectors2 bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
   BEGIN_ERROR_HANDLING();
 
   (void)circ; /* Don't actually use this... just for consistency in
@@ -50,11 +50,11 @@ BfVectors2 bfCircle2SampleUnitNormals(BfCircle2 const *circ, BfSize n) {
   return unitNormals;
 }
 
-bool bfCircle2ContainsPoint(BfCircle2 const *circ, BfPoint2 const point) {
+bool bfCircle2ContainsPoint(BfCircle const *circ, BfPoint2 const point) {
   return bfPoint2Dist(circ->center, point) <= circ->r;
 }
 
-bool bfCircle2ContainsPoints(BfCircle2 const *circ, BfPoints2 const *points) {
+bool bfCircle2ContainsPoints(BfCircle const *circ, BfPoints2 const *points) {
   for (BfSize i = 0; i < points->size; ++i)
     if (!bfCircle2ContainsPoint(circ, points->data[i]))
       return false;

@@ -11,8 +11,8 @@
 #include <bf/points.h>
 #include <bf/vectors.h>
 
-BfSize bfHelm2RankEstForTwoCircles(BfCircle2 const *circ1,
-                                   BfCircle2 const *circ2,
+BfSize bfHelm2RankEstForTwoCircles(BfCircle const *circ1,
+                                   BfCircle const *circ2,
                                    BfReal k, BfReal C, BfReal eps)
 {
   assert(k > 0);

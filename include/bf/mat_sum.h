@@ -3,14 +3,19 @@
 #include "mat.h"
 #include "ptr_array.h"
 
+/** Interface: MatSum */
+
+BfType bfMatSumGetType(BfMat const *mat);
+BfSize bfMatSumGetNumRows(BfMat const *mat);
+BfSize bfMatSumGetNumCols(BfMat const *mat);
+BfMat *bfMatSumMul(BfMat const *mat, BfMat const *otherMat);
+
+/** Implementation: MatSum */
+
 typedef struct BfMatSum {
   BfMat super;
   BfPtrArray termArr;
 } BfMatSum;
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatSum)
-#undef INTERFACE
 
 BfMat *bfMatSumToMat(BfMatSum *matSum);
 

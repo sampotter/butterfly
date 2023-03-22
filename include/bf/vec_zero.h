@@ -2,13 +2,13 @@
 
 #include "vec.h"
 
+void bfVecZeroDelete(BfVec **mat);
+BfType bfVecZeroGetType(BfVec const *vec);
+BfVec *bfVecZeroConcat(BfVec const *vec, BfVec const *otherVec);
+
 struct BfVecZero {
   BfVec super;
 };
-
-#define INTERFACE BF_INTERFACE_Vec
-BF_DECLARE_INTERFACE(VecZero)
-#undef INTERFACE
 
 BfVec *bfVecZeroToVec(BfVecZero *vecZero);
 

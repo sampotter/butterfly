@@ -2,6 +2,18 @@
 
 #include "mat.h"
 
+/** Interface: MatCooReal */
+
+void bfMatCooRealDelete(BfMat **mat);
+BfType bfMatCooRealGetType(BfMat const *mat);
+BfSize bfMatCooRealGetNumRows(BfMat const *mat);
+BfSize bfMatCooRealGetNumCols(BfMat const *mat);
+BfMat *bfMatCooRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1);
+BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1);
+void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm);
+void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm);
+bool bfMatCooRealIsZero(BfMat const *mat);
+
 struct BfMatCooReal {
   BfMat super;
   BfSize numElts;
@@ -9,10 +21,6 @@ struct BfMatCooReal {
   BfSize *colInd;
   BfReal *value;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatCooReal)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat *bfMatCooRealToMat(BfMatCooReal *matCooReal);

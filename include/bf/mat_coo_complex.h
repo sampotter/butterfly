@@ -2,6 +2,19 @@
 
 #include "mat.h"
 
+/** Interface: MatCooComplex */
+
+void bfMatCooComplexDelete(BfMat **mat);
+BfType bfMatCooComplexGetType(BfMat const *mat);
+BfSize bfMatCooComplexGetNumRows(BfMat const *mat);
+BfSize bfMatCooComplexGetNumCols(BfMat const *mat);
+BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1);
+BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1);
+void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm);
+void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm);
+BfMat *bfMatCooComplexMul(BfMat const *mat, BfMat const *otherMat);
+bool bfMatCooComplexIsZero(BfMat const *mat);
+
 struct BfMatCooComplex {
   BfMat super;
   BfSize numElts;
@@ -9,10 +22,6 @@ struct BfMatCooComplex {
   BfSize *colInd;
   BfComplex *value;
 };
-
-#define INTERFACE BF_INTERFACE_Mat
-BF_DECLARE_INTERFACE(MatCooComplex)
-#undef INTERFACE
 
 /* Upcasting: */
 BfMat *bfMatCooComplexToMat(BfMatCooComplex *matCooComplex);

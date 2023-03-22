@@ -7,32 +7,26 @@
 
 /** Interface: Mat */
 
-#define INTERFACE BF_INTERFACE_Mat
-BF_DEFINE_VTABLE(Mat, MatCooReal)
-#undef INTERFACE
-
-BF_STUB(BfMat *, MatCooRealCopy, BfMat const *)
-BF_STUB(BfMat *, MatCooRealGetView, BfMat *)
-BF_STUB(BfVec *, MatCooRealGetRowCopy, BfMat const *, BfSize)
-BF_STUB(BfVec *, MatCooRealGetRowView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCooRealGetColView, BfMat *, BfSize)
-BF_STUB(BfVec *, MatCooRealGetColRangeView, BfMat *, BfSize, BfSize, BfSize)
+static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatCooRealDelete))bfMatCooRealDelete,
+  .GetType = (__typeof__(&bfMatCooRealGetType))bfMatCooRealGetType,
+  .GetNumRows = (__typeof__(&bfMatCooRealGetNumRows))bfMatCooRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatCooRealGetNumCols))bfMatCooRealGetNumCols,
+  .GetRowRangeCopy = (__typeof__(&bfMatCooRealGetRowRangeCopy))bfMatCooRealGetRowRangeCopy,
+  .GetColRangeCopy = (__typeof__(&bfMatCooRealGetColRangeCopy))bfMatCooRealGetColRangeCopy,
+  .PermuteRows = (__typeof__(&bfMatCooRealPermuteRows))bfMatCooRealPermuteRows,
+  .PermuteCols = (__typeof__(&bfMatCooRealPermuteCols))bfMatCooRealPermuteCols,
+  .IsZero = (__typeof__(&bfMatCooRealIsZero))bfMatCooRealIsZero,
+};
 
 void bfMatCooRealDelete(BfMat **mat) {
   bfMatCooRealDeinitAndDealloc((BfMatCooReal **)mat);
 }
 
-BF_STUB(BfMat *, MatCooRealEmptyLike, BfMat const *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCooRealZerosLike, BfMat const *, BfSize, BfSize)
-
 BfType bfMatCooRealGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_COO_REAL;
 }
-
-BF_STUB(BfSize, MatCooRealNumBytes, BfMat const *)
-BF_STUB(void, MatCooRealSave, BfMat const *, char const *)
-BF_STUB(void, MatCooRealPrint, BfMat const *, FILE *)
 
 BfSize bfMatCooRealGetNumRows(BfMat const *mat) {
   if (bfMatGetType(mat) != BF_TYPE_MAT_COO_REAL) {
@@ -51,12 +45,6 @@ BfSize bfMatCooRealGetNumCols(BfMat const *mat) {
     return mat->numCols;
   }
 }
-
-BF_STUB(void, MatCooRealSetRow, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCooRealSetCol, BfMat *, BfSize, BfVec const *)
-BF_STUB(void, MatCooRealSetColRange, BfMat *, BfSize, BfSize, BfSize, BfVec const *)
-BF_STUB(BfMat *, MatCooRealGetRowRange, BfMat *, BfSize, BfSize)
-BF_STUB(BfMat *, MatCooRealGetColRange, BfMat *, BfSize, BfSize)
 
 BfMat *bfMatCooRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
   BEGIN_ERROR_HANDLING();
@@ -144,8 +132,6 @@ BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
   return bfMatCooRealToMat(colRange);
 }
 
-BF_STUB(void, MatCooRealSetRowRange, BfMat *, BfSize, BfSize, BfMat const *)
-
 void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
@@ -212,30 +198,9 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   bfPermDeinit(&revPerm);
 }
 
-BF_STUB(BfVec *, MatCooRealRowDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooRealColDists, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooRealColDots, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooRealColNorms, BfMat const *)
-BF_STUB(void, MatCooRealScaleCols, BfMat *, BfVec const *)
-BF_STUB(BfVec *, MatCooRealSumCols, BfMat const *)
-BF_STUB(void, MatCooRealAddInplace, BfMat *, BfMat const *)
-BF_STUB(void, MatCooRealAddDiag, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooRealSub, BfMat const *, BfMat const *)
-BF_STUB(void, MatCooRealSubInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooRealMul, BfMat const *, BfMat const *)
-BF_STUB(BfVec *, MatCooRealMulVec, BfMat const *, BfVec const *)
-BF_STUB(void, MatCooRealMulInplace, BfMat *, BfMat const *)
-BF_STUB(BfMat *, MatCooRealSolveLU, BfMat const *, BfMat const *)
-BF_STUB(BfMat *, MatCooRealLstSq, BfMat const *, BfMat const *)
-BF_STUB(bool, MatCooRealIsUpperTri, BfMat const *)
-BF_STUB(BfVec *, MatCooRealBackwardSolveVec, BfMat const *, BfVec const *)
-
 bool bfMatCooRealIsZero(BfMat const *mat) {
   return bfMatConstToMatCooRealConst(mat)->numElts == 0;
 }
-
-BF_STUB(void, MatCooRealNegate, BfMat *)
-BF_STUB(BfMat *, MatCooRealToType, BfMat const *, BfType)
 
 /** Upcasting: */
 
@@ -285,7 +250,7 @@ void bfMatCooRealInitEmpty(BfMatCooReal *mat, BfSize numRows,
                               BfSize numCols, BfSize numElts) {
   BEGIN_ERROR_HANDLING();
 
-  bfMatInit(&mat->super, &MatVtbl, numRows, numCols);
+  bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
   mat->numElts = numElts;
@@ -322,7 +287,6 @@ void bfMatCooRealDeinit(BfMatCooReal *mat) {
   mat->colInd = NULL;
   mat->value = NULL;
 }
-
 
 void bfMatCooRealDealloc(BfMatCooReal **mat) {
   free(*mat);
