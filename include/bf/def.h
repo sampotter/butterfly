@@ -3,6 +3,11 @@
 /* For getline */
 #define _POSIX_C_SOURCE 200809L
 
+/* For j0, j1, y0, and y1: */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+
 #include <complex.h>
 #include <stdbool.h>
 #include <stddef.h>

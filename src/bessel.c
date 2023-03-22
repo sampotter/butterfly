@@ -1,7 +1,10 @@
 #include <bf/bessel.h>
 
-#include <assert.h>
 #include <math.h>
+
+#ifndef _DEFAULT_SOURCE
+
+#include <assert.h>
 #include <stdbool.h>
 
 #include <gsl/gsl_sf_bessel.h>
@@ -277,3 +280,31 @@ BfReal bf_y1(BfReal x) {
 BfComplex bf_H1(BfReal x) {
   return bf_j1(x) + I*bf_y1(x);
 }
+
+#else // #ifdef _DEFAULT_SOURCE
+
+BfReal bf_j0(BfReal x) {
+  return j0(x);
+}
+
+BfReal bf_y0(BfReal x) {
+  return y0(x);
+}
+
+BfComplex bf_H0(BfReal x) {
+  return j0(x) + I*y0(x);
+}
+
+BfReal bf_j1(BfReal x) {
+  return j1(x);
+}
+
+BfReal bf_y1(BfReal x) {
+  return y1(x);
+}
+
+BfComplex bf_H1(BfReal x) {
+  return j1(x) + I*y1(x);
+}
+
+#endif // #ifdef _DEFAULT_SOURCE
