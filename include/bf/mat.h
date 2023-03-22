@@ -19,7 +19,7 @@ typedef enum BfMatProps {
 
 /** Interface: Mat */
 
-BfMat *bfMatCopy(BfMat const *);
+gpBfMat *bfMatCopy(BfMat const *);
 BfMat *bfMatGetView(BfMat *);
 BfVec *bfMatGetRowCopy(BfMat const *, BfSize);
 BfVec *bfMatGetRowView(BfMat *, BfSize);
