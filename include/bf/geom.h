@@ -12,6 +12,8 @@ typedef BfReal BfVector3[3];
 typedef struct BfBbox2 BfBbox2;
 typedef struct BfBoundingBox3 BfBoundingBox3;
 
+typedef struct BfEllipse BfEllipse;
+
 typedef struct BfCircle BfCircle;
 typedef struct BfSphere BfSphere;
 

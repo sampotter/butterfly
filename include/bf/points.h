@@ -4,6 +4,10 @@
 #include "mat.h"
 
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q);
+BfReal bfPoint2Magnitude(BfPoint2 const p);
+void bfPoint2SampleUniformlyFromBoundingBox(BfBbox2 const *bbox, BfPoint2 p);
+void bfPoint2RotateAboutOrigin(BfPoint2 p, BfReal theta);
+void bfPoint2Translate(BfPoint2 p, BfVector2 const u);
 
 BfReal bfPoint3Dist(BfPoint3 const p, BfPoint3 const q);
 void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv);
@@ -28,8 +32,12 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints);
 struct BfPoints2 {
   BfPoint2 *data;
   BfSize size;
+  BfSize capacity;
+  bool isView;
 };
 
+BfPoints2 *bfPoints2NewEmpty();
+BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny);
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat);
 BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal);
 BfPoints2 bfGetUninitializedPoints2();
@@ -42,6 +50,10 @@ void bfGetPointsByIndex(BfPoints2 const *points, BfSize numInds, BfSize const *i
 void bfPrintPoints2(BfPoints2 const *points);
 void bfSavePoints2(BfPoints2 const *points, char const *path);
 BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y);
+void bfPoints2Append(BfPoints2 *points, BfPoint2 const p);
+void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints);
+void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p);
+BfSize bfPoints2GetSize(BfPoints2 const *points);
 
 struct BfPoints3 {
   BfPoint3 *data;

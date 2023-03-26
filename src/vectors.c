@@ -3,9 +3,35 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+
+void bfVector2Normalize(BfVector2 u) {
+  BfReal mag = hypot(u[0], u[1]);
+  u[0] /= mag;
+  u[1] /= mag;
+}
+
+void bfVector2Reject(BfVector2 u, BfVector2 const v) {
+  BfReal v_dot_u = v[0]*u[0] + v[1]*u[1];
+  u[0] -= v_dot_u*v[0];
+  u[1] -= v_dot_u*v[1];
+}
+
+void bfVector2Negate(BfVector2 u) {
+  u[0] *= -1;
+  u[1] *= -1;
+}
+
+void bfVector2Rotate(BfVector2 u, BfReal theta) {
+  BfReal c = cos(theta);
+  BfReal s = sin(theta);
+  BfReal tmp = c*u[0] - s*u[1];
+  u[1] = s*u[0] + c*u[1];
+  u[0] = tmp;
+}
 
 void bfVector3Copy(BfVector3 u, BfVector3 const v) {
   u[0] = v[0];
@@ -33,6 +59,26 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
   w[2] = u[0]*v[1] - u[1]*v[0];
 }
 
+BfVectors2 *bfVectors2NewEmpty() {
+  BEGIN_ERROR_HANDLING();
+
+  BfVectors2 *vectors = malloc(sizeof(BfVectors2));
+  if (vectors == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  vectors->size = 0;
+  vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  vectors->isView = false;
+
+  vectors->data = malloc(vectors->capacity*sizeof(BfPoint2));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return vectors;
+}
+
 BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat) {
   return bfVectors2ConstViewFromMatDenseReal(bfMatConstToMatDenseRealConst(mat));
 }
@@ -54,6 +100,8 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
   vectors = malloc(sizeof(BfVectors2));
   vectors->data = (BfPoint2 *)matDenseReal->data;
   vectors->size = bfMatDenseRealGetNumRows(mat);
+  vectors->capacity = BF_SIZE_BAD_VALUE;
+  vectors->isView = true;
 
   END_ERROR_HANDLING() {
     free(vectors);
@@ -74,6 +122,8 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
   }
 
   vectors->size = numVectors;
+  vectors->capacity = 2*numVectors;
+  vectors->isView = true;
 
   vectors->data = malloc(numVectors*sizeof(BfVector2));
   if (vectors->data == NULL)
@@ -156,6 +206,61 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Grow the array if we're at capacity */
+  if (vectors->size == vectors->capacity) {
+    vectors->capacity *= 2;
+
+    BfPoint2 *newData = realloc(vectors->data, vectors->capacity*sizeof(BfPoint2));
+    if (newData == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    vectors->data = newData;
+  }
+
+  /* Append new point */
+  memcpy(&vectors->data[vectors->size++], p, sizeof(BfPoint2));
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfVectors2Extend(BfVectors2 *vectors, BfVectors2 const *newVectors) {
+  /* TODO: bad implementation to start... fix */
+  for (BfSize i = 0; i < newVectors->size; ++i) {
+    BfPoint2 v;
+    bfVectors2Get(newVectors, i, v);
+    bfVectors2Append(vectors, v);
+  }
+}
+
+void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i >= vectors->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(v, &vectors->data[i], sizeof(BfVector2));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i >= vectors->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(&vectors->data[i], v, sizeof(BfVector2));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 }
 
 void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {

@@ -32,6 +32,7 @@ butterfly_lib_src = [
   'src/circle.c',
   'src/cholmod.c',
   'src/dtype.c',
+  'src/ellipse.c',
   'src/error.c',
   'src/eval_tree.c',
   'src/fac.c',
