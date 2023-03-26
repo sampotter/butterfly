@@ -9,13 +9,13 @@
 #include "bf/geom.h"
 #include <bf/helm2.h>
 #include <bf/layer_pot.h>
+#include <bf/linalg.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_coo_complex.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_diag_real.h>
-#include <bf/mat_solve.h>
 #include <bf/mat_zero.h>
 #include <bf/points.h>
 #include <bf/quadrature.h>
