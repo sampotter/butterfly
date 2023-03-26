@@ -7,8 +7,6 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
-static BfSize const BF_ARRAY_DEFAULT_CAPACITY = 128;
-
 static void invalidate(BfSizeArray *sizeArray) {
   sizeArray->data = NULL;
   sizeArray->size = BF_SIZE_BAD_VALUE;
