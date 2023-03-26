@@ -422,7 +422,7 @@ static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential la
     BfVectors2 *tgtNormalsPtr = usingTgtNormals ? &tgtNormals : NULL;
 
     mat->super.block[i] = bfGetHelm2KernelMatrix(
-      &srcCircPts, &tgtPts, tgtNormalsPtr, K, layerPot);
+      &srcCircPts, &tgtPts, NULL, tgtNormalsPtr, K, layerPot);
     HANDLE_ERROR();
 
     assert(mat->super.rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
@@ -683,7 +683,7 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfL
     tgtNormalsPtr = &tgtNormals;
   }
 
-  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, tgtNormalsPtr, K, layerPot);
+  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, NULL, tgtNormalsPtr, K, layerPot);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING()

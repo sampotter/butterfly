@@ -147,7 +147,7 @@ int main(int argc, char const *argv[]) {
   }
 
   BfMat *Z_gt = bfGetHelm2KernelMatrix(
-    &srcNodePts, &tgtNodePts, tgtNodeNormalsPtr, K, layerPot);
+    &srcNodePts, &tgtNodePts, NULL, tgtNodeNormalsPtr, K, layerPot);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");
