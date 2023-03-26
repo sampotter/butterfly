@@ -189,6 +189,10 @@ BfMatDiagReal *bfMatDiagRealNew() {
 }
 
 BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols) {
+  return bfMatDiagRealNewConstant(numRows, numCols, 1.0);
+}
+
+BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal diagValue) {
   BEGIN_ERROR_HANDLING();
 
   BfMatDiagReal *mat = bfMatDiagRealNew();
@@ -197,7 +201,7 @@ BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols) {
   bfMatDiagRealInit(mat, numRows, numCols);
   HANDLE_ERROR();
 
-  bfMatDiagRealSetConstant(mat, 1);
+  bfMatDiagRealSetConstant(mat, diagValue);
 
   END_ERROR_HANDLING()
     mat = NULL;
