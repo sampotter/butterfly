@@ -4,8 +4,6 @@
 #include "error.h"
 #include "types.h"
 
-static BfSize const BF_ARRAY_DEFAULT_CAPACITY = 1024;
-
 enum BfPtrArrayFlags {
   BF_PTR_ARRAY_FLAG_NONE = 0,
   BF_PTR_ARRAY_FLAG_VIEW = 1 << 0
