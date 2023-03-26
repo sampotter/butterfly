@@ -48,7 +48,7 @@ BfVec *bfMatRowDists(BfMat const *, BfMat const *);
 BfVec *bfMatColDists(BfMat const *, BfMat const *);
 BfVec *bfMatColDots(BfMat const *, BfMat const *);
 BfVec *bfMatColNorms(BfMat const *);
-void bfMatScale(BfMat *, BfReal);
+void bfMatScale(BfMat *, BfComplex);
 void bfMatScaleRows(BfMat *, BfVec const *);
 void bfMatScaleCols(BfMat *, BfVec const *);
 BfVec *bfMatSumCols(BfMat const *);

@@ -195,6 +195,7 @@ static BfMatVtable MAT_VTABLE = {
   .ColDists = (__typeof__(&bfMatDenseComplexColDists))bfMatDenseComplexColDists,
   .ColDots = (__typeof__(&bfMatDenseComplexColDots))bfMatDenseComplexColDots,
   .ColNorms = (__typeof__(&bfMatDenseComplexColNorms))bfMatDenseComplexColNorms,
+  .Scale = (__typeof__(&bfMatScale))bfMatDenseComplexScale,
   .ScaleCols = (__typeof__(&bfMatDenseComplexScaleCols))bfMatDenseComplexScaleCols,
   .AddInplace = (__typeof__(&bfMatDenseComplexAddInplace))bfMatDenseComplexAddInplace,
   .Sub = (__typeof__(&bfMatDenseComplexSub))bfMatDenseComplexSub,
@@ -763,6 +764,21 @@ BfVec *bfMatDenseComplexColNorms(BfMat const *mat) {
     bfVecRealDeinitAndDealloc(&colNorms);
 
   return bfVecRealToVec(colNorms);
+}
+
+void bfMatDenseComplexScale(BfMatDenseComplex *matDenseComplex, BfComplex scalar) {
+  BfMat *mat = bfMatDenseComplexToMat(matDenseComplex);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  for (BfSize i = 0; i < m; ++i) {
+    BfComplex *rowPtr = matDenseComplex->data + i*matDenseComplex->rowStride;
+    for (BfSize j = 0; j < n; ++j) {
+      *rowPtr *= scalar;
+      rowPtr += matDenseComplex->colStride;
+    }
+  }
 }
 
 void bfMatDenseComplexScaleCols(BfMat *mat, BfVec const *vec) {

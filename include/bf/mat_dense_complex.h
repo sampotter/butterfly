@@ -29,6 +29,7 @@ void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm);
 BfVec *bfMatDenseComplexColDists(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatDenseComplexColDots(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatDenseComplexColNorms(BfMat const *mat);
+void bfMatDenseComplexScale(BfMatDenseComplex *matDenseComplex, BfComplex scalar);
 void bfMatDenseComplexScaleCols(BfMat *mat, BfVec const *vec);
 void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat);
 BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat);

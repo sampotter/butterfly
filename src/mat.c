@@ -127,7 +127,7 @@ BfVec *bfMatColNorms(BfMat const *mat) {
   return mat->vtbl->ColNorms(mat);
 }
 
-void bfMatScale(BfMat *mat, BfReal scalar) {
+void bfMatScale(BfMat *mat, BfComplex scalar) {
   mat->vtbl->Scale(mat, scalar);
 }
 
