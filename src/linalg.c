@@ -25,8 +25,8 @@ BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const 
   return k;
 }
 
-BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
-                       BfReal tol, BfSize maxNumIter, BfSize *numIter) {
+BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
+                    BfReal tol, BfSize maxNumIter, BfSize *numIter) {
   BEGIN_ERROR_HANDLING();
 
   /* Solution of the system */
