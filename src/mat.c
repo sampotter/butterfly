@@ -143,6 +143,10 @@ BfVec *bfMatSumCols(BfMat const *mat) {
   return mat->vtbl->SumCols(mat);
 }
 
+BfMat *bfMatAdd(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->Add(mat, otherMat);
+}
+
 void bfMatAddInplace(BfMat *lhs, BfMat const *rhs) {
   lhs->vtbl->AddInplace(lhs, rhs);
 }

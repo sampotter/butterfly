@@ -52,6 +52,7 @@ void bfMatScale(BfMat *, BfComplex);
 void bfMatScaleRows(BfMat *, BfVec const *);
 void bfMatScaleCols(BfMat *, BfVec const *);
 BfVec *bfMatSumCols(BfMat const *);
+BfMat *bfMatAdd(BfMat const *, BfMat const *);
 void bfMatAddInplace(BfMat *, BfMat const *);
 void bfMatAddDiag(BfMat *, BfMat const *);
 BfMat *bfMatSub(BfMat const *, BfMat const *);
@@ -105,6 +106,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatScaleRows) ScaleRows;
   __typeof__(&bfMatScaleCols) ScaleCols;
   __typeof__(&bfMatSumCols) SumCols;
+  __typeof__(&bfMatAdd) Add;
   __typeof__(&bfMatAddInplace) AddInplace;
   __typeof__(&bfMatAddDiag) AddDiag;
   __typeof__(&bfMatSub) Sub;
