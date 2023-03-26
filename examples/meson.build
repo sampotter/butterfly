@@ -3,6 +3,7 @@ examples = [
   'bf_all_blocks',
   'bf_lbo',
   'helm2_bie',
+  'multiple_scattering',
   'test_hankel_evaluator',
   'test_helm2_adapt_fac'
 ]
