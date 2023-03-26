@@ -207,7 +207,7 @@ int main(int argc, char const *argv[]) {
   /* Solve dense system using GMRES */
   bfToc();
   BfSize num_iter_dense_GMRES;
-  BfMat *sigma_dense_GMRES = bfMatSolveGMRES(
+  BfMat *sigma_dense_GMRES = bfSolveGMRES(
     A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES);
   printf("solved using GMRES (dense): %lu iter. [%0.2fs]\n",
          num_iter_dense_GMRES, bfToc());
@@ -215,7 +215,7 @@ int main(int argc, char const *argv[]) {
   /* Solve butterfly-factorized system using GMRES */
   bfToc();
   BfSize num_iter_BF_GMRES;
-  BfMat *sigma_BF_GMRES = bfMatSolveGMRES(
+  BfMat *sigma_BF_GMRES = bfSolveGMRES(
     A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES);
   bfMatPermuteRows(sigma_BF_GMRES, perm);
   printf("solved using GMRES (BF): %lu iter. [%0.2fs]\n",
