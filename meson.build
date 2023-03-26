@@ -68,6 +68,7 @@ butterfly_lib_src = [
   'src/octree_node.c',
   'src/perm.c',
   'src/points.c',
+  'src/poisson_disk_sampling.c',
   'src/ptr_array.c',
   'src/quadrature.c',
   'src/quadtree.c',
