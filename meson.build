@@ -17,7 +17,7 @@ endif
 cc = meson.get_compiler('c')
 
 openblas_dep = cc.find_library('openblas', required : true)
-cholmod_dep = cc.find_library('cholmod', required : true)
+# cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
 
@@ -30,7 +30,7 @@ butterfly_lib_src = [
   'src/bessel.c',
   'src/cheb.c',
   'src/circle.c',
-  'src/cholmod.c',
+#  'src/cholmod.c',
   'src/dtype.c',
   'src/error.c',
   'src/eval_tree.c',
@@ -52,7 +52,7 @@ butterfly_lib_src = [
   'src/mat_coo_complex.c',
   'src/mat_coo_real.c',
   'src/mat_csr_real.c',
-  'src/mat_csr_real.cholmod.c',
+#  'src/mat_csr_real.cholmod.c',
   'src/mat_csr_real.umfpack.c',
   'src/mat_dense.c',
   'src/mat_dense_complex.c',
@@ -94,7 +94,7 @@ butterfly_inc = include_directories('include')
 
 butterfly_dependencies = [
   arpack_ng_dep,
-  cholmod_dep,
+#  cholmod_dep,
   gsl_dep,
   m_dep,
   openblas_dep,
