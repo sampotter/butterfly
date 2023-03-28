@@ -211,7 +211,7 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
 }
 
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp) {
-  qsort(arr->data, arr->num_elts, sizeof(BfPtr), (__compar_fn_t)ptrCmp);
+  qsort(arr->data, arr->num_elts, sizeof(BfPtr), (BfCompar)ptrCmp);
 }
 
 void bfPtrArrayReverse(BfPtrArray *arr) {

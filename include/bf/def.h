@@ -37,3 +37,5 @@ typedef void *BfPtr;
 typedef void const *BfConstPtr;
 
 static BfSize const BF_DEFAULT_STRIDE = 1;
+
+typedef int (*BfCompar)(const void *, const void *);
