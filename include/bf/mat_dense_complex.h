@@ -41,6 +41,7 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs);
 bool bfMatDenseComplexIsUpperTri(BfMat const *mat);
 BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec);
 void bfMatDenseComplexNegate(BfMat *mat);
+BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1);
 
 struct BfMatDenseComplex {
   BfMat super;

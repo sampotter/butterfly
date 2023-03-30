@@ -207,6 +207,7 @@ static BfMatVtable MAT_VTABLE = {
   .IsUpperTri = (__typeof__(&bfMatDenseComplexIsUpperTri))bfMatDenseComplexIsUpperTri,
   .BackwardSolveVec = (__typeof__(&bfMatDenseComplexBackwardSolveVec))bfMatDenseComplexBackwardSolveVec,
   .Negate = (__typeof__(&bfMatDenseComplexNegate))bfMatDenseComplexNegate,
+  .GetBlockView = (__typeof__(&bfMatGetBlockView))bfMatDenseComplexGetBlockView,
 };
 
 BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
@@ -1125,26 +1126,26 @@ void bfMatDenseComplexNegate(BfMat *mat) {
   END_ERROR_HANDLING() {}
 }
 
-/* Implementation: MatDenseComplex */
-
-BfMatDenseComplex *bfMatDenseComplexNewView(BfMatDenseComplex *matDenseComplex) {
+BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDenseComplex *matDenseComplexView = malloc(sizeof(BfMatDenseComplex));
-  if (matDenseComplexView == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  BfMatDenseComplex *blockView = bfMatDenseComplexNew();
+  HANDLE_ERROR();
 
-  *matDenseComplexView = *matDenseComplex;
+  bfMatInit(&blockView->super, &MAT_VTABLE, i1 - i0, j1 - j0);
 
-  bfMatDenseComplexToMat(matDenseComplexView)->props |= BF_MAT_PROPS_VIEW;
+  blockView->super.props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
-    free(matDenseComplexView);
-    matDenseComplexView = NULL;
-  }
+  blockView->rowStride = mat->rowStride;
+  blockView->colStride = mat->colStride;
+  blockView->data = mat->data + i0*mat->rowStride + j0*mat->colStride;
 
-  return matDenseComplexView;
+  END_ERROR_HANDLING() {}
+
+  return bfMatDenseComplexToMat(blockView);
 }
+
+/* Implementation: MatDenseComplex */
 
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat) {
   return bfMatIsTransposed(bfMatDenseComplexConstToMatConst(mat)) ?

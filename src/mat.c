@@ -219,6 +219,10 @@ void bfMatPrintBlocksDeep(BfMat const *mat, FILE *fp, BfSize i0, BfSize j0, BfSi
   mat->vtbl->PrintBlocksDeep(mat, fp, i0, j0, depth);
 }
 
+BfMat *bfMatGetBlockView(BfMat *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1) {
+  return mat->vtbl->GetBlockView(mat, i0, i1, j0, j1);
+}
+
 /** Implementation: Mat */
 
 void bfMatInvalidate(BfMat *mat) {

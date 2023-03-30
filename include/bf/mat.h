@@ -71,6 +71,7 @@ BfMat *bfMatToType(BfMat const *, BfType);
 BfMat *bfMatCholesky(BfMat const *);
 BfSizeArray *bfMatGetNonzeroColumnRanges(BfMat const *);
 void bfMatPrintBlocksDeep(BfMat const *, FILE *, BfSize, BfSize, BfSize);
+BfMat *bfMatGetBlockView(BfMat *mat, BfSize, BfSize, BfSize, BfSize);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatCopy) Copy;
@@ -125,6 +126,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatCholesky) Cholesky;
   __typeof__(&bfMatGetNonzeroColumnRanges) GetNonzeroColumnRanges;
   __typeof__(&bfMatPrintBlocksDeep) PrintBlocksDeep;
+  __typeof__(&bfMatGetBlockView) GetBlockView;
 } BfMatVtable;
 
 /** Implementation: Mat */
