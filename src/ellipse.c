@@ -7,6 +7,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/points.h>
+#include <bf/vec_real.h>
 #include <bf/vectors.h>
 
 BfReal bfEllipseGetPerimeter(BfEllipse const *ellipse) {
@@ -28,6 +29,49 @@ BfReal bfEllipseGetPerimeter(BfEllipse const *ellipse) {
   BfReal p = BF_PI*(a + b)*sum;
 
   return p;
+}
+
+void bfEllipseSampleLinspaced(BfEllipse const *ellipse, BfSize numPoints, BfPoints2 *points, BfVectors2 *unitTangents, BfVectors2 *unitNormals, BfRealArray *weights) {
+  BfReal a = ellipse->semiMajorAxis;
+  BfReal b = ellipse->semiMinorAxis;
+
+  BfReal h = BF_TWO_PI/numPoints;
+
+  for (BfSize i = 0; i < numPoints; ++i) {
+    BfReal theta = h*i;
+
+    /* Compute point: */
+    BfReal px = a*cos(theta);
+    BfReal py = b*sin(theta);
+    BfPoint2 p = {px, py};
+    bfPoint2RotateAboutOrigin(p, ellipse->theta);
+    bfPoint2Translate(p, ellipse->center);
+    if (points) bfPoints2Append(points, p);
+
+    /* Compute unit tangent vector: */
+    BfReal tx = -a*sin(theta);
+    BfReal ty = b*cos(theta);
+    BfVector2 t = {tx, ty};
+
+    /* If we're computing weights, get the current one now: */
+    if (weights != NULL)
+      bfRealArrayAppend(weights, h*hypot(tx, ty));
+
+    bfVector2Normalize(t);
+
+    /* Compute unit normal vector: */
+    BfReal nx = -a*cos(theta);
+    BfReal ny = -b*sin(theta);
+    BfVector2 n = {nx, ny};
+    bfVector2Reject(n, t);
+    bfVector2Normalize(n);
+    bfVector2Rotate(n, ellipse->theta);
+    bfVector2Negate(n); // get outward-facing normal
+    if (unitNormals) bfVectors2Append(unitNormals, n);
+
+    bfVector2Rotate(t, ellipse->theta);
+    if (unitTangents) bfVectors2Append(unitTangents, t);
+  }
 }
 
 void bfEllipseSampleEquispaced(BfEllipse const *ellipse, BfSize numPoints,
