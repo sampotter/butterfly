@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 
+typedef struct BfRealArray BfRealArray;
 typedef struct BfSizeArray BfSizeArray;
 
 typedef struct BfPtrArray BfPtrArray;
