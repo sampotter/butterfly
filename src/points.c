@@ -468,6 +468,31 @@ BfSize bfPoints2GetSize(BfPoints2 const *points) {
   return points->size;
 }
 
+BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if ((i0 >= points->size && i1 > points->size) || i0 > points->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfPoints2 *pointsView = malloc(sizeof(BfPoints2));
+  if (pointsView == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  pointsView->size = i1 - i0;
+  pointsView->capacity = BF_SIZE_BAD_VALUE;
+  pointsView->isView = true;
+  pointsView->data = &points->data[i0];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return pointsView;
+}
+
 /** Implementation: Points3 */
 
 void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {

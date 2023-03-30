@@ -54,6 +54,7 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p);
 void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints);
 void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p);
 BfSize bfPoints2GetSize(BfPoints2 const *points);
+BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1);
 
 struct BfPoints3 {
   BfPoint3 *data;
