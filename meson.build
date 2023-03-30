@@ -1,6 +1,6 @@
 project('butterfly', 'c', default_options : ['c_std=c11'])
 
-cmake = import('cmake')
+pkg = import('pkgconfig')
 
 add_global_arguments('-DBF_DEBUG', language : 'c')
 add_global_arguments('-DBF_DOUBLE', language : 'c')
@@ -114,12 +114,17 @@ butterfly_lib = library(
   'butterfly',
   butterfly_lib_src,
   dependencies : butterfly_dependencies,
-  include_directories : butterfly_include_directories
+  include_directories : butterfly_include_directories,
+  install : true
 )
+
+install_subdir('include/bf', install_dir : 'include', install_tag : 'devel')
 
 butterfly_dep = declare_dependency(
   link_with : butterfly_lib,
   include_directories : butterfly_inc
 )
+
+pkg.generate(butterfly_lib)
 
 subdir('examples')
