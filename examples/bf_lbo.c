@@ -240,6 +240,8 @@ int main(int argc, char const *argv[]) {
     if (freqs->size >= numEigs) break;
   }
 
+  puts("- finished streaming butterfly factorization");
+
   /* TODO: prune factorization */
 
   END_ERROR_HANDLING() {}
