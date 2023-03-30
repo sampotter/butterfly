@@ -57,7 +57,7 @@ apply_KR_correction_complex(BfMatDenseComplex *mat, BfSize m, BfSize order,
     for (BfSize p = 0, j; p < order; ++p) {
       j = (i + p + 1) % m;
       *(rowptr + j*mat->colStride) += w_KR[p]*K(i, j, aux);
-      j = (i - p - 1) % m;
+      j = ((i + m) - p - 1) % m;
       *(rowptr + j*mat->colStride) += w_KR[p]*K(i, j, aux);
     }
   }
