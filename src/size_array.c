@@ -214,6 +214,23 @@ BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i) {
   return elt;
 }
 
+BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize elt = BF_SIZE_BAD_VALUE;
+
+  if (sizeArray->size == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  elt = sizeArray->data[sizeArray->size - 1];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return elt;
+}
+
 BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray) {
   return sizeArray->size == 0 ?
     BF_SIZE_BAD_VALUE :

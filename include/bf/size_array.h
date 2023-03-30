@@ -23,6 +23,7 @@ bool bfSizeArrayIsSorted(BfSizeArray const *sizeArray);
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt);
 BfSize bfSizeArrayFindFirst(BfSizeArray const *sizeArray, BfSize elt);
 BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i);
+BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray);
 BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray);
 void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst);
 BfSize bfSizeArrayGetSize(BfSizeArray const *sizeArray);
