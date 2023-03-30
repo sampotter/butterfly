@@ -205,7 +205,7 @@ get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
       } else {
         BfReal const *xsrc = Xsrc->data[j];
         BfReal const *nsrc = Nsrc->data[j];
-        BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
+        BfReal dot = -(nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]));
         BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
         kernelMat->data[k] = scale*dot;
       }
