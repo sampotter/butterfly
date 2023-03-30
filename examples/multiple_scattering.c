@@ -7,9 +7,12 @@
 #include <bf/poisson_disk_sampling.h>
 #include <bf/quadtree.h>
 #include <bf/rand.h>
+#include <bf/real_array.h>
+#include <bf/size_array.h>
 #include <bf/util.h>
 #include <bf/vectors.h>
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,50 +22,92 @@
 int const MAX_NUM_ARG_ERRORS = 20;
 
 typedef struct {
+  /* Problem parameters: */
+  BfReal wavenumber;
   BfReal minDist;
   BfReal axisLow;
   BfReal axisHigh;
+
+  /* Discretization parameters: */
   BfReal h;
-  BfReal wavenumber;
+
+  /* Postprocessing parameters: */
+  BfBbox2 bboxEval;
+  BfSize nxEval;
+  BfSize nyEval;
 } Opts;
 
 struct K_helm2_wkspc {
   BfPoints2 const *points;
   BfVectors2 const *normals;
-  BfReal K;
-  BfReal nu;
+  BfReal k;
 };
 
 BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
   struct K_helm2_wkspc *wkspc = aux;
+
   BfReal const *xsrc = &wkspc->points->data[i][0];
   BfReal const *xtgt = &wkspc->points->data[j][0];
   BfReal const *nsrc = &wkspc->normals->data[i][0];
-  BfReal G = bfHelm2GetKernelValue(
-    xsrc, xtgt, NULL, NULL, wkspc->K, BF_LAYER_POTENTIAL_SINGLE);
-  BfReal dGdN = bfHelm2GetKernelValue(
-    xsrc, xtgt, nsrc, NULL, wkspc->K, BF_LAYER_POTENTIAL_PV_DOUBLE);
-  return G + 1i*wkspc->nu*dGdN;
+  BfReal k = wkspc->k;
+
+  BfComplex G = bfHelm2GetKernelValue(
+    xsrc, xtgt, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
+  BfComplex dGdN = bfHelm2GetKernelValue(
+    xsrc, xtgt, nsrc, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
+  BfComplex K = dGdN - 1i*wkspc->k*G;
+
+  return K;
 }
 
 static bool parseArgs(int argc, char *argv[], Opts *opts) {
   bool success = true;
 
+  /** All CLI parameters: */
+
   struct arg_lit *help;
+
+  /* Problem parameters: */
+  struct arg_dbl *wavenumber;
   struct arg_dbl *minDist;
   struct arg_dbl *axisLow;
   struct arg_dbl *axisHigh;
+
+  /* Discretization parameters: */
   struct arg_dbl *h;
-  struct arg_dbl *wavenumber;
+
+  /* Postprocessing parameters: */
+  struct arg_dbl *xminEval;
+  struct arg_dbl *xmaxEval;
+  struct arg_dbl *yminEval;
+  struct arg_dbl *ymaxEval;
+  struct arg_int *nxEval;
+  struct arg_int *nyEval;
+
   struct arg_end *end;
+
+  /** Set up argtable and parse: */
 
   void *argtable[] = {
     help = arg_litn(NULL, "help", 0, 1, "Display help and exit"),
+
+    /* Problem parameters: */
+    wavenumber = arg_dbln("k", "wavenumber", "<k>", 0, 1, "The wavenumber for the problem"),
     minDist = arg_dbln("r", "minDist", "<r>", 0, 1, "Minimum distance between ellipse centers"),
     axisLow = arg_dbln("a", "axisLow", "<a>", 0, 1, "Lower bound for uniformly sampled ellipse axes"),
     axisHigh = arg_dbln("b", "axisHigh", "<b>", 0, 1, "Upper bound for uniformly sampled ellipse axes"),
+
+    /* Discretization parameters: */
     h = arg_dbln("h", NULL, "<h>", 0, 1, "The mesh fineness"),
-    wavenumber = arg_dbln("k", "wavenumber", "<k>", 0, 1, "The wavenumber for the problem"),
+
+    /* Postprocessing parameters: */
+    xminEval = arg_dbln(NULL, "xmin", "<xmin>", 0, 1, "The minimum x coord. of the eval. box"),
+    xmaxEval = arg_dbln(NULL, "xmax", "<xmax>", 0, 1, "The maximum x coord. of the eval. box"),
+    yminEval = arg_dbln(NULL, "ymin", "<ymin>", 0, 1, "The minimum y coord. of the eval. box"),
+    ymaxEval = arg_dbln(NULL, "ymax", "<ymax>", 0, 1, "The maximum y coord. of the eval. box"),
+    nxEval = arg_intn(NULL, "nx", "<nx>", 0, 1, "The number of eval. box nodes in x direction"),
+    nyEval = arg_intn(NULL, "ny", "<ny>", 0, 1, "The number of eval. box nodes in y direction"),
+
     end = arg_end(MAX_NUM_ARG_ERRORS)
   };
 
@@ -83,11 +128,24 @@ static bool parseArgs(int argc, char *argv[], Opts *opts) {
     goto cleanup;
   }
 
+  /** Extract parameters from parsed CLI options: */
+
+  /* Problem parameters: */
+  opts->wavenumber = *wavenumber->dval;
   opts->minDist = *minDist->dval;
   opts->axisLow = *axisLow->dval;
   opts->axisHigh = *axisHigh->dval;
+
+  /* Discretization parameters: */
   opts->h = *h->dval;
-  opts->wavenumber = *wavenumber->dval;
+
+  /* Postprocessing parameters: */
+  opts->bboxEval.min[0] = *xminEval->dval;
+  opts->bboxEval.max[0] = *xmaxEval->dval;
+  opts->bboxEval.min[1] = *yminEval->dval;
+  opts->bboxEval.max[1] = *ymaxEval->dval;
+  opts->nxEval = *nxEval->ival;
+  opts->nyEval = *nyEval->ival;
 
 cleanup:
   arg_freetable(argtable, sizeof(argtable)/sizeof(argtable[0]));
@@ -106,15 +164,14 @@ int main(int argc, char *argv[]) {
 
   BfReal k = opts.wavenumber;
 
-  BfReal nu = k;
-
   BfVector2 d;
   bfSampleRandomUnitVector2(d);
 
-  BfReal tol = 1e-12;
+  printf("- uIn = exp(i*k*d*r), where:\n");
+  printf("  * k = %g\n", k);
+  printf("  * d = (%g, %g)\n", d[0], d[1]);
 
-  BfSize nxEval = 257;
-  BfSize nyEval = 257;
+  BfReal tol = 1e-12;
 
   /** Set up problem geometry: randomly sample lots of little
    ** well-separated ellipses with different semimajor/minor axes and
@@ -126,7 +183,6 @@ int main(int argc, char *argv[]) {
    * keep ellipses fully inside */
   BfReal R = 1 - opts.minDist;
   BfBbox2 ellipseBbox = {.min = {-R, -R}, .max = {R, R}};
-  BfBbox2 bbox = {.min = {-1, -1}, .max = {1, 1}};
 
   /* Sample ellipse centers */
   BfPoints2 *ellipseCenters = bfPoints2SamplePoissonDisk(&ellipseBbox, opts.minDist, 30);
@@ -157,13 +213,24 @@ int main(int argc, char *argv[]) {
 
   bfToc();
 
+  /* Keep track of the offset to each ellipse---we'll use these
+   * indices to figure out where to apply the KR correction and do
+   * preconditioning *blockwise*. */
+  BfSizeArray *ellipseOffsets = bfSizeArrayNewWithDefaultCapacity();
+  bfSizeArrayAppend(ellipseOffsets, 0);
+
   BfPoints2 *X = bfPoints2NewEmpty();
   BfVectors2 *N = bfVectors2NewEmpty();
+  BfRealArray *W = bfRealArrayNewWithDefaultCapacity();
   for (BfSize i = 0; i < numEllipses; ++i) {
     BfReal p = bfEllipseGetPerimeter(&ellipse[i]);
     BfSize n = floor(p/opts.h) + 1;
-    bfEllipseSampleEquispaced(&ellipse[i], n, X, NULL, N);
+    bfEllipseSampleLinspaced(&ellipse[i], n, X, NULL, N, W);
+    // bfEllipseSampleEquispaced(&ellipse[i], n, X, NULL, N);
     // bfEllipseSampleWithInverseCurvatureSpacing(&ellipse[i], n, X, NULL, N);
+
+    /* Add the current offset: */
+    bfSizeArrayAppend(ellipseOffsets, bfPoints2GetSize(X));
   }
   bfSavePoints2(X, "X.bin");
   bfSaveVectors2(N, "N.bin");
@@ -173,17 +240,6 @@ int main(int argc, char *argv[]) {
 
   /** Build a quadtree on the discretization points: */
 
-  bfToc();
-
-  BfQuadtree quadtree;
-  bfQuadtreeInit(&quadtree, X, N);
-
-  printf("- set up quadtree [%0.2fs]\n", bfToc());
-
-  BfTree *tree = bfQuadtreeToTree(&quadtree);
-  BfPerm const *perm = bfTreeGetPermConst(tree);
-  BfPerm revPerm = bfPermGetReversePerm(perm);
-
   /** Set up the dense kernel matrix using the combined field integral
    * equation for the exterior Dirichlet problem: */
 
@@ -192,15 +248,31 @@ int main(int argc, char *argv[]) {
   BfMat *oneHalfEye = bfMatDiagRealToMat(bfMatDiagRealNewConstant(n, n, 0.5));
   BfMat *K = bfGetHelm2KernelMatrix(X, X, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
   BfMat *D = bfGetHelm2KernelMatrix(X, X, N, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
-  bfMatAddInplace(K, oneHalfEye);
-  bfMatScale(D, 1j*nu);
+  bfMatScale(K, -1j*k);
   bfMatAddInplace(K, D);
 
-//   /* Apply KR correction */
-//   struct K_helm2_wkspc K_wkspc = {.points = X, .normals = N, .K = k};
-//   bf_apply_KR_correction(K, 6, K_helm2, (void *)&K_wkspc);
+  /* Apply KR correction blockwise: */
+  for (BfSize i = 0; i < numEllipses; ++i) {
+    BfSize i0 = bfSizeArrayGet(ellipseOffsets, i);
+    BfSize i1 = bfSizeArrayGet(ellipseOffsets, i + 1);
+
+    struct K_helm2_wkspc wkspc;
+    wkspc.points = bfPoints2GetRangeView(X, i0, i1);
+    wkspc.normals = bfVectors2GetRangeView(N, i0, i1);
+    wkspc.k = k;
+
+    BfMat *KBlock = bfMatGetBlockView(K, i0, i1, i0, i1);
+    bf_apply_KR_correction(KBlock, 6, K_helm2, (void *)&wkspc);
+  }
+
+  BfVec *WVec = bfRealArrayGetVecView(W);
+  bfMatScaleCols(K, WVec);
+
+  bfMatAddInplace(K, oneHalfEye);
 
   printf("- set up dense kernel matrix [%0.2fs]\n", bfToc());
+
+  bfMatSave(K, "K.bin");
 
   /** Set up the RHS for the scattering problem: */
 
@@ -212,11 +284,19 @@ int main(int argc, char *argv[]) {
     for (BfSize i = 0; i < n; ++i) {
       BfPoint2 x;
       bfPoints2Get(X, i, x);
-      *(_->data + i*_->rowStride) = cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
+      *(_->data + i*_->rowStride) = -cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
     }
     rhs = bfMatDenseComplexToMat(_); }
 
   printf("- set up RHS for scattering problem [%0.2fs]\n", bfToc());
+
+  /** Set up block LU preconditioner: */
+
+  bfToc();
+
+  assert(false); // TODO: implement using stuff in <bf/lu.h>
+
+  printf("- set up block LU preconditioner [%0.2fs]\n", bfToc());
 
   /** Solve the dense system using GMRES: */
 
@@ -227,13 +307,37 @@ int main(int argc, char *argv[]) {
 
   printf("- solve dense system using GMRES in %lu iterations [%0.2fs]\n", numIterDense, bfToc());
 
+  /** Check BCs: */
+
+  BfMat *KCheck = bfGetHelm2KernelMatrix(X, X, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
+  BfMat *DCheck = bfGetHelm2KernelMatrix(X, X, N, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
+  bfMatScale(KCheck, -1j*k);
+  bfMatAddInplace(KCheck, DCheck);
+  bfMatScaleCols(KCheck, WVec);
+
+  BfMat *uDenseCheck = NULL;
+  { BfMatDenseComplex *_ = bfMatDenseComplexNew();
+    bfMatDenseComplexInit(_, n, 1);
+    for (BfSize i = 0; i < n; ++i) {
+      BfPoint2 x;
+      bfPoints2Get(X, i, x);
+      *(_->data + i*_->rowStride) = cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
+    }
+    uDenseCheck = bfMatDenseComplexToMat(_); }
+
+  BfMat *uScatDenseCheck = bfMatMul(KCheck, sigmaDense);
+
+  bfMatAddInplace(uDenseCheck, uScatDenseCheck);
+
+  bfMatSave(uDenseCheck, "uDenseCheck.bin");
+
   /** Set up evaluation grid: */
 
   bfToc();
 
-  BfPoints2 *XEval = bfPoints2NewGrid(&bbox, nxEval, nyEval);
+  BfPoints2 *XEval = bfPoints2NewGrid(&opts.bboxEval, opts.nxEval, opts.nyEval);
 
-  printf("- set up %lu x %lu evaluation grid [%0.2fs]\n", nxEval, nyEval, bfToc());
+  printf("- set up %lu x %lu evaluation grid [%0.2fs]\n", opts.nxEval, opts.nyEval, bfToc());
 
   bfSavePoints2(XEval, "XEval.bin");
 
@@ -242,9 +346,10 @@ int main(int argc, char *argv[]) {
   bfToc();
 
   BfMat *uIn = NULL;
-  { BfMatDenseComplex *_ = bfMatDenseComplexNew();
-    bfMatDenseComplexInit(_, nxEval*nyEval, 1);
-    for (BfSize i = 0; i < nxEval*nyEval; ++i) {
+  { BfSize nEval = opts.nxEval*opts.nyEval;
+    BfMatDenseComplex *_ = bfMatDenseComplexNew();
+    bfMatDenseComplexInit(_, nEval, 1);
+    for (BfSize i = 0; i < nEval; ++i) {
       BfPoint2 x;
       bfPoints2Get(XEval, i, x);
       *(_->data + i*_->rowStride) = cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
@@ -261,8 +366,9 @@ int main(int argc, char *argv[]) {
 
   BfMat *KEval = bfGetHelm2KernelMatrix(X, XEval, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
   BfMat *DEval = bfGetHelm2KernelMatrix(X, XEval, N, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
-  bfMatScale(DEval, 1j*nu);
+  bfMatScale(KEval, -1j*k);
   bfMatAddInplace(KEval, DEval);
+  bfMatScaleCols(KEval, WVec);
 
   BfMat *uScatDense = bfMatMul(KEval, sigmaDense);
 
@@ -270,6 +376,18 @@ int main(int argc, char *argv[]) {
 
   bfMatSave(uScatDense, "uScatDense.bin");
 
+  /** Set up quadtree for building multilevel BF: */
+
+  bfToc();
+
+  BfQuadtree quadtree;
+  bfQuadtreeInit(&quadtree, X, N);
+
+  printf("- set up quadtree [%0.2fs]\n", bfToc());
+
+  BfTree *tree = bfQuadtreeToTree(&quadtree);
+  BfPerm const *perm = bfTreeGetPermConst(tree);
+  BfPerm revPerm = bfPermGetReversePerm(perm);
+
   (void)revPerm;
-  (void)sigmaDense;
 }
