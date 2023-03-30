@@ -37,6 +37,7 @@ void bfVectors2Extend(BfVectors2 *vectors, BfVectors2 const *newVectors);
 void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v);
 BfSize bfVectors2GetSize(BfVectors2 const *vectors);
 void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v);
+BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1);
 
 struct BfVectors3 {
   BfVector3 *data;

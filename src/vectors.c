@@ -263,6 +263,31 @@ void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
   }
 }
 
+BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if ((i0 >= vectors->size && i1 > vectors->size) || i0 > vectors->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfVectors2 *vectorsView = malloc(sizeof(BfVectors2));
+  if (vectorsView == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  vectorsView->size = i1 - i0;
+  vectorsView->capacity = BF_SIZE_BAD_VALUE;
+  vectorsView->isView = true;
+  vectorsView->data = &vectors->data[i0];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return vectorsView;
+}
+
 void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
   if (numVectors == 0) {
     bfSetError(BF_ERROR_INVALID_ARGUMENTS);
