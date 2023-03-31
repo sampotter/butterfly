@@ -288,7 +288,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(L, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolve(M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuSolveVec(M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 
@@ -435,7 +435,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(M, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolve(A_minus_sigma_M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuSolveVec(A_minus_sigma_M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 

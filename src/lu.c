@@ -146,7 +146,7 @@ static BfVec *solve_vecReal(BfLu const *lu, BfVecReal const *b) {
   return bfVecRealToVec(x);
 }
 
-BfVec *bfLuSolve(BfLu const *lu, BfVec const *b) {
+BfVec *bfLuSolveVec(BfLu const *lu, BfVec const *b) {
   switch (bfVecGetType(b)) {
   case BF_TYPE_VEC_REAL:
     return solve_vecReal(lu, bfVecConstToVecRealConst(b));
@@ -254,7 +254,7 @@ static BfVec *scale_vecReal(BfLu const *lu, BfVecReal const *b) {
   return bfVecRealToVec(x);
 }
 
-BfVec *bfLuScale(BfLu const *lu, BfVec const *b) {
+BfVec *bfLuScaleVec(BfLu const *lu, BfVec const *b) {
   switch (bfVecGetType(b)) {
   case BF_TYPE_VEC_REAL:
     return scale_vecReal(lu, bfVecConstToVecRealConst(b));
