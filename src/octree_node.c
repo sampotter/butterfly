@@ -277,7 +277,7 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   bfBoundingBox3GetCenter(&boundingBox, node->split);
 
   octreeNodeInitRecursive(node, tree->points, boundingBox, 0, tree->points->size,
-                            tree->super.perm.index, 0);
+                          tree->super.perm.index, 0);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {}
