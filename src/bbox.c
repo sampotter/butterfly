@@ -84,6 +84,19 @@ void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox) {
   boundingBox->max[2] = c[2] + dmax/2;
 }
 
+bool bfBoundingBox3ContainsPoint(BfBoundingBox3 const *boundingBox, BfPoint3 const point) {
+  return boundingBox->min[0] <= point[0] && point[0] <= boundingBox->max[0]
+      && boundingBox->min[1] <= point[1] && point[1] <= boundingBox->max[1]
+      && boundingBox->min[2] <= point[2] && point[2] <= boundingBox->max[2];
+}
+
+bool bfBoundingBox3ContainsPoints(BfBoundingBox3 const *boundingBox, BfPoints3 const *points) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (!bfBoundingBox3ContainsPoint(boundingBox, points->data[i]))
+      return false;
+  return true;
+}
+
 void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center) {
   center[0] = (boundingBox->min[0] + boundingBox->max[0])/2;
   center[1] = (boundingBox->min[1] + boundingBox->max[1])/2;
@@ -102,4 +115,10 @@ BfSphere bfBoundingBox3GetBoundingSphere(BfBoundingBox3 const *boundingBox) {
   bfBoundingBox3GetCenter(boundingBox, sphere.center);
 
   return sphere;
+}
+
+BfReal bfBoundingBox3GetVolume(BfBoundingBox3 const *boundingBox) {
+  BfReal dx, dy, dz;
+  getSideLengths(boundingBox, &dx, &dy, &dz);
+  return dx*dy*dz;
 }
