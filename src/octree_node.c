@@ -161,6 +161,12 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
   BfTreeNode **child = &node->super.child[0];
   BfSize *offset = &node->super.offset[0];
 
+  /* Sanity check: make sure all points are in bounding box for node. */
+#if BF_DEBUG
+  for (BfSize i = i0; i < i1; ++i)
+    assert(bfBoundingBox3ContainsPoint(&boundingBox, point[perm[i]]));
+#endif
+
   /* Sift the points into the correct octants at this level. Note that
    * because of the way we do the sifting, it's unnecessary to call
    * `sift` for the last child node. */
