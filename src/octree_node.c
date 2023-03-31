@@ -223,6 +223,9 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
     if (numChildPoints == 0)
       continue;
 
+    assert(!bfBoundingBox3IsEmpty(&childBoundingBox[q]));
+    assert(bfBoundingBox3GetVolume(&childBoundingBox[q]) >= 1e-15);
+
     /* Create and initialize a new octree node */
     BfOctreeNode *newChild = bfOctreeNodeNew();
     bfTreeNodeInit(&newChild->super, &TreeNodeVtable, false, (void *)node,
