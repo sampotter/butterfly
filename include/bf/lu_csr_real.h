@@ -1,5 +1,6 @@
 #pragma once
 
+#include "def.h"
 #include "lu.h"
 
 /** Interface: Lu */
@@ -18,6 +19,18 @@ BfVec *bfLuCsrRealScaleVec(BfLuCsrReal const *luCsrReal, BfVec const *b);
 /** Downcasting: Lu -> LuCsrReal */
 
 /** Implementation: LuCsrReal */
+
+struct BfLuCsrReal {
+  BfLu super;
+
+  /** Private data used internally by UMFPACK: */
+
+  int *rowptr;
+  int *colind;
+  BfReal *data;
+  void *symbolic;
+  void *numeric;
+};
 
 BfLuCsrReal *bfLuCsrRealNew();
 void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat);

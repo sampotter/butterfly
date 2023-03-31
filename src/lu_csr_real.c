@@ -12,111 +12,43 @@
 
 #include <suitesparse/umfpack.h>
 
-struct BfLuCsrReal {
-  int *rowptr;
-  int *colind;
-  BfReal *data;
+/** Interface: Lu */
 
-  void *symbolic;
-  void *numeric;
+static BfLuVtable LU_VTABLE = {
+  .Solve = (__typeof__(&bfLuSolve))bfLuCsrRealSolve,
+  .SolveLower = (__typeof__(&bfLuSolveLower))bfLuCsrRealSolveLower,
+  .SolveUpper = (__typeof__(&bfLuSolveUpper))bfLuCsrRealSolveUpper,
+  .Scale = (__typeof__(&bfLuScale))bfLuCsrRealScale,
+  .SolveVec = (__typeof__(&bfLuSolveVec))bfLuCsrRealSolveVec,
+  .SolveLowerVec = (__typeof__(&bfLuSolveLowerVec))bfLuCsrRealSolveLowerVec,
+  .SolveUpperVec = (__typeof__(&bfLuSolveUpperVec))bfLuCsrRealSolveUpperVec,
+  .ScaleVec = (__typeof__(&bfLuScaleVec))bfLuCsrRealScaleVec,
 };
 
-BfLuCsrReal *bfLuCsrRealNew() {
-  BEGIN_ERROR_HANDLING();
-
-  BfLuCsrReal *luCsrReal = malloc(sizeof(BfLuCsrReal));
-  if (luCsrReal == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  END_ERROR_HANDLING() {}
-
-  return luCsrReal;
+BfMat *bfLuCsrRealSolve(BfLuCsrReal const *luCsrReal, BfMat const *B) {
+  (void)luCsrReal;
+  (void)B;
+  assert(false);
 }
 
-void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
-
-  BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
-  HANDLE_ERROR();
-
-  BfSize n = bfMatGetNumRows(mat);
-  if (n != bfMatGetNumCols(mat))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  /* Can't exceed range of int since UMFPACK uses ints for indices. */
-  if (n > INT_MAX)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  BfSize nnz = matCsrReal->rowptr[n];
-
-  luCsrReal->rowptr = malloc((n + 1)*sizeof(int));
-  if (luCsrReal->rowptr == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  for (BfSize i = 0; i <= n; ++i)
-    luCsrReal->rowptr[i] = matCsrReal->rowptr[i];
-
-  luCsrReal->colind = malloc(nnz*sizeof(int));
-  if (luCsrReal->colind == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  for (BfSize i = 0; i < nnz; ++i)
-    luCsrReal->colind[i] = matCsrReal->colind[i];
-
-  luCsrReal->data = malloc(nnz*sizeof(BfReal));
-  if (luCsrReal->data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  memcpy(luCsrReal->data, matCsrReal->data, nnz*sizeof(BfReal));
-
-  /* Use UMFPACK to compute the LU decomposition of `mat`. Since
-   * UMFPACK operates on CSC sparse matrices, and since `mat` is a CSR
-   * sparse matrix, we actually compute the LU decomposition A^T =
-   * U^T*L*T. */
-
-  int status;
-
-  status = umfpack_di_symbolic(
-    n, n, luCsrReal->rowptr, luCsrReal->colind, luCsrReal->data,
-    &luCsrReal->symbolic, NULL, NULL);
-  if (status)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  status = umfpack_di_numeric(
-    luCsrReal->rowptr, luCsrReal->colind, luCsrReal->data,
-    luCsrReal->symbolic, &luCsrReal->numeric, NULL, NULL);
-  if (status)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  END_ERROR_HANDLING() {
-    bfLuCsrRealDeinit(luCsrReal);
-  }
+BfMat *bfLuCsrRealSolveLower(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
+  (void)luCsrReal;
+  (void)B;
+  (void)permute;
+  assert(false);
 }
 
-void bfLuCsrRealDeinit(BfLuCsrReal *luCsrReal) {
-  free(luCsrReal->rowptr);
-  free(luCsrReal->colind);
-  free(luCsrReal->data);
-
-  luCsrReal->rowptr = NULL;
-  luCsrReal->colind = NULL;
-  luCsrReal->data = NULL;
-
-  umfpack_di_free_numeric(&luCsrReal->numeric);
-  luCsrReal->numeric = NULL;
-
-  umfpack_di_free_symbolic(&luCsrReal->symbolic);
-  luCsrReal->symbolic = NULL;
+BfMat *bfLuCsrRealSolveUpper(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
+  (void)luCsrReal;
+  (void)B;
+  (void)permute;
+  assert(false);
 }
 
-void bfLuCsrRealDealloc(BfLuCsrReal **luCsrReal) {
-  free(*luCsrReal);
-  *luCsrReal = NULL;
-}
-
-void bfLuCsrRealDeinitAndDealloc(BfLuCsrReal **luCsrReal) {
-  bfLuCsrRealDeinit(*luCsrReal);
-  bfLuCsrRealDealloc(luCsrReal);
+BfMat *bfLuCsrRealScale(BfLuCsrReal const *luCsrReal, BfMat const *B) {
+  (void)luCsrReal;
+  (void)B;
+  assert(false);
 }
 
 static BfVec *solve_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
@@ -266,6 +198,111 @@ BfVec *bfLuCsrRealScaleVec(BfLuCsrReal const *luCsrReal, BfVec const *b) {
   }
 }
 
+/** Upcasting: LuCsrReal -> Lu */
+
+/** Downcasting: Lu -> LuCsrReal */
+
+/** Implementation: LuCsrReal */
+
+BfLuCsrReal *bfLuCsrRealNew() {
+  BEGIN_ERROR_HANDLING();
+
+  BfLuCsrReal *luCsrReal = malloc(sizeof(BfLuCsrReal));
+  if (luCsrReal == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  END_ERROR_HANDLING() {}
+
+  return luCsrReal;
+}
+
+void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
+  BEGIN_ERROR_HANDLING();
+
+  bfLuInit(&luCsrReal->super, &LU_VTABLE);
+
+  BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
+  HANDLE_ERROR();
+
+  BfSize n = bfMatGetNumRows(mat);
+  if (n != bfMatGetNumCols(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* Can't exceed range of int since UMFPACK uses ints for indices. */
+  if (n > INT_MAX)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize nnz = matCsrReal->rowptr[n];
+
+  luCsrReal->rowptr = malloc((n + 1)*sizeof(int));
+  if (luCsrReal->rowptr == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  for (BfSize i = 0; i <= n; ++i)
+    luCsrReal->rowptr[i] = matCsrReal->rowptr[i];
+
+  luCsrReal->colind = malloc(nnz*sizeof(int));
+  if (luCsrReal->colind == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  for (BfSize i = 0; i < nnz; ++i)
+    luCsrReal->colind[i] = matCsrReal->colind[i];
+
+  luCsrReal->data = malloc(nnz*sizeof(BfReal));
+  if (luCsrReal->data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  memcpy(luCsrReal->data, matCsrReal->data, nnz*sizeof(BfReal));
+
+  /* Use UMFPACK to compute the LU decomposition of `mat`. Since
+   * UMFPACK operates on CSC sparse matrices, and since `mat` is a CSR
+   * sparse matrix, we actually compute the LU decomposition A^T =
+   * U^T*L*T. */
+
+  int status;
+
+  status = umfpack_di_symbolic(
+    n, n, luCsrReal->rowptr, luCsrReal->colind, luCsrReal->data,
+    &luCsrReal->symbolic, NULL, NULL);
+  if (status)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  status = umfpack_di_numeric(
+    luCsrReal->rowptr, luCsrReal->colind, luCsrReal->data,
+    luCsrReal->symbolic, &luCsrReal->numeric, NULL, NULL);
+  if (status)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  END_ERROR_HANDLING() {
+    bfLuCsrRealDeinit(luCsrReal);
+  }
+}
+
+void bfLuCsrRealDeinit(BfLuCsrReal *luCsrReal) {
+  free(luCsrReal->rowptr);
+  free(luCsrReal->colind);
+  free(luCsrReal->data);
+
+  luCsrReal->rowptr = NULL;
+  luCsrReal->colind = NULL;
+  luCsrReal->data = NULL;
+
+  umfpack_di_free_numeric(&luCsrReal->numeric);
+  luCsrReal->numeric = NULL;
+
+  umfpack_di_free_symbolic(&luCsrReal->symbolic);
+  luCsrReal->symbolic = NULL;
+}
+
+void bfLuCsrRealDealloc(BfLuCsrReal **luCsrReal) {
+  free(*luCsrReal);
+  *luCsrReal = NULL;
+}
+
+void bfLuCsrRealDeinitAndDealloc(BfLuCsrReal **luCsrReal) {
+  bfLuCsrRealDeinit(*luCsrReal);
+  bfLuCsrRealDealloc(luCsrReal);
+}
 void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   BEGIN_ERROR_HANDLING();
 
