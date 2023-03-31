@@ -273,7 +273,7 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   bfBoundingBox3RescaleToCube(&boundingBox);
   node->boundingBox = boundingBox;
 
-  /* Compute the split for the node node */
+  /* Compute the split for the node */
   bfBoundingBox3GetCenter(&boundingBox, node->split);
 
   octreeNodeInitRecursive(node, tree->points, boundingBox, 0, tree->points->size,
