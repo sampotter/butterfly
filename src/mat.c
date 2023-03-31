@@ -223,6 +223,10 @@ BfMat *bfMatGetBlockView(BfMat *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1)
   return mat->vtbl->GetBlockView(mat, i0, i1, j0, j1);
 }
 
+BfLu *bfMatGetLu(BfMat const *mat) {
+  return mat->vtbl->GetLu(mat);
+}
+
 /** Implementation: Mat */
 
 void bfMatInvalidate(BfMat *mat) {

@@ -47,6 +47,7 @@ butterfly_lib_src = [
   'src/linalg.c',
   'src/logging.c',
   'src/lu.c',
+  'src/lu_csr_real.c',
   'src/mat.c',
   'src/mat_block.c',
   'src/mat_block_coo.c',

@@ -86,6 +86,15 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT_DENSE_REAL] = true,
     },
 
+    /** Lu hierarchy: */
+    [BF_TYPE_LU] = {
+      [BF_TYPE_LU] = true,
+    },
+    [BF_TYPE_LU_CSR_REAL] = {
+      [BF_TYPE_LU] = true,
+      [BF_TYPE_LU_CSR_REAL] = true,
+    },
+
     /** Vec hierarchy: */
     [BF_TYPE_VEC] = {
       [BF_TYPE_VEC] = true

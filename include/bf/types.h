@@ -34,6 +34,7 @@ typedef struct BfVecZero BfVecZero;
 typedef struct BfIndexedMat BfIndexedMat;
 
 typedef struct BfLu BfLu;
+typedef struct BfLuCsrReal BfLuCsrReal;
 
 typedef struct BfTree BfTree;
 typedef struct BfIntervalTree BfIntervalTree;
@@ -73,6 +74,10 @@ typedef enum BfTypes {
   BF_TYPE_MAT_DENSE,
   BF_TYPE_MAT_DENSE_COMPLEX,
   BF_TYPE_MAT_DENSE_REAL,
+
+  /* Lu hierarchy: */
+  BF_TYPE_LU,
+  BF_TYPE_LU_CSR_REAL,
 
   /* Vec hierarchy */
   BF_TYPE_VEC,

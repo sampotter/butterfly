@@ -7,7 +7,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
-#include <bf/lu.h>
+#include <bf/lu_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
@@ -235,10 +235,10 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   a_int const rvec = 0; /* only computing eigenvalues */
   char const howmny[] = "A";
 
-  BfLu *M_lu = bfLuNew();
+  BfLuCsrReal *M_lu = bfLuCsrRealNew();
   HANDLE_ERROR();
 
-  bfLuInit(M_lu, M);
+  bfLuCsrRealInit(M_lu, M);
   HANDLE_ERROR();
 
   double *resid = malloc(N*sizeof(BfReal));
@@ -288,7 +288,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(L, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolveVec(M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 
@@ -345,7 +345,7 @@ dnaupd:
     eigmax = NAN;
   }
 
-  bfLuDeinitAndDealloc(&M_lu);
+  bfLuCsrRealDeinitAndDealloc(&M_lu);
 
   free(resid);
   free(V);
@@ -383,10 +383,10 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   bfMatAddInplace(A_minus_sigma_M, A);
   HANDLE_ERROR();
 
-  BfLu *A_minus_sigma_M_lu = bfLuNew();
+  BfLuCsrReal *A_minus_sigma_M_lu = bfLuCsrRealNew();
   HANDLE_ERROR();
 
-  bfLuInit(A_minus_sigma_M_lu, A_minus_sigma_M);
+  bfLuCsrRealInit(A_minus_sigma_M_lu, A_minus_sigma_M);
   HANDLE_ERROR();
 
   double *resid = malloc(N*sizeof(BfReal));
@@ -435,7 +435,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(M, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolveVec(A_minus_sigma_M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(A_minus_sigma_M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 
@@ -567,7 +567,7 @@ dnaupd:
   free(dr);
   free(di);
 
-  bfLuDeinitAndDealloc(&A_minus_sigma_M_lu);
+  bfLuCsrRealDeinitAndDealloc(&A_minus_sigma_M_lu);
   bfMatDelete(&A_minus_sigma_M);
 
   free(resid);
