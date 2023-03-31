@@ -186,34 +186,34 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
   BfBoundingBox3 childBoundingBox[NUM_CHILDREN_] = {
     [0] = {
       .min = {boundingBox.min[0], boundingBox.min[1], boundingBox.min[2]},
-      .max = {split[0], split[1], split[2]}
+      .max = {          split[0],           split[1],           split[2]}
     },
     [1] = {
-      .min = {boundingBox.min[0], boundingBox.min[1], split[2]},
-      .max = {split[0], split[1], boundingBox.max[2]}
+      .min = {boundingBox.min[0], boundingBox.min[1],           split[2]},
+      .max = {          split[0],           split[1], boundingBox.max[2]}
     },
     [2] = {
-      .min = {boundingBox.min[0], split[1], boundingBox.min[2]},
-      .max = {split[0], boundingBox.max[1], split[2]}
+      .min = {boundingBox.min[0],           split[1], boundingBox.min[2]},
+      .max = {          split[0], boundingBox.max[1],           split[2]}
     },
     [3] = {
-      .min = {boundingBox.min[0], split[1], split[2]},
-      .max = {split[0], boundingBox.max[1], boundingBox.max[2]}
+      .min = {boundingBox.min[0],           split[1],           split[2]},
+      .max = {          split[0], boundingBox.max[1], boundingBox.max[2]}
     },
     [4] = {
-      .min = {split[0], boundingBox.min[1], boundingBox.min[2]},
-      .max = {boundingBox.max[0], split[1], split[2]}
+      .min = {          split[0], boundingBox.min[1], boundingBox.min[2]},
+      .max = {boundingBox.max[0],           split[1],           split[2]}
     },
     [5] = {
-      .min = {split[0], boundingBox.min[1], split[2]},
-      .max = {boundingBox.max[0], split[1], boundingBox.max[2]}
+      .min = {          split[0], boundingBox.min[1],           split[2]},
+      .max = {boundingBox.max[0],           split[1], boundingBox.max[2]}
     },
     [6] = {
-      .min = {split[0], split[1], boundingBox.min[2]},
-      .max = {boundingBox.max[0], boundingBox.max[1], split[2]}
+      .min = {          split[0],           split[1], boundingBox.min[2]},
+      .max = {boundingBox.max[0], boundingBox.max[1],           split[2]}
     },
     [7] = {
-      .min = {split[0], split[1], split[2]},
+      .min = {          split[0],           split[1],           split[2]},
       .max = {boundingBox.max[0], boundingBox.max[1], boundingBox.max[2]}
     },
   };
