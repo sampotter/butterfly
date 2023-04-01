@@ -9,10 +9,14 @@ examples = [
 ]
 
 foreach example : examples
+  example_deps = [argtable3_dep, butterfly_dep, m_dep]
+  if example == 'multiple_scattering'
+    example_deps += [fmm2d_dep]
+  endif
   executable(
     example,
     example + '.c',
-    dependencies : [argtable3_dep, butterfly_dep, m_dep]
+    dependencies : example_deps
   )
 endforeach
 

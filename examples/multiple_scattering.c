@@ -19,6 +19,8 @@
 
 #include "argtable3.h"
 
+#include <fmm2d/helmholtz.h>
+
 int const MAX_NUM_ARG_ERRORS = 20;
 
 typedef struct {
@@ -390,4 +392,18 @@ int main(int argc, char *argv[]) {
   BfPerm revPerm = bfPermGetReversePerm(perm);
 
   (void)revPerm;
+
+  /** Solve using HF-FMM (fmm2d): */
+
+  // TODO: starting with a quick test...
+  {
+    BfReal eps = 1e-10;
+    BfComplex zk = k;
+    BfSize ns = bfSizeArrayGet(ellipseOffsets, 1) - bfSizeArrayGet(ellipseOffsets, 0);
+    BfReal const *sources = (BfReal const *)&X->data[0];
+    BfComplex const *charge = &bfMatToMatDenseComplex(rhs)->data[0];
+    BfComplex *pot = malloc(ns*sizeof(BfComplex));
+    int64_t ier;
+    hfmm2d_s_c_p(eps, zk, ns, sources, charge, pot, &ier);
+  }
 }
