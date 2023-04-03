@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
   bfToc();
 
   BfSize numIterDense;
-  BfMat *sigmaDense = bfSolveGMRES(K, rhs, NULL, tol, n, &numIterDense);
+  BfMat *sigmaDense = bfSolveGMRES(K, rhs, NULL, tol, n, &numIterDense, NULL);
 
   printf("- solve dense system using GMRES in %lu iterations [%0.2fs]\n", numIterDense, bfToc());
 

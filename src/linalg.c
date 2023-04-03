@@ -25,8 +25,19 @@ BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const 
   return k;
 }
 
+/* Solve the linear system with matrix `A`, RHS `B`, and initial guess
+ * `X0`. Tolerance and maximum number of iterations specified by `tol`
+ * and `maxNumIter`, respectively. The final iteration count will be
+ * passed back in `numIter` if `numIter != NULL`.
+ *
+ * For left preconditioned GMRES, set the preconditioner in `M`.  Note
+ * that the residual will be determined from the *preconditioned*
+ * residual vectors. See Saad for more details.
+ *
+ * TODO: right and split preconditioned GMRES. */
 BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
-                    BfReal tol, BfSize maxNumIter, BfSize *numIter) {
+                    BfReal tol, BfSize maxNumIter, BfSize *numIter,
+                    BfMat const *M) {
   BEGIN_ERROR_HANDLING();
 
   /* Solution of the system */
@@ -69,6 +80,17 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   if (X0 != NULL && n != bfMatGetNumRows(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
+  bool leftPrecond = M != NULL;
+
+  /* If we're using a left preconditioner, make sure it has a
+   * compatible shape. */
+  if (leftPrecond) {
+    if (n != bfMatGetNumRows(M))
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+    if (n != bfMatGetNumCols(M))
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  }
+
   /* Get number of RHSs (p) and check compatibility */
   BfSize p = bfMatGetNumCols(B);
   if (X0 != NULL && p != bfMatGetNumCols(X0))
@@ -98,6 +120,11 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   R = bfMatSub(B, Y);
   HANDLE_ERROR();
   bfMatDelete(&Y);
+  if (leftPrecond) {
+    BfMat *_ = bfMatSolve(M, R);
+    bfMatDelete(&R);
+    R = _;
+  }
 
   /* Compute the norm of the residual for each righthand side */
   BfVec *R_col_norms = bfMatColNorms(R);
@@ -117,6 +144,11 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   BfSize i = 0;
   for (i = 0; i < m; ++i) {
     BfMat *W = bfMatMul(A, V[i]);
+    if (leftPrecond) {
+      BfMat *_ = bfMatSolve(M, W);
+      bfMatDelete(&W);
+      W = _;
+    }
 
     H[i] = bfMatEmptyLike(W, i + 2, p);
 
