@@ -42,6 +42,16 @@ void bfPermDeinit(BfPerm *perm) {
   perm->size = BF_SIZE_BAD_VALUE;
 }
 
+void bfPermDealloc(BfPerm **perm) {
+  free(*perm);
+  *perm = NULL;
+}
+
+void bfPermDelete(BfPerm **perm) {
+  bfPermDeinit(*perm);
+  bfPermDealloc(perm);
+}
+
 BfPerm bfPermIdentity(BfSize size) {
   BEGIN_ERROR_HANDLING();
 
