@@ -94,6 +94,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_LU] = true,
       [BF_TYPE_LU_CSR_REAL] = true,
     },
+    [BF_TYPE_LU_DENSE_COMPLEX] = {
+      [BF_TYPE_LU] = true,
+      [BF_TYPE_LU_DENSE_COMPLEX] = true,
+    },
 
     /** Vec hierarchy: */
     [BF_TYPE_VEC] = {

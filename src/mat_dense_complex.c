@@ -10,6 +10,7 @@
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/lu_dense_complex.h>
 #include <bf/mat_coo_complex.h>
 #include <bf/mat_coo_real.h>
 #include <bf/mat_dense_real.h>
@@ -208,6 +209,7 @@ static BfMatVtable MAT_VTABLE = {
   .BackwardSolveVec = (__typeof__(&bfMatDenseComplexBackwardSolveVec))bfMatDenseComplexBackwardSolveVec,
   .Negate = (__typeof__(&bfMatDenseComplexNegate))bfMatDenseComplexNegate,
   .GetBlockView = (__typeof__(&bfMatGetBlockView))bfMatDenseComplexGetBlockView,
+  .GetLu = (__typeof__(&bfMatGetLu))bfMatDenseComplexGetLu,
 };
 
 BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
@@ -1143,6 +1145,24 @@ BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i
   END_ERROR_HANDLING() {}
 
   return bfMatDenseComplexToMat(blockView);
+}
+
+BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *matDenseComplex) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseComplexConstToMatConst(matDenseComplex);
+
+  BfLuDenseComplex *luDenseComplex = bfLuDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfLuDenseComplexInit(luDenseComplex, mat);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfLuDenseComplexToLu(luDenseComplex);
 }
 
 /* Implementation: MatDenseComplex */
