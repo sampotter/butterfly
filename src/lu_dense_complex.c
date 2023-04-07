@@ -199,7 +199,16 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   lapack_complex_double *a = malloc(m*n*sizeof(lapack_complex_double));
   if (a == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  memcpy(a, matDenseComplex->data, m*n*sizeof(lapack_complex_double));
+
+  for (BfSize i = 0; i < m; ++i) {
+    lapack_complex_double *writePtr = a + i*n;
+    BfComplex const *readPtr = matDenseComplex->data + i*matDenseComplex->rowStride;
+    for (BfSize j = 0; j < n; ++j) {
+      *writePtr = *readPtr;
+      ++writePtr;
+      readPtr += matDenseComplex->colStride;
+    }
+  }
 
   BfSize lda = n;
 
