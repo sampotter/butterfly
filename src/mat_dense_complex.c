@@ -1735,6 +1735,21 @@ BfMatDenseComplex *bfMatDenseComplexNew() {
   return mat;
 }
 
+BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDenseComplex *matDenseComplex = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInitViewFromPtr(matDenseComplex, numRows, numCols, data);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return matDenseComplex;
+}
+
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
   BEGIN_ERROR_HANDLING();
 
@@ -1794,6 +1809,23 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
 
   END_ERROR_HANDLING()
     bfMatDeinit(&mat->super);
+}
+
+void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols, BfComplex *data) {
+  BEGIN_ERROR_HANDLING();
+
+  bfMatInit(&matDenseComplex->super, &MAT_VTABLE, numRows, numCols);
+  HANDLE_ERROR();
+
+  matDenseComplex->super.props |= BF_MAT_PROPS_VIEW;
+
+  matDenseComplex->rowStride = numCols;
+  matDenseComplex->colStride = 1;
+  matDenseComplex->data = data;
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 }
 
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat) {

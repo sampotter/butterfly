@@ -23,6 +23,7 @@ void bfMatDenseComplexSetRow(BfMat *mat, BfSize i, BfVec const *rowVec);
 void bfMatDenseComplexSetCol(BfMat *mat, BfSize j, BfVec const *vec);
 void bfMatDenseComplexSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1, BfVec const *vec);
 BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
+BfMat const *bfMatDenseComplexGetRowRangeConst(BfMatDenseComplex const *matDenseComplex, BfSize i0, BfSize i1);
 BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1);
 void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows);
 void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm);
@@ -63,7 +64,9 @@ BfMatDenseComplex *bfMatToMatDenseComplex(BfMat *mat);
 BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat);
 
 BfMatDenseComplex *bfMatDenseComplexNew();
+BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
+void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols, BfComplex *data);
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
