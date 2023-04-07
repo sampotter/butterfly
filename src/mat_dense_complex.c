@@ -608,7 +608,7 @@ BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
 
   if (i1 - i0 != numRows) {
     bfMatDenseComplexToMat(submat)->numRows = i1 - i0;
-    submat->data += submat ->rowStride*i0;
+    submat->data += submat->rowStride*i0;
   }
 
   END_ERROR_HANDLING()
