@@ -22,9 +22,9 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
                   BfTreeLevelIter *tgtLevelIter);
 
 BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K,
-                             BfLayerPotential layerPot,
+                             BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta,
                              BfTreeLevelIter *srcLevelIter,
                              BfTreeLevelIter *tgtLevelIter,
                              BfSize numFactors);
 
-BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot);
+BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta);

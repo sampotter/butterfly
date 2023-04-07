@@ -103,7 +103,8 @@ int main(int argc, char const *argv[]) {
   /* Set up the LHS of the problem */
   // BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
   BfMat *phi_in = bfGetHelm2KernelMatrix(
-    X_source_points, X_points, NULL, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    X_source_points, X_points, NULL, N_vectors, K,
+    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Permute the LHS for the butterfly factorized version of A*/
@@ -131,7 +132,8 @@ int main(int argc, char const *argv[]) {
 
   /* Compute S_k' (normal derivative of single-layer potential) */
   BfMat *A_dense = bfGetHelm2KernelMatrix(
-    X_points, X_points, NULL, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    X_points, X_points, NULL, N_vectors, K,
+    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
@@ -150,7 +152,7 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   BfMat *A_BF = bfFacHelm2MakeMultilevel(
-    &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
@@ -225,11 +227,11 @@ int main(int argc, char const *argv[]) {
 
   /* Set up evaluation matrix */
   BfMat *G_eval = bfGetHelm2KernelMatrix(
-    X_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+    X_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
   bfMatScaleCols(G_eval, w);
 
   BfMat *phi_exact = bfGetHelm2KernelMatrix(
-    X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+    X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
   BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);
