@@ -16,6 +16,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
   .Mul = (__typeof__(&bfMatProductMul))bfMatProductMul,
+  .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
 };
 
 BfMat *bfMatProductCopy(BfMat const *mat) {
@@ -160,6 +161,36 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
   END_ERROR_HANDLING() {
     bfMatDelete(&prev);
     bfMatDelete(&result);
+  }
+
+  return result;
+}
+
+BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+  if (numFactors == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMat const *factor = bfMatProductGetFactorConst(matProduct, 0);
+
+  BfMat *result = bfMatSolve(factor, otherMat);
+  HANDLE_ERROR();
+
+  for (BfSize i = 1; i < numFactors; ++i) {
+    factor = bfMatProductGetFactorConst(matProduct, i);
+
+    BfMat *_ = bfMatSolve(factor, result);
+    HANDLE_ERROR();
+
+    bfMatDelete(&result);
+
+    result = _;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
   }
 
   return result;
