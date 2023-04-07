@@ -65,6 +65,7 @@ butterfly_lib_src = [
   'src/mat_diag_real.c',
   'src/mat_givens.c',
   'src/mat_identity.c',
+  'src/mat_perm.c',
   'src/mat_product.c',
   'src/mat_sum.c',
   'src/mat_zero.c',

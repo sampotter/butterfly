@@ -22,6 +22,7 @@ typedef struct BfMatDenseReal BfMatDenseReal;
 typedef struct BfMatDiagReal BfMatDiagReal;
 typedef struct BfMatGivensComplex BfMatGivensComplex;
 typedef struct BfMatIdentity BfMatIdentity;
+typedef struct BfMatPerm BfMatPerm;
 typedef struct BfMatProduct BfMatProduct;
 typedef struct BfMatSum BfMatSum;
 typedef struct BfMatZero BfMatZero;
@@ -61,6 +62,7 @@ typedef enum BfTypes {
   BF_TYPE_MAT_DIAG_REAL,
   BF_TYPE_MAT_GIVENS_COMPLEX,
   BF_TYPE_MAT_IDENTITY,
+  BF_TYPE_MAT_PERM,
   BF_TYPE_MAT_PRODUCT,
   BF_TYPE_MAT_SUM,
   BF_TYPE_MAT_ZERO,
