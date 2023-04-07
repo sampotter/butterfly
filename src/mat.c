@@ -231,6 +231,10 @@ BfLu *bfMatGetLu(BfMat const *mat) {
   return mat->vtbl->GetLu(mat);
 }
 
+BfMat *bfMatGetInverse(BfMat const *mat) {
+  return mat->vtbl->GetInverse(mat);
+}
+
 /** Implementation: Mat */
 
 void bfMatInvalidate(BfMat *mat) {
