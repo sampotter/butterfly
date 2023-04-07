@@ -30,6 +30,22 @@ BfSizeArray *bfSizeArrayNew() {
   return sizeArray;
 }
 
+BfSizeArray *bfSizeArrayNewIota(BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *sizeArray = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < n; ++i)
+    bfSizeArrayAppend(sizeArray, i);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return sizeArray;
+}
+
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   BEGIN_ERROR_HANDLING();
 

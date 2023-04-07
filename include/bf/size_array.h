@@ -12,6 +12,7 @@ struct BfSizeArray {
 typedef int (*BfSizeArrayComparator)(BfSize, BfSize, void *);
 
 BfSizeArray *bfSizeArrayNew();
+BfSizeArray *bfSizeArrayNewIota(BfSize n);
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity();
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray);
 void bfSizeArrayDeinit(BfSizeArray *sizeArray);
