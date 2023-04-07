@@ -9,6 +9,8 @@ struct BfSizeArray {
   BfSize capacity;
 };
 
+typedef int (*BfSizeArrayComparator)(BfSize, BfSize, void *);
+
 BfSizeArray *bfSizeArrayNew();
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity();
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray);
@@ -20,6 +22,7 @@ void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt);
 bool bfSizeArrayContains(BfSizeArray const *sizeArray, BfSize elt);
 bool bfSizeArrayIsEmpty(BfSizeArray const *sizeArray);
 bool bfSizeArrayIsSorted(BfSizeArray const *sizeArray);
+void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *aux);
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt);
 BfSize bfSizeArrayFindFirst(BfSizeArray const *sizeArray, BfSize elt);
 BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i);

@@ -151,6 +151,23 @@ bool bfSizeArrayIsSorted(BfSizeArray const *sizeArray) {
   return true;
 }
 
+typedef struct {
+  BfSizeArrayComparator cmp;
+  void *aux;
+} ComparatorAndAuxPtr;
+
+static int qsortComparator(const void *elt1, const void *elt2, void *_) {
+  ComparatorAndAuxPtr *cmpAndAux = (ComparatorAndAuxPtr *)_;
+  BfSizeArrayComparator cmp = cmpAndAux->cmp;
+  void *aux = cmpAndAux->aux;
+  return cmp(*(BfSize const *)elt1, *(BfSize const *)elt2, aux);
+}
+
+void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *aux) {
+  ComparatorAndAuxPtr cmpAndAux = {.cmp = cmp, .aux = aux};
+  qsort_r(sizeArray->data, sizeArray->size, sizeof(BfSize), qsortComparator, &cmpAndAux);
+}
+
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   BEGIN_ERROR_HANDLING();
 

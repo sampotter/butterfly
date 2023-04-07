@@ -8,6 +8,11 @@
 #define _DEFAULT_SOURCE 1
 #endif
 
+/* For qsort_r: */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <complex.h>
 #include <stdbool.h>
 #include <stddef.h>
