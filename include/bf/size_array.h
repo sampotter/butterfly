@@ -27,6 +27,7 @@ void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *au
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt);
 BfSize bfSizeArrayFindFirst(BfSizeArray const *sizeArray, BfSize elt);
 BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i);
+BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray);
 BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray);
 BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray);
 void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst);
