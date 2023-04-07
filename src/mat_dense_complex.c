@@ -437,12 +437,17 @@ void bfMatDenseComplexSave(BfMat const *mat, char const *path) {
   if (fp == NULL)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  BfSize numElts = mat->numRows*mat->numCols;
+  for (BfSize i = 0; i < mat->numRows; ++i) {
+    BfComplex const *ptr = matDenseComplex->data + i*matDenseComplex->rowStride;
+    for (BfSize j = 0; j < mat->numCols; ++j) {
+      fwrite(ptr, sizeof(BfComplex), 1, fp);
+      ptr += matDenseComplex->colStride;
+    }
+  }
 
-  fwrite(matDenseComplex->data, sizeof(BfComplex), numElts, fp);
-  /* TODO: error-handling */
-
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 
   fclose(fp);
 }
