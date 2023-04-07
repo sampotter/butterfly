@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bf/def.h>
+#include "def.h"
+#include "types.h"
 
 typedef struct BfPerm {
   BfSize *index;
