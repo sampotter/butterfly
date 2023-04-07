@@ -36,6 +36,7 @@ BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat);
 void bfMatDenseComplexSubInplace(BfMat *mat, BfMat const *otherMat);
 BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2);
 BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec);
+BfMat *bfMatDenseComplexSolve(BfMatDenseComplex const *matDenseComplex, BfMat const *otherMat);
 BfMat *bfMatDenseComplexSolveLU(BfMat const *A, BfMat const *B);
 BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs);
 bool bfMatDenseComplexIsUpperTri(BfMat const *mat);

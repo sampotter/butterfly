@@ -203,6 +203,7 @@ static BfMatVtable MAT_VTABLE = {
   .SubInplace = (__typeof__(&bfMatDenseComplexSubInplace))bfMatDenseComplexSubInplace,
   .Mul = (__typeof__(&bfMatDenseComplexMul))bfMatDenseComplexMul,
   .MulVec = (__typeof__(&bfMatDenseComplexMulVec))bfMatDenseComplexMulVec,
+  .Solve = (__typeof__(&bfMatSolve))bfMatDenseComplexSolve,
   .SolveLU = (__typeof__(&bfMatDenseComplexSolveLU))bfMatDenseComplexSolveLU,
   .LstSq = (__typeof__(&bfMatDenseComplexLstSq))bfMatDenseComplexLstSq,
   .IsUpperTri = (__typeof__(&bfMatDenseComplexIsUpperTri))bfMatDenseComplexIsUpperTri,
@@ -986,6 +987,80 @@ BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec) {
     bfVecDelete(&result);
 
   return result;
+}
+
+static BfMat *
+solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const *otherMat) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseComplexConstToMatConst(matDenseComplex);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+  BfSize p = bfMatGetNumCols(otherMat);
+
+  if (m != n)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  if (bfMatGetNumRows(otherMat) != m);
+
+  assert(mat->props & BF_MAT_PROPS_TRI);
+
+  if (mat->props & BF_MAT_PROPS_TRANS)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfMatDenseComplex const *otherMatDenseComplex = bfMatConstToMatDenseComplexConst(otherMat);
+
+  BfMatDenseComplex *resultMatDenseComplex = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(resultMatDenseComplex, n, p);
+  HANDLE_ERROR();
+
+  memcpy(resultMatDenseComplex->data, otherMatDenseComplex->data, n*p*sizeof(BfComplex));
+
+  BfComplex alpha = 1;
+
+  cblas_ztrsm(
+    CblasRowMajor,
+    CblasLeft,
+    mat->props & BF_MAT_PROPS_LOWER_TRI ? CblasLower : CblasUpper,
+    CblasNoTrans,
+    mat->props & BF_MAT_PROPS_UNIT ? CblasUnit : CblasNonUnit,
+    bfMatGetNumRows(otherMat),
+    bfMatGetNumCols(otherMat),
+    &alpha,
+    /* a: */ matDenseComplex->data,
+    /* lda: */ n,
+    /* b: */ resultMatDenseComplex->data,
+    /* ldb: */ p);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfMatDenseComplexToMat(resultMatDenseComplex);
+}
+
+static BfMat *solve_matDenseComplex(BfMatDenseComplex const *matDenseComplex, BfMat const *otherMat) {
+  BfMat const *mat = bfMatDenseComplexConstToMatConst(matDenseComplex);
+
+  if (mat->props & BF_MAT_PROPS_TRI)
+    return solve_matDenseComplex_tri(matDenseComplex, otherMat);
+
+  bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+
+  return NULL;
+}
+
+BfMat *bfMatDenseComplexSolve(BfMatDenseComplex const *matDenseComplex, BfMat const *otherMat) {
+  switch (bfMatGetType(otherMat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return solve_matDenseComplex(matDenseComplex, otherMat);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 BfMat *bfMatDenseComplexSolveLU(BfMat const *A, BfMat const *B) {
