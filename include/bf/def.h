@@ -34,6 +34,10 @@ typedef double _Complex BfComplex;
 typedef uint8_t BfByte;
 typedef size_t BfSize;
 
+/* TODO: only define if we're using LAPACK? make sure it's right,
+ * anyway... should get this info from Meson */
+typedef int BfLapackInt;
+
 typedef BfSize BfSize3[3];
 
 static BfSize const BF_SIZE_BAD_VALUE = -1;
