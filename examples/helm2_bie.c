@@ -174,10 +174,6 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   printf("wrote blocks to %s\n", argv[7]);
 
-  /** Copy the BF'd system matrix and do an MVP to verify that it was
-   * copied correctly (recursive copying logic is a bit
-   * involved---worth validating this here) */
-
   /** Verify and time the matrix multiplications */
 
   bfToc();
