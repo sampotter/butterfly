@@ -34,6 +34,10 @@ BfVec *bfLuScaleVec(BfLu const *lu, BfVec const *b) {
   return lu->vtbl->ScaleVec(lu, b);
 }
 
+BfMat *bfLuGetMatView(BfLu *lu) {
+  return lu->vtbl->GetMatView(lu);
+}
+
 /** Implementation: Lu */
 
 void bfLuInit(BfLu *lu, BfLuVtable *vtbl) {

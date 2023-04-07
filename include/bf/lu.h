@@ -12,6 +12,7 @@ BfVec *bfLuSolveVec(BfLu const *lu, BfVec const *b);
 BfVec *bfLuSolveLowerVec(BfLu const *lu, BfVec const *b, bool permute);
 BfVec *bfLuSolveUpperVec(BfLu const *lu, BfVec const *b, bool permute);
 BfVec *bfLuScaleVec(BfLu const *lu, BfVec const *b);
+BfMat *bfLuGetMatView(BfLu *lu);
 
 typedef struct BfLuVtable {
   __typeof__(&bfLuSolve) Solve;
@@ -22,6 +23,7 @@ typedef struct BfLuVtable {
   __typeof__(&bfLuSolveLowerVec) SolveLowerVec;
   __typeof__(&bfLuSolveUpperVec) SolveUpperVec;
   __typeof__(&bfLuScaleVec) ScaleVec;
+  __typeof__(&bfLuGetMatView) GetMatView;
 } BfLuVtable;
 
 /** Implementation: Lu */

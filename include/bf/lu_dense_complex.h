@@ -12,6 +12,7 @@ BfVec *bfLuDenseComplexSolveVec(BfLuDenseComplex const *luDenseComplex, BfVec co
 BfVec *bfLuDenseComplexSolveLowerVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute);
 BfVec *bfLuDenseComplexSolveUpperVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute);
 BfVec *bfLuDenseComplexScaleVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b);
+BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex);
 
 /** Upcasting: LuDenseComplex -> Lu */
 

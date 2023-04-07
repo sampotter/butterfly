@@ -7,6 +7,8 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/mat_perm.h>
+#include <bf/mat_product.h>
 
 struct BfLuDenseComplexImpl {
   lapack_int m;
@@ -26,6 +28,7 @@ static BfLuVtable LU_VTABLE = {
   .SolveLowerVec = (__typeof__(&bfLuSolveLowerVec))bfLuDenseComplexSolveLowerVec,
   .SolveUpperVec = (__typeof__(&bfLuSolveUpperVec))bfLuDenseComplexSolveUpperVec,
   .ScaleVec = (__typeof__(&bfLuScaleVec))bfLuDenseComplexScaleVec,
+  .GetMatView = (__typeof__(&bfLuGetMatView))bfLuDenseComplexGetMatView,
 };
 
 BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const *mat) {
@@ -111,6 +114,53 @@ BfVec *bfLuDenseComplexScaleVec(BfLuDenseComplex const *luDenseComplex, BfVec co
   (void)luDenseComplex;
   (void)b;
   assert(false);
+}
+
+BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct *PLU = bfMatProductNew();
+  HANDLE_ERROR();
+
+  bfMatProductInit(PLU);
+  HANDLE_ERROR();
+
+  BfMat *P = bfMatPermToMat(
+    bfMatPermNewViewFromLapackPivots(
+      luDenseComplex->impl->m, luDenseComplex->impl->ipiv));
+  HANDLE_ERROR();
+
+  bfMatProductPostMultiply(PLU, P);
+  HANDLE_ERROR();
+
+  BfSize n = luDenseComplex->impl->m;
+  if (n != luDenseComplex->impl->n)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfComplex *ptr = luDenseComplex->impl->data;
+
+  BfMat *L = bfMatDenseComplexToMat(bfMatDenseComplexNewViewFromPtr(n, n, ptr));
+  HANDLE_ERROR();
+
+  L->props |= BF_MAT_PROPS_LOWER_TRI;
+  L->props |= BF_MAT_PROPS_UNIT;
+
+  bfMatProductPostMultiply(PLU, L);
+  HANDLE_ERROR();
+
+  BfMat *U = bfMatDenseComplexToMat(bfMatDenseComplexNewViewFromPtr(n, n, ptr));
+  HANDLE_ERROR();
+
+  U->props |= BF_MAT_PROPS_UPPER_TRI;
+
+  bfMatProductPostMultiply(PLU, U);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfMatProductToMat(PLU);
 }
 
 /** Upcasting: LuDenseComplex -> Lu */
