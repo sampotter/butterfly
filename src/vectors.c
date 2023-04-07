@@ -250,6 +250,10 @@ void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
   }
 }
 
+BfSize bfVectors2GetSize(BfVectors2 const *vectors) {
+  return vectors->size;
+}
+
 void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
   BEGIN_ERROR_HANDLING();
 
