@@ -906,8 +906,10 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *quadtree, BfReal K,
   facHelm2MakeMultilevel_rec(quadtree, K, layerPot, alpha, beta, levelNodes, levelNodes, 2, matBlockDense);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  END_ERROR_HANDLING() {
     bfMatBlockDenseDeinitAndDealloc(&matBlockDense);
+    assert(false);
+  }
 
   bfTreeLevelIterDeinit(&levelIter);
 
