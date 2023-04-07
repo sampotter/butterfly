@@ -14,8 +14,13 @@ typedef enum BfMatProps {
   BF_MAT_PROPS_VIEW = 1 << 0,
   BF_MAT_PROPS_TRANS = 1 << 1,
   BF_MAT_PROPS_CONJ = 1 << 2,
-  BF_MAT_PROPS_ORTHO = 1 << 3
+  BF_MAT_PROPS_ORTHO = 1 << 3,
+  BF_MAT_PROPS_LOWER_TRI = 1 << 4,
+  BF_MAT_PROPS_UPPER_TRI = 1 << 5,
+  BF_MAT_PROPS_UNIT = 1 << 6
 } BfMatProps;
+
+static BfMatProps const BF_MAT_PROPS_TRI = BF_MAT_PROPS_LOWER_TRI | BF_MAT_PROPS_UPPER_TRI;
 
 /** Interface: Mat */
 
