@@ -235,6 +235,10 @@ BfMat *bfMatGetInverse(BfMat const *mat) {
   return mat->vtbl->GetInverse(mat);
 }
 
+void bfMatDivideCols(BfMat *mat, BfVec const *vec) {
+  mat->vtbl->DivideCols(mat, vec);
+}
+
 /** Implementation: Mat */
 
 void bfMatInvalidate(BfMat *mat) {

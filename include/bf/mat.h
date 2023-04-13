@@ -80,6 +80,7 @@ void bfMatPrintBlocksDeep(BfMat const *, FILE *, BfSize, BfSize, BfSize);
 BfMat *bfMatGetBlockView(BfMat *mat, BfSize, BfSize, BfSize, BfSize);
 BfLu *bfMatGetLu(BfMat const *mat);
 BfMat *bfMatGetInverse(BfMat const *mat);
+void bfMatDivideCols(BfMat *, BfVec const *);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatCopy) Copy;
@@ -138,6 +139,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatGetBlockView) GetBlockView;
   __typeof__(&bfMatGetLu) GetLu;
   __typeof__(&bfMatGetInverse) GetInverse;
+  __typeof__(&bfMatDivideCols) DivideCols;
 } BfMatVtable;
 
 /** Implementation: Mat */

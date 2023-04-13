@@ -45,6 +45,7 @@ BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec);
 void bfMatDenseComplexNegate(BfMat *mat);
 BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1);
 BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *mat);
+void bfMatDenseComplexDivideCols(BfMatDenseComplex *matDenseComplex, BfVec const *vec);
 
 struct BfMatDenseComplex {
   BfMat super;

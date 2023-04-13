@@ -211,6 +211,7 @@ static BfMatVtable MAT_VTABLE = {
   .Negate = (__typeof__(&bfMatDenseComplexNegate))bfMatDenseComplexNegate,
   .GetBlockView = (__typeof__(&bfMatGetBlockView))bfMatDenseComplexGetBlockView,
   .GetLu = (__typeof__(&bfMatGetLu))bfMatDenseComplexGetLu,
+  .DivideCols = (__typeof__(&bfMatDivideCols))bfMatDenseComplexDivideCols,
 };
 
 BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
@@ -1243,6 +1244,40 @@ BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *matDenseComplex) {
   }
 
   return bfLuDenseComplexToLu(luDenseComplex);
+}
+
+static void divideCols_vecReal(BfMatDenseComplex *matDenseComplex, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatDenseComplexToMat(matDenseComplex);
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  if (numCols != vec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfVecReal const *vecReal = bfVecConstToVecRealConst(vec);
+
+  for (BfSize j = 0; j < numCols; ++j) {
+    BfReal alpha = *(vecReal->data + j*vecReal->stride);
+    BfComplex *writePtr = matDenseComplex->data + j*matDenseComplex->colStride;
+    cblas_zdscal(numRows, 1/alpha, writePtr, matDenseComplex->rowStride);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+void bfMatDenseComplexDivideCols(BfMatDenseComplex *matDenseComplex, BfVec const *vec) {
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    divideCols_vecReal(matDenseComplex, vec);
+    break;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
 }
 
 /* Implementation: MatDenseComplex */
