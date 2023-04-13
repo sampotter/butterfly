@@ -116,14 +116,14 @@ static BfVec *bfMatDenseComplexDenseComplexColDots(
     colPtr = matDenseComplex->data + j*matDenseComplex->colStride;
     otherColPtr = otherMatDenseComplex->data + j*otherMatDenseComplex->colStride;
 
-    BfComplex sum = 0;
-    for (BfSize i = 0; i < numRows; ++i) {
-      sum += *colPtr*conj(*otherColPtr);
-      colPtr += matDenseComplex->rowStride;
-      otherColPtr += otherMatDenseComplex->rowStride;
-    }
+    BfComplex dot = cblas_zdotc(
+      /* n: */ numRows,
+      /* x: */ colPtr,
+      /* incx: */ matDenseComplex->rowStride,
+      /* y: */ otherColPtr,
+      /* incy: */ otherMatDenseComplex->rowStride);
 
-    *resultPtr++ = sum;
+    *resultPtr++ = dot;
   }
 
   END_ERROR_HANDLING()
@@ -156,13 +156,13 @@ void bfMatDenseComplexScaleCols_complex(BfMatDenseComplex *mat, BfVec const *vec
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
   HANDLE_ERROR();
 
-  for (BfSize i = 0; i < mat->super.numRows; ++i) {
-    BfComplex *vecComplexData = vecComplex->data;
-    BfComplex *rowData = mat->data + i*mat->rowStride;
-    for (BfSize j = 0; j < mat->super.numCols; ++j) {
-      *(rowData + j*mat->colStride) *= *vecComplexData;
-      vecComplexData += vecComplex->stride;
-    }
+  BfSize m = mat->super.numRows;
+  BfSize n = mat->super.numCols;
+
+  for (BfSize j = 0; j < n; ++j) {
+    BfComplex const *readPtr = vecComplex->data + j*vecComplex->stride;
+    BfComplex *writePtr = mat->data + j*mat->colStride;
+    cblas_zscal(m, readPtr, writePtr, mat->rowStride);
   }
 
   END_ERROR_HANDLING() {}
@@ -760,14 +760,9 @@ BfVec *bfMatDenseComplexColNorms(BfMat const *mat) {
   bfVecRealInit(colNorms, n);
 
   for (BfSize j = 0; j < n; ++j) {
-    BfComplex *colPtr = matDenseComplex->data + j*matDenseComplex->colStride;
-    BfReal colNorm = 0;
-    for (BfSize i = 0; i < m; ++i) {
-      BfComplex z = *colPtr;
-      colNorm += creal(z*conj(z));
-      colPtr += matDenseComplex->rowStride;
-    }
-    *(colNorms->data + j*colNorms->stride) = sqrt(colNorm);
+    BfComplex const *readPtr = matDenseComplex->data + j*matDenseComplex->colStride;
+    BfReal *writePtr = colNorms->data + j*colNorms->stride;
+    *writePtr = cblas_dznrm2(m, readPtr, matDenseComplex->rowStride);
   }
 
   END_ERROR_HANDLING()

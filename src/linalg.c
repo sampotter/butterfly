@@ -12,6 +12,10 @@
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
+#if BF_DEBUG
+#include <bf/vec_complex.h>
+#endif
+
 #include <arpack.h>
 
 BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const *S) {
@@ -52,8 +56,6 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   /* Givens rotations for solving the least squares problem */
   BfMat **J = NULL;
 
-  BfSize const m = maxNumIter;
-
   bool converged = false;
 
   /* Make sure B is a dense matrix */
@@ -91,26 +93,26 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
       RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
   }
 
-  /* Get number of RHSs (p) and check compatibility */
-  BfSize p = bfMatGetNumCols(B);
-  if (X0 != NULL && p != bfMatGetNumCols(X0))
+  /* Get number of RHSs (P) and check compatibility */
+  BfSize numRhs = bfMatGetNumCols(B);
+  if (X0 != NULL && numRhs != bfMatGetNumCols(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  V = malloc((m + 1)*sizeof(BfMatDenseComplex *));
+  V = malloc((maxNumIter + 1)*sizeof(BfMatDenseComplex *));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  H = malloc(m*sizeof(BfMatDenseComplex *));
+  H = malloc(maxNumIter*sizeof(BfMatDenseComplex *));
   if (H == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  J = malloc(m*p*sizeof(BfMat *));
+  J = malloc(maxNumIter*numRhs*sizeof(BfMat *));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   /* If an initial iterate wasn't passed, set it to zero */
   if (X0 == NULL) {
-    X0 = bfMatZerosLike(B, n, p);
+    X0 = bfMatZerosLike(B, n, numRhs);
     HANDLE_ERROR();
   }
 
@@ -127,116 +129,162 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   }
 
   /* Compute the norm of the residual for each righthand side */
-  BfVec *R_col_norms = bfMatColNorms(R);
-  BfReal beta = bfVecNormMax(R_col_norms);
+  BfVec *RNorm = bfMatColNorms(R);
+
+  // TODO: beta is different for each RHS
+  BfReal beta = bfVecNormMax(RNorm);
 
   /* Set the first basis vector to the normalized residual */
   V[0] = bfMatCopy(R);
-  bfVecRecipInplace(R_col_norms);
-  bfMatScaleCols(V[0], R_col_norms);
+  bfMatDivideCols(V[0], RNorm);
 
   /* Initialize S to ||r||_2*e1---need to take the reciprocal of
    * `R_col_norms` again first */
-  S = bfMatZerosLike(B, m + 1, p);
-  bfVecRecipInplace(R_col_norms);
-  bfMatSetRow(S, 0, R_col_norms);
+  S = bfMatZerosLike(B, maxNumIter + 1, numRhs);
+  bfMatSetRow(S, 0, RNorm);
 
-  BfSize i = 0;
-  for (i = 0; i < m; ++i) {
-    BfMat *W = bfMatMul(A, V[i]);
+  FILE *fp = fopen("gmres_res.bin", "w");
+
+  /* The iteration count/the current column: */
+  BfSize j = 0;
+
+  for (j = 0; j < maxNumIter; ++j) {
+    BfMat *W = bfMatMul(A, V[j]);
+
+    /* Apply left preconditioner if we're using one: */
     if (leftPrecond) {
       BfMat *_ = bfMatSolve(M, W);
       bfMatDelete(&W);
       W = _;
     }
 
-    H[i] = bfMatEmptyLike(W, i + 2, p);
+    /** Run modified Gram-Schmidt: */
 
-    for (BfSize k = 0; k <= i; ++k) {
-      BfVec *Hk = bfMatColDots(W, V[k]);
-      bfMatSetRow(H[i], k, Hk);
+    /* Compute W column norms before applying Gram-Schmidt: */
+    BfVec *WNormBefore = bfMatColNorms(W); // 433
 
-      BfMat *Vk_Hk = bfMatCopy(V[k]);
-      bfMatScaleCols(Vk_Hk, Hk);
-      bfMatSubInplace(W, Vk_Hk);
+    /* Allocate space for next column of H: */
+    H[j] = bfMatEmptyLike(W, j + 2, numRhs);
 
-      bfMatDelete(&Vk_Hk);
-      bfVecDelete(&Hk);
+    for (BfSize i = 0; i <= j; ++i) {
+      BfVec *Hij = bfMatColDots(V[i], W); // 435
+      bfMatSetRow(H[j], i, Hij);          // "
+
+      BfMat *Hij_Vi = bfMatCopy(V[i]);
+      bfMatScaleCols(Hij_Vi, Hij); // 436
+      bfMatSubInplace(W, Hij_Vi);  // "
+
+      bfMatDelete(&Hij_Vi);
+      bfVecDelete(&Hij);
     }
 
-    BfVec *W_col_norms = bfMatColNorms(W);
-    bfMatSetRow(H[i], i + 1, W_col_norms);
+    BfVec *WNorm = bfMatColNorms(W); // 438
+    bfMatSetRow(H[j], j + 1, WNorm); // 439
 
-    V[i + 1] = bfMatCopy(W);
-    bfVecRecipInplace(W_col_norms);
-    bfMatScaleCols(V[i + 1], W_col_norms);
+#if BF_DEBUG // TODO: deal with breakdown
+    {
+      assert(numRhs == 1); // TODO: handle numRhs > 1
+      BfReal _ = bfVecNormMax(WNorm)/bfVecNormMax(WNormBefore);
+      assert(_ >= tol);
+    }
+#endif
+
+    V[j + 1] = bfMatCopy(W); // 440
+    bfMatDivideCols(V[j + 1], WNorm); // 447 & 448
+
     bfMatDelete(&W);
-    bfVecDelete(&W_col_norms);
+    bfVecDelete(&WNorm);
+    bfVecDelete(&WNormBefore);
 
-    for (BfSize k = 0; k < i; ++k) {
-      for (BfSize j = 0; j < p; ++j) {
-        BfVec *h = bfMatGetColRangeView(H[i], 0, k + 2, j);
-        bfVecSolveInplace(h, J[p*k + j]);
+    /** Use Givens rotations to reduce H to upper triangular form: */
+
+    for (BfSize i = 0; i < j; ++i) {
+      for (BfSize p = 0; p < numRhs; ++p) {
+        BfVec *h = bfMatGetColRangeView(H[j], 0, i + 2, p);
+        bfVecMulInplace(h, J[numRhs*i + p]);
         bfVecDelete(&h);
       }
     }
 
-    for (BfSize j = 0; j < p; ++j) {
-      BfVec *h = bfMatGetColView(H[i], j);
-      J[p*i + j] = bfVecGetGivensRotation(h, i, i + 1);
-      bfVecSolveInplace(h, J[p*i + j]);
+    for (BfSize p = 0; p < numRhs; ++p) {
+      BfVec *h = bfMatGetColView(H[j], p);
+      J[numRhs*j + p] = bfVecGetGivensRotation(h, j, j + 1);
+      bfVecMulInplace(h, J[numRhs*j + p]);
       bfVecDelete(&h);
     }
 
     /* Apply most recent set of Givens rotations to S */
-    for (BfSize j = 0; j < p; ++j) {
-      BfVec *s = bfMatGetColView(S, j);
-      BfVec *sSub = bfVecGetSubvecView(s, 0, i + 2);
-      bfVecSolveInplace(sSub, J[p*i + j]);
+    for (BfSize p = 0; p < numRhs; ++p) {
+      BfVec *s = bfMatGetColView(S, p);
+      BfVec *sSub = bfVecGetSubvecView(s, 0, j + 2);
+      bfVecMulInplace(sSub, J[numRhs*j + p]);
       bfVecDelete(&sSub);
       bfVecDelete(&s);
     }
 
-    BfVec *sLastRow = bfMatGetRowView(S, i + 1);
-    if (bfVecNormMax(sLastRow) < tol*beta)
+    BfVec *sLastRow = bfMatGetRowView(S, j + 1);
+    BfReal residual = bfVecNormMax(sLastRow)/beta;
+
+    fwrite(&residual, sizeof(BfReal), 1, fp);
+
+    /** Deal with convergence: */
+
+    if (residual < tol)
       converged = true;
+
     bfVecDelete(&sLastRow);
 
     if (converged)
       break;
   }
 
+  fclose(fp);
+
   /* Construct the solution */
-  X = bfMatEmptyLike(B, n, p);
-  for (BfSize j = 0; j < p; ++j) {
-    /* Extract the version of H for this RHS */
-    BfMat *Hj = bfMatZerosLike(H[0], i + 1, i + 1);
-    for (BfSize k = 0; k < i + 1; ++k) {
-      BfVec *h = bfMatGetColView(H[k], j);
-      bfMatSetColRange(Hj, k, 0, h->size - 1, h);
+  X = bfMatEmptyLike(B, n, numRhs);
+  for (BfSize p = 0; p < numRhs; ++p) {
+    /* Extract the triangularized version of the upper Hessenberg
+     * matrix H for the current RHS: */
+    BfMat *Hp = bfMatZerosLike(H[0], j, j);
+    for (BfSize i = 0; i < j; ++i) {
+      BfVec *h = bfMatGetColView(H[i], p);
+#if BF_DEBUG
+      if (bfVecGetType(h) == BF_TYPE_VEC_COMPLEX) {
+        BfVecComplex *_ = bfVecToVecComplex(h);
+        BfComplex z = *(_->data + (i + 1)*_->stride);
+        assert(cabs(z) <= 1e-15);
+      }
+#endif
+      bfMatSetColRange(Hp, i, 0, i + 1, h);
     }
-    assert(bfMatIsUpperTri(Hj));
 
     /* Extract the version of V for this RHS */
-    BfMat *Vj = bfMatEmptyLike(V[0], n, i + 1);
-    for (BfSize k = 0; k < i + 1; ++k) {
-      BfVec *v = bfMatGetColView(V[k], j);
-      bfMatSetCol(Vj, k, v);
+    BfMat *Vp = bfMatEmptyLike(V[0], n, j);
+    for (BfSize i = 0; i < j; ++i) {
+      BfVec *v = bfMatGetColView(V[i], p);
+      bfMatSetCol(Vp, i, v);
     }
 
     /* Solve for the coefficients representing x - x0 in the V-basis */
-    BfVec *s = bfMatGetColRangeView(S, 0, i + 1, j);
-    BfVec *y = bfMatBackwardSolveVec(Hj, s);
-    BfVec *x0 = bfMatGetColView(X0, j);
-    BfVec *x = bfMatMulVec(Vj, y);
+    BfVec *s = bfMatGetColRangeView(S, 0, j, p);
+    BfVec *y = bfMatBackwardSolveVec(Hp, s);
+    BfVec *x0 = bfMatGetColView(X0, p);
+    BfVec *x = bfMatMulVec(Vp, y);
     bfVecAddInplace(x, x0);
-    bfMatSetCol(X, j, x);
+    bfMatSetCol(X, p, x);
+
+    bfVecSave(s, "gmres_s.bin");
+    bfMatSave(Hp, "gmres_H.bin");
+    bfMatSave(Vp, "gmres_V.bin");
+    bfVecSave(y, "gmres_y.bin");
+    bfVecSave(x0, "gmres_x0.bin");
+    bfVecSave(x, "gmres_x.bin");
   }
 
   END_ERROR_HANDLING() {}
 
   if (numIter != NULL)
-    *numIter = i;
+    *numIter = j;
 
   return X;
 }

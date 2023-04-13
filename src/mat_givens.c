@@ -70,7 +70,7 @@ BfMatGivensComplex *bfMatGivensComplexNew() {
 
 void bfMatGivensComplexInit(BfMatGivensComplex *mat, BfSize n,
                             BfSize srcInd, BfSize elimInd,
-                            BfReal c, BfComplex s) {
+                            BfComplex c, BfComplex s) {
   BEGIN_ERROR_HANDLING();
 
   bfMatInit(&mat->super, &MAT_VTABLE, n, n);
