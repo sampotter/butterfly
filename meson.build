@@ -21,6 +21,7 @@ openblas_dep = cc.find_library('openblas', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
 
+fmm2d_dep = dependency('fmm2d', required : true)
 argtable3_dep = dependency('argtable3', required : true)
 arpack_ng_dep = dependency('arpack', required : true)
 gsl_dep = dependency('gsl', required : true)
