@@ -25,6 +25,7 @@ static BfVecVtable VEC_VTABLE = {
   .SolveInplace = (__typeof__(&bfVecComplexSolveInplace))bfVecComplexSolveInplace,
   .GetGivensRotation = (__typeof__(&bfVecComplexGetGivensRotation))bfVecComplexGetGivensRotation,
   .Concat = (__typeof__(&bfVecComplexConcat))bfVecComplexConcat,
+  .Save = (__typeof__(&bfVecSave))bfVecComplexSave,
 };
 
 BfVec *bfVecComplexCopy(BfVec const *vec) {
@@ -402,6 +403,25 @@ BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec) {
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
   }
+}
+
+void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  for (BfSize i = 0; i < vecComplex->super.size; ++i) {
+    BfComplex const *ptr = vecComplex->data + i*vecComplex->stride;
+    fwrite(ptr, sizeof(BfComplex), 1, fp);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  fclose(fp);
 }
 
 /** Upcasting: */

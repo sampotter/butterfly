@@ -35,6 +35,7 @@ void bfVecRecipInplace(BfVec *);
 BfMat *bfVecGetGivensRotation(BfVec const *, BfSize, BfSize);
 void bfVecPermute(BfVec *, BfPerm const *);
 BfVec *bfVecConcat(BfVec const *, BfVec const *);
+void bfVecSave(BfVec const *, char const *);
 
 typedef struct BfVecVtable {
   __typeof__(&bfVecCopy) Copy;
@@ -58,6 +59,7 @@ typedef struct BfVecVtable {
   __typeof__(&bfVecGetGivensRotation) GetGivensRotation;
   __typeof__(&bfVecPermute) Permute;
   __typeof__(&bfVecConcat) Concat;
+  __typeof__(&bfVecSave) Save;
 } BfVecVtable;
 
 /** Implementation: Vec */

@@ -15,6 +15,7 @@ void bfVecComplexMulInplace(BfVec *vec, BfMat const *mat);
 void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat);
 BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd);
 BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec);
+void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path);
 
 struct BfVecComplex {
   BfVec super;
