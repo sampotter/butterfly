@@ -20,6 +20,7 @@ typedef struct BfMatDense BfMatDense;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDenseReal BfMatDenseReal;
 typedef struct BfMatDiagReal BfMatDiagReal;
+typedef struct BfMatFunc BfMatFunc;
 typedef struct BfMatGivensComplex BfMatGivensComplex;
 typedef struct BfMatIdentity BfMatIdentity;
 typedef struct BfMatPerm BfMatPerm;
@@ -60,6 +61,7 @@ typedef enum BfTypes {
   BF_TYPE_MAT_COO_REAL,
   BF_TYPE_MAT_CSR_REAL,
   BF_TYPE_MAT_DIAG_REAL,
+  BF_TYPE_MAT_FUNC,
   BF_TYPE_MAT_GIVENS_COMPLEX,
   BF_TYPE_MAT_IDENTITY,
   BF_TYPE_MAT_PERM,

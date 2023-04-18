@@ -3,7 +3,7 @@
 #include "mat.h"
 #include "ptr_array.h"
 
-/** Interface: MatProduct */
+/** Interface: Mat */
 
 BfMat *bfMatProductCopy(BfMat const *mat);
 void bfMatProductDelete(BfMat **mat);

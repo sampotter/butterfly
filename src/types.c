@@ -28,6 +28,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT]           = true,
       [BF_TYPE_MAT_DIAG_REAL] = true,
     },
+    [BF_TYPE_MAT_FUNC] = {
+      [BF_TYPE_MAT]           = true,
+      [BF_TYPE_MAT_FUNC] = true,
+    },
     [BF_TYPE_MAT_GIVENS_COMPLEX] = {
       [BF_TYPE_MAT]                = true,
       [BF_TYPE_MAT_GIVENS_COMPLEX] = true,
