@@ -145,3 +145,27 @@ BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
 
   return bfVecRealToVec(vecReal);
 }
+
+BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i1 > realArray->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize size = i1 - i0;
+
+  BfVecReal *vecReal = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInitView(vecReal, size, 1, realArray->data + i0);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return bfVecRealToVec(vecReal);
+}

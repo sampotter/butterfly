@@ -19,3 +19,4 @@ void bfRealArrayDeinitAndDealloc(BfRealArray **realArray);
 void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity);
 void bfRealArrayAppend(BfRealArray *realArray, BfReal elt);
 BfVec *bfRealArrayGetVecView(BfRealArray *realArray);
+BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1);
