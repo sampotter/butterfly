@@ -49,6 +49,30 @@ static BfReal const *get_w_KR(BfSize order) {
   }
 }
 
+void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
+                                 BfSize n, BfComplex const *x, BfReal const *h, BfComplex *y) {
+  BEGIN_ERROR_HANDLING();
+
+  if (order != 2 && order != 6 && order != 10)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (n < 2*order + 1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfReal const *w_KR = get_w_KR(order);
+
+  for (BfSize i = 0; i < n; ++i) {
+    for (BfSize p = 0, j; p < order; ++p) {
+      j = (i + p + 1) % n;         y[i] += h[j]*w_KR[p]*K(i, j, aux)*x[j];
+      j = ((i + n) - p - 1) % n;   y[i] += h[j]*w_KR[p]*K(i, j, aux)*x[j];
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
 static void
 apply_KR_correction_to_block_complex(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize order,
                                      BfKernelComplex K, BfPtr *aux) {
