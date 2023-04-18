@@ -152,7 +152,7 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   BfMat *A_BF = bfFacHelm2MakeMultilevel(
-    &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
+    &quadtree, &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */

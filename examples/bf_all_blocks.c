@@ -124,7 +124,7 @@ int main(int argc, char const *argv[]) {
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #endif
 
-  BfMat *A_BF = bfFacHelm2MakeMultilevel(&quadtree, K, layerPot, NULL, NULL);
+  BfMat *A_BF = bfFacHelm2MakeMultilevel(&quadtree, &quadtree, K, layerPot, NULL, NULL);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMat *x; {

@@ -31,9 +31,9 @@ getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
   return numChildren;
 }
 
-static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
+static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                              BfReal K, BfLayerPotential layerPot,
                               BfComplex const *alpha, BfComplex const *beta,
-                              BfQuadtree const *tree,
                               BfPtrArray const *srcLevelNodes,
                               BfPtrArray const *tgtLevelNodes) {
   BEGIN_ERROR_HANDLING();
@@ -79,11 +79,11 @@ static BfMat *makeFirstFactor(BfReal K, BfLayerPotential layerPot,
     BfCircle srcCirc = bfQuadtreeNodeGetBoundingCircle(srcNode);
 
     /* get the original points in the current source node box */
-    srcPts = bfQuadtreeNodeGetPoints(srcNode, tree);
+    srcPts = bfQuadtreeNodeGetPoints(srcNode, srcTree);
     HANDLE_ERROR();
 
     /* Get the original normals in the current source node box: */
-    srcNormals = bfQuadtreeNodeGetUnitNormals(srcNode, tree);
+    srcNormals = bfQuadtreeNodeGetUnitNormals(srcNode, srcTree);
     HANDLE_ERROR();
 
     /* verify that the source bounding circle contains the points */
@@ -379,7 +379,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   return bfMatBlockCooToMat(mat);
 }
 
-static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfQuadtree const *tree, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes, BfComplex const *alpha, BfComplex const *beta) {
+static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes, BfComplex const *alpha, BfComplex const *beta) {
   BEGIN_ERROR_HANDLING();
 
   /* the current level of the target node tree shouldn't be empty */
@@ -436,12 +436,12 @@ static BfMat *makeLastFactor(BfMat const *prevMat, BfReal K, BfLayerPotential la
     }
 
     /* get the current set of target points */
-    tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tree);
+    tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tgtTree);
 
     /* get the current target points' unit normals */
     BfVectors2 *tgtNormalsPtr = NULL;
     if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
-      tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tree);
+      tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
       tgtNormalsPtr = &tgtNormals;
     }
 
@@ -627,7 +627,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   return numFactors;
 }
 
-BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
+BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
   BEGIN_ERROR_HANDLING();
 
   /* allocate space for the butterfly factors
@@ -643,7 +643,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential 
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
   factor[0] = makeFirstFactor(
-    K, layerPot, alpha, beta, tree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
+    srcTree, tgtTree, K, layerPot, alpha, beta, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
@@ -664,7 +664,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *tree, BfReal K, BfLayerPotential 
    * evaluation factor, which computes the potential at each target
    * point due to the charges on the final source circle */
   factor[numFactors - 1] = makeLastFactor(
-    factor[numFactors - 2], K, layerPot, tree, &srcLevelIter->levelNodes,
+    srcTree, tgtTree, factor[numFactors - 2], K, layerPot, &srcLevelIter->levelNodes,
     &tgtLevelIter->levelNodes, alpha, beta);
   HANDLE_ERROR();
 
@@ -690,7 +690,7 @@ static BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
   return childNodes;
 }
 
-static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode) {
+static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode) {
   BEGIN_ERROR_HANDLING();
 
   BfPoints2 srcPts, tgtPts;
@@ -699,16 +699,16 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfL
 
   BfMat *Z = NULL;
 
-  srcPts = bfQuadtreeNodeGetPoints(srcNode, tree);
-  tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tree);
+  srcPts = bfQuadtreeNodeGetPoints(srcNode, srcTree);
+  tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tgtTree);
 
   if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
-    srcNormals = bfQuadtreeNodeGetUnitNormals(srcNode, tree);
+    srcNormals = bfQuadtreeNodeGetUnitNormals(srcNode, srcTree);
     srcNormalsPtr = &srcNormals;
   }
 
   if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
-    tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tree);
+    tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
     tgtNormalsPtr = &tgtNormals;
   }
 
@@ -723,8 +723,8 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *tree, BfReal K, BfL
 
 static
 BfMat *
-facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
-                                 BfLayerPotential layerPot,
+facHelm2MakeMultilevel_separated(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                                 BfReal K, BfLayerPotential layerPot,
                                  BfComplex const *alpha, BfComplex const *beta,
                                  BfQuadtreeNode const *srcNode,
                                  BfQuadtreeNode const *tgtNode) {
@@ -733,16 +733,16 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *tree, BfReal K,
     srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
 
   if (numFactors == 0)
-    return facHelm2MakeMultilevel_dense(tree, K, layerPot, alpha, beta, srcNode, tgtNode);
+    return facHelm2MakeMultilevel_dense(srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode);
 
   BfMatProduct *factorization = bfFacHelm2Make(
-    tree, K, layerPot, alpha, beta, &srcLevelIter, &tgtLevelIter, numFactors);
+    srcTree, tgtTree, K, layerPot, alpha, beta, &srcLevelIter, &tgtLevelIter, numFactors);
 
   return bfMatProductToMat(factorization);
 }
 
-static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
-                                       BfLayerPotential layerPot,
+static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                                       BfReal K, BfLayerPotential layerPot,
                                        BfComplex const *alpha, BfComplex const *beta,
                                        BfPtrArray const *srcNodes,
                                        BfPtrArray const *tgtNodes,
@@ -751,8 +751,8 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
 
 static
 BfMat *
-facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
-                            BfLayerPotential layerPot,
+facHelm2MakeMultilevel_diag(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                            BfReal K, BfLayerPotential layerPot,
                             BfComplex const *alpha, BfComplex const *beta,
                             BfQuadtreeNode const *srcNode,
                             BfQuadtreeNode const *tgtNode,
@@ -780,7 +780,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   bfMatBlockDenseInit(childBlockMat, numBlockRows, numBlockCols);
   HANDLE_ERROR();
 
-  facHelm2MakeMultilevel_rec(tree, K, layerPot, alpha, beta, &srcChildNodes, &tgtChildNodes,
+  facHelm2MakeMultilevel_rec(srcTree, tgtTree, K, layerPot, alpha, beta, &srcChildNodes, &tgtChildNodes,
                              level + 1, childBlockMat);
   HANDLE_ERROR();
 
@@ -795,8 +795,8 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *tree, BfReal K,
   return bfMatBlockDenseToMat(childBlockMat);
 }
 
-static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
-                                       BfLayerPotential layerPot,
+static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                                       BfReal K, BfLayerPotential layerPot,
                                        BfComplex const *alpha, BfComplex const *beta,
                                        BfPtrArray const *srcNodes,
                                        BfPtrArray const *tgtNodes,
@@ -824,13 +824,13 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
       bool separated = bfQuadtreeNodesAreSeparated(srcNode, tgtNode);
 
       if (numRows*numCols < MAX_DENSE_MATRIX_SIZE)
-        mat = facHelm2MakeMultilevel_dense(tree, K, layerPot, alpha, beta, srcNode, tgtNode);
+        mat = facHelm2MakeMultilevel_dense(srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode);
       else if (separated)
-        mat = facHelm2MakeMultilevel_separated(tree, K, layerPot, alpha, beta, srcNode, tgtNode);
+        mat = facHelm2MakeMultilevel_separated(srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode);
       else
         /* TODO: we really need to consolidate _rec and _diag (also,
          * "_diag" is a total misnomer) */
-        mat = facHelm2MakeMultilevel_diag(tree, K, layerPot, alpha, beta, srcNode, tgtNode, level);
+        mat = facHelm2MakeMultilevel_diag(srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode, level);
 
       if (bfMatGetNumRows(mat) != numRows)
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -876,34 +876,56 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *tree, BfReal K,
   END_ERROR_HANDLING() { /* TODO: ... */ }
 }
 
-BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *quadtree, BfReal K,
-                                BfLayerPotential layerPot,
+BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+                                BfReal K, BfLayerPotential layerPot,
                                 BfComplex const *alpha, BfComplex const *beta) {
   BEGIN_ERROR_HANDLING();
 
-  /* Iterate over the quadtree level by level to generate pairs of
-   * nodes to compress */
-  BfTreeLevelIter levelIter;
+  // TODO: ugh. Should actually be passing these TreeLevelIters to
+  // this function, not the trees themselves. Can fix this up later.
+  //
+  // An alternative might be to pass the trees and to *not* skip the
+  // levels, since this would automatically happen in the recursion
+  // anyway (level 2 is the first level with any well-separated
+  // nodes). Or maybe it would start at level 1 occassionally? Hm.
+
+  /** Get nodes on second level of source (column) tree: */
+
+  BfTreeLevelIter srcLevelIter;
   bfTreeLevelIterInit(
-    &levelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
-    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)quadtree->super.root));
+    &srcLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)srcTree->super.root));
   HANDLE_ERROR();
 
-  /* Skip to level 2 of quadtree */
-  bfTreeLevelIterNext(&levelIter);
-  bfTreeLevelIterNext(&levelIter);
+  bfTreeLevelIterNext(&srcLevelIter);
+  bfTreeLevelIterNext(&srcLevelIter);
   HANDLE_ERROR();
 
-  /* Get the nodes at the current level along with their count */
-  BfPtrArray const *levelNodes = &levelIter.levelNodes;
-  BfSize numNodes = bfPtrArraySize(levelNodes);
+  BfPtrArray const *srcLevelNodes = &srcLevelIter.levelNodes;
+  BfSize numSrcNodes = bfPtrArraySize(srcLevelNodes);
 
-  /* Create a new dense block matrix to store the HODBF matrix */
+  /** Get nodes on second level of target (row) tree: */
+
+  BfTreeLevelIter tgtLevelIter;
+  bfTreeLevelIterInit(
+    &tgtLevelIter, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER,
+    bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)tgtTree->super.root));
+  HANDLE_ERROR();
+
+  bfTreeLevelIterNext(&tgtLevelIter);
+  bfTreeLevelIterNext(&tgtLevelIter);
+  HANDLE_ERROR();
+
+  BfPtrArray const *tgtLevelNodes = &tgtLevelIter.levelNodes;
+  BfSize numTgtNodes = bfPtrArraySize(tgtLevelNodes);
+
+  /** Build the multilevel butterfly factorization: */
+
   BfMatBlockDense *matBlockDense = bfMatBlockDenseNew();
-  bfMatBlockDenseInit(matBlockDense, numNodes, numNodes);
+  bfMatBlockDenseInit(matBlockDense, numTgtNodes, numSrcNodes);
+  HANDLE_ERROR();
 
-  /* Build the multilevel butterfly factorization */
-  facHelm2MakeMultilevel_rec(quadtree, K, layerPot, alpha, beta, levelNodes, levelNodes, 2, matBlockDense);
+  facHelm2MakeMultilevel_rec(srcTree, tgtTree, K, layerPot, alpha, beta, srcLevelNodes, tgtLevelNodes, 2, matBlockDense);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -911,7 +933,8 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *quadtree, BfReal K,
     assert(false);
   }
 
-  bfTreeLevelIterDeinit(&levelIter);
+  bfTreeLevelIterDeinit(&srcLevelIter);
+  bfTreeLevelIterDeinit(&tgtLevelIter);
 
   return bfMatBlockDenseToMat(matBlockDense);
 }

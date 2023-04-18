@@ -168,7 +168,7 @@ int main(int argc, char const *argv[]) {
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   factorization = bfFacHelm2Make(
-    quadtree, K, layerPot, NULL, NULL, &srcLevelIter, &tgtLevelIter, numFactors);
+    quadtree, quadtree, K, layerPot, NULL, NULL, &srcLevelIter, &tgtLevelIter, numFactors);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 
