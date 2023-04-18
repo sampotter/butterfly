@@ -70,8 +70,13 @@ BfSize bfMatCsrRealGetNumCols(BfMat const *mat) {
   }
 }
 
-void bfMatCsrRealScale(BfMat *mat, BfReal scalar) {
+void bfMatCsrRealScale(BfMat *mat, BfComplex scalar) {
   BEGIN_ERROR_HANDLING();
+
+  if (cimag(scalar) != 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfReal scalar_ = creal(scalar);
 
   BfMatCsrReal *matCsrReal = bfMatToMatCsrReal(mat);
   HANDLE_ERROR();
@@ -79,7 +84,7 @@ void bfMatCsrRealScale(BfMat *mat, BfReal scalar) {
   BfSize m = bfMatGetNumRows(mat);
   BfSize nnz = matCsrReal->rowptr[m];
   for (BfSize i = 0; i < nnz; ++i)
-    matCsrReal->data[i] *= scalar;
+    matCsrReal->data[i] *= scalar_;
 
   END_ERROR_HANDLING() {}
 }

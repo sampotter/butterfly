@@ -31,6 +31,19 @@ void bfSeed(BfSize seed) {
   xoshiro256plus_seed(seeds);
 }
 
+/* Compute a random BfSize in the half-open interval [low, high). */
+BfSize bfSizeUniform1(BfSize low, BfSize high) {
+  uint64_t r = xoshiro256plus_next();
+  double x = (r >> 11) * 0x1.0p-53;
+  x *= high - low;
+  x += low;
+  return (BfSize)floor(x);
+}
+
+BfReal bfRealUniform1() {
+  return (xoshiro256plus_next() >> 11) * 0x1.0p-53;
+}
+
 void bfRealUniform(BfSize n, BfReal *x) {
   for (BfSize i = 0; i < n; ++i) {
     uint64_t r = xoshiro256plus_next();
@@ -65,4 +78,11 @@ void bfRealRandn(BfSize n, BfReal *x) {
 
 void bfComplexRandn(BfSize n, BfComplex *x) {
   bfRealRandn(2*n, (BfReal *)x);
+}
+
+void bfSampleRandomUnitVector2(BfVector2 u) {
+  bfRealRandn(2, u);
+  BfReal uMag = hypot(u[0], u[1]);
+  u[0] /= uMag;
+  u[1] /= uMag;
 }

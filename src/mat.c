@@ -127,7 +127,7 @@ BfVec *bfMatColNorms(BfMat const *mat) {
   return mat->vtbl->ColNorms(mat);
 }
 
-void bfMatScale(BfMat *mat, BfReal scalar) {
+void bfMatScale(BfMat *mat, BfComplex scalar) {
   mat->vtbl->Scale(mat, scalar);
 }
 
@@ -141,6 +141,10 @@ void bfMatScaleCols(BfMat *mat, BfVec const *vec) {
 
 BfVec *bfMatSumCols(BfMat const *mat) {
   return mat->vtbl->SumCols(mat);
+}
+
+BfMat *bfMatAdd(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->Add(mat, otherMat);
 }
 
 void bfMatAddInplace(BfMat *lhs, BfMat const *rhs) {
@@ -169,6 +173,10 @@ BfVec *bfMatMulVec(BfMat const *mat, BfVec const *vec) {
 
 void bfMatMulInplace(BfMat *mat, BfMat const *otherMat) {
   mat->vtbl->MulInplace(mat, otherMat);
+}
+
+BfMat *bfMatSolve(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->Solve(mat, otherMat);
 }
 
 BfMat *bfMatSolveLU(BfMat const *mat, BfMat const *otherMat) {
@@ -213,6 +221,22 @@ BfSizeArray *bfMatGetNonzeroColumnRanges(BfMat const *mat) {
 
 void bfMatPrintBlocksDeep(BfMat const *mat, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
   mat->vtbl->PrintBlocksDeep(mat, fp, i0, j0, depth);
+}
+
+BfMat *bfMatGetBlockView(BfMat *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1) {
+  return mat->vtbl->GetBlockView(mat, i0, i1, j0, j1);
+}
+
+BfLu *bfMatGetLu(BfMat const *mat) {
+  return mat->vtbl->GetLu(mat);
+}
+
+BfMat *bfMatGetInverse(BfMat const *mat) {
+  return mat->vtbl->GetInverse(mat);
+}
+
+void bfMatDivideCols(BfMat *mat, BfVec const *vec) {
+  mat->vtbl->DivideCols(mat, vec);
 }
 
 /** Implementation: Mat */

@@ -30,6 +30,22 @@ BfSizeArray *bfSizeArrayNew() {
   return sizeArray;
 }
 
+BfSizeArray *bfSizeArrayNewIota(BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *sizeArray = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < n; ++i)
+    bfSizeArrayAppend(sizeArray, i);
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return sizeArray;
+}
+
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   BEGIN_ERROR_HANDLING();
 
@@ -151,6 +167,23 @@ bool bfSizeArrayIsSorted(BfSizeArray const *sizeArray) {
   return true;
 }
 
+typedef struct {
+  BfSizeArrayComparator cmp;
+  void *aux;
+} ComparatorAndAuxPtr;
+
+static int qsortComparator(const void *elt1, const void *elt2, void *_) {
+  ComparatorAndAuxPtr *cmpAndAux = (ComparatorAndAuxPtr *)_;
+  BfSizeArrayComparator cmp = cmpAndAux->cmp;
+  void *aux = cmpAndAux->aux;
+  return cmp(*(BfSize const *)elt1, *(BfSize const *)elt2, aux);
+}
+
+void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *aux) {
+  ComparatorAndAuxPtr cmpAndAux = {.cmp = cmp, .aux = aux};
+  qsort_r(sizeArray->data, sizeArray->size, sizeof(BfSize), qsortComparator, &cmpAndAux);
+}
+
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   BEGIN_ERROR_HANDLING();
 
@@ -212,6 +245,46 @@ BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i) {
   }
 
   return elt;
+}
+
+BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize elt = BF_SIZE_BAD_VALUE;
+
+  if (sizeArray->size == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  elt = sizeArray->data[0];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return elt;
+}
+
+BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize elt = BF_SIZE_BAD_VALUE;
+
+  if (sizeArray->size == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  elt = sizeArray->data[sizeArray->size - 1];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return elt;
+}
+
+BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray) {
+  return sizeArray->size == 0 ?
+    BF_SIZE_BAD_VALUE :
+    sizeArray->data[bfSizeUniform1(0, sizeArray->size)];
 }
 
 void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst) {

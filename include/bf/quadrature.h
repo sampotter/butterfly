@@ -12,9 +12,8 @@ typedef enum BfQuadratures {
 
 typedef BfComplex (*BfKernelComplex)(BfSize, BfSize, void *);
 
-void bf_apply_KR_correction(BfMat *mat, BfSize order, BfKernelComplex K,
-                            BfPtr *aux);
-
-void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
-                                     BfTree const *tree, BfKernelComplex K,
-                                     BfPtr *aux);
+void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux, BfSize n, BfComplex const *x, BfReal const *h, BfComplex *y);
+void bf_apply_KR_correction(BfMat *mat, BfSize order, BfKernelComplex K, BfPtr *aux);
+void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order, BfTree const *tree, BfKernelComplex K, BfPtr *aux);
+void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfKernelComplex K, BfPtr *aux);
+void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfTree const *Tree, BfKernelComplex K, BfPtr *aux);

@@ -8,6 +8,7 @@
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
 #include <bf/mat_block_coo.h>
+#include <bf/mat_dense_complex.h>
 #include <bf/mat_zero.h>
 #include <bf/ptr_array.h>
 #include <bf/util.h>
@@ -40,6 +41,7 @@ static BfMatVtable MAT_VTABLE = {
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDiagMulVec,
   .Negate = (__typeof__(&bfMatBlockDiagNegate))bfMatBlockDiagNegate,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDiagPrintBlocksDeep,
+  .Solve = (__typeof__(&bfMatSolve))bfMatBlockDiagSolve,
 };
 
 BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
@@ -408,6 +410,63 @@ void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
     BfSize j0_ = j0 + COL_OFFSET(matBlockDiag, k);
     BfMat const *block = matBlockDiag->super.block[k];
     bfMatPrintBlocksDeep(block, fp, i0_, j0_, depth + 1);
+  }
+}
+
+BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
+                             BfMatDenseComplex const *otherMatDenseComplex) {
+  BEGIN_ERROR_HANDLING();
+
+  // (m x n) (n x p) = (m x p)
+
+  BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
+  BfMat const *otherMat = bfMatDenseComplexConstToMatConst(otherMatDenseComplex);
+
+  if (bfMatGetNumCols(mat) != bfMatGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize p = bfMatGetNumCols(otherMat);
+
+  BfMatDenseComplex *resultMatDenseComplex = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(resultMatDenseComplex, m, p);
+  HANDLE_ERROR();
+
+  BfMat *resultMat = bfMatDenseComplexToMat(resultMatDenseComplex);
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockDiag, k);
+
+    BfSize i0 = ROW_OFFSET(matBlockDiag, k);
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = COL_OFFSET(matBlockDiag, k);
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    BfMat const *otherBlock = bfMatGetRowRange((BfMat *)otherMat, j0, j1);
+    BfMat *resultBlock = bfMatSolve(block, otherBlock);
+    bfMatSetRowRange(resultMat, i0, i1, resultBlock);
+    bfMatDelete(&resultBlock);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return resultMat;
+}
+
+BfMat *bfMatBlockDiagSolve(BfMatBlockDiag const *matBlockDiag, BfMat const *mat) {
+  switch (bfMatGetType(mat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return solve_matDenseComplex(matBlockDiag, bfMatConstToMatDenseComplexConst(mat));
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
   }
 }
 

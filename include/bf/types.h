@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 
+typedef struct BfRealArray BfRealArray;
 typedef struct BfSizeArray BfSizeArray;
 
 typedef struct BfPtrArray BfPtrArray;
@@ -19,8 +20,10 @@ typedef struct BfMatDense BfMatDense;
 typedef struct BfMatDenseComplex BfMatDenseComplex;
 typedef struct BfMatDenseReal BfMatDenseReal;
 typedef struct BfMatDiagReal BfMatDiagReal;
+typedef struct BfMatFunc BfMatFunc;
 typedef struct BfMatGivensComplex BfMatGivensComplex;
 typedef struct BfMatIdentity BfMatIdentity;
+typedef struct BfMatPerm BfMatPerm;
 typedef struct BfMatProduct BfMatProduct;
 typedef struct BfMatSum BfMatSum;
 typedef struct BfMatZero BfMatZero;
@@ -33,6 +36,8 @@ typedef struct BfVecZero BfVecZero;
 typedef struct BfIndexedMat BfIndexedMat;
 
 typedef struct BfLu BfLu;
+typedef struct BfLuCsrReal BfLuCsrReal;
+typedef struct BfLuDenseComplex BfLuDenseComplex;
 
 typedef struct BfTree BfTree;
 typedef struct BfIntervalTree BfIntervalTree;
@@ -56,8 +61,10 @@ typedef enum BfTypes {
   BF_TYPE_MAT_COO_REAL,
   BF_TYPE_MAT_CSR_REAL,
   BF_TYPE_MAT_DIAG_REAL,
+  BF_TYPE_MAT_FUNC,
   BF_TYPE_MAT_GIVENS_COMPLEX,
   BF_TYPE_MAT_IDENTITY,
+  BF_TYPE_MAT_PERM,
   BF_TYPE_MAT_PRODUCT,
   BF_TYPE_MAT_SUM,
   BF_TYPE_MAT_ZERO,
@@ -72,6 +79,11 @@ typedef enum BfTypes {
   BF_TYPE_MAT_DENSE,
   BF_TYPE_MAT_DENSE_COMPLEX,
   BF_TYPE_MAT_DENSE_REAL,
+
+  /* Lu hierarchy: */
+  BF_TYPE_LU,
+  BF_TYPE_LU_CSR_REAL,
+  BF_TYPE_LU_DENSE_COMPLEX,
 
   /* Vec hierarchy */
   BF_TYPE_VEC,

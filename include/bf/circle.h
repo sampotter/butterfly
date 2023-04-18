@@ -2,10 +2,10 @@
 
 #include "geom.h"
 
-typedef struct BfCircle {
+struct BfCircle {
   BfReal r;
   BfPoint2 center;
-} BfCircle;
+};
 
 BfPoints2 bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints);
 BfVectors2 bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize numPoints);

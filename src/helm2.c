@@ -38,8 +38,12 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle const *circ1,
   return rank;
 }
 
-BfComplex get_dGdN_value(BfPoint2 const xsrc, BfPoint2 const xtgt,
-                         BfVector2 const ntgt, BfReal K) {
+BfComplex get_S_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfReal K) {
+  BfReal r = bfPoint2Dist(xsrc, xtgt);
+  return r == 0 ? NAN : I*bf_H0(K*r)/4;
+}
+
+BfComplex get_Sp_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfVector2 const ntgt, BfReal K) {
   BfReal r = bfPoint2Dist(xsrc, xtgt);
   if (r < 1e-15)
     return 0;
@@ -48,24 +52,31 @@ BfComplex get_dGdN_value(BfPoint2 const xsrc, BfPoint2 const xtgt,
   return scale*dot;
 }
 
-BfComplex get_G_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfReal K) {
+BfComplex get_D_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfVector2 const nsrc, BfReal K) {
   BfReal r = bfPoint2Dist(xsrc, xtgt);
-  return r == 0 ? NAN : I*bf_H0(K*r)/4;
+  if (r < 1e-15)
+    return 0;
+  BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
+  BfComplex scale = (I/4)*K*bf_H1(K*r)/r;
+  return scale*dot;
 }
 
 BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
-                                BfVector2 const ntgt, BfReal K,
-                                BfLayerPotential layerPot) {
+                                BfVector2 const nsrc, BfVector2 const ntgt,
+                                BfReal K, BfLayerPotential layerPot) {
   BEGIN_ERROR_HANDLING();
 
   BfComplex z;
 
   switch (layerPot) {
-  case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
-    z = get_dGdN_value(xsrc, xtgt, ntgt, K);
-    break;
   case BF_LAYER_POTENTIAL_SINGLE:
-    z = get_G_value(xsrc, xtgt, K);
+    z = get_S_value(xsrc, xtgt, K);
+    break;
+  case BF_LAYER_POTENTIAL_PV_DOUBLE:
+    z = get_D_value(xsrc, xtgt, nsrc, K);
+    break;
+  case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
+    z = get_Sp_value(xsrc, xtgt, ntgt, K);
     break;
   default:
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -79,7 +90,7 @@ BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
 }
 
 static BfMat *
-get_G_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
+get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
   BEGIN_ERROR_HANDLING();
 
   BfSize m = Xtgt->size; /* number of rows */
@@ -113,8 +124,8 @@ get_G_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
 }
 
 static BfMat *
-get_dGdN_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
-                              BfVectors2 const *Ntgt, BfReal K) {
+get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
+                       BfVectors2 const *Ntgt, BfReal K) {
   BEGIN_ERROR_HANDLING();
 
   BfSize m = Xtgt->size; /* number of rows */
@@ -161,23 +172,139 @@ get_dGdN_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   return bfMatDenseComplexToMat(kernelMat);
 }
 
+static BfMat *
+get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
+                    BfVectors2 const *Nsrc, BfReal K) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize m = Xtgt->size; /* number of rows */
+  BfSize n = Xsrc->size; /* number of columns */
+  BfReal *r = NULL;
+
+  BfMatDenseComplex *kernelMat = NULL;
+
+  if (K <= 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* length m*n array of pairwise dists in row major order */
+  r = bfPoints2PairwiseDists(Xtgt, Xsrc);
+  HANDLE_ERROR();
+
+  kernelMat = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(kernelMat, m, n);
+  HANDLE_ERROR();
+
+  BfSize k = 0;
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal const *xtgt = Xtgt->data[i];
+    for (BfSize j = 0; j < n; ++j) {
+      if (r[k] == 0) {
+        kernelMat->data[k] = 0;
+      } else {
+        BfReal const *xsrc = Xsrc->data[j];
+        BfReal const *nsrc = Nsrc->data[j];
+        BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
+        BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
+        kernelMat->data[k] = scale*dot;
+      }
+      ++k;
+    }
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDealloc(&kernelMat);
+
+  free(r);
+
+  return bfMatDenseComplexToMat(kernelMat);
+}
+
+static BfMat *
+get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
+                           BfVectors2 const *Nsrc, BfReal K,
+                           BfComplex alpha, BfComplex beta) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize m = Xtgt->size; /* number of rows */
+  BfSize n = Xsrc->size; /* number of columns */
+  BfReal *r = NULL;
+
+  BfMatDenseComplex *kernelMat = NULL;
+
+  if (K <= 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  kernelMat = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(kernelMat, m, n);
+  HANDLE_ERROR();
+
+  BfSize k = 0;
+  for (BfSize i = 0; i < m; ++i) {
+    BfReal const *xtgt = Xtgt->data[i];
+    for (BfSize j = 0; j < n; ++j) {
+      BfReal const *xsrc = Xsrc->data[j];
+      BfReal r = bfPoint2Dist(xtgt, xsrc);
+      if (r == 0) {
+        kernelMat->data[k] = 0;
+      } else {
+        BfReal const *nsrc = Nsrc->data[j];
+
+        /* Compute single-layer potential kernel value: */
+        BfComplex S = (I/4)*bf_H0(K*r);
+
+        /* Compute double-layer potential kernel value: */
+        BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
+        BfComplex scale = (I/4)*K*bf_H1(K*r)/r;
+        BfComplex D = scale*dot;
+
+        kernelMat->data[k] = alpha*S + beta*D;
+      }
+      ++k;
+    }
+  }
+
+  END_ERROR_HANDLING()
+    bfMatDenseComplexDeinitAndDealloc(&kernelMat);
+
+  free(r);
+
+  return bfMatDenseComplexToMat(kernelMat);
+}
+
 BfMat *
 bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
-                       BfVectors2 const *Ntgt,
-                       BfReal K, BfLayerPotential layerPot)
+                       BfVectors2 const *Nsrc, BfVectors2 const *Ntgt,
+                       BfReal K, BfLayerPotential layerPot,
+                       BfComplex const *alpha, BfComplex const *beta)
 {
   BEGIN_ERROR_HANDLING();
+
+  if (Nsrc != NULL && bfPoints2GetSize(Xsrc) != bfVectors2GetSize(Nsrc))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (Ntgt != NULL && bfPoints2GetSize(Xtgt) != bfVectors2GetSize(Ntgt))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfMat *kernelMat = NULL;
 
   switch (layerPot) {
-  case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
-    kernelMat = get_dGdN_kernel_matrix(Xsrc, Xtgt, Ntgt, K);
+  case BF_LAYER_POTENTIAL_SINGLE:
+    kernelMat = get_S_kernel_matrix(Xsrc, Xtgt, K);
     HANDLE_ERROR();
     break;
-  case BF_LAYER_POTENTIAL_SINGLE:
-    kernelMat = get_G_kernel_matrix(Xsrc, Xtgt, K);
+  case BF_LAYER_POTENTIAL_PV_DOUBLE:
+    kernelMat = get_D_kernel_matrix(Xsrc, Xtgt, Nsrc, K);
+    break;
+  case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
+    kernelMat = get_Sp_kernel_matrix(Xsrc, Xtgt, Ntgt, K);
     HANDLE_ERROR();
+    break;
+  case BF_LAYER_POTENTIAL_COMBINED_FIELD:
+    kernelMat = get_S_plus_D_kernel_matrix(Xsrc, Xtgt, Nsrc, K, *alpha, *beta);
     break;
   default:
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -191,22 +318,35 @@ bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 BfMat *
 bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
                             BfPoints2 const *srcPtsEquiv,
+                            BfVectors2 const *srcNormalsOrig,
+                            BfVectors2 const *srcNormalsEquiv,
                             BfPoints2 const *tgtPts,
-                            BfReal K, BfLayerPotential layerPot)
+                            BfReal K, BfLayerPotential layerPot,
+                            BfComplex const *alpha, BfComplex const *beta)
 {
   BEGIN_ERROR_HANDLING();
 
-  if (layerPot != BF_LAYER_POTENTIAL_SINGLE)
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  if (srcNormalsOrig != NULL
+      && bfPoints2GetSize(srcPtsOrig) != bfVectors2GetSize(srcNormalsOrig))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (srcNormalsEquiv != NULL
+      && bfPoints2GetSize(srcPtsEquiv) != bfVectors2GetSize(srcNormalsEquiv))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* Computing a reexpansion matrix doesn't make any sense for a layer
+   * potential which depends on unit normals at target points */
+  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* compute the kernel matrix mapping charges on the original sources
    * points to potentials on the original target points */
-  BfMat *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, NULL, K, layerPot);
+  BfMat *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, srcNormalsOrig, NULL, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   /* compute the kernel matrix mapping charges on the source
    * circle to potentials on the target circle */
-  BfMat *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, NULL, K, layerPot);
+  BfMat *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, srcNormalsEquiv, NULL, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   /* set the "shift matrix" to Z_equiv\Z_orig */

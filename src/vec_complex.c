@@ -25,6 +25,7 @@ static BfVecVtable VEC_VTABLE = {
   .SolveInplace = (__typeof__(&bfVecComplexSolveInplace))bfVecComplexSolveInplace,
   .GetGivensRotation = (__typeof__(&bfVecComplexGetGivensRotation))bfVecComplexGetGivensRotation,
   .Concat = (__typeof__(&bfVecComplexConcat))bfVecComplexConcat,
+  .Save = (__typeof__(&bfVecSave))bfVecComplexSave,
 };
 
 BfVec *bfVecComplexCopy(BfVec const *vec) {
@@ -160,11 +161,11 @@ mulInplace_givensComplex(BfVecComplex *vecComplex, BfMatGivensComplex const *giv
   BfComplex z0 = *z0_ptr;
   BfComplex z1 = *z1_ptr;
 
-  BfReal c = givens->c;
+  BfComplex c = givens->c;
   BfComplex s = givens->s;
 
-  *z0_ptr = c*z0 - s*z1;
-  *z1_ptr = s*z0 + c*z1;
+  *z0_ptr = conj(c)*z0 + -s*z1;
+  *z1_ptr =       s*z0 +  c*z1;
 }
 
 void bfVecComplexMulInplace(BfVec *vec, BfMat const *mat) {
@@ -197,11 +198,11 @@ solveInplace_givensComplex(BfVecComplex *vecComplex, BfMatGivensComplex const *g
   BfComplex z0 = *z0_ptr;
   BfComplex z1 = *z1_ptr;
 
-  BfReal c = givens->c;
+  BfComplex c = givens->c;
   BfComplex s = givens->s;
 
   *z0_ptr =        c*z0 + conj(s)*z1;
-  *z1_ptr = -conj(s)*z0 +       c*z1;
+  *z1_ptr = -conj(s)*z0 + conj(c)*z1;
 }
 
 void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat) {
@@ -247,30 +248,41 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
   givens = bfMatGivensComplexNew();
   HANDLE_ERROR();
 
-
-// def zrotg(a, b):
-//     if a == 0:
-//         c, s = 0, 1
-//     else:
-//         tmp = b/a
-//         c = 1/np.sqrt(1 + abs(tmp)**2)
-//         s = tmp*c
-//     return c, np.conj(s)
-
   BfComplex a = *(vecComplex->data + srcInd*vecComplex->stride);
   BfComplex b = *(vecComplex->data + elimInd*vecComplex->stride);
-  BfReal c;
+  BfComplex c;
   BfComplex s;
 
-  /* This way of calculating the Givens is from Flatiron's BIE3D. */
-  if (a == 0) {
-    c = 0;
-    s = 1;
+  // TODO: we should replace this with LAPACK's zlartg, but it appears
+  // to have been added pretty recently---like 2021 or so. It isn't
+  // available in OpenBLAS. May be best to conditionally compile and
+  // use zlartg if it's available and the implementation below
+  // otherwise as a fallback.
+
+  /* This method of computing a Givens rotation comes from SciPy's
+   * implementation of GMRES:
+   *
+   *   https://github.com/scipy/scipy/blob/main/scipy/sparse/linalg/_isolve/iterative/GMRESREVCOM.f.src
+   *
+   * which is a fork of gmresrevcom from "templated.f":
+   *
+   *   https://people.sc.fsu.edu/~jburkardt/f77_src/templated/templated.f
+   *
+   * which is a FORTRAN77 implementation of the stuff described in the
+   * "Templates for the Solution of Linear Systems" book (although the
+   * original F77 code just calls out to drotg, which could be of poor
+   * quality). */
+  if (cabs(b) == 0) {
+    c = 1;
+    s = 0;
+  } else if (cabs(b) > cabs(a)) {
+    BfComplex tmp = -a/b;
+    s = 1/sqrt(1 + pow(cabs(tmp), 2));
+    c = tmp*s;
   } else {
-    BfComplex tmp = b/a;
+    BfComplex tmp = -b/a;
     c = 1/sqrt(1 + pow(cabs(tmp), 2));
-    s = conj(tmp*c); // conjugate here because of how we define a
-                     // Givens rotation matrix
+    s = tmp*c;
   }
 
   bfMatGivensComplexInit(givens, vec->size, srcInd, elimInd, c, s);
@@ -402,6 +414,25 @@ BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec) {
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
   }
+}
+
+void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  for (BfSize i = 0; i < vecComplex->super.size; ++i) {
+    BfComplex const *ptr = vecComplex->data + i*vecComplex->stride;
+    fwrite(ptr, sizeof(BfComplex), 1, fp);
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  fclose(fp);
 }
 
 /** Upcasting: */

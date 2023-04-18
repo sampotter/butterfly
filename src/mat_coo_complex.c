@@ -1,10 +1,13 @@
 #include <bf/mat_coo_complex.h>
 
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/size_array.h>
 #include <bf/vec_complex.h>
 
 /** Interface: Mat */
@@ -18,6 +21,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetColRangeCopy = (__typeof__(&bfMatCooComplexGetColRangeCopy))bfMatCooComplexGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatCooComplexPermuteRows))bfMatCooComplexPermuteRows,
   .PermuteCols = (__typeof__(&bfMatCooComplexPermuteCols))bfMatCooComplexPermuteCols,
+  .AddInplace = (__typeof__(&bfMatAddInplace))bfMatCooComplexAddInplace,
   .Mul = (__typeof__(&bfMatCooComplexMul))bfMatCooComplexMul,
   .IsZero = (__typeof__(&bfMatCooComplexIsZero))bfMatCooComplexIsZero,
 };
@@ -253,6 +257,134 @@ static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
   return result;
 }
 
+static void expand(BfMatCooComplex *matCooComplex) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSize newCapacity = 2*matCooComplex->capacity;
+
+  BfSize *rowInd = NULL, *oldRowInd = NULL;
+  BfSize *colInd = NULL, *oldColInd = NULL;
+  BfComplex *value = NULL, *oldValue = NULL;
+
+  rowInd = malloc(newCapacity*sizeof(BfSize));
+  if (rowInd == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(rowInd, matCooComplex->rowInd, matCooComplex->numElts*sizeof(BfSize));
+  oldRowInd = matCooComplex->rowInd;
+  matCooComplex->rowInd = rowInd;
+
+  colInd = malloc(newCapacity*sizeof(BfSize));
+  if (colInd == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(colInd, matCooComplex->colInd, matCooComplex->numElts*sizeof(BfSize));
+  oldColInd = matCooComplex->colInd;
+  matCooComplex->colInd = colInd;
+
+  value = malloc(newCapacity*sizeof(BfComplex));
+  if (value == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(value, matCooComplex->value, matCooComplex->numElts*sizeof(BfComplex));
+  oldValue = matCooComplex->value;
+  matCooComplex->value = value;
+
+  matCooComplex->capacity = newCapacity;
+
+  END_ERROR_HANDLING() {}
+
+  free(oldRowInd);
+  free(oldColInd);
+  free(oldValue);
+}
+
+static int compare(BfSize k0, BfSize k1, void *aux) {
+  BfMatCooComplex *matCooComplex = (BfMatCooComplex *)aux;
+
+  BfSize i0 = matCooComplex->rowInd[k0];
+  BfSize j0 = matCooComplex->colInd[k0];
+
+  BfSize i1 = matCooComplex->rowInd[k1];
+  BfSize j1 = matCooComplex->colInd[k1];
+
+  if (i0 < i1)
+    return -1;
+  else if (j0 < j1)
+    return -1;
+  else
+    return j0 == j1 ? 0 : 1;
+}
+
+static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
+                                  BfMatCooComplex const *otherMatCooComplex) {
+  BEGIN_ERROR_HANDLING();
+
+  BfSizeArray *indexArray = bfSizeArrayNewIota(matCooComplex->numElts);
+  HANDLE_ERROR();
+
+  bfSizeArraySort(indexArray, compare, matCooComplex);
+
+  BfSizeArray *otherIndexArray = bfSizeArrayNewIota(otherMatCooComplex->numElts);
+  HANDLE_ERROR();
+
+  bfSizeArraySort(otherIndexArray, compare, (BfMatCooComplex *)otherMatCooComplex);
+
+  BfSize i0, i1, j0, j1;
+
+  BfSize n0 = matCooComplex->numElts;
+  BfSize n1 = otherMatCooComplex->numElts;
+
+  BfSize k0 = 0, pk0;
+  for (BfSize k1 = 0; k1 < n1; ++k1) {
+    BfSize pk1 = bfSizeArrayGet(otherIndexArray, k1);
+
+    i1 = otherMatCooComplex->rowInd[pk1];
+    j1 = otherMatCooComplex->colInd[pk1];
+
+    if (k0 < n0) {
+      /* Seek k0 forward until we hit or pass k1: */
+    inc:
+      pk0 = bfSizeArrayGet(indexArray, k0++);
+      i0 = matCooComplex->rowInd[pk0];
+      j0 = matCooComplex->colInd[pk0];
+      if (k0 < n0 && (i0 < i1 || (i0 == i1 && j0 < j1)))
+        goto inc;
+
+      /* If we hit k1, accumulate into k0: */
+      if (i0 == i1 && j0 == j1) {
+        matCooComplex->value[pk0] += otherMatCooComplex->value[pk1];
+        continue;
+      }
+    }
+
+    if (matCooComplex->numElts == matCooComplex->capacity) {
+      expand(matCooComplex);
+      HANDLE_ERROR();
+    }
+
+    matCooComplex->rowInd[matCooComplex->numElts] = i1;
+    matCooComplex->colInd[matCooComplex->numElts] = j1;
+    matCooComplex->value[matCooComplex->numElts] = otherMatCooComplex->value[pk1];
+
+    ++matCooComplex->numElts;
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+void bfMatCooComplexAddInplace(BfMatCooComplex *matCooComplex, BfMat const *otherMat) {
+  switch (bfMatGetType(otherMat)) {
+  case BF_TYPE_MAT_COO_COMPLEX:
+    addInplace_cooComplex(matCooComplex, bfMatConstToMatCooComplexConst(otherMat));
+    return;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
+}
+
 BfMat *bfMatCooComplexMul(BfMat const *mat, BfMat const *otherMat) {
   switch (bfMatGetType(otherMat)) {
   case BF_TYPE_MAT_DENSE_COMPLEX:
@@ -331,6 +463,8 @@ void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows,
   mat->value = malloc(numElts*sizeof(BfComplex));
   if (mat->value == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  mat->capacity = numElts;
 
   END_ERROR_HANDLING() {
     free(mat->rowInd);

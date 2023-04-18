@@ -109,6 +109,10 @@ BfVec *bfVecConcat(BfVec const *vec, BfVec const *otherVec) {
   return vec->vtbl->Concat(vec, otherVec);
 }
 
+void bfVecSave(BfVec const *vec, char const *path) {
+  vec->vtbl->Save(vec, path);
+}
+
 /** Implementation: Vec */
 
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size) {

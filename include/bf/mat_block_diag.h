@@ -17,6 +17,7 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other);
 BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec);
 void bfMatBlockDiagNegate(BfMat *mat);
 void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
+BfMat *bfMatBlockDiagSolve(BfMatBlockDiag const *matBlockDiag, BfMat const *mat);
 
 /** Interface: MatBlock */
 

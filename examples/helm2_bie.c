@@ -8,13 +8,13 @@
 #include "bf/geom.h"
 #include <bf/helm2.h>
 #include <bf/layer_pot.h>
+#include <bf/linalg.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_coo_complex.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_diag_real.h>
-#include <bf/mat_solve.h>
 #include <bf/mat_zero.h>
 #include <bf/points.h>
 #include <bf/quadrature.h>
@@ -37,7 +37,7 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
   BfReal const *xtgt = &wkspc->points->data[j][0];
   BfReal const *ntgt = &wkspc->normals->data[j][0];
   return bfHelm2GetKernelValue(
-    xsrc, xtgt, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    xsrc, xtgt, NULL, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
 }
 
 int main(int argc, char const *argv[]) {
@@ -102,7 +102,8 @@ int main(int argc, char const *argv[]) {
   /* Set up the LHS of the problem */
   // BfMat *phi_in = bf_hh2_get_dGdN(X_source_points, X_points, K, N_vectors);
   BfMat *phi_in = bfGetHelm2KernelMatrix(
-    X_source_points, X_points, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    X_source_points, X_points, NULL, N_vectors, K,
+    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Permute the LHS for the butterfly factorized version of A*/
@@ -130,7 +131,8 @@ int main(int argc, char const *argv[]) {
 
   /* Compute S_k' (normal derivative of single-layer potential) */
   BfMat *A_dense = bfGetHelm2KernelMatrix(
-    X_points, X_points, N_vectors, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    X_points, X_points, NULL, N_vectors, K,
+    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
@@ -149,7 +151,7 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   BfMat *A_BF = bfFacHelm2MakeMultilevel(
-    &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
+    &quadtree, &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
@@ -170,10 +172,6 @@ int main(int argc, char const *argv[]) {
   bfPrintBlocks(A_BF, 2, fp);
   fclose(fp);
   printf("wrote blocks to %s\n", argv[7]);
-
-  /** Copy the BF'd system matrix and do an MVP to verify that it was
-   * copied correctly (recursive copying logic is a bit
-   * involved---worth validating this here) */
 
   /** Verify and time the matrix multiplications */
 
@@ -206,16 +204,16 @@ int main(int argc, char const *argv[]) {
   /* Solve dense system using GMRES */
   bfToc();
   BfSize num_iter_dense_GMRES;
-  BfMat *sigma_dense_GMRES = bfMatSolveGMRES(
-    A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES);
+  BfMat *sigma_dense_GMRES = bfSolveGMRES(
+    A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES, NULL);
   printf("solved using GMRES (dense): %lu iter. [%0.2fs]\n",
          num_iter_dense_GMRES, bfToc());
 
   /* Solve butterfly-factorized system using GMRES */
   bfToc();
   BfSize num_iter_BF_GMRES;
-  BfMat *sigma_BF_GMRES = bfMatSolveGMRES(
-    A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES);
+  BfMat *sigma_BF_GMRES = bfSolveGMRES(
+    A_BF, phi_in_perm, NULL, tol, numIter, &num_iter_BF_GMRES, NULL);
   bfMatPermuteRows(sigma_BF_GMRES, perm);
   printf("solved using GMRES (BF): %lu iter. [%0.2fs]\n",
          num_iter_BF_GMRES, bfToc());
@@ -224,11 +222,11 @@ int main(int argc, char const *argv[]) {
 
   /* Set up evaluation matrix */
   BfMat *G_eval = bfGetHelm2KernelMatrix(
-    X_points, X_target_points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+    X_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
   bfMatScaleCols(G_eval, w);
 
   BfMat *phi_exact = bfGetHelm2KernelMatrix(
-    X_source_points, X_target_points, NULL, K, BF_LAYER_POTENTIAL_SINGLE);
+    X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
   BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);

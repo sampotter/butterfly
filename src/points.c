@@ -3,15 +3,40 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <bf/bbox.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_real.h>
+#include <bf/rand.h>
 #include <bf/vec_real.h>
 
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
   return hypot(q[0] - p[0], q[1] - p[1]);
+}
+
+BfReal bfPoint2Magnitude(BfPoint2 const p) {
+  return hypot(p[0], p[1]);
+}
+
+void bfPoint2SampleUniformlyFromBoundingBox(BfBbox2 const *bbox, BfPoint2 p) {
+  p[0] = (bbox->max[0] - bbox->min[0])*bfRealUniform1() + bbox->min[0];
+  p[1] = (bbox->max[1] - bbox->min[1])*bfRealUniform1() + bbox->min[1];
+}
+
+void bfPoint2RotateAboutOrigin(BfPoint2 p, BfReal theta) {
+  BfReal c = cos(theta);
+  BfReal s = sin(theta);
+  BfReal tmp = c*p[0] - s*p[1];
+  p[1] = s*p[0] + c*p[1];
+  p[0] = tmp;
+}
+
+void bfPoint2Translate(BfPoint2 p, BfVector2 const u) {
+  p[0] += u[0];
+  p[1] += u[1];
 }
 
 BfReal bfPoint3Dist(BfPoint3 const p, BfPoint3 const q) {
@@ -37,6 +62,50 @@ void bfPoint3Copy(BfPoint3 x, BfPoint3 const y) {
   x[2] = y[2];
 }
 
+BfPoints2 *bfPoints2NewEmpty() {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints2 *points = malloc(sizeof(BfPoints2));
+  if (points == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  points->size = 0;
+  points->capacity = 16;
+  points->isView = BF_ARRAY_DEFAULT_CAPACITY;
+
+  points->data = malloc(points->capacity*sizeof(BfPoint2));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return points;
+}
+
+BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints2 *points = bfPoints2NewEmpty();
+  HANDLE_ERROR();
+
+  BfReal hx = (bbox->max[0] - bbox->min[0])/(nx - 1);
+  BfReal hy = (bbox->max[1] - bbox->min[1])/(ny - 1);
+
+  for (BfSize i = 0; i < nx; ++i) {
+    for (BfSize j = 0; j < ny; ++j) {
+      BfPoint2 p = {hx*i + bbox->min[0], hy*j + bbox->min[1]};
+      bfPoints2Append(points, p);
+      HANDLE_ERROR();
+    }
+  }
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return points;
+}
+
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat) {
   return bfPoints2ConstViewFromMatDenseReal(bfMatConstToMatDenseRealConst(mat));
 }
@@ -58,6 +127,8 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
   points = malloc(sizeof(BfPoints2));
   points->data = (BfPoint2 *)matDenseReal->data;
   points->size = bfMatDenseRealGetNumRows(mat);
+  points->capacity = BF_SIZE_BAD_VALUE;
+  points->isView = true;
 
   END_ERROR_HANDLING() {
     free(points);
@@ -208,6 +279,11 @@ void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
   points->data = malloc(numPoints*sizeof(BfPoint2));
   if (points->data == NULL)
     bfSetError(BF_ERROR_MEMORY_ERROR);
+
+#if BF_DEBUG
+  for (BfSize i = 0; i < numPoints; ++i)
+    points->data[i][0] = points->data[i][1] = BF_NAN;
+#endif
 }
 
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
@@ -344,6 +420,77 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
   END_ERROR_HANDLING() {}
 
   return r;
+}
+
+void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Grow the array if we're at capacity */
+  if (points->size == points->capacity) {
+    points->capacity *= 2;
+
+    BfPoint2 *newData = realloc(points->data, points->capacity*sizeof(BfPoint2));
+    if (newData == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    points->data = newData;
+  }
+
+  /* Append new point */
+  memcpy(&points->data[points->size++], p, sizeof(BfPoint2));
+
+  END_ERROR_HANDLING() {}
+}
+
+void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints) {
+  /* TODO: bad implementation to start... fix */
+  for (BfSize i = 0; i < newPoints->size; ++i) {
+    BfPoint2 p;
+    bfPoints2Get(newPoints, i, p);
+    bfPoints2Append(points, p);
+  }
+}
+
+void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i >= points->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  memcpy(p, &points->data[i], sizeof(BfPoint2));
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+}
+
+BfSize bfPoints2GetSize(BfPoints2 const *points) {
+  return points->size;
+}
+
+BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
+  BEGIN_ERROR_HANDLING();
+
+  if ((i0 >= points->size && i1 > points->size) || i0 > points->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfPoints2 *pointsView = malloc(sizeof(BfPoints2));
+  if (pointsView == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  pointsView->size = i1 - i0;
+  pointsView->capacity = BF_SIZE_BAD_VALUE;
+  pointsView->isView = true;
+  pointsView->data = &points->data[i0];
+
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
+
+  return pointsView;
 }
 
 /** Implementation: Points3 */

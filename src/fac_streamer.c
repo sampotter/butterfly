@@ -24,9 +24,6 @@
 #include <bf/tree_iter_post_order.h>
 #include <bf/vec_real.h>
 
-#undef BF_ARRAY_DEFAULT_CAPACITY
-#define BF_ARRAY_DEFAULT_CAPACITY 32
-
 ////////////////////////////////////////////////////////////////////////
 // BEGIN PARTIAL FAC STUFF...
 

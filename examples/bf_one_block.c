@@ -146,7 +146,7 @@ int main(int argc, char const *argv[]) {
   }
 
   BfMat *Z_gt = bfGetHelm2KernelMatrix(
-    &srcNodePts, &tgtNodePts, tgtNodeNormalsPtr, K, layerPot);
+    &srcNodePts, &tgtNodePts, NULL, tgtNodeNormalsPtr, K, layerPot, NULL, NULL);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");
@@ -167,7 +167,7 @@ int main(int argc, char const *argv[]) {
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   factorization = bfFacHelm2Make(
-    quadtree, K, layerPot, &srcLevelIter, &tgtLevelIter, numFactors);
+    quadtree, quadtree, K, layerPot, NULL, NULL, &srcLevelIter, &tgtLevelIter, numFactors);
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 

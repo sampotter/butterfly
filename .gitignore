@@ -12,5 +12,5 @@ GTAGS
 __pycache__
 builddir
 compile_commands.json
-subprojects/argtable3/
+subprojects/argtable3
 vgcore.*

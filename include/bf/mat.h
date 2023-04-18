@@ -14,8 +14,13 @@ typedef enum BfMatProps {
   BF_MAT_PROPS_VIEW = 1 << 0,
   BF_MAT_PROPS_TRANS = 1 << 1,
   BF_MAT_PROPS_CONJ = 1 << 2,
-  BF_MAT_PROPS_ORTHO = 1 << 3
+  BF_MAT_PROPS_ORTHO = 1 << 3,
+  BF_MAT_PROPS_LOWER_TRI = 1 << 4,
+  BF_MAT_PROPS_UPPER_TRI = 1 << 5,
+  BF_MAT_PROPS_UNIT = 1 << 6
 } BfMatProps;
+
+static BfMatProps const BF_MAT_PROPS_TRI = BF_MAT_PROPS_LOWER_TRI | BF_MAT_PROPS_UPPER_TRI;
 
 /** Interface: Mat */
 
@@ -48,10 +53,11 @@ BfVec *bfMatRowDists(BfMat const *, BfMat const *);
 BfVec *bfMatColDists(BfMat const *, BfMat const *);
 BfVec *bfMatColDots(BfMat const *, BfMat const *);
 BfVec *bfMatColNorms(BfMat const *);
-void bfMatScale(BfMat *, BfReal);
+void bfMatScale(BfMat *, BfComplex);
 void bfMatScaleRows(BfMat *, BfVec const *);
 void bfMatScaleCols(BfMat *, BfVec const *);
 BfVec *bfMatSumCols(BfMat const *);
+BfMat *bfMatAdd(BfMat const *, BfMat const *);
 void bfMatAddInplace(BfMat *, BfMat const *);
 void bfMatAddDiag(BfMat *, BfMat const *);
 BfMat *bfMatSub(BfMat const *, BfMat const *);
@@ -59,6 +65,7 @@ void bfMatSubInplace(BfMat *, BfMat const *);
 BfMat *bfMatMul(BfMat const *, BfMat const *);
 BfVec *bfMatMulVec(BfMat const *, BfVec const *);
 void bfMatMulInplace(BfMat *, BfMat const *);
+BfMat *bfMatSolve(BfMat const *, BfMat const *);
 BfMat *bfMatSolveLU(BfMat const *, BfMat const *);
 BfMat *bfMatLstSq(BfMat const *, BfMat const *);
 bool bfMatIsUpperTri(BfMat const *);
@@ -70,6 +77,10 @@ BfMat *bfMatToType(BfMat const *, BfType);
 BfMat *bfMatCholesky(BfMat const *);
 BfSizeArray *bfMatGetNonzeroColumnRanges(BfMat const *);
 void bfMatPrintBlocksDeep(BfMat const *, FILE *, BfSize, BfSize, BfSize);
+BfMat *bfMatGetBlockView(BfMat *mat, BfSize, BfSize, BfSize, BfSize);
+BfLu *bfMatGetLu(BfMat const *mat);
+BfMat *bfMatGetInverse(BfMat const *mat);
+void bfMatDivideCols(BfMat *, BfVec const *);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatCopy) Copy;
@@ -105,6 +116,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatScaleRows) ScaleRows;
   __typeof__(&bfMatScaleCols) ScaleCols;
   __typeof__(&bfMatSumCols) SumCols;
+  __typeof__(&bfMatAdd) Add;
   __typeof__(&bfMatAddInplace) AddInplace;
   __typeof__(&bfMatAddDiag) AddDiag;
   __typeof__(&bfMatSub) Sub;
@@ -112,6 +124,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatMul) Mul;
   __typeof__(&bfMatMulVec) MulVec;
   __typeof__(&bfMatMulInplace) MulInplace;
+  __typeof__(&bfMatSolve) Solve;
   __typeof__(&bfMatSolveLU) SolveLU;
   __typeof__(&bfMatLstSq) LstSq;
   __typeof__(&bfMatIsUpperTri) IsUpperTri;
@@ -123,6 +136,10 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatCholesky) Cholesky;
   __typeof__(&bfMatGetNonzeroColumnRanges) GetNonzeroColumnRanges;
   __typeof__(&bfMatPrintBlocksDeep) PrintBlocksDeep;
+  __typeof__(&bfMatGetBlockView) GetBlockView;
+  __typeof__(&bfMatGetLu) GetLu;
+  __typeof__(&bfMatGetInverse) GetInverse;
+  __typeof__(&bfMatDivideCols) DivideCols;
 } BfMatVtable;
 
 /** Implementation: Mat */

@@ -28,6 +28,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT]           = true,
       [BF_TYPE_MAT_DIAG_REAL] = true,
     },
+    [BF_TYPE_MAT_FUNC] = {
+      [BF_TYPE_MAT]           = true,
+      [BF_TYPE_MAT_FUNC] = true,
+    },
     [BF_TYPE_MAT_GIVENS_COMPLEX] = {
       [BF_TYPE_MAT]                = true,
       [BF_TYPE_MAT_GIVENS_COMPLEX] = true,
@@ -35,6 +39,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
     [BF_TYPE_MAT_IDENTITY] = {
       [BF_TYPE_MAT]          = true,
       [BF_TYPE_MAT_IDENTITY] = true,
+    },
+    [BF_TYPE_MAT_PERM] = {
+      [BF_TYPE_MAT]      = true,
+      [BF_TYPE_MAT_PERM] = true
     },
     [BF_TYPE_MAT_PRODUCT] = {
       [BF_TYPE_MAT]         = true,
@@ -84,6 +92,19 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT]            = true,
       [BF_TYPE_MAT_DENSE]      = true,
       [BF_TYPE_MAT_DENSE_REAL] = true,
+    },
+
+    /** Lu hierarchy: */
+    [BF_TYPE_LU] = {
+      [BF_TYPE_LU] = true,
+    },
+    [BF_TYPE_LU_CSR_REAL] = {
+      [BF_TYPE_LU] = true,
+      [BF_TYPE_LU_CSR_REAL] = true,
+    },
+    [BF_TYPE_LU_DENSE_COMPLEX] = {
+      [BF_TYPE_LU] = true,
+      [BF_TYPE_LU_DENSE_COMPLEX] = true,
     },
 
     /** Vec hierarchy: */

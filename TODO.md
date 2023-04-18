@@ -1,7 +1,7 @@
 # to-do list
 
 1. [ ] `CamelCase` -> `snake_case`
-2. [ ] more abbreviations (e.g., `BfMatDenseComplex` -> `bf_zmat`)
+2. [ ] terser abbreviations (e.g., `BfMatDenseComplex` -> `bf_zmat`)
 3. [ ] add SVDs to the matrix type hierarchy... ditto IDs eventually
 4. [ ] add casts for handles (used in `*Delete`)
 5. [ ] x-macros for automatically generating casts
@@ -89,11 +89,15 @@ One straightforward approach would be to use reference counting with explicit `r
 
 For reference counting, retain functions may not actually be necessary? Not sure.
 
+# Don't get rid of const?
+
+Re: "Get rid of const...? and "Handle ownership correctly", if we *don't* get rid of const, then one issue is views. E.g., if we get a view of some subblock of a matrix which we have a constant pointer to, that view should also be const. Realistically, there are two levels of const here: shallow const (`BfMat const *` vs `BfMat *`) and deep const (`BfMatViewConst` vs `BfMatView`---these don't exist at the time of writing...). I don't currently have the time to build out the type hierarchy to model the latter accurately. But at least for shallow const, if we get a view of a `BfMat const *` subblock, we'd like it to also be `BfMat const *`. The problem with this is that we need to allocate memory to get this view. Critically, `free` *does not* take a const pointer. One benefit of using our own wrappers for malloc and free is that we can sidestep this problem. But even better would be to outlaw `free` entirely by only using `retain` and `release` type functions (see "Handle ownership correctly"). In this case, it makes perfectly good sense to have `retain` and `release` take const pointers. They don't *logically* modify the value being pointed to, they only increment or decrement the associated reference count.
+
 # Add a top type
 
 # All objects should be passed as pointers
 
-Since we rely so heavily on using `NULL` as a tombstone value, we really need
+Since we rely so heavily on using `NULL` as a tombstone value, we really need to be consistent about passing around objects "by reference" only.
 
 # Add a NodeSpan type
 

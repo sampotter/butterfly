@@ -21,5 +21,8 @@ typedef struct BfBoundingBox3 {
 void bfBoundingBox3InitEmpty(BfBoundingBox3 *boundingBox);
 bool bfBoundingBox3IsEmpty(BfBoundingBox3 const *boundingBox);
 void bfBoundingBox3RescaleToCube(BfBoundingBox3 *boundingBox);
+bool bfBoundingBox3ContainsPoint(BfBoundingBox3 const *boundingBox, BfPoint3 const point);
+bool bfBoundingBox3ContainsPoints(BfBoundingBox3 const *boundingBox, BfPoints3 const *points);
 void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center);
 BfSphere bfBoundingBox3GetBoundingSphere(BfBoundingBox3 const *boundingBox);
+BfReal bfBoundingBox3GetVolume(BfBoundingBox3 const *boundingBox);

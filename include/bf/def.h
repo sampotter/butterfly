@@ -8,6 +8,11 @@
 #define _DEFAULT_SOURCE 1
 #endif
 
+/* For qsort_r: */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <complex.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -29,6 +34,10 @@ typedef double _Complex BfComplex;
 typedef uint8_t BfByte;
 typedef size_t BfSize;
 
+/* TODO: only define if we're using LAPACK? make sure it's right,
+ * anyway... should get this info from Meson */
+typedef int BfLapackInt;
+
 typedef BfSize BfSize3[3];
 
 static BfSize const BF_SIZE_BAD_VALUE = -1;
@@ -37,5 +46,7 @@ typedef void *BfPtr;
 typedef void const *BfConstPtr;
 
 static BfSize const BF_DEFAULT_STRIDE = 1;
+
+static BfSize const BF_ARRAY_DEFAULT_CAPACITY = 128;
 
 typedef int (*BfCompar)(const void *, const void *);

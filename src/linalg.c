@@ -7,10 +7,14 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
-#include <bf/lu.h>
+#include <bf/lu_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
+
+#if BF_DEBUG
+#include <bf/vec_complex.h>
+#endif
 
 #include <arpack.h>
 
@@ -25,8 +29,19 @@ BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const 
   return k;
 }
 
-BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
-                       BfReal tol, BfSize maxNumIter, BfSize *numIter) {
+/* Solve the linear system with matrix `A`, RHS `B`, and initial guess
+ * `X0`. Tolerance and maximum number of iterations specified by `tol`
+ * and `maxNumIter`, respectively. The final iteration count will be
+ * passed back in `numIter` if `numIter != NULL`.
+ *
+ * For left preconditioned GMRES, set the preconditioner in `M`.  Note
+ * that the residual will be determined from the *preconditioned*
+ * residual vectors. See Saad for more details.
+ *
+ * TODO: right and split preconditioned GMRES. */
+BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
+                    BfReal tol, BfSize maxNumIter, BfSize *numIter,
+                    BfMat const *M) {
   BEGIN_ERROR_HANDLING();
 
   /* Solution of the system */
@@ -40,8 +55,6 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
 
   /* Givens rotations for solving the least squares problem */
   BfMat **J = NULL;
-
-  BfSize const m = maxNumIter;
 
   bool converged = false;
 
@@ -69,26 +82,37 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   if (X0 != NULL && n != bfMatGetNumRows(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  /* Get number of RHSs (p) and check compatibility */
-  BfSize p = bfMatGetNumCols(B);
-  if (X0 != NULL && p != bfMatGetNumCols(X0))
+  bool leftPrecond = M != NULL;
+
+  /* If we're using a left preconditioner, make sure it has a
+   * compatible shape. */
+  if (leftPrecond) {
+    if (n != bfMatGetNumRows(M))
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+    if (n != bfMatGetNumCols(M))
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  }
+
+  /* Get number of RHSs (P) and check compatibility */
+  BfSize numRhs = bfMatGetNumCols(B);
+  if (X0 != NULL && numRhs != bfMatGetNumCols(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  V = malloc((m + 1)*sizeof(BfMatDenseComplex *));
+  V = malloc((maxNumIter + 1)*sizeof(BfMatDenseComplex *));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  H = malloc(m*sizeof(BfMatDenseComplex *));
+  H = malloc(maxNumIter*sizeof(BfMatDenseComplex *));
   if (H == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  J = malloc(m*p*sizeof(BfMat *));
+  J = malloc(maxNumIter*numRhs*sizeof(BfMat *));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   /* If an initial iterate wasn't passed, set it to zero */
   if (X0 == NULL) {
-    X0 = bfMatZerosLike(B, n, p);
+    X0 = bfMatZerosLike(B, n, numRhs);
     HANDLE_ERROR();
   }
 
@@ -98,76 +122,112 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   R = bfMatSub(B, Y);
   HANDLE_ERROR();
   bfMatDelete(&Y);
+  if (leftPrecond) {
+    BfMat *_ = bfMatSolve(M, R);
+    bfMatDelete(&R);
+    R = _;
+  }
 
   /* Compute the norm of the residual for each righthand side */
-  BfVec *R_col_norms = bfMatColNorms(R);
-  BfReal beta = bfVecNormMax(R_col_norms);
+  BfVec *RNorm = bfMatColNorms(R);
+
+  // TODO: beta is different for each RHS
+  BfReal beta = bfVecNormMax(RNorm);
 
   /* Set the first basis vector to the normalized residual */
   V[0] = bfMatCopy(R);
-  bfVecRecipInplace(R_col_norms);
-  bfMatScaleCols(V[0], R_col_norms);
+  bfMatDivideCols(V[0], RNorm);
 
   /* Initialize S to ||r||_2*e1---need to take the reciprocal of
    * `R_col_norms` again first */
-  S = bfMatZerosLike(B, m + 1, p);
-  bfVecRecipInplace(R_col_norms);
-  bfMatSetRow(S, 0, R_col_norms);
+  S = bfMatZerosLike(B, maxNumIter + 1, numRhs);
+  bfMatSetRow(S, 0, RNorm);
 
-  BfSize i = 0;
-  for (i = 0; i < m; ++i) {
-    BfMat *W = bfMatMul(A, V[i]);
+  /* The iteration count/the current column: */
+  BfSize j = 0;
 
-    H[i] = bfMatEmptyLike(W, i + 2, p);
+  for (j = 0; j < maxNumIter; ++j) {
+    BfMat *W = bfMatMul(A, V[j]);
 
-    for (BfSize k = 0; k <= i; ++k) {
-      BfVec *Hk = bfMatColDots(W, V[k]);
-      bfMatSetRow(H[i], k, Hk);
-
-      BfMat *Vk_Hk = bfMatCopy(V[k]);
-      bfMatScaleCols(Vk_Hk, Hk);
-      bfMatSubInplace(W, Vk_Hk);
-
-      bfMatDelete(&Vk_Hk);
-      bfVecDelete(&Hk);
+    /* Apply left preconditioner if we're using one: */
+    if (leftPrecond) {
+      BfMat *_ = bfMatSolve(M, W);
+      bfMatDelete(&W);
+      W = _;
     }
 
-    BfVec *W_col_norms = bfMatColNorms(W);
-    bfMatSetRow(H[i], i + 1, W_col_norms);
+    /** Run modified Gram-Schmidt: */
 
-    V[i + 1] = bfMatCopy(W);
-    bfVecRecipInplace(W_col_norms);
-    bfMatScaleCols(V[i + 1], W_col_norms);
+    /* Compute W column norms before applying Gram-Schmidt: */
+    BfVec *WNormBefore = bfMatColNorms(W); // 433
+
+    /* Allocate space for next column of H: */
+    H[j] = bfMatEmptyLike(W, j + 2, numRhs);
+
+    for (BfSize i = 0; i <= j; ++i) {
+      BfVec *Hij = bfMatColDots(V[i], W); // 435
+      bfMatSetRow(H[j], i, Hij);          // "
+
+      BfMat *Hij_Vi = bfMatCopy(V[i]);
+      bfMatScaleCols(Hij_Vi, Hij); // 436
+      bfMatSubInplace(W, Hij_Vi);  // "
+
+      bfMatDelete(&Hij_Vi);
+      bfVecDelete(&Hij);
+    }
+
+    BfVec *WNorm = bfMatColNorms(W); // 438
+    bfMatSetRow(H[j], j + 1, WNorm); // 439
+
+#if BF_DEBUG // TODO: deal with breakdown
+    {
+      assert(numRhs == 1); // TODO: handle numRhs > 1
+      BfReal _ = bfVecNormMax(WNorm)/bfVecNormMax(WNormBefore);
+      assert(_ >= tol);
+    }
+#endif
+
+    V[j + 1] = bfMatCopy(W); // 440
+    bfMatDivideCols(V[j + 1], WNorm); // 447 & 448
+
     bfMatDelete(&W);
-    bfVecDelete(&W_col_norms);
+    bfVecDelete(&WNorm);
+    bfVecDelete(&WNormBefore);
 
-    for (BfSize k = 0; k < i; ++k) {
-      for (BfSize j = 0; j < p; ++j) {
-        BfVec *h = bfMatGetColRangeView(H[i], 0, k + 2, j);
-        bfVecSolveInplace(h, J[p*k + j]);
+    /** Use Givens rotations to reduce H to upper triangular form: */
+
+    for (BfSize i = 0; i < j; ++i) {
+      for (BfSize p = 0; p < numRhs; ++p) {
+        BfVec *h = bfMatGetColRangeView(H[j], 0, i + 2, p);
+        bfVecMulInplace(h, J[numRhs*i + p]);
         bfVecDelete(&h);
       }
     }
 
-    for (BfSize j = 0; j < p; ++j) {
-      BfVec *h = bfMatGetColView(H[i], j);
-      J[p*i + j] = bfVecGetGivensRotation(h, i, i + 1);
-      bfVecSolveInplace(h, J[p*i + j]);
+    for (BfSize p = 0; p < numRhs; ++p) {
+      BfVec *h = bfMatGetColView(H[j], p);
+      J[numRhs*j + p] = bfVecGetGivensRotation(h, j, j + 1);
+      bfVecMulInplace(h, J[numRhs*j + p]);
       bfVecDelete(&h);
     }
 
     /* Apply most recent set of Givens rotations to S */
-    for (BfSize j = 0; j < p; ++j) {
-      BfVec *s = bfMatGetColView(S, j);
-      BfVec *sSub = bfVecGetSubvecView(s, 0, i + 2);
-      bfVecSolveInplace(sSub, J[p*i + j]);
+    for (BfSize p = 0; p < numRhs; ++p) {
+      BfVec *s = bfMatGetColView(S, p);
+      BfVec *sSub = bfVecGetSubvecView(s, 0, j + 2);
+      bfVecMulInplace(sSub, J[numRhs*j + p]);
       bfVecDelete(&sSub);
       bfVecDelete(&s);
     }
 
-    BfVec *sLastRow = bfMatGetRowView(S, i + 1);
-    if (bfVecNormMax(sLastRow) < tol*beta)
+    BfVec *sLastRow = bfMatGetRowView(S, j + 1);
+    BfReal residual = bfVecNormMax(sLastRow)/beta;
+
+    /** Deal with convergence: */
+
+    if (residual < tol)
       converged = true;
+
     bfVecDelete(&sLastRow);
 
     if (converged)
@@ -175,36 +235,43 @@ BfMat *bfMatSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   }
 
   /* Construct the solution */
-  X = bfMatEmptyLike(B, n, p);
-  for (BfSize j = 0; j < p; ++j) {
-    /* Extract the version of H for this RHS */
-    BfMat *Hj = bfMatZerosLike(H[0], i + 1, i + 1);
-    for (BfSize k = 0; k < i + 1; ++k) {
-      BfVec *h = bfMatGetColView(H[k], j);
-      bfMatSetColRange(Hj, k, 0, h->size - 1, h);
+  X = bfMatEmptyLike(B, n, numRhs);
+  for (BfSize p = 0; p < numRhs; ++p) {
+    /* Extract the triangularized version of the upper Hessenberg
+     * matrix H for the current RHS: */
+    BfMat *Hp = bfMatZerosLike(H[0], j, j);
+    for (BfSize i = 0; i < j; ++i) {
+      BfVec *h = bfMatGetColView(H[i], p);
+#if BF_DEBUG
+      if (bfVecGetType(h) == BF_TYPE_VEC_COMPLEX) {
+        BfVecComplex *_ = bfVecToVecComplex(h);
+        BfComplex z = *(_->data + (i + 1)*_->stride);
+        assert(cabs(z) <= 1e-15);
+      }
+#endif
+      bfMatSetColRange(Hp, i, 0, i + 1, h);
     }
-    assert(bfMatIsUpperTri(Hj));
 
     /* Extract the version of V for this RHS */
-    BfMat *Vj = bfMatEmptyLike(V[0], n, i + 1);
-    for (BfSize k = 0; k < i + 1; ++k) {
-      BfVec *v = bfMatGetColView(V[k], j);
-      bfMatSetCol(Vj, k, v);
+    BfMat *Vp = bfMatEmptyLike(V[0], n, j);
+    for (BfSize i = 0; i < j; ++i) {
+      BfVec *v = bfMatGetColView(V[i], p);
+      bfMatSetCol(Vp, i, v);
     }
 
     /* Solve for the coefficients representing x - x0 in the V-basis */
-    BfVec *s = bfMatGetColRangeView(S, 0, i + 1, j);
-    BfVec *y = bfMatBackwardSolveVec(Hj, s);
-    BfVec *x0 = bfMatGetColView(X0, j);
-    BfVec *x = bfMatMulVec(Vj, y);
+    BfVec *s = bfMatGetColRangeView(S, 0, j, p);
+    BfVec *y = bfMatBackwardSolveVec(Hp, s);
+    BfVec *x0 = bfMatGetColView(X0, p);
+    BfVec *x = bfMatMulVec(Vp, y);
     bfVecAddInplace(x, x0);
-    bfMatSetCol(X, j, x);
+    bfMatSetCol(X, p, x);
   }
 
   END_ERROR_HANDLING() {}
 
   if (numIter != NULL)
-    *numIter = i;
+    *numIter = j;
 
   return X;
 }
@@ -235,10 +302,10 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   a_int const rvec = 0; /* only computing eigenvalues */
   char const howmny[] = "A";
 
-  BfLu *M_lu = bfLuNew();
+  BfLuCsrReal *M_lu = bfLuCsrRealNew();
   HANDLE_ERROR();
 
-  bfLuInit(M_lu, M);
+  bfLuCsrRealInit(M_lu, M);
   HANDLE_ERROR();
 
   double *resid = malloc(N*sizeof(BfReal));
@@ -288,7 +355,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(L, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolve(M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 
@@ -345,7 +412,7 @@ dnaupd:
     eigmax = NAN;
   }
 
-  bfLuDeinitAndDealloc(&M_lu);
+  bfLuCsrRealDeinitAndDealloc(&M_lu);
 
   free(resid);
   free(V);
@@ -383,10 +450,10 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   bfMatAddInplace(A_minus_sigma_M, A);
   HANDLE_ERROR();
 
-  BfLu *A_minus_sigma_M_lu = bfLuNew();
+  BfLuCsrReal *A_minus_sigma_M_lu = bfLuCsrRealNew();
   HANDLE_ERROR();
 
-  bfLuInit(A_minus_sigma_M_lu, A_minus_sigma_M);
+  bfLuCsrRealInit(A_minus_sigma_M_lu, A_minus_sigma_M);
   HANDLE_ERROR();
 
   double *resid = malloc(N*sizeof(BfReal));
@@ -435,7 +502,7 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(M, bfVecRealToVec(&x));
-    BfVecReal *y = bfVecToVecReal(bfLuSolve(A_minus_sigma_M_lu, tmp));
+    BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(A_minus_sigma_M_lu, tmp));
 
     memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
 
@@ -567,7 +634,7 @@ dnaupd:
   free(dr);
   free(di);
 
-  bfLuDeinitAndDealloc(&A_minus_sigma_M_lu);
+  bfLuCsrRealDeinitAndDealloc(&A_minus_sigma_M_lu);
   bfMatDelete(&A_minus_sigma_M);
 
   free(resid);
