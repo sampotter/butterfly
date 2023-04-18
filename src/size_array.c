@@ -66,7 +66,7 @@ void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
   BEGIN_ERROR_HANDLING();
 
   sizeArray->size = 0;
-  sizeArray->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  sizeArray->capacity = 128;
 
   sizeArray->data = malloc(sizeArray->capacity*sizeof(BfSize));
   if (sizeArray->data == NULL)

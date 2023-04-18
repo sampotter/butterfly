@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <openblas/cblas.h>
-
+#include <bf/blas.h>
 #include <bf/error_macros.h>
 #include <bf/fac.h>
 #include "bf/geom.h"
