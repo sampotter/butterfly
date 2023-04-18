@@ -205,7 +205,7 @@ get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
       } else {
         BfReal const *xsrc = Xsrc->data[j];
         BfReal const *nsrc = Nsrc->data[j];
-        BfReal dot = -(nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]));
+        BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
         BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
         kernelMat->data[k] = scale*dot;
       }
@@ -236,10 +236,6 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   if (K <= 0)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  /* length m*n array of pairwise dists in row major order */
-  r = bfPoints2PairwiseDists(Xtgt, Xsrc);
-  HANDLE_ERROR();
-
   kernelMat = bfMatDenseComplexNew();
   HANDLE_ERROR();
 
@@ -250,18 +246,19 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   for (BfSize i = 0; i < m; ++i) {
     BfReal const *xtgt = Xtgt->data[i];
     for (BfSize j = 0; j < n; ++j) {
-      if (r[k] == 0) {
+      BfReal const *xsrc = Xsrc->data[j];
+      BfReal r = bfPoint2Dist(xtgt, xsrc);
+      if (r == 0) {
         kernelMat->data[k] = 0;
       } else {
-        BfReal const *xsrc = Xsrc->data[j];
         BfReal const *nsrc = Nsrc->data[j];
 
         /* Compute single-layer potential kernel value: */
-        BfComplex S = (I/4)*bf_H0(K*r[k]);
+        BfComplex S = (I/4)*bf_H0(K*r);
 
         /* Compute double-layer potential kernel value: */
-        BfReal dot = -(nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]));
-        BfComplex scale = (I/4)*K*bf_H1(K*r[k])/r[k];
+        BfReal dot = nsrc[0]*(xtgt[0] - xsrc[0]) + nsrc[1]*(xtgt[1] - xsrc[1]);
+        BfComplex scale = (I/4)*K*bf_H1(K*r)/r;
         BfComplex D = scale*dot;
 
         kernelMat->data[k] = alpha*S + beta*D;
