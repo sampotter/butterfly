@@ -3,16 +3,12 @@ examples = [
   'bf_all_blocks',
   'bf_lbo',
   'helm2_bie',
-  'multiple_scattering',
   'test_hankel_evaluator',
   'test_helm2_adapt_fac'
 ]
 
 foreach example : examples
   example_deps = [argtable3_dep, butterfly_dep, m_dep]
-  if example == 'multiple_scattering'
-    example_deps += [fmm2d_dep]
-  endif
   executable(
     example,
     example + '.c',
@@ -20,8 +16,14 @@ foreach example : examples
   )
 endforeach
 
+executable('multiple_scattering', ['multiple_scattering.c',
+  'multiple_scattering_opts.c', 'multiple_scattering_context.c'],
+  dependencies : example_deps + [fmm2d_dep])
+
 scripts = [
   'bf_lbo_plot_blocks.py',
+  'collect_multiple_scattering_data.py',
+  'convert_raw_multiple_scattering_data_to_csv.py',
   'ellipse.py',
   'make_circle_test_data.py',
   'make_ellipse_test_data.py',

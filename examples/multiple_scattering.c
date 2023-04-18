@@ -1,613 +1,70 @@
-#include <bf/bbox.h>
-#include <bf/const.h>
-#include <bf/ellipse.h>
-#include <bf/fac.h>
-#include <bf/helm2.h>
-#include <bf/linalg.h>
-#include <bf/lu.h>
-#include <bf/mat_block_diag.h>
-#include <bf/mat_diag_real.h>
-#include <bf/mat_perm.h>
-#include <bf/poisson_disk_sampling.h>
-#include <bf/quadtree.h>
-#include <bf/rand.h>
-#include <bf/real_array.h>
-#include <bf/size_array.h>
-#include <bf/util.h>
-#include <bf/vec_real.h>
-#include <bf/vectors.h>
-
-#include <assert.h>
-#include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
-#include "argtable3.h"
+#include <bf/rand.h>
 
-#include <fmm2d/helmholtz.h>
-
-int const MAX_NUM_ARG_ERRORS = 20;
-
-typedef struct {
-  /* Problem parameters: */
-  BfReal wavenumber;
-  BfReal minDist;
-  BfReal axisLow;
-  BfReal axisHigh;
-
-  /* Discretization parameters: */
-  BfReal h;
-
-  /* Postprocessing parameters: */
-  BfBbox2 bboxEval;
-  BfSize nxEval;
-  BfSize nyEval;
-} Opts;
-
-struct K_helm2_wkspc {
-  BfPoints2 const *points;
-  BfVectors2 const *normals;
-  BfReal k;
-};
-
-BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
-  struct K_helm2_wkspc *wkspc = aux;
-
-  BfReal const *xsrc = &wkspc->points->data[i][0];
-  BfReal const *xtgt = &wkspc->points->data[j][0];
-  BfReal const *nsrc = &wkspc->normals->data[i][0];
-  BfReal k = wkspc->k;
-
-  BfComplex G = bfHelm2GetKernelValue(
-    xsrc, xtgt, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
-  BfComplex dGdN = bfHelm2GetKernelValue(
-    xsrc, xtgt, nsrc, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
-  BfComplex K = dGdN - 1i*wkspc->k*G;
-
-  return K;
-}
-
-static bool parseArgs(int argc, char *argv[], Opts *opts) {
-  bool success = true;
-
-  /** All CLI parameters: */
-
-  struct arg_lit *help;
-
-  /* Problem parameters: */
-  struct arg_dbl *wavenumber;
-  struct arg_dbl *minDist;
-  struct arg_dbl *axisLow;
-  struct arg_dbl *axisHigh;
-
-  /* Discretization parameters: */
-  struct arg_dbl *h;
-
-  /* Postprocessing parameters: */
-  struct arg_dbl *xminEval;
-  struct arg_dbl *xmaxEval;
-  struct arg_dbl *yminEval;
-  struct arg_dbl *ymaxEval;
-  struct arg_int *nxEval;
-  struct arg_int *nyEval;
-
-  struct arg_end *end;
-
-  /** Set up argtable and parse: */
-
-  void *argtable[] = {
-    help = arg_litn(NULL, "help", 0, 1, "Display help and exit"),
-
-    /* Problem parameters: */
-    wavenumber = arg_dbln("k", "wavenumber", "<k>", 0, 1, "The wavenumber for the problem"),
-    minDist = arg_dbln("r", "minDist", "<r>", 0, 1, "Minimum distance between ellipse centers"),
-    axisLow = arg_dbln("a", "axisLow", "<a>", 0, 1, "Lower bound for uniformly sampled ellipse axes"),
-    axisHigh = arg_dbln("b", "axisHigh", "<b>", 0, 1, "Upper bound for uniformly sampled ellipse axes"),
-
-    /* Discretization parameters: */
-    h = arg_dbln("h", NULL, "<h>", 0, 1, "The mesh fineness"),
-
-    /* Postprocessing parameters: */
-    xminEval = arg_dbln(NULL, "xmin", "<xmin>", 0, 1, "The minimum x coord. of the eval. box"),
-    xmaxEval = arg_dbln(NULL, "xmax", "<xmax>", 0, 1, "The maximum x coord. of the eval. box"),
-    yminEval = arg_dbln(NULL, "ymin", "<ymin>", 0, 1, "The minimum y coord. of the eval. box"),
-    ymaxEval = arg_dbln(NULL, "ymax", "<ymax>", 0, 1, "The maximum y coord. of the eval. box"),
-    nxEval = arg_intn(NULL, "nx", "<nx>", 0, 1, "The number of eval. box nodes in x direction"),
-    nyEval = arg_intn(NULL, "ny", "<ny>", 0, 1, "The number of eval. box nodes in y direction"),
-
-    end = arg_end(MAX_NUM_ARG_ERRORS)
-  };
-
-  BfSize numErrors = arg_parse(argc, argv, argtable);
-
-  if (help->count > 0) {
-    printf("Usage: %s", argv[0]);
-    arg_print_syntax(stdout, argtable, "\n");
-    printf("Run a test problem demonstrating multiple scattering\n");
-    arg_print_glossary(stdout, argtable, "  %-25s %s\n");
-    goto cleanup;
-  }
-
-  if (numErrors > 0) {
-    arg_print_errors(stdout, end, argv[0]);
-    printf("Try '%s --help' for more information.\n", argv[0]);
-    success = false;
-    goto cleanup;
-  }
-
-  /** Extract parameters from parsed CLI options: */
-
-  /* Problem parameters: */
-  opts->wavenumber = *wavenumber->dval;
-  opts->minDist = *minDist->dval;
-  opts->axisLow = *axisLow->dval;
-  opts->axisHigh = *axisHigh->dval;
-
-  /* Discretization parameters: */
-  opts->h = *h->dval;
-
-  /* Postprocessing parameters: */
-  opts->bboxEval.min[0] = *xminEval->dval;
-  opts->bboxEval.max[0] = *xmaxEval->dval;
-  opts->bboxEval.min[1] = *yminEval->dval;
-  opts->bboxEval.max[1] = *ymaxEval->dval;
-  opts->nxEval = *nxEval->ival;
-  opts->nyEval = *nyEval->ival;
-
-cleanup:
-  arg_freetable(argtable, sizeof(argtable)/sizeof(argtable[0]));
-
-  return success;
-}
+#include "multiple_scattering_context.h"
 
 int main(int argc, char *argv[]) {
   Opts opts;
-  bool success = parseArgs(argc, argv, &opts);
+  bool success = parseArgs(&opts, argc, argv);
   if (!success) exit(EXIT_SUCCESS);
 
-  FILE *fp = NULL;
-
-  bfSeed(0);
-
-  puts("solving multiple scattering problem:");
-
-  BfReal k = opts.wavenumber;
-
-  /* Weights for combined-field representation: */
-  BfComplex alpha = -1j*k;
-  BfComplex beta = 1;
+  MultipleScatteringContext context;
+  init(&context, &opts);
 
-  BfVector2 d;
-  bfSampleRandomUnitVector2(d);
+  printInfo(&context);
 
-  printf("- uIn = exp(i*k*d*r), where:\n");
-  printf("  * k = %g\n", k);
-  printf("  * d = (%g, %g)\n", d[0], d[1]);
+  /* Common setup: */
+  setUpGeometry(&context);
+  setUpDiscretization(&context);
+  buildQuadtrees(&context);
+  setUpKrWorkspace(&context);
+  setUpRhs(&context);
 
-  BfReal tol = 1e-13;
-  BfSize orderKR = 6;
+  if (shouldAssembleDenseK(&opts))
+    assembleDenseK(&context);
 
-  /** Set up problem geometry: randomly sample lots of little
-   ** well-separated ellipses with different semimajor/minor axes and
-   ** orientations: */
+  if (shouldAssembleButterfliedK(&opts))
+    assembleButterfliedK(&context);
 
-  bfToc();
+  if (shouldExtractDenseButterfliedK(&opts))
+    extractDenseButterfliedK(&context);
 
-  /* Set up bounding box of sampling domain---give a little margin to
-   * keep ellipses fully inside */
-  BfReal R = 1 - opts.minDist;
-  BfBbox2 ellipseBbox = {.min = {-R, -R}, .max = {R, R}};
+  if (shouldAssemblePreconditioner(&opts))
+    assemblePreconditioner(&context);
 
-  /* Sample ellipse centers */
-  BfPoints2 *ellipseCenters = bfPoints2SamplePoissonDisk(&ellipseBbox, opts.minDist, 30);
-  bfSavePoints2(ellipseCenters, "ellipseCenters.bin");
+  if (shouldAssembleFmmK(&opts))
+    assembleFmmK(&context);
 
-  BfSize numEllipses = bfPoints2GetSize(ellipseCenters);
+  if (shouldComputeLu(&opts))
+    computeLu(&context);
 
-  /* Randomly sample ellipses */
-  BfEllipse *ellipse = malloc(numEllipses*sizeof(BfEllipse));
-  for (BfSize i = 0; i < numEllipses; ++i) {
-    /* Sample ellipse semi-major and semi-minor axes: */
-    BfReal a = (opts.axisHigh - opts.axisLow)*bfRealUniform1() + opts.axisLow;
-    BfReal b = (opts.axisHigh - opts.axisLow)*bfRealUniform1() + opts.axisLow;
-    ellipse[i].semiMajorAxis = fmax(a, b);
-    ellipse[i].semiMinorAxis = fmin(a, b);
+  if (shouldSolveLu(&opts))
+    solveLu(&context);
 
-    /* Give ellipse random orientation */
-    ellipse[i].theta = BF_TWO_PI*bfRealUniform1();
+  if (shouldSolveDenseGmres(&opts))
+    solveDenseGmres(&context);
 
-    /* Set ellipse center */
-    memcpy(ellipse[i].center, ellipseCenters->data[i], sizeof(BfPoint2));
-  }
+  if (shouldSolveDensePreconditionedGmres(&opts))
+    solveDensePreconditionedGmres(&context);
 
-  printf("- created %lu random ellipses [%0.2fs]\n", numEllipses, bfToc());
+  if (shouldSolveButterflyGmres(&opts))
+    solveButterflyGmres(&context);
 
-  fp = fopen("ellipseData.bin", "w");
-  for (BfSize i = 0; i < numEllipses; ++i) {
-    fwrite(&ellipse[i].center[0], sizeof(BfReal), 1, fp);
-    fwrite(&ellipse[i].center[1], sizeof(BfReal), 1, fp);
-    fwrite(&ellipse[i].semiMajorAxis, sizeof(BfReal), 1, fp);
-    fwrite(&ellipse[i].semiMinorAxis, sizeof(BfReal), 1, fp);
-    fwrite(&ellipse[i].theta, sizeof(BfReal), 1, fp);
-  }
-  fclose(fp);
+  if (shouldSolveButterflyPreconditionedGmres(&opts))
+    solveButterflyPreconditionedGmres(&context);
 
-  /** Sample discretization points from the ellipses using inverse
-   ** curvature weighting: */
+  if (shouldSolveFmmGmres(&opts))
+    solveFmmGmres(&context);
 
-  bfToc();
+  if (shouldSolveFmmPreconditionedGmres(&opts))
+    solveFmmPreconditionedGmres(&context);
 
-  /* Keep track of the offset to each ellipse---we'll use these
-   * indices to figure out where to apply the KR correction and do
-   * preconditioning *blockwise*. */
-  BfSizeArray *ellipseOffsets = bfSizeArrayNewWithDefaultCapacity();
-  bfSizeArrayAppend(ellipseOffsets, 0);
+  if (shouldCollectAndPrintStats(&opts))
+    collectAndPrintStats(&context);
 
-  BfPoints2 *X = bfPoints2NewEmpty();
-  BfVectors2 *N = bfVectors2NewEmpty();
-  BfRealArray *W = bfRealArrayNewWithDefaultCapacity();
-  for (BfSize i = 0; i < numEllipses; ++i) {
-    BfReal p = bfEllipseGetPerimeter(&ellipse[i]);
-    BfSize n = floor(p/opts.h) + 1;
-    bfEllipseSampleLinspaced(&ellipse[i], n, X, NULL, N, W);
-    // bfEllipseSampleEquispaced(&ellipse[i], n, X, NULL, N);
-    // bfEllipseSampleWithInverseCurvatureSpacing(&ellipse[i], n, X, NULL, N);
+  if (shouldDoPostprocessing(&opts))
+    doPostprocessing(&context);
 
-    /* Add the current offset: */
-    bfSizeArrayAppend(ellipseOffsets, bfPoints2GetSize(X));
-  }
-  bfSavePoints2(X, "X.bin");
-  bfSaveVectors2(N, "N.bin");
-
-  BfSize n = bfPoints2GetSize(X);
-  printf("- sampled %lu discretization points [%0.2fs]\n", n, bfToc());
-
-  fp = fopen("ellipseOffsets.bin", "w");
-  for (BfSize i = 0; i <= numEllipses; ++i) {
-    BfSize i0 = bfSizeArrayGet(ellipseOffsets, i);
-    fwrite(&i0, sizeof(BfSize), 1, fp);
-  }
-  fclose(fp);
-
-  /** Set up quadtree: */
-
-  bfToc();
-
-  BfQuadtree quadtree;
-  bfQuadtreeInit(&quadtree, X, N);
-
-  printf("- set up quadtree [%0.2fs]\n", bfToc());
-
-  /** Get quadtree permutation and inverse permutation: */
-
-  BfTree *tree = bfQuadtreeToTree(&quadtree);
-
-  BfPerm const *perm = bfTreeGetPermConst(tree);
-  BfPerm revPerm = bfPermGetReversePerm(perm);
-
-  fp = fopen("perm.bin", "w");
-  fwrite(perm->index, sizeof(BfSize), perm->size, fp);
-  fclose(fp);
-
-  /** Set up workspace for applying KR corrections: */
-
-  struct K_helm2_wkspc K_wkspc = {.points = X, .normals = N, .k = k};
-
-  /** Set up the dense kernel matrix using the combined field integral
-   ** equation for the exterior Dirichlet problem: */
-
-  bfToc();
-
-  /* Assemble discretized CFIE kernel matrix: */
-  BfMat *K = bfGetHelm2KernelMatrix(
-    X, X, N, NULL, k, BF_LAYER_POTENTIAL_COMBINED_FIELD, &alpha, &beta);
-
-  /* Apply KR correction blockwise: */
-  bf_apply_block_KR_correction(K, ellipseOffsets, orderKR, K_helm2, (void *)&K_wkspc);
-
-  /* Scale columns by trapezoid rule weights: */
-  BfVec *WVec = bfRealArrayGetVecView(W);
-  bfMatScaleCols(K, WVec);
-
-  /* Perturb by I/2: */
-  BfMat *oneHalfEye = bfMatDiagRealToMat(bfMatDiagRealNewConstant(n, n, 0.5));
-  bfMatAddInplace(K, oneHalfEye);
-
-  printf("- set up dense kernel matrix [%0.2fs]\n", bfToc());
-
-  bfMatSave(K, "K.bin");
-
-  /** Assemble the multilevel BF approximation of the system matrix: */
-
-  bfToc();
-
-  /* Assemble and butterfly compress discretized CFIE kernel matrix: */
-  BfMat *K_BF = bfFacHelm2MakeMultilevel(
-    &quadtree, k, BF_LAYER_POTENTIAL_COMBINED_FIELD, &alpha, &beta);
-
-  /* Apply KR correction blockwise: */
-  bf_apply_block_KR_correction_quadtree(
-    K_BF, ellipseOffsets, orderKR, tree, K_helm2, (void *)&K_wkspc);
-
-  /* Scale columns by trapezoid rule weights: */
-  BfVec *WVecPerm = bfVecCopy(WVec);
-  bfVecPermute(WVecPerm, &revPerm);
-  bfMatScaleCols(K_BF, WVecPerm);
-
-  /* Perturb by I/2: */
-  bfMatAddInplace(K_BF, oneHalfEye);
-
-  printf("- set up BF approx. of dense kernel matrix [%0.2fs]\n", bfToc());
-
-  /* Write BF blocks to disk: */
-  char const *path = "blocks.txt";
-  fp = fopen(path, "w");
-  bfPrintBlocks(K_BF, 2, fp);
-  fclose(fp);
-  printf("- wrote BF blocks to %s\n", path);
-
-  /** Extract components of BF matrix (NOTE: very expensive!!!): */
-
-//   bfToc();
-
-//   BfMat *KBFDense = bfMatEmptyLike(K, n, n);
-//   for (BfSize j = 0; j < n; ++j) {
-//     /* Get jth standard basis vector: */
-//     BfMat *ej; {
-//       BfMatDenseComplex *_ = bfMatDenseComplexNew();
-//       bfMatDenseComplexInit(_, n, 1);
-//       for (BfSize i = 0; i < n; ++i)
-//         *(_->data + i*_->rowStride) = i == j ? 1 : 0;
-//       ej = bfMatDenseComplexToMat(_); }
-//     BfMat *kj = bfMatMul(K_BF, ej);
-//     BfVec *kjVecView = bfMatGetColView(kj, 0);
-//     bfMatSetCol(KBFDense, j, kjVecView);
-//     bfVecDelete(&kjVecView);
-//     bfMatDelete(&kj);
-//   }
-
-//   printf("- sampled dense version of BF'd kernel matrix [%0.2fs]\n", bfToc());
-
-//   bfMatSave(KBFDense, "KBFDense.bin");
-
-  /** Set up the RHS for the scattering problem: */
-
-  bfToc();
-
-  BfMat *rhs = NULL;
-  { BfMatDenseComplex *_ = bfMatDenseComplexNew();
-    bfMatDenseComplexInit(_, n, 1);
-    for (BfSize i = 0; i < n; ++i) {
-      BfPoint2 x;
-      bfPoints2Get(X, i, x);
-      *(_->data + i*_->rowStride) = -cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
-    }
-    rhs = bfMatDenseComplexToMat(_); }
-
-  BfMat *rhsPerm = bfMatCopy(rhs);
-  bfMatPermuteRows(rhsPerm, &revPerm);
-
-  printf("- set up RHS for scattering problem [%0.2fs]\n", bfToc());
-
-  bfMatSave(rhs, "rhs.bin");
-
-  /** Compare dense and butterfly MVPs: */
-
-  bfToc();
-
-  BfMat *yTestDense = bfMatMul(K, rhs);
-
-  printf("- did test dense MVP [%0.2fs]\n", bfToc());
-
-  bfToc();
-
-  BfMat *yTestButterfly = bfMatMul(K_BF, rhsPerm);
-  bfMatPermuteRows(yTestButterfly, perm);
-
-  printf("- did test butterfly MVP [%0.2fs]\n", bfToc());
-
-  { BfVec *mvpError = bfMatColDists(yTestDense, yTestButterfly);
-    BfVec *yColNorms = bfMatColNorms(yTestDense);
-    BfReal mvpRelErrorMax = bfVecNormMax(mvpError)/bfVecNormMax(yColNorms);
-    bfVecDelete(&mvpError);
-    bfVecDelete(&yColNorms);
-    printf("- relative error between dense and butterfly MVPs: %g\n", mvpRelErrorMax); }
-
-  /** Solve the system using elimination: */
-
-  bfToc();
-
-  BfLu *KLu = bfMatGetLu(K);
-
-  printf("- computed LU decomposition of K [%0.2fs]\n", bfToc());
-
-  BfMat *sigmaLu = bfLuSolve(KLu, rhs);
-
-  printf("- solved dense system using LU decomposition of K [%0.2fs]\n", bfToc());
-
-  /** Solve the dense system using GMRES: */
-
-  bfToc();
-
-  BfSize numIterDense;
-  BfMat *sigmaDense = bfSolveGMRES(K, rhs, NULL, tol, n, &numIterDense, NULL);
-  // BfMat *sigmaDense = bfSolveGMRES(K, rhs, NULL, tol, 1, &numIterDense, NULL);
-
-  printf("- solved dense system using GMRES in %lu iterations [%0.2fs]\n", numIterDense, bfToc());
-
-  /** Compare sigmaLu and sigmaDense: */
-
-  { BfVecReal *l2Dist = bfVecToVecReal(bfMatColDists(sigmaLu, sigmaDense));
-    BfVecReal *l2Norm = bfVecToVecReal(bfMatColNorms(sigmaLu));
-    BfReal l2ErrorRel = l2Dist->data[0]/l2Norm->data[0];
-    printf("- rel l2 error between LU and GMRES sigmas: %g\n", l2ErrorRel); }
-
-  /** Set up block LU preconditioner: */
-
-  bfToc();
-
-  /* Build block Jacobi preconditioner: */
-  BfPtrArray *MBlocks = bfPtrArrayNewWithDefaultCapacity();
-  for (BfSize i = 0; i < numEllipses; ++i) {
-    BfSize i0 = bfSizeArrayGet(ellipseOffsets, i);
-    BfSize i1 = bfSizeArrayGet(ellipseOffsets, i + 1);
-    BfMat *KBlock = bfMatGetBlockView(K, i0, i1, i0, i1);
-    BfLu *KBlockLu = bfMatGetLu(KBlock);
-    BfMat *MBlock = bfLuGetMatView(KBlockLu);
-    bfPtrArrayAppend(MBlocks, MBlock);
-  }
-  BfMat *M = bfMatBlockDiagToMat(bfMatBlockDiagNewFromBlocks(MBlocks));
-
-  /* Get the permuted version of M for use with the
-   * butterfly-accelerated version: */
-
-  BfMat *MPerm = NULL;
-  { BfMat *matPerm = bfMatPermToMat(bfMatPermNewFromPerm(perm));
-    BfMat *matPermInverse = bfMatGetInverse(matPerm);
-    BfMatProduct *matProduct = bfMatProductNew();
-    bfMatProductInit(matProduct);
-    bfMatProductPostMultiply(matProduct, matPerm);
-    bfMatProductPostMultiply(matProduct, M);
-    bfMatProductPostMultiply(matProduct, matPermInverse);
-    MPerm = bfMatProductToMat(matProduct); }
-
-  printf("- assembled block Jacobi preconditioner [%0.2fs]\n", bfToc());
-
-  /** Solve dense system using block LU preconditioned GMRES: */
-
-  bfToc();
-
-  BfSize numIterDensePrecondLeft;
-  BfMat *sigmaDensePrecondLeft = bfSolveGMRES(K, rhs, NULL, tol, n, &numIterDensePrecondLeft, M);
-
-  printf("- solved dense system using GMRES w/ block Jacobi preconditioner in %lu iterations [%0.2fs]\n", numIterDensePrecondLeft, bfToc());
-
-  /** Solve butterfly-factorized system using GMRES: */
-
-  bfToc();
-
-  BfSize numIterButterfly;
-  BfMat *sigmaButterfly = bfSolveGMRES(K_BF, rhsPerm, NULL, tol, n, &numIterButterfly, NULL);
-  bfMatPermuteRows(sigmaButterfly, perm);
-
-  printf("- solved butterfly-factorized system using GMRES in %lu iterations [%0.2fs]\n", numIterButterfly, bfToc());
-
-  /** Solve butterfly-factorized system using GMRES: */
-
-  bfToc();
-
-  BfSize numIterButterflyPrecondLeft;
-  BfMat *sigmaButterflyPrecondLeft = bfSolveGMRES(K_BF, rhsPerm, NULL, tol, n, &numIterButterflyPrecondLeft, MPerm);
-  bfMatPermuteRows(sigmaButterflyPrecondLeft, perm);
-
-  printf("- solved butterfly-factorized system using GMRES w/ block Jacobi preconditioner in %lu iterations [%0.2fs]\n", numIterButterflyPrecondLeft, bfToc());
-
-  /** Compare sigmaLu and sigmaDense: */
-
-  { BfVecReal *l2Dist = bfVecToVecReal(bfMatColDists(sigmaLu, sigmaDensePrecondLeft));
-    BfVecReal *l2Norm = bfVecToVecReal(bfMatColNorms(sigmaLu));
-    BfReal l2ErrorRel = l2Dist->data[0]/l2Norm->data[0];
-    printf("- rel l2 error between LU and left preconditioned GMRES sigmas: %g\n", l2ErrorRel); }
-
-  /** Compare sigmaLu and sigmaButterfly: */
-
-  { BfVecReal *l2Dist = bfVecToVecReal(bfMatColDists(sigmaLu, sigmaButterfly));
-    BfVecReal *l2Norm = bfVecToVecReal(bfMatColNorms(sigmaLu));
-    BfReal l2ErrorRel = l2Dist->data[0]/l2Norm->data[0];
-    printf("- rel l2 error between LU and butterfly GMRES sigmas: %g\n", l2ErrorRel); }
-
-  { BfVecReal *l2Dist = bfVecToVecReal(bfMatColDists(sigmaLu, sigmaButterflyPrecondLeft));
-    BfVecReal *l2Norm = bfVecToVecReal(bfMatColNorms(sigmaLu));
-    BfReal l2ErrorRel = l2Dist->data[0]/l2Norm->data[0];
-    printf("- rel l2 error between LU and butterfly GMRES (w/ precond) sigmas: %g\n", l2ErrorRel); }
-
-  /** Check BCs: */
-
-  // TODO: doing this the wrong way, I think
-
-  BfMat *KCheck = bfGetHelm2KernelMatrix(X, X, N, NULL, k, BF_LAYER_POTENTIAL_COMBINED_FIELD, &alpha, &beta);
-
-  bfMatScaleCols(KCheck, WVec);
-
-  BfMat *uDenseCheck = NULL;
-  { BfMatDenseComplex *_ = bfMatDenseComplexNew();
-    bfMatDenseComplexInit(_, n, 1);
-    for (BfSize i = 0; i < n; ++i) {
-      BfPoint2 x;
-      bfPoints2Get(X, i, x);
-      *(_->data + i*_->rowStride) = cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
-    }
-    uDenseCheck = bfMatDenseComplexToMat(_); }
-
-  BfMat *uScatDenseCheck = bfMatMul(KCheck, sigmaDense);
-
-  bfMatAddInplace(uDenseCheck, uScatDenseCheck);
-
-  bfMatSave(uDenseCheck, "uDenseCheck.bin");
-
-  /** Set up evaluation grid: */
-
-  bfToc();
-
-  BfPoints2 *XEval = bfPoints2NewGrid(&opts.bboxEval, opts.nxEval, opts.nyEval);
-
-  printf("- set up %lu x %lu evaluation grid [%0.2fs]\n", opts.nxEval, opts.nyEval, bfToc());
-
-  bfSavePoints2(XEval, "XEval.bin");
-
-  /** Compute uIn on evaluation grid: */
-
-  bfToc();
-
-  BfMat *uIn = NULL;
-  { BfSize nEval = opts.nxEval*opts.nyEval;
-    BfMatDenseComplex *_ = bfMatDenseComplexNew();
-    bfMatDenseComplexInit(_, nEval, 1);
-    for (BfSize i = 0; i < nEval; ++i) {
-      BfPoint2 x;
-      bfPoints2Get(XEval, i, x);
-      *(_->data + i*_->rowStride) = cexp(1i*k*(d[0]*x[0] + d[1]*x[1]));
-    }
-    uIn = bfMatDenseComplexToMat(_); }
-
-  printf("- computed uIn on evaluation grid [%0.2fs]\n", bfToc());
-
-  bfMatSave(uIn, "uIn.bin");
-
-  /** Solve using HF-FMM (fmm2d): */
-
-  bfToc();
-
-  // TODO: starting with a quick test...
-  {
-    BfComplex zk = k;
-    BfSize ns = n;
-    BfReal const *sources = (BfReal const *)&X->data[0];
-    BfComplex const *charge = &bfMatToMatDenseComplex(rhs)->data[0];
-    BfComplex *pot = malloc(ns*sizeof(BfComplex));
-    int64_t ier;
-    hfmm2d_s_c_p(tol, zk, ns, sources, charge, pot, &ier);
-  }
-
-  printf("- did hfmm2d_s_c_p test call [%0.2f]\n", bfToc());
-
-  /** Sample total field for different solution methods: */
-
-  bfToc();
-
-  BfMat *KEval = bfGetHelm2KernelMatrix(X, XEval, N, NULL, k, BF_LAYER_POTENTIAL_COMBINED_FIELD, &alpha, &beta);
-
-  bfMatScaleCols(KEval, WVec);
-
-  printf("- set up evaluation matrix [%0.2fs]\n", bfToc());
-
-  BfMat *uScatLu = bfMatMul(KEval, sigmaLu);
-  bfMatSave(uScatLu, "uScatLu.bin");
-
-  printf("- computed scattered field (LU) [%0.2fs]\n", bfToc());
-
-  BfMat *uScatDense = bfMatMul(KEval, sigmaDense);
-  bfMatSave(uScatDense, "uScatDense.bin");
-
-  printf("- computed scattered field (dense + GMRES) [%0.2fs]\n", bfToc());
+  // deinit(&context, &opts);
 }
