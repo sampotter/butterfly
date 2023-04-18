@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import colorcet as cc
 import itertools as it
 import matplotlib.pyplot as plt; plt.ion()

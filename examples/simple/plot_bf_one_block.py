@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys; sys.path.insert(0, '..')
+
 import colorcet as cc
 import matplotlib.pyplot as plt
 import numpy as np
