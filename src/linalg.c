@@ -143,8 +143,6 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   S = bfMatZerosLike(B, maxNumIter + 1, numRhs);
   bfMatSetRow(S, 0, RNorm);
 
-  FILE *fp = fopen("gmres_res.bin", "w");
-
   /* The iteration count/the current column: */
   BfSize j = 0;
 
@@ -225,8 +223,6 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     BfVec *sLastRow = bfMatGetRowView(S, j + 1);
     BfReal residual = bfVecNormMax(sLastRow)/beta;
 
-    fwrite(&residual, sizeof(BfReal), 1, fp);
-
     /** Deal with convergence: */
 
     if (residual < tol)
@@ -237,8 +233,6 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     if (converged)
       break;
   }
-
-  fclose(fp);
 
   /* Construct the solution */
   X = bfMatEmptyLike(B, n, numRhs);
@@ -272,13 +266,6 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     BfVec *x = bfMatMulVec(Vp, y);
     bfVecAddInplace(x, x0);
     bfMatSetCol(X, p, x);
-
-    bfVecSave(s, "gmres_s.bin");
-    bfMatSave(Hp, "gmres_H.bin");
-    bfMatSave(Vp, "gmres_V.bin");
-    bfVecSave(y, "gmres_y.bin");
-    bfVecSave(x0, "gmres_x0.bin");
-    bfVecSave(x, "gmres_x.bin");
   }
 
   END_ERROR_HANDLING() {}
