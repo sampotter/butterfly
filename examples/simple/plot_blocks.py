@@ -21,8 +21,8 @@ Level, I0, I1, J0, J1, Type = np.array(
     [tuple(int(_) for _ in line.split()) for line in lines]
 ).T
 
-assert(min(I0) == 0)
-assert(min(J0) == 0)
+assert min(I0) == 0
+assert min(J0) == 0
 
 max_level = Level.max()
 default_bitmap_value = max_level + 1
