@@ -106,6 +106,9 @@ BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
+  if (numRowBlocks == 0)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
 
   BfSize k = 0, i0, i1;
   for (; k < numRowBlocks; ++k) {

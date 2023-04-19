@@ -306,6 +306,17 @@ void bfLuCsrRealDeinitAndDealloc(BfLuCsrReal **luCsrReal) {
 void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   BEGIN_ERROR_HANDLING();
 
+  int *Lp = NULL;
+  int *Lj = NULL;
+  double *Lx = NULL;
+  int *Up = NULL;
+  int *Ui = NULL;
+  double *Ux = NULL;
+  int *P = NULL;
+  int *Q = NULL;
+  double *Dx = NULL;
+  double *Rs = NULL;
+
   int status = 0;
 
   int lnz, unz, n_row, n_col, nz_udiag;
@@ -316,43 +327,43 @@ void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   BF_ASSERT(n_row == n_col);
   int n = n_row;
 
-  int *Lp = bfMemAlloc(n + 1, sizeof(int));
+  Lp = bfMemAlloc(n + 1, sizeof(int));
   if (Lp == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Lj = bfMemAlloc(lnz, sizeof(int));
+  Lj = bfMemAlloc(lnz, sizeof(int));
   if (Lj == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Lx = bfMemAlloc(lnz, sizeof(double));
+  Lx = bfMemAlloc(lnz, sizeof(double));
   if (Lx == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Up = bfMemAlloc(n + 1, sizeof(int));
+  Up = bfMemAlloc(n + 1, sizeof(int));
   if (Up == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Ui = bfMemAlloc(unz, sizeof(int));
+  Ui = bfMemAlloc(unz, sizeof(int));
   if (Ui == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Ux = bfMemAlloc(unz, sizeof(double));
+  Ux = bfMemAlloc(unz, sizeof(double));
   if (Ux == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *P = bfMemAlloc(n, sizeof(int));
+  P = bfMemAlloc(n, sizeof(int));
   if (P == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Q = bfMemAlloc(n, sizeof(int));
+  Q = bfMemAlloc(n, sizeof(int));
   if (Q == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Dx = bfMemAlloc(n, sizeof(double));
+  Dx = bfMemAlloc(n, sizeof(double));
   if (Dx == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Rs = bfMemAlloc(n, sizeof(double));
+  Rs = bfMemAlloc(n, sizeof(double));
   if (Rs == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

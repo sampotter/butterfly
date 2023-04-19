@@ -112,7 +112,8 @@ BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
-  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
+  if (numRowBlocks == 0)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BfSize ib = 0, i0, i1;
   for (; ib < numRowBlocks; ++ib) {
@@ -121,6 +122,8 @@ BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
     if (i0 <= i && i < i1)
       break;
   }
+
+  BfSize numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
 
   for (BfSize jb = 0; jb < numColBlocks; ++jb) {
     BfMat *block = BLOCK(matBlockDense, ib, jb);
@@ -992,6 +995,8 @@ void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
 void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
   BEGIN_ERROR_HANDLING();
 
+  BfSize oldNumColBlocks = BF_SIZE_BAD_VALUE;
+
   BfMatBlock *matBlock = NULL;
 
   matBlock = bfMatBlockDenseToMatBlock(mat);
@@ -999,7 +1004,7 @@ void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
 
   /** Update the number of block columns and their offsets: */
 
-  BfSize oldNumColBlocks = NUM_COL_BLOCKS(mat)++;
+  oldNumColBlocks = NUM_COL_BLOCKS(mat)++;
 
   /* Allocate more space for column offsets */
   BfSize *newColOffset = bfMemRealloc(

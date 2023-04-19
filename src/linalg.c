@@ -290,6 +290,13 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
 
   BEGIN_ERROR_HANDLING();
 
+  double *resid = NULL;
+  double *V = NULL;
+  a_int *select = NULL;
+  double *workd = NULL;
+  double *workl = NULL;
+  BfReal *workev = NULL;
+
   a_int const N = bfMatGetNumRows(L);
   char const which[] = "LM";
   a_int const nev = 1;
@@ -307,15 +314,16 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   bfLuCsrRealInit(M_lu, M);
   HANDLE_ERROR();
 
-  double *resid = bfMemAlloc(N, sizeof(BfReal));
+  resid = bfMemAlloc(N, sizeof(BfReal));
   if (resid == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *V = bfMemAlloc(N, ncv*sizeof(BfReal));
+  V = bfMemAlloc(N, ncv*sizeof(BfReal));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = bfMemAllocAndZero(ncv, sizeof(a_int));
+  select = bfMemAllocAndZero(ncv, sizeof(a_int));
+  HANDLE_ERROR();
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
@@ -326,18 +334,18 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
 
   a_int ipntr[11];
 
-  double *workd = bfMemAlloc(3*N, sizeof(BfReal));
+  workd = bfMemAlloc(3*N, sizeof(BfReal));
   if (workd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (a_int i = 0; i < 3*N; ++i)
     workd[i] = 0;
 
-  double *workl = bfMemAlloc(lworkl, sizeof(BfReal));
+  workl = bfMemAlloc(lworkl, sizeof(BfReal));
   if (workl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *workev = bfMemAlloc(3*ncv, sizeof(BfReal));
+  workev = bfMemAlloc(3*ncv, sizeof(BfReal));
   if (workev == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -429,6 +437,19 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
 
   BEGIN_ERROR_HANDLING();
 
+  double *resid = NULL;
+  double *V = NULL;
+  a_int *select = NULL;
+  double *workd = NULL;
+  double *workl = NULL;
+  BfReal *workev = NULL;
+  BfReal *dr = NULL;
+  BfReal *di = NULL;
+  BfReal *z = NULL;
+
+  BfSize *J = NULL;
+  BfVecReal *Lambda = NULL;
+
   a_int const N = bfMatGetNumRows(A);
   char const which[] = "LM";
   a_int const nev = k;
@@ -455,15 +476,16 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   bfLuCsrRealInit(A_minus_sigma_M_lu, A_minus_sigma_M);
   HANDLE_ERROR();
 
-  double *resid = bfMemAlloc(N, sizeof(BfReal));
+  resid = bfMemAlloc(N, sizeof(BfReal));
   if (resid == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *V = bfMemAlloc(N*ncv, sizeof(BfReal));
+  V = bfMemAlloc(N*ncv, sizeof(BfReal));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = bfMemAllocAndZero(ncv, sizeof(a_int));
+  select = bfMemAllocAndZero(ncv, sizeof(a_int));
+  HANDLE_ERROR();
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
@@ -473,18 +495,18 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
 
   a_int ipntr[11];
 
-  double *workd = bfMemAlloc(3*N, sizeof(BfReal));
+  workd = bfMemAlloc(3*N, sizeof(BfReal));
   if (workd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (a_int i = 0; i < 3*N; ++i)
     workd[i] = 0;
 
-  double *workl = bfMemAlloc(lworkl, sizeof(BfReal));
+  workl = bfMemAlloc(lworkl, sizeof(BfReal));
   if (workl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *workev = bfMemAlloc(3*ncv, sizeof(BfReal));
+  workev = bfMemAlloc(3*ncv, sizeof(BfReal));
   if (workev == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -528,15 +550,15 @@ dnaupd:
   if (info < 0 || iparam[4] < nev)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfReal *dr = bfMemAlloc(nev + 1, sizeof(BfReal));
+  dr = bfMemAlloc(nev + 1, sizeof(BfReal));
   if (dr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *di = bfMemAlloc(nev + 1, sizeof(BfReal));
+  di = bfMemAlloc(nev + 1, sizeof(BfReal));
   if (di == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *z = bfMemAlloc(N*(nev + 1), sizeof(BfReal));
+  z = bfMemAlloc(N*(nev + 1), sizeof(BfReal));
   if (z == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -572,7 +594,7 @@ dnaupd:
     if (fabs(di[i]) != 0)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfSize *J = bfMemAlloc(k, sizeof(BfSize));
+  J = bfMemAlloc(k, sizeof(BfSize));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -584,7 +606,7 @@ dnaupd:
   if (*LambdaPtr != NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfVecReal *Lambda = bfVecRealNew();
+  Lambda = bfVecRealNew();
   HANDLE_ERROR();
 
   bfVecRealInit(Lambda, k);

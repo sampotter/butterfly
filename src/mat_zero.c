@@ -19,6 +19,8 @@ static BfMatVtable MAT_VTABLE = {
 BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
   BEGIN_ERROR_HANDLING();
 
+  BfVecZero *rowCopy = NULL;
+
   BfSize numRows = bfMatGetNumRows(mat);
   if (i >= numRows)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -28,7 +30,7 @@ BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
   if (!bfMatInstanceOf(mat, BF_TYPE_MAT_ZERO))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfVecZero *rowCopy = bfVecZeroNew();
+  rowCopy = bfVecZeroNew();
   HANDLE_ERROR();
 
   bfVecZeroInit(rowCopy, numCols);

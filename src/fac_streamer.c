@@ -516,12 +516,11 @@ static BfConstPtrArray getLastRowNodes(BfPtrArray const *partialFacs) {
 static bool nodesHaveSameFirstIndex(BfConstPtrArray const *nodes) {
   BEGIN_ERROR_HANDLING();
 
-  BfSize numNodes = bfConstPtrArraySize(nodes);
+  bool sameFirstIndex = true;
 
+  BfSize numNodes = bfConstPtrArraySize(nodes);
   if (numNodes == 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  bool sameFirstIndex = true;
 
   BfTreeNode const *node = bfConstPtrArrayGetFirst(nodes);
   BfSize i0 = bfTreeNodeGetFirstIndex(node);
@@ -885,6 +884,9 @@ static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
                                       BfMat **WPtr) {
   BEGIN_ERROR_HANDLING();
 
+  BfMatBlockDense *Psi = NULL;
+  BfMatBlockDiag *W = NULL;
+
   if (PsiPtr == NULL)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
@@ -919,12 +921,12 @@ static void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
 
   /* Horizontally concatenate together the Psi blocks we found to get
    * the leading "Psi*" block. */
-  BfMatBlockDense *Psi = bfMatBlockDenseNewRowFromBlocks(&PsiBlocks);
+  Psi = bfMatBlockDenseNewRowFromBlocks(&PsiBlocks);
   HANDLE_ERROR();
 
   /* Diagonally concatenate together the W row blocks we found to get
    * the first column block of the permuted W factor. */
-  BfMatBlockDiag *W = bfMatBlockDiagNewFromBlocks(&W0Blocks);
+  W = bfMatBlockDiagNewFromBlocks(&W0Blocks);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {}

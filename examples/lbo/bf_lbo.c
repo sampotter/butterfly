@@ -50,6 +50,10 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
                                   BfMat const *L, BfMat const *M) {
   BEGIN_ERROR_HANDLING();
 
+  BfMat *Phi = NULL;
+  BfVecReal *Lam = NULL;
+  BfPoints1 *newFreqs = NULL;
+
   BfTreeNode *treeNode = bfFacStreamerGetCurrentColumnNode(facStreamer);
   if (!bfTreeNodeIsLeaf(treeNode))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -64,10 +68,6 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
    * eigenvalues. */
   if (!bfTreeNodeIsEmpty(treeNode))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  BfMat *Phi = NULL;
-  BfVecReal *Lam = NULL;
-  BfPoints1 *newFreqs = NULL;
 
   BfIntervalTreeNode *intervalTreeNode = bfTreeNodeToIntervalTreeNode(treeNode);
   HANDLE_ERROR();

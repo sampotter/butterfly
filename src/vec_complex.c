@@ -296,13 +296,15 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
 static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
 
+  BfVecComplex *cat = NULL;
+
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
   HANDLE_ERROR();
 
   BfVecComplex const *otherVecComplex = bfVecConstToVecComplexConst(otherVec);
   HANDLE_ERROR();
 
-  BfVecComplex *cat = bfVecComplexNew();
+  cat = bfVecComplexNew();
   HANDLE_ERROR();
 
   bfVecComplexInit(cat, vec->size + otherVec->size);
@@ -333,13 +335,15 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
 static BfVec *concat_vecReal(BfVec const *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
 
+  BfVecComplex *cat = NULL;
+
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
   HANDLE_ERROR();
 
   BfVecReal const *vecReal = bfVecConstToVecRealConst(otherVec);
   HANDLE_ERROR();
 
-  BfVecComplex *cat = bfVecComplexNew();
+  cat = bfVecComplexNew();
   HANDLE_ERROR();
 
   bfVecComplexInit(cat, vec->size + otherVec->size);

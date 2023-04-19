@@ -93,7 +93,7 @@ int compar(void const *x, void const *y) {
 }
 
 int main(int argc, char *argv[]) {
-  Opts opts;
+  Opts opts = {.pointsType = NULL};
   int code = parseArgs(argc, argv, &opts);
   if (code) exit(EXIT_FAILURE);
 

@@ -1106,6 +1106,8 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs) {
 bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
   BEGIN_ERROR_HANDLING();
 
+  bool upperTri = true;
+
   BfMatDenseComplex const *matDenseComplex = NULL;
 
   matDenseComplex = bfMatConstToMatDenseComplexConst(mat);
@@ -1113,7 +1115,6 @@ bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
 
   BfSize m = bfMatGetNumRows(mat);
 
-  bool upperTri = true;
   for (BfSize i = 0; i < m; ++i) {
     BfComplex const *rowPtr = matDenseComplex->data + i*matDenseComplex->rowStride;
     for (BfSize j = 0; j < i; ++j) {

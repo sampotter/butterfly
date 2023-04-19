@@ -283,13 +283,13 @@ bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 {
   BEGIN_ERROR_HANDLING();
 
+  BfMat *kernelMat = NULL;
+
   if (Nsrc != NULL && bfPoints2GetSize(Xsrc) != bfVectors2GetSize(Nsrc))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   if (Ntgt != NULL && bfPoints2GetSize(Xtgt) != bfVectors2GetSize(Ntgt))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  BfMat *kernelMat = NULL;
 
   switch (layerPot) {
   case BF_LAYER_POTENTIAL_SINGLE:

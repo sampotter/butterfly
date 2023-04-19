@@ -136,6 +136,8 @@ BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
 void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
+  BfSize *rowIndPerm = NULL;
+
   BfMatCooReal *matCooReal = bfMatToMatCooReal(mat);
   HANDLE_ERROR();
 
@@ -144,7 +146,7 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numRows)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *rowIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
+  rowIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (rowIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -169,6 +171,8 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
 void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
+  BfSize *colIndPerm = NULL;
+
   BfMatCooReal *matCooReal = bfMatToMatCooReal(mat);
   HANDLE_ERROR();
 
@@ -177,7 +181,7 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numCols)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *colIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
+  colIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (colIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

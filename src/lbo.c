@@ -9,23 +9,28 @@
 void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
   BEGIN_ERROR_HANDLING();
 
+  BfSize *rowptr = NULL;
+  BfSize *colind = NULL;
+  BfReal *L_data = NULL;
+  BfReal *M_data = NULL;
+
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
 
   BfSize nnz = numVerts + trimesh->vvOffset[numVerts];
 
-  BfSize *rowptr = bfMemAlloc(numVerts + 1, sizeof(BfSize));
+  rowptr = bfMemAlloc(numVerts + 1, sizeof(BfSize));
   if (rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfSize *colind = bfMemAlloc(nnz, sizeof(BfSize));
+  colind = bfMemAlloc(nnz, sizeof(BfSize));
   if (colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *L_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
+  L_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
   if (L_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *M_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
+  M_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
   if (M_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

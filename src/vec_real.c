@@ -196,6 +196,8 @@ void bfVecRealPrint(BfVec const *vec, FILE *fp) {
 BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
 
+  BfReal dist = NAN;
+
   if (bfVecGetType(otherVec) != BF_TYPE_VEC_REAL)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
@@ -205,7 +207,7 @@ BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec) {
   if (vec->size != otherVec->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfReal dist = -INFINITY;
+  dist = -INFINITY;
   for (BfSize i = 0; i < vec->size; ++i) {
     BfReal x = *(vecReal->data + i*vecReal->stride);
     BfReal y = *(otherVecReal->data + i*otherVecReal->stride);
