@@ -279,9 +279,9 @@ void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
 }
 
 void bfLuCsrRealDeinit(BfLuCsrReal *luCsrReal) {
-  free(luCsrReal->rowptr);
-  free(luCsrReal->colind);
-  free(luCsrReal->data);
+  bfMemFree(luCsrReal->rowptr);
+  bfMemFree(luCsrReal->colind);
+  bfMemFree(luCsrReal->data);
 
   luCsrReal->rowptr = NULL;
   luCsrReal->colind = NULL;
@@ -295,7 +295,7 @@ void bfLuCsrRealDeinit(BfLuCsrReal *luCsrReal) {
 }
 
 void bfLuCsrRealDealloc(BfLuCsrReal **luCsrReal) {
-  free(*luCsrReal);
+  bfMemFree(*luCsrReal);
   *luCsrReal = NULL;
 }
 
@@ -417,14 +417,14 @@ void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
 
   END_ERROR_HANDLING() {}
 
-  free(Lp);
-  free(Lj);
-  free(Lx);
-  free(Up);
-  free(Ui);
-  free(Ux);
-  free(P);
-  free(Q);
-  free(Dx);
-  free(Rs);
+  bfMemFree(Lp);
+  bfMemFree(Lj);
+  bfMemFree(Lx);
+  bfMemFree(Up);
+  bfMemFree(Ui);
+  bfMemFree(Ux);
+  bfMemFree(P);
+  bfMemFree(Q);
+  bfMemFree(Dx);
+  bfMemFree(Rs);
 }

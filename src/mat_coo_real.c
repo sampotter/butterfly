@@ -1,7 +1,5 @@
 #include <bf/mat_coo_real.h>
 
-#include <stdlib.h>
-
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -158,11 +156,11 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
     rowIndPerm[i] = revPerm.index[matCooReal->rowInd[i]];
 
   /* Free old row indices and replace with permuted ones */
-  free(matCooReal->rowInd);
+  bfMemFree(matCooReal->rowInd);
   matCooReal->rowInd = rowIndPerm;
 
   END_ERROR_HANDLING() {
-    free(rowIndPerm);
+    bfMemFree(rowIndPerm);
   }
 
   bfPermDeinit(&revPerm);
@@ -193,11 +191,11 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
     colIndPerm[i] = revPerm.index[matCooReal->colInd[i]];
 
   /* Free old column indices and replace with permuted ones */
-  free(matCooReal->colInd);
+  bfMemFree(matCooReal->colInd);
   matCooReal->colInd = colIndPerm;
 
   END_ERROR_HANDLING() {
-    free(colIndPerm);
+    bfMemFree(colIndPerm);
   }
 
   bfPermDeinit(&revPerm);
@@ -273,18 +271,18 @@ void bfMatCooRealInitEmpty(BfMatCooReal *mat, BfSize numRows,
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {
-    free(mat->rowInd);
-    free(mat->colInd);
-    free(mat->value);
+    bfMemFree(mat->rowInd);
+    bfMemFree(mat->colInd);
+    bfMemFree(mat->value);
     bfMatDeinit(&mat->super);
   }
 }
 
 void bfMatCooRealDeinit(BfMatCooReal *mat) {
   if (!(mat->super.props & BF_MAT_PROPS_VIEW)) {
-    free(mat->rowInd);
-    free(mat->colInd);
-    free(mat->value);
+    bfMemFree(mat->rowInd);
+    bfMemFree(mat->colInd);
+    bfMemFree(mat->value);
   }
 
   mat->numElts = BF_SIZE_BAD_VALUE;
@@ -294,7 +292,7 @@ void bfMatCooRealDeinit(BfMatCooReal *mat) {
 }
 
 void bfMatCooRealDealloc(BfMatCooReal **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 
