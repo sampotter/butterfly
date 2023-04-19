@@ -1,6 +1,7 @@
 #include <bf/mem.h>
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <bf/assert.h>
@@ -26,11 +27,11 @@ BfPtr bfMemAlloc(BfSize n, BfSize size) {
 BfPtr bfMemAllocAndZero(BfSize n, BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  // TODO: check if n*size overflows
-
-  BfPtr ptr = calloc(n, size);
+  BfPtr ptr = bfMemAlloc(n, size);
   if (ptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  bfMemZero(ptr, n, size);
 
   END_ERROR_HANDLING() {
     BF_ASSERT(false);
