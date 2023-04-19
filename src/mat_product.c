@@ -1,7 +1,5 @@
 #include <bf/mat_product.h>
 
-#include <stdlib.h>
-
 #include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -264,7 +262,7 @@ void bfMatProductDeinit(BfMatProduct *prod) {
 }
 
 void bfMatProductDealloc(BfMatProduct **prod) {
-  free(*prod);
+  bfMemFree(*prod);
   *prod = NULL;
 }
 

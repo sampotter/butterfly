@@ -1,7 +1,5 @@
 #include <bf/mat_func.h>
 
-#include <stdlib.h>
-
 #include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -109,7 +107,7 @@ void bfMatFuncInit(BfMatFunc *matFunc, BfSize numRows, BfSize numCols, MatMulFun
 void bfMatFuncDeinit(BfMatFunc *matFunc) {}
 
 void bfMatFuncDealloc(BfMatFunc **matFunc) {
-  free(*matFunc);
+  bfMemFree(*matFunc);
   *matFunc = NULL;
 }
 

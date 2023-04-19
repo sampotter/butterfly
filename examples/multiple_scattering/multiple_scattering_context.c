@@ -303,7 +303,7 @@ void setUpGeometry(MultipleScatteringContext *context) {
     ellipse->theta = BF_TWO_PI*bfRealUniform1();
 
     /* Set ellipse center */
-    memcpy(ellipse->center, context->ellipseCenters->data[i], sizeof(BfPoint2));
+    bfMemCopy(context->ellipseCenters->data[i], 1, sizeof(BfPoint2), ellipse->center);
   }
 
   printf(" sampled %lu ellipses [%0.2fs]\n", context->numEllipses, bfToc());

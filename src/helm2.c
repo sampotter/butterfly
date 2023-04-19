@@ -1,13 +1,13 @@
 #include <bf/helm2.h>
 
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/assert.h>
 #include <bf/bessel.h>
 #include <bf/circle.h>
 #include <bf/const.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/vectors.h>
 
@@ -118,7 +118,7 @@ get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
-  free(r);
+  bfMemFree(r);
 
   return bfMatDenseComplexToMat(kernelMat);
 }
@@ -167,7 +167,7 @@ get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
-  free(r);
+  bfMemFree(r);
 
   return bfMatDenseComplexToMat(kernelMat);
 }
@@ -216,7 +216,7 @@ get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
-  free(r);
+  bfMemFree(r);
 
   return bfMatDenseComplexToMat(kernelMat);
 }
@@ -270,7 +270,7 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
-  free(r);
+  bfMemFree(r);
 
   return bfMatDenseComplexToMat(kernelMat);
 }
