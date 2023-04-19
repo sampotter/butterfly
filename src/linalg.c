@@ -267,10 +267,12 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     bfMatSetCol(X, p, x);
   }
 
-  END_ERROR_HANDLING() {}
-
   if (numIter != NULL)
     *numIter = j;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
 
   return X;
 }

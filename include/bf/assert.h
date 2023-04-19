@@ -12,3 +12,5 @@
 #include <assert.h>
 #define BF_ASSERT(c) assert(c)
 #endif
+
+#define BF_DIE() BF_ASSERT(false)
