@@ -2,13 +2,12 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/lu_csr_real.h>
 #include <bf/mat_dense_real.h>
+#include <bf/mem.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
@@ -98,15 +97,15 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   if (X0 != NULL && numRhs != bfMatGetNumCols(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  V = malloc((maxNumIter + 1)*sizeof(BfMatDenseComplex *));
+  V = bfMemAlloc((maxNumIter + 1), sizeof(BfMatDenseComplex *));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  H = malloc(maxNumIter*sizeof(BfMatDenseComplex *));
+  H = bfMemAlloc(maxNumIter, sizeof(BfMatDenseComplex *));
   if (H == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  J = malloc(maxNumIter*numRhs*sizeof(BfMat *));
+  J = bfMemAlloc(maxNumIter, numRhs*sizeof(BfMat *));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -308,15 +307,15 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   bfLuCsrRealInit(M_lu, M);
   HANDLE_ERROR();
 
-  double *resid = malloc(N*sizeof(BfReal));
+  double *resid = bfMemAlloc(N, sizeof(BfReal));
   if (resid == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *V = malloc(N*ncv*sizeof(BfReal));
+  double *V = bfMemAlloc(N, ncv*sizeof(BfReal));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = calloc(ncv, sizeof(a_int));
+  a_int *select = bfMemAllocAndZero(ncv, sizeof(a_int));
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
@@ -327,18 +326,18 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
 
   a_int ipntr[11];
 
-  double *workd = malloc(3*N*sizeof(BfReal));
+  double *workd = bfMemAlloc(3*N, sizeof(BfReal));
   if (workd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (a_int i = 0; i < 3*N; ++i)
     workd[i] = 0;
 
-  double *workl = malloc(lworkl*sizeof(BfReal));
+  double *workl = bfMemAlloc(lworkl, sizeof(BfReal));
   if (workl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *workev = malloc(3*ncv*sizeof(BfReal));
+  BfReal *workev = bfMemAlloc(3*ncv, sizeof(BfReal));
   if (workev == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -357,7 +356,7 @@ dnaupd:
     BfVec *tmp = bfMatMulVec(L, bfVecRealToVec(&x));
     BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(M_lu, tmp));
 
-    memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
+    bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
     bfVecDelete(&tmp);
     bfVecRealDeinitAndDealloc(&y);
@@ -372,7 +371,7 @@ dnaupd:
 
     BfVecReal *y = bfVecToVecReal(bfMatMulVec(M, bfVecRealToVec(&x)));
 
-    memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
+    bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
     bfVecRealDeinitAndDealloc(&y);
 
@@ -414,11 +413,11 @@ dnaupd:
 
   bfLuCsrRealDeinitAndDealloc(&M_lu);
 
-  free(resid);
-  free(V);
-  free(workd);
-  free(workl);
-  free(workev);
+  bfMemFree(resid);
+  bfMemFree(V);
+  bfMemFree(workd);
+  bfMemFree(workl);
+  bfMemFree(workev);
 
   return eigmax;
 }
@@ -456,15 +455,15 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   bfLuCsrRealInit(A_minus_sigma_M_lu, A_minus_sigma_M);
   HANDLE_ERROR();
 
-  double *resid = malloc(N*sizeof(BfReal));
+  double *resid = bfMemAlloc(N, sizeof(BfReal));
   if (resid == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *V = malloc(N*ncv*sizeof(BfReal));
+  double *V = bfMemAlloc(N*ncv, sizeof(BfReal));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  a_int *select = calloc(ncv, sizeof(a_int));
+  a_int *select = bfMemAllocAndZero(ncv, sizeof(a_int));
 
   a_int iparam[11] = {
     [0] = 1, /* compute exact shifts */
@@ -474,18 +473,18 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
 
   a_int ipntr[11];
 
-  double *workd = malloc(3*N*sizeof(BfReal));
+  double *workd = bfMemAlloc(3*N, sizeof(BfReal));
   if (workd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (a_int i = 0; i < 3*N; ++i)
     workd[i] = 0;
 
-  double *workl = malloc(lworkl*sizeof(BfReal));
+  double *workl = bfMemAlloc(lworkl, sizeof(BfReal));
   if (workl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *workev = malloc(3*ncv*sizeof(BfReal));
+  BfReal *workev = bfMemAlloc(3*ncv, sizeof(BfReal));
   if (workev == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -504,7 +503,7 @@ dnaupd:
     BfVec *tmp = bfMatMulVec(M, bfVecRealToVec(&x));
     BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(A_minus_sigma_M_lu, tmp));
 
-    memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
+    bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
     bfVecDelete(&tmp);
     bfVecRealDeinitAndDealloc(&y);
@@ -519,7 +518,7 @@ dnaupd:
 
     BfVecReal *y = bfVecToVecReal(bfMatMulVec(M, bfVecRealToVec(&x)));
 
-    memcpy(&workd[ipntr[1] - 1], y->data, N*sizeof(BfReal));
+    bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
     bfVecRealDeinitAndDealloc(&y);
 
@@ -529,15 +528,15 @@ dnaupd:
   if (info < 0 || iparam[4] < nev)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfReal *dr = malloc((nev + 1)*sizeof(BfReal));
+  BfReal *dr = bfMemAlloc(nev + 1, sizeof(BfReal));
   if (dr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *di = malloc((nev + 1)*sizeof(BfReal));
+  BfReal *di = bfMemAlloc(nev + 1, sizeof(BfReal));
   if (di == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *z = malloc(N*(nev + 1)*sizeof(BfReal));
+  BfReal *z = bfMemAlloc(N*(nev + 1), sizeof(BfReal));
   if (z == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -573,7 +572,7 @@ dnaupd:
     if (fabs(di[i]) != 0)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfSize *J = malloc(k*sizeof(BfSize));
+  BfSize *J = bfMemAlloc(k, sizeof(BfSize));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -629,19 +628,19 @@ dnaupd:
     *PhiPtr = NULL;
   }
 
-  free(J);
-  free(z);
-  free(dr);
-  free(di);
+  bfMemFree(J);
+  bfMemFree(z);
+  bfMemFree(dr);
+  bfMemFree(di);
 
   bfLuCsrRealDeinitAndDealloc(&A_minus_sigma_M_lu);
   bfMatDelete(&A_minus_sigma_M);
 
-  free(resid);
-  free(V);
-  free(workd);
-  free(workl);
-  free(workev);
+  bfMemFree(resid);
+  bfMemFree(V);
+  bfMemFree(workd);
+  bfMemFree(workl);
+  bfMemFree(workev);
 }
 
 void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,

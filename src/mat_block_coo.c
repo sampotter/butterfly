@@ -1,12 +1,12 @@
 #include <bf/mat_block_coo.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
 #include <bf/mat_zero.h>
+#include <bf/mem.h>
 #include <bf/ptr_array.h>
 #include <bf/size_array.h>
 #include <bf/util.h>
@@ -137,7 +137,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   for (BfSize k = 0; k < numBlocks; ++k) {
     if (ROW_IND(matBlockCoo, k) != rowInd)
       continue;
-    BfMatBlockCooEntry *entry = malloc(sizeof(BfMatBlockCooEntry));
+    BfMatBlockCooEntry *entry = bfMemAlloc(1, sizeof(BfMatBlockCooEntry));
     entry->i0 = BLOCK_ROW_OFFSET(matBlockCoo, k);
     entry->j0 = BLOCK_COL_OFFSET(matBlockCoo, k);
     entry->block = BLOCK(matBlockCoo, k);
@@ -145,7 +145,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   }
 
   /* Sort the array of blocks into dictionary order */
-  bfPtrArraySort(&blocks, (BfPtrCmp)cmpColumnOrder);
+  bfPtrArraySort(&blocks, (BfPtrCmp)cmpColumnOrder, NULL);
 
   /* Verify that none of the collected blocks are overlapping */
 #if BF_DEBUG
@@ -176,7 +176,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   END_ERROR_HANDLING() {}
 
   for (BfSize k = 0; k < bfPtrArraySize(&blocks); ++k)
-    free(bfPtrArrayGet(&blocks, k));
+    bfMemFree(bfPtrArrayGet(&blocks, k));
   bfPtrArrayDeinit(&blocks);
 
   return rowCopy;
@@ -272,7 +272,7 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
     BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
     HANDLE_ERROR();
 
-    BfIndexedMat *indexedRowBlock = malloc(sizeof(BfIndexedMat));
+    BfIndexedMat *indexedRowBlock = bfMemAlloc(1, sizeof(BfIndexedMat));
     if (indexedRowBlock == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -298,7 +298,7 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
 
   /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
   for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
-    free(bfPtrArrayGet(&indexedRowBlocks, k));
+    bfMemFree(bfPtrArrayGet(&indexedRowBlocks, k));
 
   bfPtrArrayDeinit(&indexedRowBlocks);
 
@@ -451,7 +451,7 @@ BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCo
 
   BfSize n = bfMatGetNumCols(bfMatBlockCooConstToMatConst(matBlockCoo));
 
-  bool *nonzero = calloc(n, sizeof(bool));
+  bool *nonzero = bfMemAllocAndZero(n, sizeof(bool));
   if (nonzero == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -640,7 +640,7 @@ void bfMatBlockCooInvalidate(BfMatBlockCoo *matBlockCoo) {
 BfMatBlockCoo *bfMatBlockCooNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatBlockCoo *matBlockCoo = malloc(sizeof(BfMatBlockCoo));
+  BfMatBlockCoo *matBlockCoo = bfMemAlloc(1, sizeof(BfMatBlockCoo));
   if (matBlockCoo == NULL)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
@@ -719,11 +719,11 @@ BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks) {
 
   /* Set up the row and column indices */
 
-  matBlockCoo->rowInd = malloc(numBlocks*sizeof(BfSize));
+  matBlockCoo->rowInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (matBlockCoo->rowInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  matBlockCoo->colInd = malloc(numBlocks*sizeof(BfSize));
+  matBlockCoo->colInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (matBlockCoo->colInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -773,11 +773,11 @@ BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks) {
 
   /* Set up the row and column indices */
 
-  matBlockCoo->rowInd = malloc(numBlocks*sizeof(BfSize));
+  matBlockCoo->rowInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (matBlockCoo->rowInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  matBlockCoo->colInd = malloc(numBlocks*sizeof(BfSize));
+  matBlockCoo->colInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (matBlockCoo->colInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -936,14 +936,14 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
   mat->numBlocks = numBlocks;
 
   /* allocate and initialize row indices to dummy values */
-  mat->rowInd = malloc(numBlocks*sizeof(BfSize));
+  mat->rowInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (mat->rowInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   for (BfSize i = 0; i < numBlocks; ++i)
     mat->rowInd[i] = BF_SIZE_BAD_VALUE;
 
   /* allocate and initialize column indices to dummy values */
-  mat->colInd = malloc(numBlocks*sizeof(BfSize));
+  mat->colInd = bfMemAlloc(numBlocks, sizeof(BfSize));
   if (mat->colInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   for (BfSize i = 0; i < numBlocks; ++i)
@@ -951,8 +951,8 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
 
   END_ERROR_HANDLING() {
     bfMatBlockDeinit(&mat->super);
-    free(mat->rowInd);
-    free(mat->colInd);
+    bfMemFree(mat->rowInd);
+    bfMemFree(mat->colInd);
   }
 }
 
@@ -962,7 +962,7 @@ void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
 }
 
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 

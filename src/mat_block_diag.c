@@ -1,7 +1,6 @@
 #include <bf/mat_block_diag.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/const.h>
 #include <bf/error.h>
@@ -10,6 +9,7 @@
 #include <bf/mat_block_coo.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_zero.h>
+#include <bf/mem.h>
 #include <bf/ptr_array.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
@@ -230,7 +230,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
     BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
     HANDLE_ERROR();
 
-    BfIndexedMat *indexedRowBlock = malloc(sizeof(BfIndexedMat));
+    BfIndexedMat *indexedRowBlock = bfMemAlloc(1, sizeof(BfIndexedMat));
     if (indexedRowBlock == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -258,7 +258,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
 
   /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
   for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
-    free(bfPtrArrayGet(&indexedRowBlocks, k));
+    bfMemFree(bfPtrArrayGet(&indexedRowBlocks, k));
 
   bfPtrArrayDeinit(&indexedRowBlocks);
 
@@ -573,7 +573,7 @@ BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
 BfMatBlockDiag *bfMatBlockDiagNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatBlockDiag *mat = malloc(sizeof(BfMatBlockDiag));
+  BfMatBlockDiag *mat = bfMemAlloc(1, sizeof(BfMatBlockDiag));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -637,7 +637,7 @@ void bfMatBlockDiagDeinit(BfMatBlockDiag *mat) {
 }
 
 void bfMatBlockDiagDealloc(BfMatBlockDiag **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 

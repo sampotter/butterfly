@@ -2,10 +2,10 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/vectors.h>
 
@@ -62,7 +62,7 @@ BfOctreeNode const *bfTreeNodeConstToOctreeNodeConst(BfTreeNode const *node) {
 BfOctreeNode *bfOctreeNodeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfOctreeNode *node = malloc(sizeof(BfOctreeNode));
+  BfOctreeNode *node = bfMemAlloc(1, sizeof(BfOctreeNode));
   if (node == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -259,7 +259,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
 
   END_ERROR_HANDLING() {
     for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
-      free(child[q]);
+      bfMemFree(child[q]);
     }
   }
 }

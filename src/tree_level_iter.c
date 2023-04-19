@@ -1,10 +1,10 @@
 #include <bf/tree_level_iter.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/tree_node.h>
 
 static
@@ -64,7 +64,7 @@ findLevelOrderOffsets(BfPtrArray *nodes, BfSize *numLevels, BfSize **offsets)
   *numLevels = maxDepth - minDepth + 1;
 
   /* allocate space for offsets */
-  *offsets = malloc((*numLevels + 1)*sizeof(BfSize));
+  *offsets = bfMemAlloc(*numLevels + 1, sizeof(BfSize));
   if (*offsets == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -83,7 +83,7 @@ findLevelOrderOffsets(BfPtrArray *nodes, BfSize *numLevels, BfSize **offsets)
   }
 
   END_ERROR_HANDLING() {
-    free(*offsets);
+    bfMemFree(*offsets);
   }
 }
 
@@ -102,7 +102,7 @@ static void treeLevelIterInit_lrLevelOrder(BfTreeLevelIter *iter, BfTreeNode *no
   fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
   HANDLE_ERROR();
 
-  info = malloc(sizeof(LrLevelOrderInfo));
+  info = bfMemAlloc(1, sizeof(LrLevelOrderInfo));
   if (info == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   iter->aux = info;
@@ -121,7 +121,7 @@ static void treeLevelIterInit_lrLevelOrder(BfTreeLevelIter *iter, BfTreeNode *no
 
   END_ERROR_HANDLING() {
     bfPtrArrayDeinit(&iter->nodes);
-    free(info);
+    bfMemFree(info);
   }
 }
 
@@ -138,7 +138,7 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
   fillWithLrLevelOrderNodePtrs(&iter->nodes, node);
   HANDLE_ERROR();
 
-  info = malloc(sizeof(LrLevelOrderInfo));
+  info = bfMemAlloc(1, sizeof(LrLevelOrderInfo));
   if (info == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   iter->aux = info;
@@ -157,7 +157,7 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
 
   END_ERROR_HANDLING() {
     bfPtrArrayDeinit(&iter->nodes);
-    free(info);
+    bfMemFree(info);
   }
 }
 
@@ -270,8 +270,8 @@ void bfTreeLevelIterNext(BfTreeLevelIter *iter) {
 
 static void deinit_levelOrder(BfTreeLevelIter *iter) {
   LrLevelOrderInfo *info = iter->aux;
-  free(info->offsets);
-  free(info);
+  bfMemFree(info->offsets);
+  bfMemFree(info);
 
   iter->aux = NULL;
 }

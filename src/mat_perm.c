@@ -1,13 +1,12 @@
 #include <bf/mat_perm.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/mem.h>
 
 typedef enum {
   PERM_TYPE_BF,
@@ -81,7 +80,7 @@ static BfMat *solve_matDenseComplex(BfMatPerm const *matPerm, BfMat const *other
     for (BfSize i = 0; i < m; ++i) {
       BfComplex *writePtr = result->data + matPerm->impl->perm->index[i]*result->rowStride;
       BfComplex const *readPtr = otherMatDenseComplex->data + i*otherMatDenseComplex->rowStride;
-      memcpy(writePtr, readPtr, n*sizeof(BfComplex));
+      bfMemCopy(readPtr, n, sizeof(BfComplex), writePtr);
     }
   }
 
@@ -90,7 +89,7 @@ static BfMat *solve_matDenseComplex(BfMatPerm const *matPerm, BfMat const *other
     for (BfSize i = 0; i < m; ++i) {
       BfComplex *writePtr = result->data + i*result->rowStride;
       BfComplex const *readPtr = otherMatDenseComplex->data + i*otherMatDenseComplex->rowStride;
-      memcpy(writePtr, readPtr, n*sizeof(BfComplex));
+      bfMemCopy(readPtr, n, sizeof(BfComplex), writePtr);
     }
 
     /* Apply row pivots using LAPACKE: */
@@ -153,7 +152,7 @@ BfMat *bfMatPermToMat(BfMatPerm *matPerm) {
 BfMatPerm *bfMatPermNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatPerm *matPerm = malloc(sizeof(BfMatPerm));
+  BfMatPerm *matPerm = bfMemAlloc(1, sizeof(BfMatPerm));
   if (matPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -200,7 +199,7 @@ void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm) {
   bfMatInit(&matPerm->super, &MAT_VTABLE, perm->size, perm->size);
   HANDLE_ERROR();
 
-  matPerm->impl = malloc(perm->size*sizeof(BfMatPermImpl));
+  matPerm->impl = bfMemAlloc(perm->size, sizeof(BfMatPermImpl));
   matPerm->impl->permType = PERM_TYPE_BF;
   matPerm->impl->perm = bfPermCopy(perm);
 
@@ -217,7 +216,7 @@ void bfMatPermInitViewFromLapackPivots(BfMatPerm *matPerm, BfSize size, BfLapack
 
   matPerm->super.props |= BF_MAT_PROPS_VIEW;
 
-  matPerm->impl = malloc(sizeof(BfMatPermImpl));
+  matPerm->impl = bfMemAlloc(1, sizeof(BfMatPermImpl));
   matPerm->impl->permType = PERM_TYPE_LAPACK;
   matPerm->impl->permLapack.size = size;
   matPerm->impl->permLapack.ipiv = ipiv;

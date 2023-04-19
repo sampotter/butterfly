@@ -7,6 +7,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/util.h>
 
@@ -16,7 +17,7 @@ static void initVf(BfTrimesh *trimesh) {
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   BfSize numFaces = bfTrimeshGetNumFaces(trimesh);
 
-  trimesh->vfOffset = calloc(numVerts + 1, sizeof(BfSize));
+  trimesh->vfOffset = bfMemAllocAndZero(numVerts + 1, sizeof(BfSize));
   if (trimesh->vfOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -37,11 +38,11 @@ static void initVf(BfTrimesh *trimesh) {
   for (BfSize i = 0; i < numVerts; ++i)
     trimesh->vfOffset[i + 1] += trimesh->vfOffset[i];
 
-  trimesh->vf = malloc(trimesh->vfOffset[numVerts]*sizeof(BfSize));
+  trimesh->vf = bfMemAlloc(trimesh->vfOffset[numVerts], sizeof(BfSize));
   if (trimesh->vf == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfSize *offset = calloc(numVerts, sizeof(BfSize));
+  BfSize *offset = bfMemAllocAndZero(numVerts, sizeof(BfSize));
   if (offset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -53,14 +54,14 @@ static void initVf(BfTrimesh *trimesh) {
   }
 
   END_ERROR_HANDLING() {
-    free(trimesh->vfOffset);
+    bfMemFree(trimesh->vfOffset);
     trimesh->vfOffset = NULL;
 
-    free(trimesh->vf);
+    bfMemFree(trimesh->vf);
     trimesh->vf = NULL;
   }
 
-  free(offset);
+  bfMemFree(offset);
 }
 
 static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
@@ -92,7 +93,7 @@ static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
       /* If we're at capacity, need to allocate */
       if (nvv == capacity) {
         BfSize capacityNew = 2*capacity;
-        BfSize *vvNew = realloc(vv, capacityNew*sizeof(BfSize));
+        BfSize *vvNew = bfMemRealloc(vv, capacityNew, sizeof(BfSize));
         if (vvNew == NULL)
           RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
         capacity = capacityNew;
@@ -101,7 +102,7 @@ static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
 
       /* Shift the latter part of vv back */
       if (l < nvv)
-        memmove(&vv[l + 1], &vv[l], (nvv - l)*sizeof(BfSize));
+        bfMemMove(&vv[l], nvv - l, sizeof(BfSize), &vv[l + 1]);
 
       /* Insert inds[k] */
       vv[l] = inds[k];
@@ -122,7 +123,7 @@ static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
   BEGIN_ERROR_HANDLING();
 
   BfSize nvv = 0, capacity = 16;
-  BfSize *vv = malloc(capacity*sizeof(BfSize));
+  BfSize *vv = bfMemAlloc(capacity, sizeof(BfSize));
   fillWithAdjacentVertsUsingVf(trimesh, i, &nvv, &capacity, &vv);
   HANDLE_ERROR();
 
@@ -130,7 +131,7 @@ static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
     nvv = BF_SIZE_BAD_VALUE;
   }
 
-  free(vv);
+  bfMemFree(vv);
 
   return nvv;
 }
@@ -141,7 +142,7 @@ static void initVv(BfTrimesh *trimesh) {
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
 
   /* Allocate space for vvOffset */
-  trimesh->vvOffset = malloc((numVerts + 1)*sizeof(BfSize));
+  trimesh->vvOffset = bfMemAlloc(numVerts + 1, sizeof(BfSize));
   if (trimesh->vvOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -158,7 +159,7 @@ static void initVv(BfTrimesh *trimesh) {
     trimesh->vvOffset[i + 1] += trimesh->vvOffset[i];
 
   /* Allocate space for vv */
-  trimesh->vv = malloc(trimesh->vvOffset[numVerts]*sizeof(BfSize));
+  trimesh->vv = bfMemAlloc(trimesh->vvOffset[numVerts], sizeof(BfSize));
   if (trimesh->vv == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -191,7 +192,7 @@ void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
 
   /* Allocate space and load the faces */
 
-  trimesh->faces = malloc(trimesh->numFaces*sizeof(BfSize3));
+  trimesh->faces = bfMemAlloc(trimesh->numFaces, sizeof(BfSize3));
   if (trimesh->faces == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -246,7 +247,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
       ++num_face_vertex_normal_indices;
     }
 
-    free(lineptr);
+    bfMemFree(lineptr);
   } while (nread >= 0);
 
   /* Allocate space for the vertices and faces */
@@ -256,7 +257,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 
   trimesh->numFaces = num_face_vertex_indices;
 
-  trimesh->faces = malloc(trimesh->numFaces*sizeof(BfSize3));
+  trimesh->faces = bfMemAlloc(trimesh->numFaces, sizeof(BfSize3));
   if (trimesh->faces == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -314,7 +315,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
       }
     }
 
-    free(lineptr);
+    bfMemFree(lineptr);
   } while (nread >= 0);
 
   initVf(trimesh);
@@ -343,7 +344,7 @@ BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh) {
 }
 
 void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x) {
-  memcpy(x, trimesh->verts.data[i], sizeof(BfPoint3));
+  bfMemCopy(trimesh->verts.data[i], 1, sizeof(BfPoint3), x);
 }
 
 void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex,

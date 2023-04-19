@@ -1,11 +1,11 @@
 #include <bf/ellipse.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/vec_real.h>
 #include <bf/vectors.h>
@@ -82,7 +82,7 @@ void bfEllipseSampleEquispaced(BfEllipse const *ellipse, BfSize numPoints,
 
   BfReal dtheta = BF_TWO_PI/numPoints;
 
-  BfReal *D = malloc((numPoints + 1)*sizeof(BfReal));
+  BfReal *D = bfMemAlloc((numPoints + 1), sizeof(BfReal));
   D[0] = 0;
   for (BfSize i = 1; i <= numPoints; ++i) {
     BfReal dx = a*cos(i*dtheta) - a*cos((i - 1)*dtheta);
@@ -129,7 +129,7 @@ void bfEllipseSampleEquispaced(BfEllipse const *ellipse, BfSize numPoints,
     if (unitTangents) bfVectors2Append(unitTangents, t);
   }
 
-  free(D);
+  bfMemFree(D);
 }
 
 void bfEllipseSampleWithInverseCurvatureSpacing(BfEllipse const *ellipse, BfSize numPoints,
@@ -139,7 +139,7 @@ void bfEllipseSampleWithInverseCurvatureSpacing(BfEllipse const *ellipse, BfSize
 
   BfReal dt = BF_TWO_PI/numPoints;
 
-  BfReal *D = malloc((numPoints + 1)*sizeof(BfReal));
+  BfReal *D = bfMemAlloc((numPoints + 1), sizeof(BfReal));
   D[0] = 0;
   for (BfSize i = 1; i <= numPoints; ++i) {
     BfReal dx = a*cos(i*dt) - a*cos((i - 1)*dt);
@@ -148,7 +148,7 @@ void bfEllipseSampleWithInverseCurvatureSpacing(BfEllipse const *ellipse, BfSize
   }
   BfReal Dmax = D[numPoints];
 
-  BfReal *S = malloc((numPoints + 1)*sizeof(BfReal));
+  BfReal *S = bfMemAlloc((numPoints + 1), sizeof(BfReal));
   S[0] = 0;
   for (BfSize i = 1; i <= numPoints; ++i) {
     BfReal t = i*dt;
@@ -185,6 +185,6 @@ void bfEllipseSampleWithInverseCurvatureSpacing(BfEllipse const *ellipse, BfSize
     bfVectors2Append(unitNormals, n);
   }
 
-  free(D);
-  free(S);
+  bfMemFree(D);
+  bfMemFree(S);
 }

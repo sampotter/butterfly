@@ -1,11 +1,10 @@
 #include <bf/mat_diag_real.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/mat_coo_real.h>
 #include <bf/vec_real.h>
 
@@ -24,7 +23,7 @@ static BfMatVtable MAT_VTABLE = {
 BfMat *bfMatDiagRealGetView(BfMat *mat) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDiagReal *view = malloc(sizeof(BfMatDiagReal));
+  BfMatDiagReal *view = bfMemAlloc(1, sizeof(BfMatDiagReal));
   if (view == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -35,7 +34,7 @@ BfMat *bfMatDiagRealGetView(BfMat *mat) {
   bfMatDiagRealToMat(view)->props |= BF_MAT_PROPS_VIEW;
 
   END_ERROR_HANDLING() {
-    free(view);
+    bfMemFree(view);
     view = NULL;
   }
 
@@ -179,7 +178,7 @@ BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat) {
 BfMatDiagReal *bfMatDiagRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDiagReal *mat = malloc(sizeof(BfMatDiagReal));
+  BfMatDiagReal *mat = bfMemAlloc(1, sizeof(BfMatDiagReal));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -217,7 +216,7 @@ void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
 
   mat->numElts = numRows < numCols ? numRows : numCols;
 
-  mat->data = malloc(mat->numElts*sizeof(BfReal));
+  mat->data = bfMemAlloc(mat->numElts, sizeof(BfReal));
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -245,13 +244,13 @@ void bfMatDiagRealDeinit(BfMatDiagReal *mat) {
   mat->numElts = BF_SIZE_BAD_VALUE;
 
   if (!(mat->super.props & BF_MAT_PROPS_VIEW))
-    free(mat->data);
+    bfMemFree(mat->data);
 
   mat->data = NULL;
 }
 
 void bfMatDiagRealDealloc(BfMatDiagReal **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 
@@ -322,7 +321,7 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
     lhsPtr++;
   }
 
-  memset(resultPtr, 0x0, (m - k)*n*sizeof(BfComplex));
+  bfMemZero(resultPtr, (m - k)*n, sizeof(BfComplex));
 
   END_ERROR_HANDLING()
     bfMatDenseComplexDeinitAndDealloc(&result);

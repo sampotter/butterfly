@@ -1,10 +1,10 @@
 #include <bf/mat_identity.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: Mat */
 
@@ -143,7 +143,7 @@ BfMatIdentity *bfMatToMatIdentity(BfMat *mat) {
 BfMatIdentity *bfMatIdentityNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatIdentity *matIdentity = malloc(sizeof(BfMatIdentity));
+  BfMatIdentity *matIdentity = bfMemAlloc(1, sizeof(BfMatIdentity));
   if (matIdentity == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -169,7 +169,7 @@ void bfMatIdentityDeinit(BfMatIdentity *matIdentity) {
 }
 
 void bfMatIdentityDealloc(BfMatIdentity **matIdentity) {
-  free(*matIdentity);
+  bfMemFree(*matIdentity);
   *matIdentity = NULL;
 }
 

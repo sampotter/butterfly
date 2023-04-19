@@ -1,10 +1,10 @@
 #include <bf/tree_iter_post_order.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/tree.h>
 #include <bf/tree_node.h>
 
@@ -20,7 +20,7 @@ typedef struct {
 StackNode *makeStackNode(BfTreeNode *treeNode) {
   BEGIN_ERROR_HANDLING();
 
-  StackNode *stackNode = malloc(sizeof(StackNode));
+  StackNode *stackNode = bfMemAlloc(1, sizeof(StackNode));
   if (stackNode == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -166,7 +166,7 @@ BfTreeIter *bfTreeIterPostOrderToTreeIter(BfTreeIterPostOrder *iter) {
 BfTreeIterPostOrder *bfTreeIterPostOrderNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfTreeIterPostOrder *iter = malloc(sizeof(BfTreeIterPostOrder));
+  BfTreeIterPostOrder *iter = bfMemAlloc(1, sizeof(BfTreeIterPostOrder));
   if (iter == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

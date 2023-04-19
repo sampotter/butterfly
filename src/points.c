@@ -2,14 +2,13 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/bbox.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_real.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 #include <bf/vec_real.h>
 
@@ -65,7 +64,7 @@ void bfPoint3Copy(BfPoint3 x, BfPoint3 const y) {
 BfPoints2 *bfPoints2NewEmpty() {
   BEGIN_ERROR_HANDLING();
 
-  BfPoints2 *points = malloc(sizeof(BfPoints2));
+  BfPoints2 *points = bfMemAlloc(1, sizeof(BfPoints2));
   if (points == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -73,7 +72,7 @@ BfPoints2 *bfPoints2NewEmpty() {
   points->capacity = 16;
   points->isView = BF_ARRAY_DEFAULT_CAPACITY;
 
-  points->data = malloc(points->capacity*sizeof(BfPoint2));
+  points->data = bfMemAlloc(points->capacity, sizeof(BfPoint2));
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -124,14 +123,14 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
   if (bfMatDenseGetColStride(matDense) != 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  points = malloc(sizeof(BfPoints2));
+  points = bfMemAlloc(1, sizeof(BfPoints2));
   points->data = (BfPoint2 *)matDenseReal->data;
   points->size = bfMatDenseRealGetNumRows(mat);
   points->capacity = BF_SIZE_BAD_VALUE;
   points->isView = true;
 
   END_ERROR_HANDLING() {
-    free(points);
+    bfMemFree(points);
     points = NULL;
   }
 
@@ -143,7 +142,7 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
 BfPoints1 *bfPoints1New() {
   BEGIN_ERROR_HANDLING();
 
-  BfPoints1 *points = malloc(sizeof(BfPoints1));
+  BfPoints1 *points = bfMemAlloc(1, sizeof(BfPoints1));
   if (points == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -161,7 +160,7 @@ BfPoints1 *bfPoints1New() {
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity) {
   BEGIN_ERROR_HANDLING();
 
-  points->data = malloc(capacity*sizeof(BfPoint1));
+  points->data = bfMemAlloc(capacity, sizeof(BfPoint1));
   if (points->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -185,7 +184,7 @@ void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal) {
 
 void bfPoints1Deinit(BfPoints1 *points) {
   if (!points->isView)
-    free(points->data);
+    bfMemFree(points->data);
   points->data = NULL;
   points->size = BF_SIZE_BAD_VALUE;
   points->capacity = BF_SIZE_BAD_VALUE;
@@ -205,7 +204,7 @@ void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
   if (points->size == points->capacity) {
     points->capacity *= 2;
 
-    BfReal *newData = realloc(points->data, points->capacity*sizeof(BfReal));
+    BfReal *newData = bfMemRealloc(points->data, points->capacity, sizeof(BfReal));
     if (newData == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -229,7 +228,7 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
 
   BfSize newSize = points->size + newPoints->size;
 
-  BfReal *newData = malloc(newSize*sizeof(BfReal));
+  BfReal *newData = bfMemAlloc(newSize, sizeof(BfReal));
   if (newData == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -252,13 +251,13 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
   assert(i == points->size && j == newPoints->size && k == newSize);
 
   if (!points->isView)
-    free(points->data);
+    bfMemFree(points->data);
   points->data = newData;
   points->size = newSize;
   points->capacity = newSize;
 
   END_ERROR_HANDLING() {
-    free(newData);
+    bfMemFree(newData);
   }
 }
 
@@ -276,7 +275,7 @@ void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
 
   points->size = numPoints;
 
-  points->data = malloc(numPoints*sizeof(BfPoint2));
+  points->data = bfMemAlloc(numPoints, sizeof(BfPoint2));
   if (points->data == NULL)
     bfSetError(BF_ERROR_MEMORY_ERROR);
 
@@ -307,7 +306,7 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
   points->size = size/sizeof(BfPoint2);
 
   /* allocate space for the points */
-  points->data = malloc(size);
+  points->data = bfMemAlloc(size, sizeof(char));
   if (points->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -316,14 +315,14 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
   // TODO: error-handling
 
   END_ERROR_HANDLING() {
-    free(points->data);
+    bfMemFree(points->data);
   }
 
   fclose(fp);
 }
 
 void bfFreePoints2(BfPoints2 *points) {
-  free(points->data);
+  bfMemFree(points->data);
 }
 
 bool bfPoints2Initialized(BfPoints2 const *points) {
@@ -404,7 +403,7 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
 
   BfSize m = X->size, n = Y->size;
 
-  BfReal *r = malloc(m*n*sizeof(BfReal));
+  BfReal *r = bfMemAlloc(m*n, sizeof(BfReal));
   if (r == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -429,7 +428,7 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
   if (points->size == points->capacity) {
     points->capacity *= 2;
 
-    BfPoint2 *newData = realloc(points->data, points->capacity*sizeof(BfPoint2));
+    BfPoint2 *newData = bfMemRealloc(points->data, points->capacity, sizeof(BfPoint2));
     if (newData == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -437,7 +436,7 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
   }
 
   /* Append new point */
-  memcpy(&points->data[points->size++], p, sizeof(BfPoint2));
+  bfMemCopy(p, 1, sizeof(BfPoint2), &points->data[points->size++]);
 
   END_ERROR_HANDLING() {}
 }
@@ -457,7 +456,7 @@ void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
   if (i >= points->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(p, &points->data[i], sizeof(BfPoint2));
+  bfMemCopy(&points->data[i], 1, sizeof(BfPoint2), p);
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -477,7 +476,7 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfPoints2 *pointsView = malloc(sizeof(BfPoints2));
+  BfPoints2 *pointsView = bfMemAlloc(1, sizeof(BfPoints2));
   if (pointsView == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -503,7 +502,7 @@ void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {
 
   points->size = numPoints;
 
-  points->data = malloc(numPoints*sizeof(BfPoint3));
+  points->data = bfMemAlloc(numPoints, sizeof(BfPoint3));
   if (points->data == NULL)
     bfSetError(BF_ERROR_MEMORY_ERROR);
 }
@@ -529,7 +528,7 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
   points->size = size/sizeof(BfPoint3);
 
   /* allocate space for the points */
-  points->data = malloc(size);
+  points->data = bfMemAlloc(size, sizeof(char));
   if (points->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -538,7 +537,7 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
   // TODO: error-handling
 
   END_ERROR_HANDLING() {
-    free(points->data);
+    bfMemFree(points->data);
   }
 
   fclose(fp);

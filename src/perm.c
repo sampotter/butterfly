@@ -1,12 +1,11 @@
 #include <bf/perm.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_perm.h>
+#include <bf/mem.h>
 
 typedef enum {
   PERM_TYPE_BF,
@@ -16,7 +15,7 @@ typedef enum {
 BfPerm *bfPermNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfPerm *perm = malloc(sizeof(BfPerm));
+  BfPerm *perm = bfMemAlloc(1, sizeof(BfPerm));
   if (perm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -30,7 +29,7 @@ BfPerm *bfPermNew() {
 void bfPermInitEmpty(BfPerm *perm, BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  perm->index = malloc(size*sizeof(BfSize));
+  perm->index = bfMemAlloc(size, sizeof(BfSize));
   if (perm->index == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -45,13 +44,13 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
 }
 
 void bfPermDeinit(BfPerm *perm) {
-  free(perm->index);
+  bfMemFree(perm->index);
   perm->index = NULL;
   perm->size = BF_SIZE_BAD_VALUE;
 }
 
 void bfPermDealloc(BfPerm **perm) {
-  free(*perm);
+  bfMemFree(*perm);
   *perm = NULL;
 }
 
@@ -69,11 +68,11 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
   bfPermInitEmpty(permCopy, perm->size);
   HANDLE_ERROR();
 
-  permCopy->index = malloc(perm->size*sizeof(BfSize));
+  permCopy->index = bfMemAlloc(perm->size, sizeof(BfSize));
   if (permCopy->index == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  memcpy(permCopy->index, perm->index, perm->size*sizeof(BfSize));
+  bfMemCopy(perm->index, perm->size, sizeof(BfSize), permCopy->index);
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -85,7 +84,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
 BfPerm bfPermIdentity(BfSize size) {
   BEGIN_ERROR_HANDLING();
 
-  BfPerm perm = {.index = malloc(size*sizeof(BfSize)), .size = size};
+  BfPerm perm = {.index = bfMemAlloc(size, sizeof(BfSize)), .size = size};
 
   if (perm.index == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
@@ -94,7 +93,7 @@ BfPerm bfPermIdentity(BfSize size) {
     perm.index[i] = i;
 
   END_ERROR_HANDLING() {
-    free(perm.index);
+    bfMemFree(perm.index);
     perm.index = NULL;
     perm.size = BF_SIZE_BAD_VALUE;
   }
@@ -106,7 +105,7 @@ BfPerm bfPermGetReversePerm(BfPerm const *perm) {
   BEGIN_ERROR_HANDLING();
 
   BfPerm revPerm = {
-    .index = malloc(perm->size*sizeof(BfSize)),
+    .index = bfMemAlloc(perm->size, sizeof(BfSize)),
     .size = perm->size
   };
 
@@ -117,7 +116,7 @@ BfPerm bfPermGetReversePerm(BfPerm const *perm) {
     revPerm.index[perm->index[i]] = i;
 
   END_ERROR_HANDLING() {
-    free(revPerm.index);
+    bfMemFree(revPerm.index);
     revPerm.index = NULL;
     revPerm.size = BF_SIZE_BAD_VALUE;
   }

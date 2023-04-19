@@ -59,7 +59,7 @@ BfMat *bfMatCsrRealCholesky(BfMat const *mat) {
 
   cholmod_sparse *R_sparse = cholmod_factor_to_sparse(R_factor, c);
 
-  BfSize *R_rowptr = malloc((n + 1)*sizeof(BfSize));
+  BfSize *R_rowptr = bfMemAlloc(n + 1, sizeof(BfSize));
   memcpy(R_rowptr, R_sparse->p, n*sizeof(BfSize));
   R_rowptr[n] = R_sparse->nzmax;
 

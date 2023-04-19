@@ -3,11 +3,11 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/circle.h>
+#include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/ptr_array.h>
 #include <bf/quadtree_node.h>
@@ -53,7 +53,7 @@ BfQuadtree *bfTreeToQuadtree(BfTree *tree) {
 BfQuadtree *bfQuadtreeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfQuadtree *quadtree = malloc(sizeof(BfQuadtree));
+  BfQuadtree *quadtree = bfMemAlloc(1, sizeof(BfQuadtree));
   if (quadtree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

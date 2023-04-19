@@ -1,10 +1,10 @@
 #include <bf/tree_node.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/tree.h>
 
 /** Interface: TreeNode */
@@ -28,7 +28,7 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
   treeNode->depth = depth;
 
   /* Allocate space for index offsets */
-  treeNode->offset = malloc((maxNumChildren + 1)*sizeof(BfSize));
+  treeNode->offset = bfMemAlloc(maxNumChildren + 1, sizeof(BfSize));
   if (treeNode->offset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -37,7 +37,7 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
     treeNode->offset[i] = BF_SIZE_BAD_VALUE;
 
   /* Make space for child pointers, all `NULL` initially */
-  treeNode->child = calloc(maxNumChildren, sizeof(BfTreeNode *));
+  treeNode->child = bfMemAllocAndZero(maxNumChildren, sizeof(BfTreeNode *));
   if (treeNode->child == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: MatProduct */
 
@@ -227,7 +228,7 @@ BfMatProduct const *bfMatConstToMatProductConst(BfMat const *mat) {
 BfMatProduct *bfMatProductNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatProduct *prod = malloc(sizeof(BfMatProduct));
+  BfMatProduct *prod = bfMemAlloc(1, sizeof(BfMatProduct));
   if (prod == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

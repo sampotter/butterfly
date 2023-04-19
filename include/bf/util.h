@@ -1,10 +1,10 @@
 #pragma once
 
+#include "def.h"
+
 #include <stdio.h>
 
 #include <bf/mat.h>
-
-#include "def.h"
 
 BfReal bfToc();
 
@@ -14,3 +14,4 @@ void bfSizeRunningSum(BfSize numSizes, BfSize *size);
 void bfPrintBlocks(BfMat const *mat, BfSize level, FILE *fp);
 BfSize bfGetFileSizeInBytes(char const *path);
 void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr);
+void bfSort(BfPtr ptr, BfSize n, BfSize size, BfCompar compar, BfPtr aux);

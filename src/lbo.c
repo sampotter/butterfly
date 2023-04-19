@@ -1,10 +1,10 @@
 #include <bf/lbo.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/vectors.h>
 
 void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
@@ -14,19 +14,19 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
 
   BfSize nnz = numVerts + trimesh->vvOffset[numVerts];
 
-  BfSize *rowptr = malloc((numVerts + 1)*sizeof(BfSize));
+  BfSize *rowptr = bfMemAlloc(numVerts + 1, sizeof(BfSize));
   if (rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfSize *colind = malloc(nnz*sizeof(BfSize));
+  BfSize *colind = bfMemAlloc(nnz, sizeof(BfSize));
   if (colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *L_data = calloc(nnz, sizeof(BfReal));
+  BfReal *L_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
   if (L_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *M_data = calloc(nnz, sizeof(BfReal));
+  BfReal *M_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
   if (M_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -138,8 +138,8 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
     bfMatCsrRealDeinitAndDealloc(&M_csr);
   }
 
-  free(rowptr);
-  free(colind);
-  free(L_data);
-  free(M_data);
+  bfMemFree(rowptr);
+  bfMemFree(colind);
+  bfMemFree(L_data);
+  bfMemFree(M_data);
 }

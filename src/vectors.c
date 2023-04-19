@@ -2,11 +2,10 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 void bfVector2Normalize(BfVector2 u) {
   BfReal mag = hypot(u[0], u[1]);
@@ -62,7 +61,7 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
 BfVectors2 *bfVectors2NewEmpty() {
   BEGIN_ERROR_HANDLING();
 
-  BfVectors2 *vectors = malloc(sizeof(BfVectors2));
+  BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
   if (vectors == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -70,7 +69,7 @@ BfVectors2 *bfVectors2NewEmpty() {
   vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
   vectors->isView = false;
 
-  vectors->data = malloc(vectors->capacity*sizeof(BfPoint2));
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfPoint2));
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -97,14 +96,14 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
   if (bfMatDenseGetColStride(matDense) != 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  vectors = malloc(sizeof(BfVectors2));
+  vectors = bfMemAlloc(1, sizeof(BfVectors2));
   vectors->data = (BfPoint2 *)matDenseReal->data;
   vectors->size = bfMatDenseRealGetNumRows(mat);
   vectors->capacity = BF_SIZE_BAD_VALUE;
   vectors->isView = true;
 
   END_ERROR_HANDLING() {
-    free(vectors);
+    bfMemFree(vectors);
     vectors = NULL;
   }
 
@@ -125,7 +124,7 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
   vectors->capacity = 2*numVectors;
   vectors->isView = true;
 
-  vectors->data = malloc(numVectors*sizeof(BfVector2));
+  vectors->data = bfMemAlloc(numVectors, sizeof(BfVector2));
   if (vectors->data == NULL)
     bfSetError(BF_ERROR_MEMORY_ERROR);
 }
@@ -151,7 +150,7 @@ void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
   vectors->size = size/sizeof(BfPoint2);
 
   /* allocate space for the vectors */
-  vectors->data = malloc(size);
+  vectors->data = bfMemAlloc(size, sizeof(char));
   if (vectors->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -160,14 +159,14 @@ void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
   // TODO: error-handling
 
   END_ERROR_HANDLING() {
-    free(vectors->data);
+    bfMemFree(vectors->data);
   }
 
   fclose(fp);
 }
 
 void bfFreeVectors2(BfVectors2 *vectors) {
-  free(vectors->data);
+  bfMemFree(vectors->data);
 }
 
 void bfGetVectorsByIndex(BfVectors2 const *vectors,
@@ -215,7 +214,7 @@ void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
   if (vectors->size == vectors->capacity) {
     vectors->capacity *= 2;
 
-    BfPoint2 *newData = realloc(vectors->data, vectors->capacity*sizeof(BfPoint2));
+    BfPoint2 *newData = bfMemRealloc(vectors->data, vectors->capacity, sizeof(BfPoint2));
     if (newData == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -223,7 +222,7 @@ void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
   }
 
   /* Append new point */
-  memcpy(&vectors->data[vectors->size++], p, sizeof(BfPoint2));
+  bfMemCopy(p, 1, sizeof(BfPoint2), &vectors->data[vectors->size++]);
 
   END_ERROR_HANDLING() {}
 }
@@ -243,7 +242,7 @@ void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
   if (i >= vectors->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(v, &vectors->data[i], sizeof(BfVector2));
+  bfMemCopy(&vectors->data[i], 1, sizeof(BfVector2), v);
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -260,7 +259,7 @@ void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
   if (i >= vectors->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(&vectors->data[i], v, sizeof(BfVector2));
+  bfMemCopy(v, 1, sizeof(BfVector2), &vectors->data[i]);
 
   END_ERROR_HANDLING() {
     assert(false);
@@ -276,7 +275,7 @@ BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfVectors2 *vectorsView = malloc(sizeof(BfVectors2));
+  BfVectors2 *vectorsView = bfMemAlloc(1, sizeof(BfVectors2));
   if (vectorsView == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -300,7 +299,7 @@ void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
 
   vectors->size = numVectors;
 
-  vectors->data = malloc(numVectors*sizeof(BfVector3));
+  vectors->data = bfMemAlloc(numVectors, sizeof(BfVector3));
   if (vectors->data == NULL)
     bfSetError(BF_ERROR_MEMORY_ERROR);
 }

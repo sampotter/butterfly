@@ -1,10 +1,10 @@
 #include <bf/interval_tree_node.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: */
 
@@ -50,9 +50,8 @@ BfIntervalTreeNode const *bfTreeNodeConstToIntervalTreeNodeConst(BfTreeNode cons
 BfIntervalTreeNode *bfIntervalTreeNodeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfIntervalTreeNode *node = malloc(sizeof(BfIntervalTreeNode));
-  if (node == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  BfIntervalTreeNode *node = bfMemAlloc(1, sizeof(BfIntervalTreeNode));
+  HANDLE_ERROR();
 
   END_ERROR_HANDLING()
     node = NULL;

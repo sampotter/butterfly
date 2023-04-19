@@ -3,11 +3,10 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/circle.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/ptr_array.h>
 #include <bf/octree_node.h>
@@ -51,7 +50,7 @@ BfOctree *bfTreeToOctree(BfTree *tree) {
 BfOctree *bfOctreeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfOctree *octree = malloc(sizeof(BfOctree));
+  BfOctree *octree = bfMemAlloc(1, sizeof(BfOctree));
   if (octree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

@@ -1,8 +1,6 @@
 #include <bf/mat_dense_real.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <openblas/lapacke.h>
 
@@ -11,6 +9,7 @@
 #include <bf/error_macros.h>
 #include <bf/mat_block.h>
 #include <bf/mat_diag_real.h>
+#include <bf/mem.h>
 #include <bf/vec_real.h>
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseReal const *mat) {
@@ -491,7 +490,7 @@ BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat) {
 BfMatDenseReal *bfMatDenseRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDenseReal *mat = malloc(sizeof(BfMatDenseReal));
+  BfMatDenseReal *mat = bfMemAlloc(1, sizeof(BfMatDenseReal));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -503,7 +502,7 @@ BfMatDenseReal *bfMatDenseRealNew() {
 BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value) {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDenseReal *matDenseReal = malloc(sizeof(BfMatDenseReal));
+  BfMatDenseReal *matDenseReal = bfMemAlloc(1, sizeof(BfMatDenseReal));
   if (matDenseReal == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -663,7 +662,7 @@ void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
   bfMatDenseInit(&mat->super, &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
   HANDLE_ERROR();
 
-  mat->data = malloc(numRows*numCols*sizeof(BfReal));
+  mat->data = bfMemAlloc(numRows*numCols, sizeof(BfReal));
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -782,18 +781,18 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
   BfReal *superb = NULL;
 
   /* dgesvd will overwrite A, so allocate space for a copy */
-  BfReal *dataCopy = malloc(m*n*sizeof(BfReal));
+  BfReal *dataCopy = bfMemAlloc(m*n, sizeof(BfReal));
   if (dataCopy == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   /* copy contents of A */
-  memcpy(dataCopy, mat->data, m*n*sizeof(BfReal));
+  bfMemCopy(mat->data, m*n, sizeof(BfReal), dataCopy);
 
   /* output array which contains information about superdiagonal
    * elements which didn't converge
    *
    * more info here: tinyurl.com/2p8f5ev3 */
-  superb = malloc((((m < n) ? m : n) - 1)*sizeof(BfReal));
+  superb = bfMemAlloc(((m < n) ? m : n) - 1, sizeof(BfReal));
   if (superb == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

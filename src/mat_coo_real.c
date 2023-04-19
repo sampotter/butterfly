@@ -4,6 +4,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: Mat */
 
@@ -143,7 +144,7 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numRows)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *rowIndPerm = malloc(numElts*sizeof(BfSize));
+  BfSize *rowIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (rowIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -176,7 +177,7 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numCols)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *colIndPerm = malloc(numElts*sizeof(BfSize));
+  BfSize *colIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (colIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -237,7 +238,7 @@ BfMatCooReal const *bfMatConstToMatCooRealConst(BfMat const *mat) {
 BfMatCooReal *bfMatCooRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatCooReal *mat = malloc(sizeof(BfMatCooReal));
+  BfMatCooReal *mat = bfMemAlloc(1, sizeof(BfMatCooReal));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -255,15 +256,15 @@ void bfMatCooRealInitEmpty(BfMatCooReal *mat, BfSize numRows,
 
   mat->numElts = numElts;
 
-  mat->rowInd = malloc(numElts*sizeof(BfSize));
+  mat->rowInd = bfMemAlloc(numElts, sizeof(BfSize));
   if (mat->rowInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->colInd = malloc(numElts*sizeof(BfSize));
+  mat->colInd = bfMemAlloc(numElts, sizeof(BfSize));
   if (mat->colInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->value = malloc(numElts*sizeof(BfReal));
+  mat->value = bfMemAlloc(numElts, sizeof(BfReal));
   if (mat->value == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

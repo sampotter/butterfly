@@ -1,12 +1,12 @@
 #include <bf/size_array.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
+#include <bf/util.h>
 
 static void invalidate(BfSizeArray *sizeArray) {
   sizeArray->data = NULL;
@@ -17,7 +17,7 @@ static void invalidate(BfSizeArray *sizeArray) {
 BfSizeArray *bfSizeArrayNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfSizeArray *sizeArray = malloc(sizeof(BfSizeArray));
+  BfSizeArray *sizeArray = bfMemAlloc(1, sizeof(BfSizeArray));
   if (sizeArray == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -68,7 +68,7 @@ void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
   sizeArray->size = 0;
   sizeArray->capacity = 128;
 
-  sizeArray->data = malloc(sizeArray->capacity*sizeof(BfSize));
+  sizeArray->data = bfMemAlloc(sizeArray->capacity, sizeof(BfSize));
   if (sizeArray->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -83,12 +83,12 @@ void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
 }
 
 void bfSizeArrayDeinit(BfSizeArray *sizeArray) {
-  free(sizeArray->data);
+  bfMemFree(sizeArray->data);
   invalidate(sizeArray);
 }
 
 void bfSizeArrayDealloc(BfSizeArray **sizeArray) {
-  free(*sizeArray);
+  bfMemFree(*sizeArray);
   *sizeArray = NULL;
 }
 
@@ -105,7 +105,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
   if (newCapacity < sizeArray->capacity)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  data = malloc(newCapacity*sizeof(BfSize));
+  data = bfMemAlloc(newCapacity, sizeof(BfSize));
   if (data == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
@@ -115,7 +115,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
 #endif
 
   /* Copy over old values */
-  memcpy(data, sizeArray->data, sizeArray->size*sizeof(BfSize));
+  bfMemCopy(sizeArray->data, sizeArray->size, sizeof(BfSize), data);
 
   oldData = sizeArray->data;
 
@@ -126,7 +126,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
     assert(false);
   }
 
-  free(oldData);
+  bfMemFree(oldData);
 }
 
 void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
@@ -172,7 +172,7 @@ typedef struct {
   void *aux;
 } ComparatorAndAuxPtr;
 
-static int qsortComparator(const void *elt1, const void *elt2, void *_) {
+static int sizeCompar(const void *elt1, const void *elt2, void *_) {
   ComparatorAndAuxPtr *cmpAndAux = (ComparatorAndAuxPtr *)_;
   BfSizeArrayComparator cmp = cmpAndAux->cmp;
   void *aux = cmpAndAux->aux;
@@ -181,7 +181,7 @@ static int qsortComparator(const void *elt1, const void *elt2, void *_) {
 
 void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *aux) {
   ComparatorAndAuxPtr cmpAndAux = {.cmp = cmp, .aux = aux};
-  qsort_r(sizeArray->data, sizeArray->size, sizeof(BfSize), qsortComparator, &cmpAndAux);
+  bfSort(sizeArray->data, sizeArray->size, sizeof(BfSize), (BfCompar)sizeCompar, &cmpAndAux);
 }
 
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
@@ -203,8 +203,7 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
     if (sizeArray->data[i] >= elt)
       break;
 
-  memmove(sizeArray->data + i + 1, sizeArray->data + i,
-          (sizeArray->size - i)*sizeof(BfSize));
+  bfMemMove(sizeArray->data + i, sizeArray->size - i, sizeof(BfSize), sizeArray->data + i + 1);
 
   sizeArray->data[i] = elt;
 
@@ -293,7 +292,7 @@ void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst) {
   if (dst == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(dst, sizeArray->data, sizeArray->size*sizeof(BfSize));
+  bfMemCopy(sizeArray->data, sizeArray->size, sizeof(BfSize), dst);
 
   END_ERROR_HANDLING() {}
 }
@@ -310,9 +309,7 @@ void bfSizeArrayDeleteFirst(BfSizeArray *sizeArray, BfSize elt) {
 
   BfSize *dst = sizeArray->data + i;
   BfSize *src = dst + 1;
-  BfSize size = (sizeArray->size - i)*sizeof(BfSize);
-
-  memmove(dst, src, size);
+  bfMemMove(src, sizeArray->size - i, sizeof(BfSize), dst);
 
   --sizeArray->size;
 }

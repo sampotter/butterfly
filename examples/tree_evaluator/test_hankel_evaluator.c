@@ -10,6 +10,7 @@
 #include <bf/const.h>
 #include <bf/eval_tree.h>
 #include <bf/fac_streamer.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 #include <bf/util.h>
 
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
 
   bfSeed(0);
 
-  BfReal *X = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *X = bfMemAlloc(opts.numPoints, sizeof(BfReal));
   if (!strcmp(opts.pointsType, "random")) {
     bfRealUniform(opts.numPoints, X);
     for (BfSize i = 0; i < opts.numPoints; ++i)
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
 
   /* check sqrt timings */
 
-  BfReal *sqrtX = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *sqrtX = bfMemAlloc(opts.numPoints, sizeof(BfReal));
 
   bfToc();
   for (BfSize i = 0; i < opts.numPoints; ++i)
@@ -132,7 +133,7 @@ int main(int argc, char *argv[]) {
 
   /* check current C std library timings for j0 */
 
-  BfReal *J0_std = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *J0_std = bfMemAlloc(opts.numPoints, sizeof(BfReal));
 
   bfToc();
   for (BfSize i = 0; i < opts.numPoints; ++i)
@@ -144,7 +145,7 @@ int main(int argc, char *argv[]) {
 
   /* check current GSL timings */
 
-  BfReal *J0_gsl = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *J0_gsl = bfMemAlloc(opts.numPoints, sizeof(BfReal));
 
   bfToc();
   for (BfSize i = 0; i < opts.numPoints; ++i)
@@ -156,10 +157,10 @@ int main(int argc, char *argv[]) {
 
   /* degree 10 clenshaw to check upper bound on rate */
 
-  BfReal *tmp = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *tmp = bfMemAlloc(opts.numPoints, sizeof(BfReal));
 
   BfChebStd randCheb = {
-    .c = malloc((opts.degree + 1)*sizeof(BfReal)),
+    .c = bfMemAlloc((opts.degree + 1), sizeof(BfReal)),
     .order = opts.degree + 1
   };
   bfRealRandn(randCheb.order, randCheb.c);
@@ -189,7 +190,7 @@ int main(int argc, char *argv[]) {
   bfEvalTreeInit(evalTree, &spec);
   BfReal time_makeEvalTree = bfToc();
 
-  BfReal *J0_evalTree = malloc(opts.numPoints*sizeof(BfReal));
+  BfReal *J0_evalTree = bfMemAlloc(opts.numPoints, sizeof(BfReal));
 
   bfToc();
   for (BfSize i = 0; i < opts.numPoints; ++i)
@@ -209,8 +210,8 @@ int main(int argc, char *argv[]) {
 
   /* clean up */
 
-  free(X);
-  free(J0_gsl);
-  free(tmp);
-  free(J0_evalTree);
+  bfMemFree(X);
+  bfMemFree(J0_gsl);
+  bfMemFree(tmp);
+  bfMemFree(J0_evalTree);
 }

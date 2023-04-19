@@ -1,9 +1,9 @@
 #include <bf/cheb.h>
 
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/const.h>
+#include <bf/mem.h>
 
 /** Utilities: */
 
@@ -15,20 +15,20 @@ void bfGetChebPts(BfSize n, BfReal *x) {
 /** Implementation: ChebStd */
 
 BfChebStd *bfChebStdNewWithDegree(BfSize d) {
-  BfChebStd *cheb = malloc(sizeof(BfChebStd));
+  BfChebStd *cheb = bfMemAlloc(1, sizeof(BfChebStd));
   cheb->order = d + 1;
-  cheb->c = malloc(cheb->order*sizeof(BfReal));
+  cheb->c = bfMemAlloc(cheb->order, sizeof(BfReal));
   return cheb;
 }
 
 void bfChebStdDeinit(BfChebStd *cheb) {
   cheb->order = BF_SIZE_BAD_VALUE;
-  free(cheb->c);
+  bfMemFree(cheb->c);
   cheb->c = NULL;
 }
 
 void bfChebStdDealloc(BfChebStd **cheb) {
-  free(*cheb);
+  bfMemFree(*cheb);
   *cheb = NULL;
 }
 
@@ -49,19 +49,19 @@ void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, B
   BfSize n = cheb->order;
   BfReal *c = cheb->c;
 
-  BfReal *y = malloc(n*sizeof(BfReal));
+  BfReal *y = bfMemAlloc(n, sizeof(BfReal));
   for (BfSize j = 0; j < n; ++j)
     y[j] = f((b - a)*(x[j] + 1)/2 + a);
 
-  BfReal *v0 = malloc(n*sizeof(BfReal));
+  BfReal *v0 = bfMemAlloc(n, sizeof(BfReal));
   for (BfSize j = 0; j < n; ++j)
     v0[j] = 1;
 
-  BfReal *v1 = malloc(n*sizeof(BfReal));
+  BfReal *v1 = bfMemAlloc(n, sizeof(BfReal));
   for (BfSize j = 0; j < n; ++j)
     v1[j] = x[j];
 
-  BfReal *v = malloc(n*sizeof(BfReal));
+  BfReal *v = bfMemAlloc(n, sizeof(BfReal));
 
   c[0] = 0;
   for (BfSize j = 0; j < n; ++j)
@@ -84,10 +84,10 @@ void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, B
   c[0] /= n;
   for (BfSize i = 1; i < n; ++i) c[i] *= 2.0/n;
 
-  free(v);
-  free(v1);
-  free(v0);
-  free(y);
+  bfMemFree(v);
+  bfMemFree(v1);
+  bfMemFree(v0);
+  bfMemFree(y);
 }
 
 BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {

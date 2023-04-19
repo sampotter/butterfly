@@ -4,6 +4,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/vec_zero.h>
 
 /** Interface: Mat */
@@ -98,7 +99,7 @@ BfMatZero const *bfMatConstToMatZeroConst(BfMat const *mat) {
 BfMatZero *bfMatZeroNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatZero *mat = malloc(sizeof(BfMatZero));
+  BfMatZero *mat = bfMemAlloc(1, sizeof(BfMatZero));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

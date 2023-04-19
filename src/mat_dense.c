@@ -1,9 +1,8 @@
 #include <bf/mat_dense.h>
 
-#include <stdlib.h>
-
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Upcasting: */
 
@@ -40,7 +39,7 @@ BfMatDense const *bfMatConstToMatDenseConst(BfMat const *mat) {
 BfMatDense *bfMatDenseNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDense *mat = malloc(sizeof(BfMatDense));
+  BfMatDense *mat = bfMemAlloc(1, sizeof(BfMatDense));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

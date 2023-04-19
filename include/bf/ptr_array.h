@@ -36,7 +36,7 @@ void bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr);
 void bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end, BfPtrArray *view);
 void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, BfPtr ptr);
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
-void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp);
+void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp, BfPtr aux);
 void bfPtrArrayReverse(BfPtrArray *arr);
 void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst);
 

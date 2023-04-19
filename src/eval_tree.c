@@ -2,11 +2,11 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/cheb.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 // NOTE: a better way to do these is to allocate a pool of coefficient
 // vectors and BfEvalTreeNodes in BfEvalTree... can use bitfields to
@@ -52,7 +52,7 @@ void evalTreeNodeInitRec(BfEvalTreeNode *node, BfEvalTree const *tree) {
 
   bfChebStdDelete(&node->cheb);
 
-  node->children = malloc(tree->k*sizeof(BfEvalTreeNode));
+  node->children = bfMemAlloc(tree->k, sizeof(BfEvalTreeNode));
 
   BfReal delta = node->b - node->a;
   delta /= tree->k;
@@ -92,7 +92,7 @@ BfReal bfEvalTreeGetValue(BfEvalTree const *tree, BfReal x) {
 BfEvalTree *bfEvalTreeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfEvalTree *evalTree = malloc(sizeof(BfEvalTree));
+  BfEvalTree *evalTree = bfMemAlloc(1, sizeof(BfEvalTree));
   if (evalTree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -111,10 +111,10 @@ void bfEvalTreeInit(BfEvalTree *tree, BfEvalTreeSpec const *spec) {
   tree->k = spec->k;
   tree->tol = spec->tol;
 
-  tree->x = malloc((tree->d + 1)*sizeof(BfReal));
+  tree->x = bfMemAlloc((tree->d + 1), sizeof(BfReal));
   bfGetChebPts(tree->d + 1, tree->x);
 
-  tree->root = malloc(sizeof(BfEvalTreeNode));
+  tree->root = bfMemAlloc(1, sizeof(BfEvalTreeNode));
   tree->root->a = tree->a;
   tree->root->b = tree->b;
   evalTreeNodeInitRec(tree->root, tree);

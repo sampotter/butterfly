@@ -2,8 +2,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <openblas/lapacke.h>
 
@@ -15,6 +13,7 @@
 #include <bf/mat_coo_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/mat_diag_real.h>
+#include <bf/mem.h>
 #include <bf/vec_complex.h>
 #include <bf/vec_real.h>
 
@@ -1013,7 +1012,7 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
   bfMatDenseComplexInit(resultMatDenseComplex, n, p);
   HANDLE_ERROR();
 
-  memcpy(resultMatDenseComplex->data, otherMatDenseComplex->data, n*p*sizeof(BfComplex));
+  bfMemCopy(otherMatDenseComplex->data, n*p, sizeof(BfComplex), resultMatDenseComplex->data);
 
   BfComplex alpha = 1;
 
@@ -1331,19 +1330,19 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
   BfReal *superb = NULL;
 
   /* zgesvd will overwrite A, so allocate space for a copy */
-  BfComplex *dataCopy = malloc(m*n*sizeof(BfComplex));
+  BfComplex *dataCopy = bfMemAlloc(m*n, sizeof(BfComplex));
   if (dataCopy == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   /* copy contents of A */
-  memcpy(dataCopy, mat->data, m*n*sizeof(BfComplex));
+  bfMemCopy(mat->data, m*n, sizeof(BfComplex), dataCopy);
   /* TODO: error-handling */
 
   /* output array which contains information about superdiagonal
    * elements which didn't converge
    *
    * more info here: tinyurl.com/2p8f5ev3 */
-  superb = malloc((((m < n) ? m : n) - 1)*sizeof(BfReal));
+  superb = bfMemAlloc(((m < n) ? m : n) - 1, sizeof(BfReal));
   if (superb == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -1698,7 +1697,7 @@ bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A,
 
   BEGIN_ERROR_HANDLING();
 
-  int *ipiv = malloc(m*sizeof(int));
+  int *ipiv = bfMemAlloc(m, sizeof(int));
 
   /* Create a copy of B here since X will be overwritten by LAPACK */
   BfMatDenseComplex *X = bfMatDenseComplexNew();
@@ -1756,7 +1755,7 @@ BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat) {
 BfMatDenseComplex *bfMatDenseComplexNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatDenseComplex *mat = malloc(sizeof(BfMatDenseComplex));
+  BfMatDenseComplex *mat = bfMemAlloc(1, sizeof(BfMatDenseComplex));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -1833,7 +1832,7 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
   mat->rowStride = numCols;
   mat->colStride = 1;
 
-  mat->data = malloc(numRows*numCols*sizeof(BfComplex));
+  mat->data = bfMemAlloc(numRows*numCols, sizeof(BfComplex));
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

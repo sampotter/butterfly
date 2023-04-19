@@ -1,12 +1,11 @@
 #include <bf/mat_coo_complex.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
+#include <bf/mem.h>
 #include <bf/size_array.h>
 #include <bf/vec_complex.h>
 
@@ -150,7 +149,7 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numRows)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *rowIndPerm = malloc(numElts*sizeof(BfSize));
+  BfSize *rowIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (rowIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -162,11 +161,11 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
     rowIndPerm[i] = revPerm.index[matCooComplex->rowInd[i]];
 
   /* Free old row indices and replace with permuted ones */
-  free(matCooComplex->rowInd);
+  bfMemFree(matCooComplex->rowInd);
   matCooComplex->rowInd = rowIndPerm;
 
   END_ERROR_HANDLING() {
-    free(rowIndPerm);
+    bfMemFree(rowIndPerm);
   }
 
   bfPermDeinit(&revPerm);
@@ -183,7 +182,7 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
   if (perm->size != mat->numCols)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize *colIndPerm = malloc(numElts*sizeof(BfSize));
+  BfSize *colIndPerm = bfMemAlloc(numElts, sizeof(BfSize));
   if (colIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -195,11 +194,11 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
     colIndPerm[i] = revPerm.index[matCooComplex->colInd[i]];
 
   /* Free old column indices and replace with permuted ones */
-  free(matCooComplex->colInd);
+  bfMemFree(matCooComplex->colInd);
   matCooComplex->colInd = colIndPerm;
 
   END_ERROR_HANDLING() {
-    free(colIndPerm);
+    bfMemFree(colIndPerm);
   }
 
   bfPermDeinit(&revPerm);
@@ -266,27 +265,27 @@ static void expand(BfMatCooComplex *matCooComplex) {
   BfSize *colInd = NULL, *oldColInd = NULL;
   BfComplex *value = NULL, *oldValue = NULL;
 
-  rowInd = malloc(newCapacity*sizeof(BfSize));
+  rowInd = bfMemAlloc(newCapacity, sizeof(BfSize));
   if (rowInd == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(rowInd, matCooComplex->rowInd, matCooComplex->numElts*sizeof(BfSize));
+  bfMemCopy(matCooComplex->rowInd, matCooComplex->numElts, sizeof(BfSize), rowInd);
   oldRowInd = matCooComplex->rowInd;
   matCooComplex->rowInd = rowInd;
 
-  colInd = malloc(newCapacity*sizeof(BfSize));
+  colInd = bfMemAlloc(newCapacity, sizeof(BfSize));
   if (colInd == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(colInd, matCooComplex->colInd, matCooComplex->numElts*sizeof(BfSize));
+  bfMemCopy(matCooComplex->colInd, matCooComplex->numElts, sizeof(BfSize), colInd);
   oldColInd = matCooComplex->colInd;
   matCooComplex->colInd = colInd;
 
-  value = malloc(newCapacity*sizeof(BfComplex));
+  value = bfMemAlloc(newCapacity, sizeof(BfComplex));
   if (value == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  memcpy(value, matCooComplex->value, matCooComplex->numElts*sizeof(BfComplex));
+  bfMemCopy(matCooComplex->value, matCooComplex->numElts, sizeof(BfComplex), value);
   oldValue = matCooComplex->value;
   matCooComplex->value = value;
 
@@ -294,9 +293,9 @@ static void expand(BfMatCooComplex *matCooComplex) {
 
   END_ERROR_HANDLING() {}
 
-  free(oldRowInd);
-  free(oldColInd);
-  free(oldValue);
+  bfMemFree(oldRowInd);
+  bfMemFree(oldColInd);
+  bfMemFree(oldValue);
 }
 
 static int compare(BfSize k0, BfSize k1, void *aux) {
@@ -434,7 +433,7 @@ BfMatCooComplex const *bfMatConstToMatCooComplexConst(BfMat const *mat) {
 BfMatCooComplex *bfMatCooComplexNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatCooComplex *mat = malloc(sizeof(BfMatCooComplex));
+  BfMatCooComplex *mat = bfMemAlloc(1, sizeof(BfMatCooComplex));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -452,33 +451,33 @@ void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows,
 
   mat->numElts = numElts;
 
-  mat->rowInd = malloc(numElts*sizeof(BfSize));
+  mat->rowInd = bfMemAlloc(numElts, sizeof(BfSize));
   if (mat->rowInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->colInd = malloc(numElts*sizeof(BfSize));
+  mat->colInd = bfMemAlloc(numElts, sizeof(BfSize));
   if (mat->colInd == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->value = malloc(numElts*sizeof(BfComplex));
+  mat->value = bfMemAlloc(numElts, sizeof(BfComplex));
   if (mat->value == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   mat->capacity = numElts;
 
   END_ERROR_HANDLING() {
-    free(mat->rowInd);
-    free(mat->colInd);
-    free(mat->value);
+    bfMemFree(mat->rowInd);
+    bfMemFree(mat->colInd);
+    bfMemFree(mat->value);
     bfMatDeinit(&mat->super);
   }
 }
 
 void bfMatCooComplexDeinit(BfMatCooComplex *mat) {
   if (!(mat->super.props & BF_MAT_PROPS_VIEW)) {
-    free(mat->rowInd);
-    free(mat->colInd);
-    free(mat->value);
+    bfMemFree(mat->rowInd);
+    bfMemFree(mat->colInd);
+    bfMemFree(mat->value);
   }
 
   mat->numElts = BF_SIZE_BAD_VALUE;
@@ -489,7 +488,7 @@ void bfMatCooComplexDeinit(BfMatCooComplex *mat) {
 
 
 void bfMatCooComplexDealloc(BfMatCooComplex **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 

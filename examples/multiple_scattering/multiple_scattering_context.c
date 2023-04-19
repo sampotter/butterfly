@@ -10,6 +10,7 @@
 // #include <bf/mat_diag_real.h>
 #include <bf/mat_func.h>
 #include <bf/mat_perm.h>
+#include <bf/mem.h>
 #include <bf/poisson_disk_sampling.h>
 #include <bf/rand.h>
 // #include <bf/real_array.h>
@@ -20,7 +21,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <fmm2d/helmholtz.h>
@@ -94,12 +94,12 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   BfComplex chargeScale = context->alpha;
   BfComplex dipstrScale = context->beta;
 
-  BfComplex *charge = malloc(n*sizeof(BfComplex));
+  BfComplex *charge = bfMemAlloc(n, sizeof(BfComplex));
   assert(charge != NULL);
   for (BfSize i = 0; i < n; ++i)
     charge[i] = chargeScale*sigmaPtr[i];
 
-  BfComplex *dipstr = malloc(n*sizeof(BfComplex));
+  BfComplex *dipstr = bfMemAlloc(n, sizeof(BfComplex));
   assert(dipstr != NULL);
   for (BfSize i = 0; i < n; ++i)
     dipstr[i] = dipstrScale*sigmaPtr[i];
@@ -129,8 +129,8 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   //
   assert(ier == 0);
 
-  free(charge);
-  free(dipstr);
+  bfMemFree(charge);
+  bfMemFree(dipstr);
 
   /** Apply the KR correction: */
 
@@ -290,7 +290,7 @@ void setUpGeometry(MultipleScatteringContext *context) {
   context->numEllipses = bfPoints2GetSize(context->ellipseCenters);
 
   /* Randomly sample ellipses */
-  context->ellipse = malloc(context->numEllipses*sizeof(BfEllipse));
+  context->ellipse = bfMemAlloc(context->numEllipses, sizeof(BfEllipse));
   for (BfSize i = 0; i < context->numEllipses; ++i) {
     BfEllipse *ellipse = &context->ellipse[i];
 
@@ -372,7 +372,7 @@ void buildQuadtrees(MultipleScatteringContext *context) {
   BfTree *tree = bfQuadtreeToTree(context->quadtree);
   context->perm = bfTreeGetPermConst(tree);
 
-  context->revPerm = malloc(sizeof(BfPerm));
+  context->revPerm = bfMemAlloc(1, sizeof(BfPerm));
   *context->revPerm = bfPermGetReversePerm(context->perm);
 
   printf("Built quadtrees [%0.2fs]\n", bfToc());

@@ -2,12 +2,12 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/bbox.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 #include <bf/size_array.h>
 
@@ -124,7 +124,7 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
   w.samples = bfPoints2NewEmpty();
   HANDLE_ERROR();
 
-  w.cellIndex = malloc(w.n*sizeof(BfSize));
+  w.cellIndex = bfMemAlloc(w.n, sizeof(BfSize));
   for (BfSize i = 0; i < w.n; ++i)
     w.cellIndex[i] = BF_SIZE_BAD_VALUE;
 
@@ -157,7 +157,7 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
     assert(false);
   }
 
-  free(w.cellIndex);
+  bfMemFree(w.cellIndex);
 
   return w.samples;
 }

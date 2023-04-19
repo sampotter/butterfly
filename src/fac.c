@@ -2,8 +2,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <bf/circle.h>
 #include <bf/error_macros.h>
@@ -13,6 +11,7 @@
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
 #include <bf/mat_product.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/quadtree_node.h>
 #include <bf/util.h>
@@ -118,7 +117,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
     /* if we're debugging, store this block's points---free them
      * otherwise */
 #if BF_DEBUG
-    BfFacAux *facAux = malloc(sizeof(BfFacAux));
+    BfFacAux *facAux = bfMemAlloc(1, sizeof(BfFacAux));
     facAux->srcPts[0] = srcPts;
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtCircPts;
@@ -354,7 +353,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
       /* if we're debugging, store this block's points---free them
        * otherwise */
 #if BF_DEBUG
-      BfFacAux *facAux = malloc(sizeof(BfFacAux));
+      BfFacAux *facAux = bfMemAlloc(1, sizeof(BfFacAux));
       facAux->srcPts[0] = srcChildPts;
       facAux->srcPts[1] = srcPts;
       facAux->tgtPts = tgtChildPts;
@@ -458,7 +457,7 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     /* hang onto this block's points if we're in debug mode, and free
      * them otherwise */
 #if BF_DEBUG
-    BfFacAux *facAux = malloc(sizeof(BfFacAux));
+    BfFacAux *facAux = bfMemAlloc(1, sizeof(BfFacAux));
     facAux->srcPts[0] = bfGetUninitializedPoints2();
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtPts;
@@ -635,7 +634,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
    * when multiplying, the factors will be multiplied in the order
    * that they're stored here (e.g., bf_factors[0] is the first factor
    * that will be multiplied) */
-  BfMat **factor = malloc(numFactors*sizeof(BfMat *));
+  BfMat **factor = bfMemAlloc(1, numFactors*sizeof(BfMat *));
   if (factor == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

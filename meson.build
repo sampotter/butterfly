@@ -71,6 +71,7 @@ butterfly_lib_src = [
   'src/mat_product.c',
   'src/mat_sum.c',
   'src/mat_zero.c',
+  'src/mem.c',
   'src/octree.c',
   'src/octree_node.c',
   'src/perm.c',

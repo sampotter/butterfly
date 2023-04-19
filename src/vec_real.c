@@ -2,13 +2,12 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat.h>
 #include <bf/mat_givens.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 
 /** Interface: Vec */
@@ -103,7 +102,7 @@ BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
   bfVecRealInit(subvec, i1 - i0);
   HANDLE_ERROR();
 
-  memcpy(subvec->data, vecReal->data + i0, (i1 - i0)*sizeof(BfReal));
+  bfMemCopy(vecReal->data + i0, i1 - i0, sizeof(BfReal), subvec->data);
 
   END_ERROR_HANDLING() {
     bfVecRealDeinitAndDealloc(&subvec);
@@ -346,7 +345,7 @@ BfVecReal const *bfVecConstToVecRealConst(BfVec const *vec) {
 BfVecReal *bfVecRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfVecReal *vecReal = malloc(sizeof(BfVecReal));
+  BfVecReal *vecReal = bfMemAlloc(1, sizeof(BfVecReal));
   if (vecReal == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -436,7 +435,7 @@ void bfVecRealInit(BfVecReal *vec, BfSize size) {
 
   vec->stride = 1;
 
-  vec->data = malloc(size*sizeof(BfReal));
+  vec->data = bfMemAlloc(size, sizeof(BfReal));
   if (vec->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -451,7 +450,7 @@ void bfVecRealInitFrom(BfVecReal *vec, BfSize size, BfSize stride, BfReal const 
 
   vec->stride = 1;
 
-  vec->data = malloc(size*sizeof(BfReal));
+  vec->data = bfMemAlloc(size, sizeof(BfReal));
   if (vec->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -486,13 +485,13 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *d
 
 void bfVecRealDeinit(BfVecReal *vecReal) {
   if (!(vecReal->super.props & BF_VEC_PROPS_VIEW))
-    free(vecReal->data);
+    bfMemFree(vecReal->data);
 
   vecReal->data = NULL;
 }
 
 void bfVecRealDealloc(BfVecReal **vecReal) {
-  free(*vecReal);
+  bfMemFree(*vecReal);
   *vecReal = NULL;
 }
 

@@ -2,11 +2,11 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/circle.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/points.h>
 #include <bf/vectors.h>
 
@@ -62,7 +62,7 @@ BfQuadtreeNode const *bfTreeNodeConstToQuadtreeNodeConst(BfTreeNode const *node)
 BfQuadtreeNode *bfQuadtreeNodeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfQuadtreeNode *node = malloc(sizeof(BfQuadtreeNode));
+  BfQuadtreeNode *node = bfMemAlloc(1, sizeof(BfQuadtreeNode));
   if (node == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -237,7 +237,7 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
 
   END_ERROR_HANDLING() {
     for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
-      free(child[q]);
+      bfMemFree(child[q]);
     }
   }
 }

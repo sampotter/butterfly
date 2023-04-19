@@ -6,6 +6,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 
 void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q) {
@@ -27,14 +28,14 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
 
   /** Convert CSR indices from BfSize to int: */
 
-  int *colind = malloc(nnz*sizeof(int));
+  int *colind = bfMemAlloc(nnz, sizeof(int));
   if (colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (BfSize i = 0; i < nnz; ++i)
     colind[i] = matCsrReal->colind[i];
 
-  int *rowptr = malloc((n + 1)*sizeof(int));
+  int *rowptr = bfMemAlloc(n + 1, sizeof(int));
   if (rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -66,39 +67,39 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
   if ((BfSize)n_row != n || (BfSize)n_col != n)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  int *Ut_rowptr = malloc((n + 1)*sizeof(int));
+  int *Ut_rowptr = bfMemAlloc(n + 1, sizeof(int));
   if (Ut_rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Ut_colind = malloc(Ut_nnz*sizeof(int));
+  int *Ut_colind = bfMemAlloc(Ut_nnz, sizeof(int));
   if (Ut_colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *Ut_data = malloc(Ut_nnz*sizeof(BfReal));
+  BfReal *Ut_data = bfMemAlloc(Ut_nnz, sizeof(BfReal));
   if (Ut_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Lt_rowptr = malloc((n + 1)*sizeof(int));
+  int *Lt_rowptr = bfMemAlloc(n + 1, sizeof(int));
   if (Lt_rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Lt_colind = malloc(Lt_nnz*sizeof(int));
+  int *Lt_colind = bfMemAlloc(Lt_nnz, sizeof(int));
   if (Lt_colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *Lt_data = malloc(Lt_nnz*sizeof(BfReal));
+  BfReal *Lt_data = bfMemAlloc(Lt_nnz, sizeof(BfReal));
   if (Lt_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *P_data = malloc(n*sizeof(int));
+  int *P_data = bfMemAlloc(n, sizeof(int));
   if (P_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Q_data = malloc(n*sizeof(int));
+  int *Q_data = bfMemAlloc(n, sizeof(int));
   if (Q_data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfReal *Rs = malloc(n*sizeof(BfReal));
+  BfReal *Rs = bfMemAlloc(n, sizeof(BfReal));
   if (Rs == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -109,11 +110,11 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfReal *b = malloc(n*sizeof(BfReal));
+  BfReal *b = bfMemAlloc(n, sizeof(BfReal));
   bfSeed(0);
   bfRealRandn(n, b);
 
-  BfReal *x = malloc(n*sizeof(BfReal));
+  BfReal *x = bfMemAlloc(n, sizeof(BfReal));
 
   // TEST SOLVE
   status = umfpack_di_solve(UMFPACK_At, rowptr, colind, data, x, b, numeric, NULL, NULL);

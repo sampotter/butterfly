@@ -1,12 +1,12 @@
 #include <bf/interval_tree.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/interval_tree_node.h>
+#include <bf/mem.h>
 #include <bf/tree.h>
 
 #include "macros.h"
@@ -53,9 +53,8 @@ BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree) {
 BfIntervalTree *bfIntervalTreeNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfIntervalTree *intervalTree = malloc(sizeof(BfIntervalTree));
-  if (intervalTree == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  BfIntervalTree *intervalTree = bfMemAlloc(1, sizeof(BfIntervalTree));
+  HANDLE_ERROR();
 
   END_ERROR_HANDLING()
     intervalTree = NULL;

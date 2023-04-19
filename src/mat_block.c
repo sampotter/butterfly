@@ -1,11 +1,10 @@
 #include <bf/mat_block.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/util.h>
 
 /** Interface: MatBlock */
@@ -96,17 +95,16 @@ void bfMatBlockInit(BfMatBlock *mat,
 
   mat->vtbl = matBlockVtbl;
 
-  mat->block = malloc(numBlocks*sizeof(BfMat *));
+  mat->block = bfMemAllocAndZero(numBlocks, sizeof(BfMat *));
   if (mat->block == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-  memset(mat->block, 0x0, numBlocks*sizeof(BfMat *));
 
-  mat->rowOffset = malloc((numBlockRows + 1)*sizeof(BfSize));
+  mat->rowOffset = bfMemAlloc(numBlockRows + 1, sizeof(BfSize));
   if (mat->rowOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   bfSizeSetConstant(numBlockRows + 1, mat->rowOffset, BF_SIZE_BAD_VALUE);
 
-  mat->colOffset = malloc((numBlockCols + 1)*sizeof(BfSize));
+  mat->colOffset = bfMemAlloc(numBlockCols + 1, sizeof(BfSize));
   if (mat->colOffset == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   bfSizeSetConstant(numBlockCols + 1, mat->colOffset, BF_SIZE_BAD_VALUE);
@@ -118,9 +116,9 @@ void bfMatBlockInit(BfMatBlock *mat,
 void bfMatBlockDeinit(BfMatBlock *mat) {
   bfMatDeinit(&mat->super);
 
-  free(mat->block);
-  free(mat->rowOffset);
-  free(mat->colOffset);
+  bfMemFree(mat->block);
+  bfMemFree(mat->rowOffset);
+  bfMemFree(mat->colOffset);
 
 #if BF_DEBUG
   mat->vtbl = NULL;
@@ -131,7 +129,7 @@ void bfMatBlockDeinit(BfMatBlock *mat) {
 }
 
 void bfMatBlockDealloc(BfMatBlock **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 

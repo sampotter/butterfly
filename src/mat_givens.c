@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: Mat */
 
@@ -59,7 +60,7 @@ BfMatGivensComplex const *bfMatConstToMatGivensComplexConst(BfMat const *mat) {
 BfMatGivensComplex *bfMatGivensComplexNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatGivensComplex *mat = malloc(sizeof(BfMatGivensComplex));
+  BfMatGivensComplex *mat = bfMemAlloc(1, sizeof(BfMatGivensComplex));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

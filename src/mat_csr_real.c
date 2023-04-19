@@ -1,10 +1,8 @@
 #include <bf/mat_csr_real.h>
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/vec_real.h>
 
 /** Interface: Mat */
@@ -205,7 +203,7 @@ BfMatCsrReal const *bfMatConstToMatCsrRealConst(BfMat const *mat) {
 BfMatCsrReal *bfMatCsrRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatCsrReal *mat = malloc(sizeof(BfMatCsrReal));
+  BfMatCsrReal *mat = bfMemAlloc(1, sizeof(BfMatCsrReal));
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -224,21 +222,21 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
-  mat->rowptr = malloc((numRows + 1)*sizeof(BfSize));
+  mat->rowptr = bfMemAlloc(numRows + 1, sizeof(BfSize));
   if (mat->rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->colind = malloc(nnz*sizeof(BfSize));
+  mat->colind = bfMemAlloc(nnz, sizeof(BfSize));
   if (mat->colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  mat->data = malloc(nnz*sizeof(BfReal));
+  mat->data = bfMemAlloc(nnz, sizeof(BfReal));
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  memcpy(mat->rowptr, rowptr, (numRows + 1)*sizeof(BfSize));
-  memcpy(mat->colind, colind, nnz*sizeof(BfSize));
-  memcpy(mat->data, data, nnz*sizeof(BfSize));
+  bfMemCopy(rowptr, numRows + 1, sizeof(BfSize), mat->rowptr);
+  bfMemCopy(colind, nnz, sizeof(BfSize), mat->colind);
+  bfMemCopy(data, nnz, sizeof(BfSize), mat->data);
 
   END_ERROR_HANDLING()
     bfMatCsrRealDeinit(mat);
@@ -246,9 +244,9 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
 
 void bfMatCsrRealDeinit(BfMatCsrReal *mat) {
   if (!(mat->super.props & BF_MAT_PROPS_VIEW)) {
-    free(mat->rowptr);
-    free(mat->colind);
-    free(mat->data);
+    bfMemFree(mat->rowptr);
+    bfMemFree(mat->colind);
+    bfMemFree(mat->data);
   }
 
   mat->rowptr = NULL;
@@ -259,7 +257,7 @@ void bfMatCsrRealDeinit(BfMatCsrReal *mat) {
 }
 
 void bfMatCsrRealDealloc(BfMatCsrReal **mat) {
-  free(*mat);
+  bfMemFree(*mat);
   *mat = NULL;
 }
 

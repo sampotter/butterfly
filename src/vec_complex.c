@@ -2,12 +2,12 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_givens.h>
+#include <bf/mem.h>
 #include <bf/vec_real.h>
 #include <bf/vec_zero.h>
 
@@ -466,7 +466,7 @@ BfVecComplex const *bfVecConstToVecComplexConst(BfVec const *vec) {
 BfVecComplex *bfVecComplexNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfVecComplex *vecComplex = malloc(sizeof(BfVecComplex));
+  BfVecComplex *vecComplex = bfMemAlloc(1, sizeof(BfVecComplex));
   if (vecComplex == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -519,7 +519,7 @@ void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size) {
 
   vecComplex->stride = 1;
 
-  vecComplex->data = malloc(size*sizeof(BfComplex));
+  vecComplex->data = bfMemAlloc(size, sizeof(BfComplex));
   if (vecComplex->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

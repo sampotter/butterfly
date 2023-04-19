@@ -1,7 +1,6 @@
 #include <bf/lu_dense_complex.h>
 
 #include <assert.h>
-#include <string.h>
 
 #include <bf/blas.h>
 #include <bf/error.h>
@@ -9,6 +8,7 @@
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_perm.h>
 #include <bf/mat_product.h>
+#include <bf/mem.h>
 
 struct BfLuDenseComplexImpl {
   lapack_int m;
@@ -55,7 +55,7 @@ BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const
 
   lapack_complex_double *b = solution->data;
 
-  memcpy(b, matDenseComplex->data, m*n*sizeof(lapack_complex_double));
+  bfMemCopy(matDenseComplex->data, m*n, sizeof(lapack_complex_double), b);
 
   lapack_int ldb = n;
 
@@ -174,15 +174,7 @@ BfLu *bfLuDenseComplexToLu(BfLuDenseComplex *luDenseComplex) {
 /** Implementation: LuDenseComplex */
 
 BfLuDenseComplex *bfLuDenseComplexNew() {
-  BEGIN_ERROR_HANDLING();
-
-  BfLuDenseComplex *luDenseComplex = malloc(sizeof(BfLuDenseComplex));
-  if (luDenseComplex == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  END_ERROR_HANDLING() {}
-
-  return luDenseComplex;
+  return bfMemAlloc(1, sizeof(BfLuDenseComplex));
 }
 
 void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
@@ -196,7 +188,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
-  lapack_complex_double *a = malloc(m*n*sizeof(lapack_complex_double));
+  lapack_complex_double *a = bfMemAlloc(m*n, sizeof(lapack_complex_double));
   if (a == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -212,7 +204,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
 
   BfSize lda = n;
 
-  lapack_int *ipiv = malloc(m*sizeof(lapack_int));
+  lapack_int *ipiv = bfMemAlloc(m, sizeof(lapack_int));
   if (ipiv == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -220,7 +212,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   if (info)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  luDenseComplex->impl = malloc(sizeof(BfLuDenseComplexImpl));
+  luDenseComplex->impl = bfMemAlloc(1, sizeof(BfLuDenseComplexImpl));
   if (luDenseComplex->impl == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

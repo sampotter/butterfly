@@ -1,12 +1,11 @@
 #include <bf/real_array.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/rand.h>
 #include <bf/vec_real.h>
 
@@ -19,7 +18,7 @@ static void invalidate(BfRealArray *realArray) {
 BfRealArray *bfRealArrayNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfRealArray *realArray = malloc(sizeof(BfRealArray));
+  BfRealArray *realArray = bfMemAlloc(1, sizeof(BfRealArray));
   if (realArray == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -54,7 +53,7 @@ void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
   realArray->size = 0;
   realArray->capacity = BF_ARRAY_DEFAULT_CAPACITY;
 
-  realArray->data = malloc(realArray->capacity*sizeof(BfReal));
+  realArray->data = bfMemAlloc(realArray->capacity, sizeof(BfReal));
   if (realArray->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -69,12 +68,12 @@ void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
 }
 
 void bfRealArrayDeinit(BfRealArray *realArray) {
-  free(realArray->data);
+  bfMemFree(realArray->data);
   invalidate(realArray);
 }
 
 void bfRealArrayDealloc(BfRealArray **realArray) {
-  free(*realArray);
+  bfMemFree(*realArray);
   *realArray = NULL;
 }
 
@@ -91,7 +90,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
   if (newCapacity < realArray->capacity)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  data = malloc(newCapacity*sizeof(BfReal));
+  data = bfMemAlloc(newCapacity, sizeof(BfReal));
   if (data == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
@@ -101,7 +100,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
 #endif
 
   /* Copy over old values */
-  memcpy(data, realArray->data, realArray->size*sizeof(BfReal));
+  bfMemCopy(realArray->data, realArray->size, sizeof(BfReal), data);
 
   oldData = realArray->data;
 
@@ -112,7 +111,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
     assert(false);
   }
 
-  free(oldData);
+  bfMemFree(oldData);
 }
 
 void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {

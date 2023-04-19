@@ -2,12 +2,11 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_csr_real.h>
+#include <bf/mem.h>
 #include <bf/vec_real.h>
 
 #include <suitesparse/umfpack.h>
@@ -207,11 +206,12 @@ BfVec *bfLuCsrRealScaleVec(BfLuCsrReal const *luCsrReal, BfVec const *b) {
 BfLuCsrReal *bfLuCsrRealNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfLuCsrReal *luCsrReal = malloc(sizeof(BfLuCsrReal));
-  if (luCsrReal == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  BfLuCsrReal *luCsrReal = bfMemAlloc(1, sizeof(BfLuCsrReal));
+  HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() {
+    assert(false);
+  }
 
   return luCsrReal;
 }
@@ -234,25 +234,25 @@ void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
 
   BfSize nnz = matCsrReal->rowptr[n];
 
-  luCsrReal->rowptr = malloc((n + 1)*sizeof(int));
+  luCsrReal->rowptr = bfMemAlloc(n + 1, sizeof(int));
   if (luCsrReal->rowptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (BfSize i = 0; i <= n; ++i)
     luCsrReal->rowptr[i] = matCsrReal->rowptr[i];
 
-  luCsrReal->colind = malloc(nnz*sizeof(int));
+  luCsrReal->colind = bfMemAlloc(nnz, sizeof(int));
   if (luCsrReal->colind == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   for (BfSize i = 0; i < nnz; ++i)
     luCsrReal->colind[i] = matCsrReal->colind[i];
 
-  luCsrReal->data = malloc(nnz*sizeof(BfReal));
+  luCsrReal->data = bfMemAlloc(nnz, sizeof(BfReal));
   if (luCsrReal->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  memcpy(luCsrReal->data, matCsrReal->data, nnz*sizeof(BfReal));
+  bfMemCopy(matCsrReal->data, nnz, sizeof(BfReal), luCsrReal->data);
 
   /* Use UMFPACK to compute the LU decomposition of `mat`. Since
    * UMFPACK operates on CSC sparse matrices, and since `mat` is a CSR
@@ -316,43 +316,43 @@ void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   assert(n_row == n_col);
   int n = n_row;
 
-  int *Lp = malloc((n + 1)*sizeof(int));
+  int *Lp = bfMemAlloc(n + 1, sizeof(int));
   if (Lp == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Lj = malloc(lnz*sizeof(int));
+  int *Lj = bfMemAlloc(lnz, sizeof(int));
   if (Lj == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Lx = malloc(lnz*sizeof(double));
+  double *Lx = bfMemAlloc(lnz, sizeof(double));
   if (Lx == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Up = malloc((n + 1)*sizeof(int));
+  int *Up = bfMemAlloc(n + 1, sizeof(int));
   if (Up == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Ui = malloc(unz*sizeof(int));
+  int *Ui = bfMemAlloc(unz, sizeof(int));
   if (Ui == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Ux = malloc(unz*sizeof(double));
+  double *Ux = bfMemAlloc(unz, sizeof(double));
   if (Ux == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *P = malloc(n*sizeof(int));
+  int *P = bfMemAlloc(n, sizeof(int));
   if (P == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  int *Q = malloc(n*sizeof(int));
+  int *Q = bfMemAlloc(n, sizeof(int));
   if (Q == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Dx = malloc(n*sizeof(double));
+  double *Dx = bfMemAlloc(n, sizeof(double));
   if (Dx == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  double *Rs = malloc(n*sizeof(double));
+  double *Rs = bfMemAlloc(n, sizeof(double));
   if (Rs == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

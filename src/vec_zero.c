@@ -1,10 +1,10 @@
 #include <bf/vec_zero.h>
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 #include <bf/vec_complex.h>
 
 /** Interface: Vec */
@@ -112,7 +112,7 @@ BfVecZero const *bfVecConstToVecZeroConst(BfVec const *vec) {
 BfVecZero *bfVecZeroNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfVecZero *vecZero = malloc(sizeof(BfVecZero));
+  BfVecZero *vecZero = bfMemAlloc(1, sizeof(BfVecZero));
   if (vecZero == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -136,7 +136,7 @@ void bfVecZeroDeinit(BfVecZero *vecZero) {
 }
 
 void bfVecZeroDealloc(BfVecZero **vecZero) {
-  free(*vecZero);
+  bfMemFree(*vecZero);
   *vecZero = NULL;
 }
 

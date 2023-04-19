@@ -1,8 +1,10 @@
 #include <bf/fac_streamer.h>
 
 #include <assert.h>
-#include <stdlib.h>
+
+#if BF_DEBUG
 #include <stdio.h>
+#endif
 
 #include <bf/const.h>
 #include <bf/error.h>
@@ -17,6 +19,7 @@
 #include <bf/mat_diag_real.h>
 #include <bf/mat_identity.h>
 #include <bf/mat_product.h>
+#include <bf/mem.h>
 #include <bf/ptr_array.h>
 #include <bf/size_array.h>
 #include <bf/tree.h>
@@ -43,7 +46,7 @@ static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
                                           BfPtrArray *WBlocks) {
   BEGIN_ERROR_HANDLING();
 
-  PartialFac *partialFac = malloc(sizeof(PartialFac));
+  PartialFac *partialFac = bfMemAlloc(1, sizeof(PartialFac));
   if (partialFac == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -59,7 +62,7 @@ static PartialFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
 
   partialFac->numW = 1;
 
-  partialFac->W = malloc(sizeof(BfMat *));
+  partialFac->W = bfMemAlloc(1, sizeof(BfMat *));
   if (partialFac->W == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -164,7 +167,7 @@ static BfVec *partialFacMulVec(PartialFac *partialFac, BfVec const *x) {
 BfFacStreamer *bfFacStreamerNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfFacStreamer *facStreamer = malloc(sizeof(BfFacStreamer));
+  BfFacStreamer *facStreamer = bfMemAlloc(1, sizeof(BfFacStreamer));
   if (facStreamer == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -664,7 +667,7 @@ static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
                                      BfSize i0, BfSize j0, BfMat *mat) {
   BEGIN_ERROR_HANDLING();
 
-  BfIndexedMat *indexedMat = malloc(sizeof(BfIndexedMat));
+  BfIndexedMat *indexedMat = bfMemAlloc(1, sizeof(BfIndexedMat));
   if (indexedMat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -863,7 +866,7 @@ getPsiAndW0BlocksByRowNodeForPartialFac(PartialFac const *partialFac,
 
   for (BfSize k = 0; k < numSubblocks; ++k) {
     BfIndexedMat *indexedMat = bfPtrArrayGet(indexedPsiSubblocks, k);
-    free(indexedMat);
+    bfMemFree(indexedMat);
   }
   bfPtrArrayDelete(&indexedPsiSubblocks);
 
@@ -981,7 +984,7 @@ static bool getLowRankApproximation(BfFacStreamer const *facStreamer,
       BfSize j0 = bfSizeArrayGet(nonzeroColumnRanges, 2*k);
       BfSize j1 = bfSizeArrayGet(nonzeroColumnRanges, 2*k + 1);
       BfMat *block = bfMatGetColRangeCopy(W0Subblock, j0, j1);
-      BfIndexedMat *indexedBlock = malloc(sizeof(BfIndexedMat));
+      BfIndexedMat *indexedBlock = bfMemAlloc(1, sizeof(BfIndexedMat));
       indexedBlock->i0 = 0;
       indexedBlock->j0 = j0;
       indexedBlock->mat = block;
@@ -1305,7 +1308,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
   // TODO: should really break this out into a separate function once
   // we refactor PartialFac into an honest ButterflyFactorization
   {
-    mergedFac = malloc(sizeof(PartialFac));
+    mergedFac = bfMemAlloc(1, sizeof(PartialFac));
     if (mergedFac == NULL)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
@@ -1318,7 +1321,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
     mergedFac->numW = maxNumW + 1;
     assert(mergedFac->numW >= 2);
 
-    mergedFac->W = calloc(mergedFac->numW, sizeof(BfMat *));
+    mergedFac->W = bfMemAllocAndZero(mergedFac->numW, sizeof(BfMat *));
     if (mergedFac->W == NULL)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
@@ -1389,7 +1392,7 @@ static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
 }
 
 static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat const *Phi) {
-  MatWithTreeNodeKey *entry = malloc(sizeof(MatWithTreeNodeKey));
+  MatWithTreeNodeKey *entry = bfMemAlloc(1, sizeof(MatWithTreeNodeKey));
   entry->treeNode = treeNode;
   entry->mat = bfMatCopy(Phi);
   bfPtrArrayAppend(facStreamer->prevPhis, entry);

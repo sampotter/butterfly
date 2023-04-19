@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: MatFunc */
 
@@ -89,7 +90,7 @@ BfMat const *bfMatFuncConstToMatConst(BfMatFunc const *matFunc) {
 BfMatFunc *bfMatFuncNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatFunc *matFunc = malloc(sizeof(BfMatFunc));
+  BfMatFunc *matFunc = bfMemAlloc(1, sizeof(BfMatFunc));
   if (matFunc == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

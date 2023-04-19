@@ -5,6 +5,7 @@
 
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mem.h>
 
 /** Interface: Mat */
 
@@ -103,7 +104,7 @@ BfMatSum const *bfMatConstToMatSumConst(BfMat const *mat) {
 BfMatSum *bfMatSumNew() {
   BEGIN_ERROR_HANDLING();
 
-  BfMatSum *sum = malloc(sizeof(BfMatSum));
+  BfMatSum *sum = bfMemAlloc(1, sizeof(BfMatSum));
   if (sum == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 

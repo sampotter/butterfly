@@ -1,5 +1,6 @@
 #include <bf/util.h>
 
+#include <stdlib.h>
 #include <time.h>
 
 #include <bf/error.h>
@@ -126,4 +127,8 @@ void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+void bfSort(BfPtr ptr, BfSize n, BfSize size, BfCompar compar, BfPtr aux) {
+  qsort_r(ptr, n, size, compar, aux);
 }
