@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error_macros.h>
 #include <bf/fac.h>
@@ -179,7 +179,7 @@ int main(int argc, char const *argv[]) {
   system(cmd);
 
   char cwd[1024];
-  assert(getcwd(cwd, 1024) != NULL);
+  BF_ASSERT(getcwd(cwd, 1024) != NULL);
   printf("cwd: %s\n", cwd);
 
   for (BfSize i = 0; i < numFactors; ++i) {

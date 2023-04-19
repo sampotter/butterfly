@@ -1,7 +1,6 @@
 #include <bf/mat_identity.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -36,7 +35,7 @@ BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatIdentityToMat(copy);
@@ -102,7 +101,7 @@ BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;
@@ -165,7 +164,7 @@ void bfMatIdentityInit(BfMatIdentity *matIdentity, BfSize n) {
 
 void bfMatIdentityDeinit(BfMatIdentity *matIdentity) {
   (void)matIdentity;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 void bfMatIdentityDealloc(BfMatIdentity **matIdentity) {

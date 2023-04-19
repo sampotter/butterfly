@@ -1,7 +1,6 @@
 #include <bf/mat_coo_complex.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
@@ -370,7 +369,7 @@ static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 

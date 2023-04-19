@@ -1,7 +1,6 @@
 #include <bf/mat_perm.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -102,7 +101,7 @@ static BfMat *solve_matDenseComplex(BfMatPerm const *matPerm, BfMat const *other
   else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatDenseComplexToMat(result);
@@ -114,7 +113,7 @@ BfMat *bfMatPermSolve(BfMatPerm const *matPerm, BfMat const *mat) {\
     return solve_matDenseComplex(matPerm, mat);
   default:
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -131,7 +130,7 @@ BfMat *bfMatPermGetInverse(BfMatPerm const *matPerm) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfPermDeinit(&permInverse);
@@ -171,7 +170,7 @@ BfMatPerm *bfMatPermNewFromPerm(BfPerm const *perm) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matPerm;
@@ -187,7 +186,7 @@ BfMatPerm *bfMatPermNewViewFromLapackPivots(BfSize size, BfLapackInt *ipiv) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matPerm;
@@ -204,7 +203,7 @@ void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm) {
   matPerm->impl->perm = bfPermCopy(perm);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -222,12 +221,12 @@ void bfMatPermInitViewFromLapackPivots(BfMatPerm *matPerm, BfSize size, BfLapack
   matPerm->impl->permLapack.ipiv = ipiv;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
 void bfMatPermDeinit(BfMatPerm *matPerm) {
-  assert(matPerm->impl->permType == PERM_TYPE_LAPACK);
+  BF_ASSERT(matPerm->impl->permType == PERM_TYPE_LAPACK);
 
   if (!(matPerm->super.props &= BF_MAT_PROPS_VIEW))
     free(matPerm->impl->permLapack.ipiv);

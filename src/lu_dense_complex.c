@@ -1,7 +1,6 @@
 #include <bf/lu_dense_complex.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -64,7 +63,7 @@ BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatDenseComplexToMat(solution);
@@ -74,46 +73,46 @@ BfMat *bfLuDenseComplexSolveLower(BfLuDenseComplex const *luDenseComplex, BfMat 
   (void)luDenseComplex;
   (void)B;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuDenseComplexSolveUpper(BfLuDenseComplex const *luDenseComplex, BfMat const *B, bool permute) {
   (void)luDenseComplex;
   (void)B;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuDenseComplexScale(BfLuDenseComplex const *luDenseComplex, BfMat const *B) {
   (void)luDenseComplex;
   (void)B;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfVec *bfLuDenseComplexSolveVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b) {
   (void)luDenseComplex;
   (void)b;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfVec *bfLuDenseComplexSolveLowerVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute) {
   (void)luDenseComplex;
   (void)b;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfVec *bfLuDenseComplexSolveUpperVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute) {
   (void)luDenseComplex;
   (void)b;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfVec *bfLuDenseComplexScaleVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b) {
   (void)luDenseComplex;
   (void)b;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
@@ -157,7 +156,7 @@ BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatProductToMat(PLU);
@@ -222,7 +221,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   luDenseComplex->impl->ipiv = ipiv;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 

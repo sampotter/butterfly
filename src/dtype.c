@@ -1,7 +1,6 @@
 #include <bf/dtype.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/mat.h>
 
 BfSize bfDtypeSize(enum BfDtypes dtype) {
@@ -24,7 +23,7 @@ bool bfDtypeIsValid(enum BfDtypes dtype) {
 }
 
 void bfGetDtypeZero(enum BfDtypes dtype, BfPtr ptr) {
-  assert(bfDtypeIsValid(dtype) && dtype != BF_DTYPE_MAT);
+  BF_ASSERT(bfDtypeIsValid(dtype) && dtype != BF_DTYPE_MAT);
 
   if (dtype == BF_DTYPE_REAL)    *(BfReal *)ptr = 0;
   if (dtype == BF_DTYPE_COMPLEX) *(BfComplex *)ptr = 0;

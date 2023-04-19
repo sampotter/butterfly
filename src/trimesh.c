@@ -1,10 +1,10 @@
 #include <bf/trimesh.h>
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -311,7 +311,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
         ++fv_index;
 //         ++fvn_index;
       } else {
-        assert(false);
+        BF_ASSERT(false);
       }
     }
 
@@ -332,7 +332,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 
 void bfTrimeshDeinit(BfTrimesh *trimesh) {
   (void)trimesh;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {
@@ -350,12 +350,12 @@ void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x) {
 void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex,
                              BfSize i, BfSize *i0, BfSize *i1) {
   BfSize *F = trimesh->faces[faceIndex];
-  assert(F[0] == i || F[1] == i || F[2] == i);
+  BF_ASSERT(F[0] == i || F[1] == i || F[2] == i);
   BfSize k = 0;
   while (F[k] == i) ++k;
   *i0 = F[k];
-  assert(*i0 != i);
+  BF_ASSERT(*i0 != i);
   while (F[k] == *i0 || F[k] == i) ++k;
   *i1 = F[k];
-  assert(*i1 != *i0 && *i1 != i);
+  BF_ASSERT(*i1 != *i0 && *i1 != i);
 }

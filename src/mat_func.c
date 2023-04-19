@@ -1,8 +1,8 @@
 #include <bf/mat_func.h>
 
-#include <assert.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -28,7 +28,7 @@ BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc) {
   numRows = matFunc->super.numRows;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return numRows;
@@ -47,7 +47,7 @@ BfSize bfMatFuncGetNumCols(BfMatFunc const *matFunc) {
   numCols = matFunc->super.numCols;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return numCols;
@@ -69,7 +69,7 @@ BfMat *bfMatFuncMul(BfMatFunc const *matFunc, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;

@@ -1,7 +1,6 @@
 #include <bf/ptr_array.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -112,7 +111,7 @@ bool bfPtrArrayIsEmpty(BfPtrArray const *arr) {
 void extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
   BEGIN_ERROR_HANDLING();
 
-  assert(new_capacity > arr->capacity);
+  BF_ASSERT(new_capacity > arr->capacity);
 
   void *new_data = bfMemRealloc(arr->data, new_capacity, sizeof(BfPtr));
   HANDLE_ERROR();
@@ -297,7 +296,7 @@ BfSize bfConstPtrArraySize(BfConstPtrArray const *arr) {
 }
 
 void extendConstPtrArray(BfConstPtrArray *arr, BfSize new_capacity) {
-  assert(new_capacity > arr->capacity);
+  BF_ASSERT(new_capacity > arr->capacity);
 
   void *new_data = bfMemRealloc(arr->data, new_capacity, sizeof(BfConstPtr));
   if (new_data == NULL) {
@@ -381,6 +380,6 @@ void bfConstPtrArrayExtend(BfConstPtrArray *arr, BfConstPtrArray const *otherArr
   }
 
   END_ERROR_HANDLING() {
-    assert(false); // roll back changes?
+    BF_ASSERT(false); // roll back changes?
   }
 }

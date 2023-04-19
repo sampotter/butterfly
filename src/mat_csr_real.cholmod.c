@@ -55,7 +55,7 @@ BfMat *bfMatCsrRealCholesky(BfMat const *mat) {
   if (R_factor->minor != n)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  assert(R_factor->is_ll && !R_factor->is_super && R_factor->is_monotonic);
+  BF_ASSERT(R_factor->is_ll && !R_factor->is_super && R_factor->is_monotonic);
 
   cholmod_sparse *R_sparse = cholmod_factor_to_sparse(R_factor, c);
 

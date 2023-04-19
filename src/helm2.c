@@ -1,9 +1,9 @@
 #include <bf/helm2.h>
 
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/bessel.h>
 #include <bf/circle.h>
 #include <bf/const.h>
@@ -15,26 +15,26 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle const *circ1,
                                    BfCircle const *circ2,
                                    BfReal k, BfReal C, BfReal eps)
 {
-  assert(k > 0);
-  assert(C > 0);
-  assert(eps > 0);
+  BF_ASSERT(k > 0);
+  BF_ASSERT(C > 0);
+  BF_ASSERT(eps > 0);
 
   BfReal r1 = circ1->r;
   BfReal r2 = circ2->r;
   BfReal R = bfPoint2Dist(circ1->center, circ2->center);
-  assert(r1 > 0 && r2 > 0 && R > 0);
+  BF_ASSERT(r1 > 0 && r2 > 0 && R > 0);
 
   BfReal d = R - r1 - r2;
-  assert(d > 0);
+  BF_ASSERT(d > 0);
 
   /* Reading Michielssen & Boag, seems like there should be a factor
    * of two pi in front of this, but that leads to a rank estimate
    * which is way higher than necessary. */
   BfReal p = k*r1*r2/d - C*log10(eps);
-  assert(p > 0);
+  BF_ASSERT(p > 0);
 
   BfSize rank = (BfSize)ceil(p);
-  assert(rank > 0);
+  BF_ASSERT(rank > 0);
   return rank;
 }
 

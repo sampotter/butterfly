@@ -1,8 +1,8 @@
 #include <bf/points.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/bbox.h>
 #include <bf/const.h>
 #include <bf/error.h>
@@ -75,7 +75,7 @@ BfPoints2 *bfPoints2NewEmpty() {
   points->data = bfMemAlloc(points->capacity, sizeof(BfPoint2));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return points;
@@ -99,7 +99,7 @@ BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return points;
@@ -245,10 +245,10 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
     } else if (j < newPoints->size) {
       newData[k++] = newPoints->data[j++];
     } else {
-      assert(false);
+      BF_ASSERT(false);
     }
   }
-  assert(i == points->size && j == newPoints->size && k == newSize);
+  BF_ASSERT(i == points->size && j == newPoints->size && k == newSize);
 
   if (!points->isView)
     bfMemFree(points->data);
@@ -459,7 +459,7 @@ void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
   bfMemCopy(&points->data[i], 1, sizeof(BfPoint2), p);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -486,7 +486,7 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
   pointsView->data = &points->data[i0];
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return pointsView;
@@ -545,7 +545,7 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
 
 void bfPoints3Deinit(BfPoints3 *points) {
   (void)points;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {

@@ -1,8 +1,8 @@
 #include <bf/vectors.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -72,7 +72,7 @@ BfVectors2 *bfVectors2NewEmpty() {
   vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfPoint2));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return vectors;
@@ -245,7 +245,7 @@ void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
   bfMemCopy(&vectors->data[i], 1, sizeof(BfVector2), v);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -262,7 +262,7 @@ void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
   bfMemCopy(v, 1, sizeof(BfVector2), &vectors->data[i]);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -285,7 +285,7 @@ BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
   vectorsView->data = &vectors->data[i0];
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return vectorsView;
@@ -306,7 +306,7 @@ void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
 
 void bfVectors3Deinit(BfVectors3 *vectors) {
   (void)vectors;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors) {

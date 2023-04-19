@@ -1,9 +1,8 @@
 #include <bf/mat_csr_real.h>
 
-#include <assert.h>
-
 #include <suitesparse/umfpack.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -171,7 +170,7 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
   (void)U;
   (void)P;
   (void)Q;
-  assert(false);
+  BF_ASSERT(false);
 
   END_ERROR_HANDLING() {}
 

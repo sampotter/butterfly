@@ -1,8 +1,8 @@
 #include <bf/linalg.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/lu_csr_real.h>
@@ -180,9 +180,9 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
 
 #if BF_DEBUG // TODO: deal with breakdown
     {
-      assert(numRhs == 1); // TODO: handle numRhs > 1
+      BF_ASSERT(numRhs == 1); // TODO: handle numRhs > 1
       BfReal _ = bfVecNormMax(WNorm)/bfVecNormMax(WNormBefore);
-      assert(_ >= tol);
+      BF_ASSERT(_ >= tol);
     }
 #endif
 
@@ -245,7 +245,7 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
       if (bfVecGetType(h) == BF_TYPE_VEC_COMPLEX) {
         BfVecComplex *_ = bfVecToVecComplex(h);
         BfComplex z = *(_->data + (i + 1)*_->stride);
-        assert(cabs(z) <= 1e-15);
+        BF_ASSERT(cabs(z) <= 1e-15);
       }
 #endif
       bfMatSetColRange(Hp, i, 0, i + 1, h);
@@ -348,8 +348,8 @@ dnaupd:
   dnaupd_c(&ido, &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
            workd, workl, lworkl, &info);
   if (ido == 1 || ido == -1) {
-    assert(ipntr[0] > 0);
-    assert(ipntr[1] > 0);
+    BF_ASSERT(ipntr[0] > 0);
+    BF_ASSERT(ipntr[1] > 0);
 
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
@@ -363,8 +363,8 @@ dnaupd:
 
     goto dnaupd;
   } else if (ido == 2) {
-    assert(ipntr[0] > 0);
-    assert(ipntr[1] > 0);
+    BF_ASSERT(ipntr[0] > 0);
+    BF_ASSERT(ipntr[1] > 0);
 
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
@@ -495,8 +495,8 @@ dnaupd:
   dnaupd_c(&ido, &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
            workd, workl, lworkl, &info);
   if (ido == 1 || ido == -1) {
-    assert(ipntr[0] > 0);
-    assert(ipntr[1] > 0);
+    BF_ASSERT(ipntr[0] > 0);
+    BF_ASSERT(ipntr[1] > 0);
 
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
@@ -510,8 +510,8 @@ dnaupd:
 
     goto dnaupd;
   } else if (ido == 2) {
-    assert(ipntr[0] > 0);
-    assert(ipntr[1] > 0);
+    BF_ASSERT(ipntr[0] > 0);
+    BF_ASSERT(ipntr[1] > 0);
 
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
@@ -686,19 +686,19 @@ get_shifted_eigs:
   if (useLeft) {
     while (j0 < k && lam[j0] < lam0)
       ++j0;
-    assert(lam0 <= lam[j0]);
+    BF_ASSERT(lam0 <= lam[j0]);
   }
-  assert(j0 < k);
+  BF_ASSERT(j0 < k);
 
   /* Find the last eigenpair in the band */
   BfSize j1 = k;
   if (useRight) {
     while (j1 > j0 && lam1 <= lam[j1 - 1])
       --j1;
-    assert(lam[j1 - 1] < lam1);
-    assert(j1 == k || lam1 <= lam[j1]);
+    BF_ASSERT(lam[j1 - 1] < lam1);
+    BF_ASSERT(j1 == k || lam1 <= lam[j1]);
   }
-  assert(j0 <= j1 && j1 <= k);
+  BF_ASSERT(j0 <= j1 && j1 <= k);
 
   if (0 < j0 || j1 < k) {
     /* Prune unnecessary eigenvectors */
@@ -797,7 +797,7 @@ bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfM
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   if (shouldDeleteMatDenseReal)

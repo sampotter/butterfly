@@ -1,8 +1,8 @@
 #include <bf/quadtree_node.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/circle.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -89,7 +89,7 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
                                       BfSize currentDepth) {
   BEGIN_ERROR_HANDLING();
 
-  assert(i0 <= i1);
+  BF_ASSERT(i0 <= i1);
 
   BfPoint2 *point = points->data;
   BfReal const *split = node->split;
@@ -182,23 +182,23 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
 #ifdef BF_DEBUG
   /* Sanity checks follow: */
 
-  assert(j == offset[4]);
+  BF_ASSERT(j == offset[4]);
 
   /* child[0]'s indices are correctly sifted */
   for (BfSize k = offset[0]; k < offset[1]; ++k)
-    assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1]);
+    BF_ASSERT(point[perm[k]][0] <= split[0] && point[perm[k]][1] <= split[1]);
 
   /* child[1]'s indices are correctly sifted */
   for (BfSize k = offset[1]; k < offset[2]; ++k)
-    assert(point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1]);
+    BF_ASSERT(point[perm[k]][0] <= split[0] && point[perm[k]][1] > split[1]);
 
   /* child[2]'s indices are correctly sifted */
   for (BfSize k = offset[2]; k < offset[3]; ++k)
-    assert(point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1]);
+    BF_ASSERT(point[perm[k]][0] > split[0] && point[perm[k]][1] <= split[1]);
 
   /* child[3]'s indices are correctly sifted */
   for (BfSize k = offset[3]; k < offset[4]; ++k)
-    assert(point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1]);
+    BF_ASSERT(point[perm[k]][0] > split[0] && point[perm[k]][1] > split[1]);
 #endif
 
   for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
@@ -231,8 +231,8 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
 
 #if BF_DEBUG
   for (BfSize q = 0; q < NUM_CHILDREN; ++q)
-    assert((offset[q] == offset[q + 1] && child[q] == NULL) ||
-           (offset[q] < offset[q + 1] && child[q] != NULL));
+    BF_ASSERT((offset[q] == offset[q + 1] && child[q] == NULL) ||
+              (offset[q] < offset[q + 1] && child[q] != NULL));
 #endif
 
   END_ERROR_HANDLING() {

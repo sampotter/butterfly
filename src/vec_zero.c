@@ -1,7 +1,6 @@
 #include <bf/vec_zero.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -29,7 +28,7 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
 
   BfVecComplex *cat = NULL;
 
-  assert(bfVecGetType(vec) == BF_TYPE_VEC_ZERO);
+  BF_ASSERT(bfVecGetType(vec) == BF_TYPE_VEC_ZERO);
 
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(otherVec);
   HANDLE_ERROR();
@@ -64,8 +63,8 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
 BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
   BEGIN_ERROR_HANDLING();
 
-  assert(bfVecGetType(vec) == BF_TYPE_VEC_ZERO);
-  assert(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
+  BF_ASSERT(bfVecGetType(vec) == BF_TYPE_VEC_ZERO);
+  BF_ASSERT(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
 
   BfVecZero *cat = bfVecZeroNew();
   HANDLE_ERROR();

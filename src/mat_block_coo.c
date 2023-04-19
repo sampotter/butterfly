@@ -1,7 +1,6 @@
 #include <bf/mat_block_coo.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/indexed_mat.h>
@@ -152,7 +151,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
   BfSize j1 = 0;
   for (BfSize k = 0; k < bfPtrArraySize(&blocks); ++k) {
     BfMatBlockCooEntry const *entry = bfPtrArrayGet(&blocks, k);
-    assert(j1 <= entry->j0);
+    BF_ASSERT(j1 <= entry->j0);
     j1 = entry->j0;
   }
 #endif
@@ -171,7 +170,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
     }
   }
 
-  assert(rowCopy->size == bfMatGetNumCols(mat));
+  BF_ASSERT(rowCopy->size == bfMatGetNumCols(mat));
 
   END_ERROR_HANDLING() {}
 
@@ -280,7 +279,7 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
     indexedRowBlock->j0 = j0_;
     indexedRowBlock->mat = blockRowRange;
 
-    assert(indexedRowBlock->mat != NULL);
+    BF_ASSERT(indexedRowBlock->mat != NULL);
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
     HANDLE_ERROR();
@@ -391,7 +390,7 @@ BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;
@@ -429,7 +428,7 @@ static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
     break;
   }
   case BF_TYPE_MAT_IDENTITY:
-    assert(m == n);
+    BF_ASSERT(m == n);
   case BF_TYPE_MAT_DENSE_REAL: {
     for (BfSize j = 0; j < n; ++j) nonzero[j] = true;
     break;
@@ -479,10 +478,10 @@ BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCo
     j0Next = j1;
   }
 
-  assert(j0Next == n);
+  BF_ASSERT(j0Next == n);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return nonzeroColumnRanges;
@@ -733,7 +732,7 @@ BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockCoo;
@@ -787,7 +786,7 @@ BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockCoo;
@@ -886,7 +885,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols,
     if (rowInd == BF_SIZE_BAD_VALUE)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-    assert(bfSizeArrayGet(&rowOffsets, rowInd + 1) == i1);
+    BF_ASSERT(bfSizeArrayGet(&rowOffsets, rowInd + 1) == i1);
 
     bfSizeArrayAppend(&rowInds, rowInd);
     HANDLE_ERROR();
@@ -895,7 +894,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols,
     if (colInd == BF_SIZE_BAD_VALUE)
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-    assert(bfSizeArrayGet(&colOffsets, colInd + 1) == j1);
+    BF_ASSERT(bfSizeArrayGet(&colOffsets, colInd + 1) == j1);
 
     bfSizeArrayAppend(&colInds, colInd);
     HANDLE_ERROR();
@@ -958,7 +957,7 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
 
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat) {
   (void)mat;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat) {

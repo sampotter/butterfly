@@ -1,7 +1,6 @@
 #include <bf/tree_node.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -48,7 +47,7 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
 
 void bfTreeNodeDeinit(BfTreeNode *treeNode) {
   (void)treeNode;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 bool bfTreeNodeInstanceOf(BfTreeNode const *treeNode, BfType type) {

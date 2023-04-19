@@ -1,8 +1,8 @@
 #include <bf/vec_real.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat.h>
@@ -177,7 +177,7 @@ void bfVecRealSetRange(BfVecReal *vecReal, BfSize i0, BfSize i1,
       = *(otherVecReal->data + (i - i0)*otherVecReal->stride);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -259,7 +259,7 @@ void bfVecRealAddInplace(BfVecReal *vecReal, BfVec const *otherVec) {
       += *(otherVecReal->data + i*otherVecReal->stride);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -367,7 +367,7 @@ BfVecReal *bfVecRealNewWithValue(BfSize n, BfReal value) {
     *(vecReal->data + i*vecReal->stride) = value;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return vecReal;
@@ -385,7 +385,7 @@ BfVecReal *bfVecRealNewRandn(BfSize n) {
   bfRealRandn(n, vecReal->data);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return vecReal;

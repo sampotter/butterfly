@@ -1,8 +1,8 @@
 #include <bf/mat_product.h>
 
-#include <assert.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -191,7 +191,7 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;

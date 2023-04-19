@@ -1,9 +1,9 @@
 #include <bf/mem.h>
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 
@@ -17,7 +17,7 @@ BfPtr bfMemAlloc(BfSize n, BfSize size) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return ptr;
@@ -33,7 +33,7 @@ BfPtr bfMemAllocAndZero(BfSize n, BfSize size) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return ptr;
@@ -51,7 +51,7 @@ BfPtr bfMemRealloc(BfPtr ptr, BfSize n, BfSize size) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return newPtr;

@@ -1,7 +1,6 @@
 #include <bf/tree_level_iter.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -34,7 +33,7 @@ fillWithLrLevelOrderNodePtrs(BfPtrArray *nodes, BfTreeNode *current)
   BfTreeNode const *prevNode = bfPtrArrayGet(nodes, 0);
   for (BfSize i = 1; i < bfPtrArraySize(nodes); ++i) {
     BfTreeNode const *node = bfPtrArrayGet(nodes, i);
-    assert(prevNode->depth <= node->depth);
+    BF_ASSERT(prevNode->depth <= node->depth);
     prevNode = node;
   }
 #endif
@@ -60,7 +59,7 @@ findLevelOrderOffsets(BfPtrArray *nodes, BfSize *numLevels, BfSize **offsets)
   HANDLE_ERROR();
   BfSize maxDepth = node->depth;
 
-  assert(maxDepth >= minDepth);
+  BF_ASSERT(maxDepth >= minDepth);
   *numLevels = maxDepth - minDepth + 1;
 
   /* allocate space for offsets */
@@ -218,7 +217,7 @@ BfSize bfTreeLevelIterCurrentDepth(BfTreeLevelIter const *iter) {
 
 bool bfTreeLevelIterIsDone(BfTreeLevelIter const *iter) {
   LrLevelOrderInfo *info = iter->aux;
-  assert(info->currentLevel <= info->numLevels);
+  BF_ASSERT(info->currentLevel <= info->numLevels);
   return info->currentLevel == info->numLevels;
 }
 
@@ -228,7 +227,7 @@ static void next_lrLevelOrder(BfTreeLevelIter *iter) {
   if (++info->currentLevel == info->numLevels)
     return;
 
-  assert(info->currentLevel < info->numLevels);
+  BF_ASSERT(info->currentLevel < info->numLevels);
 
   bfMakeEmptyPtrArrayView(&iter->levelNodes);
   bfPtrArrayGetRangeView(

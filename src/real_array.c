@@ -1,7 +1,6 @@
 #include <bf/real_array.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -41,7 +40,7 @@ BfRealArray *bfRealArrayNewWithDefaultCapacity() {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return realArray;
@@ -108,7 +107,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
   realArray->capacity = newCapacity;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfMemFree(oldData);
@@ -125,7 +124,7 @@ void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
   realArray->data[realArray->size++] = elt;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -139,7 +138,7 @@ BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfVecRealToVec(vecReal);
@@ -163,7 +162,7 @@ BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfVecRealToVec(vecReal);

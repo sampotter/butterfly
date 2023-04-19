@@ -1,5 +1,6 @@
 #include "multiple_scattering_context.h"
 
+#include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/ellipse.h>
 #include <bf/fac.h>
@@ -19,9 +20,7 @@
 #include <bf/vec_real.h>
 #include <bf/vectors.h>
 
-#include <assert.h>
 #include <math.h>
-#include <string.h>
 
 #include <fmm2d/helmholtz.h>
 
@@ -76,10 +75,10 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
 
   BfSize numRhs = 1;
 
-  assert(context->N->size == n);
-  assert(bfMatGetNumRows(sigma) == n);
-  assert(bfMatGetNumCols(sigma) == numRhs); // TODO: handle multiple righthand sides
-  assert(bfMatConstToMatDenseComplexConst(sigma)->rowStride == 1); // XXX
+  BF_ASSERT(context->N->size == n);
+  BF_ASSERT(bfMatGetNumRows(sigma) == n);
+  BF_ASSERT(bfMatGetNumCols(sigma) == numRhs); // TODO: handle multiple righthand sides
+  BF_ASSERT(bfMatConstToMatDenseComplexConst(sigma)->rowStride == 1); // XXX
 
   BfMatDenseComplex *u = bfMatDenseComplexNew();
   bfMatDenseComplexInit(u, n, numRhs);
@@ -95,12 +94,12 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   BfComplex dipstrScale = context->beta;
 
   BfComplex *charge = bfMemAlloc(n, sizeof(BfComplex));
-  assert(charge != NULL);
+  BF_ASSERT(charge != NULL);
   for (BfSize i = 0; i < n; ++i)
     charge[i] = chargeScale*sigmaPtr[i];
 
   BfComplex *dipstr = bfMemAlloc(n, sizeof(BfComplex));
-  assert(dipstr != NULL);
+  BF_ASSERT(dipstr != NULL);
   for (BfSize i = 0; i < n; ++i)
     dipstr[i] = dipstrScale*sigmaPtr[i];
 
@@ -127,7 +126,7 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   //   ier == 1, 2, 3, or 4 -> "allocate" failed
   //   ier == 13 -> "computational box too big"
   //
-  assert(ier == 0);
+  BF_ASSERT(ier == 0);
 
   bfMemFree(charge);
   bfMemFree(dipstr);
@@ -823,7 +822,7 @@ void collectAndPrintStats(MultipleScatteringContext *context) {
   };
 
   BfSize numMethods = sizeof(sigma)/sizeof(sigma[0]);
-  assert(numMethods == sizeof(methodName)/sizeof(methodName[0]));
+  BF_ASSERT(numMethods == sizeof(methodName)/sizeof(methodName[0]));
 
   for (BfSize i = 0; i < numMethods; ++i) {
     if (sigma[i] == NULL) continue;
@@ -931,7 +930,7 @@ void doPostprocessing(MultipleScatteringContext *context) {
   };
 
   BfSize numMethods = sizeof(sigma)/sizeof(sigma[0]);
-  assert(numMethods == sizeof(methodName)/sizeof(methodName[0]));
+  BF_ASSERT(numMethods == sizeof(methodName)/sizeof(methodName[0]));
 
   for (BfSize i = 0; i < numMethods; ++i) {
     if (sigma[i] == NULL) continue;
@@ -954,5 +953,5 @@ void doPostprocessing(MultipleScatteringContext *context) {
 }
 
 void deinit(MultipleScatteringContext *context, Opts *opts) {
-  assert(false);
+  BF_ASSERT(false);
 }

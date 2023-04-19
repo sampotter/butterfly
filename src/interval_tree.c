@@ -1,7 +1,6 @@
 #include <bf/interval_tree.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -114,7 +113,7 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
 
     BfSize j = i + 1;
     while (i < i1 && j < i1) {
-      assert(x[P[i]] < a || b <= x[P[i]]);
+      BF_ASSERT(x[P[i]] < a || b <= x[P[i]]);
 
       /* Find the next point that's in the current child interval */
       while (j < i1 && (x[P[j]] < a || b <= x[P[j]]))

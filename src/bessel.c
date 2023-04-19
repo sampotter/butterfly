@@ -209,7 +209,7 @@ BfReal bf_y0(BfReal x) {
   BfReal two_over_pi = 2.0/BF_PI;
   BfReal xmax        = 1.0/BF_EPS;
 
-  assert(x > 0);
+  BF_ASSERT(x > 0);
 
   if (x < 4.0) {
     BfReal J0 = bf_j0(x);
@@ -231,7 +231,7 @@ BfReal bf_y0(BfReal x) {
   }
 
   // UNDERFLOW_ERROR(result);
-  assert(false); // TODO: throw error
+  BF_ASSERT(false); // TODO: throw error
 }
 
 static BfComplex _H0_small_arg(BfReal x) {
@@ -256,14 +256,14 @@ static BfComplex _H0_large_arg(BfReal x) {
 }
 
 BfComplex bf_H0(BfReal x) {
-  assert(x > 0);
+  BF_ASSERT(x > 0);
   if (x <= 4.0)
     return _H0_small_arg(x);
   else if (x < 1.0/BF_EPS)
     return _H0_large_arg(x);
   else
     // UNDERFLOW_ERROR(result);
-    assert(false); // TODO: throw error
+    BF_ASSERT(false); // TODO: throw error
 }
 
 /* TODO: pull in GSL code so we can create opportunities for

@@ -1,7 +1,6 @@
 #include <bf/tree_iter_post_order.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -40,7 +39,7 @@ StackNode *makeStackNode(BfTreeNode *treeNode) {
 }
 
 void incStackNodeChild(StackNode *stackNode) {
-  assert(stackNode->nextChild != BF_SIZE_BAD_VALUE);
+  BF_ASSERT(stackNode->nextChild != BF_SIZE_BAD_VALUE);
 
   BfTreeNode *treeNode = stackNode->treeNode;
 
@@ -141,7 +140,7 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 

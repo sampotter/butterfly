@@ -1,7 +1,6 @@
 #include <bf/tree.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/tree_level_iter.h>
@@ -34,7 +33,7 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
 
 void bfTreeDeinit(BfTree *tree) {
   (void)tree;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 bool bfTreeInstanceOf(BfTree const *tree, BfType type) {
@@ -198,7 +197,7 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
 
 #if BF_DEBUG
   for (BfSize k = 0; k < bfPtrArraySize(&levelNodes); ++k)
-    assert(bfPtrArrayGet(&levelNodes, k) != NULL);
+    BF_ASSERT(bfPtrArrayGet(&levelNodes, k) != NULL);
 #endif
 
   return levelNodes;

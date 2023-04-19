@@ -1,7 +1,6 @@
 #include <bf/mat_block.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -22,12 +21,12 @@ BfSize bfMatBlockGetNumColBlocks(BfMatBlock const *matBlock) {
 }
 
 BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *mat, BfSize i) {
-  assert(mat->vtbl->GetNumBlockRows == NULL); // TODO: safeguard
+  BF_ASSERT(mat->vtbl->GetNumBlockRows == NULL); // TODO: safeguard
   return mat->rowOffset[i + 1] - mat->rowOffset[i];
 }
 
 BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *mat, BfSize j) {
-  assert(mat->vtbl->GetNumBlockCols == NULL); // TODO: safeguard
+  BF_ASSERT(mat->vtbl->GetNumBlockCols == NULL); // TODO: safeguard
   return mat->colOffset[j + 1] - mat->colOffset[j];
 }
 

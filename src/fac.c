@@ -1,8 +1,8 @@
 #include <bf/fac.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/circle.h>
 #include <bf/error_macros.h>
 #include <bf/helm2.h>
@@ -39,10 +39,10 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
 
   /* there should only be one target node at the starting level of
    * the target tree when we begin the traversal */
-  assert(bfPtrArraySize(tgtLevelNodes) == 1);
+  BF_ASSERT(bfPtrArraySize(tgtLevelNodes) == 1);
 
   /* the current level of the source node tree shouldn't be empty */
-  assert(!bfPtrArrayIsEmpty(srcLevelNodes));
+  BF_ASSERT(!bfPtrArrayIsEmpty(srcLevelNodes));
 
   BfQuadtreeNode const *srcNode = NULL;
   BfQuadtreeNode const *tgtNode = NULL;
@@ -86,7 +86,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
     HANDLE_ERROR();
 
     /* verify that the source bounding circle contains the points */
-    assert(bfCircle2ContainsPoints(&srcCirc, &srcPts));
+    BF_ASSERT(bfCircle2ContainsPoints(&srcCirc, &srcPts));
 
     /* get the rank estimate for the current pair of source and
      * target bounding circles */
@@ -172,7 +172,7 @@ typedef struct {
 static void resetMakeFactorIter(MakeFactorIter *iter, BfPtrArray const *levelNodes) {
 #if BF_DEBUG
   for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i)
-    assert(!bfTreeNodeIsLeaf(bfPtrArrayGet(levelNodes, i)));
+    BF_ASSERT(!bfTreeNodeIsLeaf(bfPtrArrayGet(levelNodes, i)));
 #endif
 
   iter->levelNodes = levelNodes;
@@ -193,7 +193,7 @@ static bool makeFactorIterNext(MakeFactorIter *iter) {
     iter->numChildren = getChildren(iter->node, iter->children);
     iter->circ = bfQuadtreeNodeGetBoundingCircle(iter->node);
   }
-  assert(iter->childIndex < iter->numChildren);
+  BF_ASSERT(iter->childIndex < iter->numChildren);
   iter->child = iter->children[iter->childIndex];
   iter->childCirc = bfQuadtreeNodeGetBoundingCircle(iter->child);
   return true;
@@ -208,8 +208,8 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   BEGIN_ERROR_HANDLING();
 
   /* neither the source nor target levels should be empty */
-  assert(!bfPtrArrayIsEmpty(srcLevelNodes));
-  assert(!bfPtrArrayIsEmpty(tgtLevelNodes));
+  BF_ASSERT(!bfPtrArrayIsEmpty(srcLevelNodes));
+  BF_ASSERT(!bfPtrArrayIsEmpty(tgtLevelNodes));
 
   /* get the layer potential we should use for reexpansion */
   BfLayerPotential proxyLayerPot = BF_PROXY_LAYER_POT[layerPot];
@@ -233,7 +233,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   BfSize numBlocks = totalNumSrcChildren*totalNumTgtChildren;
   BfSize numBlockRows = totalNumTgtChildren*totalNumSrcNodes;
   BfSize numBlockCols = totalNumSrcChildren*totalNumTgtNodes;
-  assert(numBlockCols == bfMatBlockGetNumRowBlocks(prevMatBlock));
+  BF_ASSERT(numBlockCols == bfMatBlockGetNumRowBlocks(prevMatBlock));
 
   BfMatBlockCoo *mat = bfMatBlockCooNew();
   bfMatBlockCooInit(mat, numBlockRows, numBlockCols, numBlocks);
@@ -268,8 +268,8 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
     j = tgtIter.nodeIndex*totalNumSrcChildren;
     do {
       i = i_offset + srcIter.nodeIndex;
-      assert(i < numBlockRows);
-      assert(j < numBlockCols);
+      BF_ASSERT(i < numBlockRows);
+      BF_ASSERT(j < numBlockCols);
 
       /* a priori rank estimate for the original circles */
       BfSize rankOr = bfHelm2RankEstForTwoCircles(
@@ -291,7 +291,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
         mat->super.rowOffset[i + 1] = rank;
 
       /* set block row and column indices */
-      assert(blockIndex < mat->numBlocks);
+      BF_ASSERT(blockIndex < mat->numBlocks);
       mat->rowInd[blockIndex] = i;
       mat->colInd[blockIndex] = j;
 
@@ -322,7 +322,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
     do {
       BfSize numRows = bfMatBlockGetNumBlockRows(&mat->super, mat->rowInd[blockIndex]);
       BfSize numCols = bfMatBlockGetNumBlockCols(&mat->super, mat->colInd[blockIndex]);
-      assert(numRows > 0 && numCols > 0);
+      BF_ASSERT(numRows > 0 && numCols > 0);
 
       /* sample points on the source child circle */
       srcChildPts = bfCircle2SamplePoints(&srcIter.childCirc, numCols);
@@ -382,11 +382,11 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
   BEGIN_ERROR_HANDLING();
 
   /* the current level of the target node tree shouldn't be empty */
-  assert(!bfPtrArrayIsEmpty(tgtLevelNodes));
+  BF_ASSERT(!bfPtrArrayIsEmpty(tgtLevelNodes));
 
   /* the should only be one source node when we make the last
    * butterfly factor */
-  assert(bfPtrArraySize(srcLevelNodes) == 1);
+  BF_ASSERT(bfPtrArraySize(srcLevelNodes) == 1);
 
   /* the number of diagonal blocks in the last factor equals the
    * number of nodes at the current depth of the target tree ... */
@@ -394,7 +394,7 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
 
   /* ... and this number of blocks should match the number of block
    *  rows of the previous factor */
-  assert(numBlocks == prevMat->numRows);
+  BF_ASSERT(numBlocks == prevMat->numRows);
 
   BfMatBlock const *prevMatBlock = bfMatConstToMatBlockConst(prevMat);
 
@@ -448,10 +448,10 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
       &srcCircPts, &tgtPts, srcNormalsPtr, tgtNormalsPtr, K, layerPot, alpha, beta);
     HANDLE_ERROR();
 
-    assert(mat->super.rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    BF_ASSERT(mat->super.rowOffset[i + 1] == BF_SIZE_BAD_VALUE);
     mat->super.rowOffset[i + 1] = mat->super.block[i]->numRows;
 
-    assert(mat->super.colOffset[i + 1] == BF_SIZE_BAD_VALUE);
+    BF_ASSERT(mat->super.colOffset[i + 1] == BF_SIZE_BAD_VALUE);
     mat->super.colOffset[i + 1] = mat->super.block[i]->numCols;
 
     /* hang onto this block's points if we're in debug mode, and free
@@ -557,7 +557,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   /* find the deepest, complete, internal level of the target tree
    * using the target level iterator */
   BfSize maxAllowableDepthBelowTgtNode = bfTreeLevelIterCurrentDepth(tgtLevelIter);
-  assert(bfTreeLevelIterCurrentLevelIsInternal(tgtLevelIter));
+  BF_ASSERT(bfTreeLevelIterCurrentLevelIsInternal(tgtLevelIter));
   bfTreeLevelIterNext(tgtLevelIter);
   HANDLE_ERROR();
   while (bfTreeLevelIterCurrentLevelIsInternal(tgtLevelIter)) {
@@ -574,14 +574,14 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
     bfQuadtreeNodeToTreeNode((BfQuadtreeNode *)tgtNode));
   HANDLE_ERROR();
 
-  assert(bfTreeLevelIterGetNumPoints(tgtLevelIter) == numTgtNodes);
+  BF_ASSERT(bfTreeLevelIterGetNumPoints(tgtLevelIter) == numTgtNodes);
 
   /* get the current source and target depths and make sure they're
    * compatible */
   BfSize currentSrcDepth =
     bfTreeLevelIterCurrentDepth(srcLevelIter);
   BfSize currentTgtDepth = bfTreeLevelIterCurrentDepth(tgtLevelIter);
-  assert(currentTgtDepth <= currentSrcDepth);
+  BF_ASSERT(currentTgtDepth <= currentSrcDepth);
 
   /* skip source levels until we're no deeper than the maximum depth
    * beneath the target node */
@@ -595,7 +595,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
     bfTreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
-  assert(bfTreeLevelIterGetNumPoints(srcLevelIter) == numSrcNodes);
+  BF_ASSERT(bfTreeLevelIterGetNumPoints(srcLevelIter) == numSrcNodes);
 
   /* Skip levels until we're on an "internal" level of the tree */
   while (!bfTreeLevelIterCurrentLevelIsInternal(srcLevelIter)) {
@@ -673,7 +673,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     bfMatProductPostMultiply(prod, factor[numFactors - 1 - i]);
 
   END_ERROR_HANDLING() {
-    assert(false); // TODO: need to think carefully about how to do this
+    BF_ASSERT(false); // TODO: need to think carefully about how to do this
   }
 
   return prod;
@@ -783,8 +783,8 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *srcTree, BfQuadtree const *tgtTree
                              level + 1, childBlockMat);
   HANDLE_ERROR();
 
-  assert(bfMatGetNumRows(mat) == bfTreeNodeGetNumPoints(&tgtNode->super));
-  assert(bfMatGetNumCols(mat) == bfTreeNodeGetNumPoints(&srcNode->super));
+  BF_ASSERT(bfMatGetNumRows(mat) == bfTreeNodeGetNumPoints(&tgtNode->super));
+  BF_ASSERT(bfMatGetNumCols(mat) == bfTreeNodeGetNumPoints(&srcNode->super));
 
   END_ERROR_HANDLING() {}
 
@@ -866,8 +866,8 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree con
     for (BfSize j = 0; j < numColBlocks; ++j) {
       BfSize n = super->colOffset[j + 1] - super->colOffset[j];
       BfMat *block = bfMatBlockDenseGetBlock(blockMat, i, j);
-      assert(bfMatGetNumRows(block) == m);
-      assert(bfMatGetNumCols(block) == n);
+      BF_ASSERT(bfMatGetNumRows(block) == m);
+      BF_ASSERT(bfMatGetNumCols(block) == n);
     }
   }
 #endif
@@ -929,7 +929,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgt
 
   END_ERROR_HANDLING() {
     bfMatBlockDenseDeinitAndDealloc(&matBlockDense);
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfTreeLevelIterDeinit(&srcLevelIter);

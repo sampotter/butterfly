@@ -1,8 +1,8 @@
 #include <bf/poisson_disk_sampling.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/bbox.h>
 #include <bf/const.h>
 #include <bf/error.h>
@@ -38,16 +38,16 @@ typedef struct {
 
 static void getCellCoords(BfPoint2 const p, Workspace const *w, BfSize *i, BfSize *j) {
   BfReal iFrac = (p[0] - w->bbox->min[0])/w->h;
-  assert(0 <= iFrac && iFrac < w->nx);
+  BF_ASSERT(0 <= iFrac && iFrac < w->nx);
 
   BfReal jFrac = (p[1] - w->bbox->min[1])/w->h;
-  assert(0 <= jFrac && jFrac < w->ny);
+  BF_ASSERT(0 <= jFrac && jFrac < w->ny);
 
   *i = floor(iFrac);
   *j = floor(jFrac);
 
-  assert(*i < w->nx);
-  assert(*j < w->ny);
+  BF_ASSERT(*i < w->nx);
+  BF_ASSERT(*j < w->ny);
 }
 
 static BfSize getCellIndex(BfPoint2 const p, Workspace const *w) {
@@ -154,7 +154,7 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfMemFree(w.cellIndex);

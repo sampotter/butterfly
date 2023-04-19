@@ -1,7 +1,6 @@
 #include <bf/size_array.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -40,7 +39,7 @@ BfSizeArray *bfSizeArrayNewIota(BfSize n) {
     bfSizeArrayAppend(sizeArray, i);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return sizeArray;
@@ -56,7 +55,7 @@ BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return sizeArray;
@@ -123,7 +122,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
   sizeArray->capacity = newCapacity;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfMemFree(oldData);
@@ -143,7 +142,7 @@ void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
   sizeArray->data[sizeArray->size++] = elt;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -188,7 +187,7 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   BEGIN_ERROR_HANDLING();
 
 #if BF_DEBUG
-  assert(bfSizeArrayIsSorted(sizeArray));
+  BF_ASSERT(bfSizeArrayIsSorted(sizeArray));
 
   BfSize prevSize = sizeArray->size;
 #endif
@@ -210,11 +209,11 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   ++sizeArray->size;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
 #if BF_DEBUG
-  assert(sizeArray->size == prevSize + 1);
+  BF_ASSERT(sizeArray->size == prevSize + 1);
 #endif
 }
 
@@ -257,7 +256,7 @@ BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
   elt = sizeArray->data[0];
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return elt;
@@ -274,7 +273,7 @@ BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
   elt = sizeArray->data[sizeArray->size - 1];
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return elt;

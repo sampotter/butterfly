@@ -1,7 +1,6 @@
 #include <bf/quadrature.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block_dense.h>
@@ -45,7 +44,7 @@ static BfReal const *get_w_KR(BfSize order) {
   case 2: return w_KR_order2;
   case 6: return w_KR_order6;
   case 10: return w_KR_order10;
-  default: assert(false);
+  default: BF_ASSERT(false);
   }
 }
 
@@ -69,7 +68,7 @@ void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -121,7 +120,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -220,7 +219,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -267,7 +266,7 @@ void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offset
   bfMatAddInplace(mat, corr);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfMatDelete(&corr);

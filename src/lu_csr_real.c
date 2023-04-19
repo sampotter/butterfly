@@ -1,8 +1,8 @@
 #include <bf/lu_csr_real.h>
 
-#include <assert.h>
 #include <limits.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_csr_real.h>
@@ -27,27 +27,27 @@ static BfLuVtable LU_VTABLE = {
 BfMat *bfLuCsrRealSolve(BfLuCsrReal const *luCsrReal, BfMat const *B) {
   (void)luCsrReal;
   (void)B;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuCsrRealSolveLower(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
   (void)luCsrReal;
   (void)B;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuCsrRealSolveUpper(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
   (void)luCsrReal;
   (void)B;
   (void)permute;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfMat *bfLuCsrRealScale(BfLuCsrReal const *luCsrReal, BfMat const *B) {
   (void)luCsrReal;
   (void)B;
-  assert(false);
+  BF_ASSERT(false);
 }
 
 static BfVec *solve_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
@@ -210,7 +210,7 @@ BfLuCsrReal *bfLuCsrRealNew() {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return luCsrReal;
@@ -313,7 +313,7 @@ void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  assert(n_row == n_col);
+  BF_ASSERT(n_row == n_col);
   int n = n_row;
 
   int *Lp = bfMemAlloc(n + 1, sizeof(int));

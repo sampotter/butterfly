@@ -1,8 +1,8 @@
 #include <bf/octree_node.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -154,7 +154,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
                                     BfSize currentDepth) {
   BEGIN_ERROR_HANDLING();
 
-  assert(i0 <= i1);
+  BF_ASSERT(i0 <= i1);
 
   BfPoint3 const *point = (BfPoint3 const *)points->data;
   BfReal const *split = node->split;
@@ -164,7 +164,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
   /* Sanity check: make sure all points are in bounding box for node. */
 #if BF_DEBUG
   for (BfSize i = i0; i < i1; ++i)
-    assert(bfBoundingBox3ContainsPoint(&boundingBox, point[perm[i]]));
+    BF_ASSERT(bfBoundingBox3ContainsPoint(&boundingBox, point[perm[i]]));
 #endif
 
   /* Sift the points into the correct octants at this level. Note that
@@ -179,7 +179,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
 #ifdef BF_DEBUG
   for (BfSize q = 0; q < NUM_CHILDREN; ++q)
     for (BfSize i = offset[q]; i < offset[q + 1]; ++i)
-      assert(inOctant[q](point[perm[i]], split));
+      BF_ASSERT(inOctant[q](point[perm[i]], split));
 #endif
 
   /* Compute the bounding boxes each child node */
@@ -223,8 +223,8 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
     if (numChildPoints == 0)
       continue;
 
-    assert(!bfBoundingBox3IsEmpty(&childBoundingBox[q]));
-    assert(bfBoundingBox3GetVolume(&childBoundingBox[q]) >= 1e-15);
+    BF_ASSERT(!bfBoundingBox3IsEmpty(&childBoundingBox[q]));
+    BF_ASSERT(bfBoundingBox3GetVolume(&childBoundingBox[q]) >= 1e-15);
 
     /* Create and initialize a new octree node */
     BfOctreeNode *newChild = bfOctreeNodeNew();
@@ -253,8 +253,8 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
    * points in the corresponding index range. */
 #if BF_DEBUG
   for (BfSize q = 0; q < NUM_CHILDREN; ++q)
-    assert((offset[q] == offset[q + 1] && child[q] == NULL) ||
-           (offset[q] < offset[q + 1] && child[q] != NULL));
+    BF_ASSERT((offset[q] == offset[q + 1] && child[q] == NULL) ||
+              (offset[q] < offset[q + 1] && child[q] != NULL));
 #endif
 
   END_ERROR_HANDLING() {

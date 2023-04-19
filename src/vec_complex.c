@@ -1,8 +1,8 @@
 #include <bf/vec_complex.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -374,7 +374,7 @@ static BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
   HANDLE_ERROR();
 
-  assert(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
+  BF_ASSERT(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
 
   cat = bfVecComplexNew();
   HANDLE_ERROR();
@@ -429,7 +429,7 @@ void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   fclose(fp);

@@ -1,7 +1,7 @@
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/fac_streamer.h>
@@ -31,7 +31,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
     /* Clamp eigenvalues to be nonnegative if we find any that are
      * negative due to roundoff */
     if (Lam->data[i] < 0) {
-      assert(Lam->data[i] > -1e-13);
+      BF_ASSERT(Lam->data[i] > -1e-13);
       Lam->data[i] = 0;
     }
 
@@ -40,7 +40,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return freqs;

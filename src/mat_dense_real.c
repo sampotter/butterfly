@@ -1,9 +1,8 @@
 #include <bf/mat_dense_real.h>
 
-#include <assert.h>
-
 #include <openblas/lapacke.h>
 
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -291,9 +290,9 @@ void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
 BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   BfSize numRows = mat->numRows;
 
-  assert(i0 < i1);
-  assert(i1 <= numRows);
-  assert(!bfMatIsTransposed(mat)); // TODO: implement
+  BF_ASSERT(i0 < i1);
+  BF_ASSERT(i1 <= numRows);
+  BF_ASSERT(!bfMatIsTransposed(mat)); // TODO: implement
 
   BEGIN_ERROR_HANDLING();
 
@@ -518,7 +517,7 @@ BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfRea
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matDenseReal;
@@ -606,7 +605,7 @@ BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
   END_ERROR_HANDLING() {
     bfMatDenseRealDeinitAndDealloc(&matDenseReal);
 
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matDenseReal;
@@ -632,7 +631,7 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
   /* If we didn't pass the number of rows or columns, figure out the
    * matrix shape from the size of the binary file. */
   if (numRows == BF_SIZE_BAD_VALUE || numCols == BF_SIZE_BAD_VALUE) {
-    assert(numRows != BF_SIZE_BAD_VALUE || numCols != BF_SIZE_BAD_VALUE);
+    BF_ASSERT(numRows != BF_SIZE_BAD_VALUE || numCols != BF_SIZE_BAD_VALUE);
     fseek(fp, 0, SEEK_END);
     BfSize numBytes = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -819,7 +818,7 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
   *VTPtr = VT;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   free(dataCopy);
@@ -935,7 +934,7 @@ static BfMat *mul_matDiagReal(BfMatDenseReal const *matDenseReal,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatDenseRealToMat(newMatDenseReal);
@@ -976,7 +975,7 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfVecRealToVec(result);
@@ -1012,7 +1011,7 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;

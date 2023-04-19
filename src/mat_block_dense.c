@@ -1,7 +1,6 @@
 #include <bf/mat_block_dense.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_coo_complex.h>
@@ -126,7 +125,7 @@ BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
   for (BfSize jb = 0; jb < numColBlocks; ++jb) {
     BfMat *block = BLOCK(matBlockDense, ib, jb);
     BfVec *blockRowCopy = bfMatGetRowCopy(block, i - i0);
-    assert(blockRowCopy->size == NUM_BLOCK_COLS(matBlockDense, jb));
+    BF_ASSERT(blockRowCopy->size == NUM_BLOCK_COLS(matBlockDense, jb));
     if (rowCopy == NULL) {
       rowCopy = blockRowCopy;
     } else {
@@ -136,10 +135,10 @@ BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
       bfVecDelete(&blockRowCopy);
       rowCopy = cat;
     }
-    assert(rowCopy->size == matBlockDense->super.colOffset[jb + 1]);
+    BF_ASSERT(rowCopy->size == matBlockDense->super.colOffset[jb + 1]);
   }
 
-  assert(rowCopy->size == bfMatGetNumCols(mat));
+  BF_ASSERT(rowCopy->size == bfMatGetNumCols(mat));
 
   END_ERROR_HANDLING() {}
 
@@ -280,12 +279,12 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   while (p1 > p0 && ROW_OFFSET(matBlockDense, p1 - 1) > i0)
     --p1;
 
-  assert(p0 <= p1);
+  BF_ASSERT(p0 <= p1);
 
   if (p0 == p1) {
     --p0;
-    assert(ROW_OFFSET(matBlockDense, p0) <= i0
-           && i1 <= ROW_OFFSET(matBlockDense, p1));
+    BF_ASSERT(ROW_OFFSET(matBlockDense, p0) <= i0
+              && i1 <= ROW_OFFSET(matBlockDense, p1));
   }
 
   /* The range [i0_, i1) is the row index range of every block in the
@@ -294,9 +293,9 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   BfSize i1_ = ROW_OFFSET(matBlockDense, p1);
 
   if (i0_ == i1_) {
-    assert(i0 <= i0_ && i0_ <= i1);
+    BF_ASSERT(i0 <= i0_ && i0_ <= i1);
   } else {
-    assert(i1_ >= i0 || i0_ <= i1);
+    BF_ASSERT(i1_ >= i0 || i0_ <= i1);
   }
 
   BfSize m_ = i1_ - i0_;
@@ -305,7 +304,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
    * row with respect to the block row index system. */
   BfSize i0__ = i0_ < i0 ? i0 - i0_ : 0;
   BfSize i1__ = m_ - (i1 < i1_ ? i1_ - i1 : 0);
-  assert(i0__ <= i1__ && i1__ <= m_);
+  BF_ASSERT(i0__ <= i1__ && i1__ <= m_);
 
   /** Copy all blocks in the row range and assemble the resulting
    * dense block matrix containing the row range. */
@@ -319,7 +318,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
     for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q) {
       BfMat const *block = BLOCK(matBlockDense, p, q);
 
-      assert(bfMatGetNumRows(block) == m_);
+      BF_ASSERT(bfMatGetNumRows(block) == m_);
 
       BfMat *blockRowRangeCopy = bfMatGetRowRangeCopy(block, i0__, i1__);
       HANDLE_ERROR();
@@ -334,7 +333,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   bfPtrArrayDelete(&blocks);
@@ -445,8 +444,8 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
       j1 = matBlock->colOffset[j + 1];
       op2Rows = bfMatGetRowRange((BfMat *)otherMat, j0, j1);
       block = bfMatBlockDenseGetBlockConst(matBlockDense, i, j);
-      assert(bfMatGetNumRows(block) == i1 - i0);
-      assert(bfMatGetNumCols(block) == j1 - j0);
+      BF_ASSERT(bfMatGetNumRows(block) == i1 - i0);
+      BF_ASSERT(bfMatGetNumCols(block) == j1 - j0);
       tmp = bfMatMul(block, op2Rows);
       bfMatAddInplace(resultRows, tmp);
       bfMatDelete(&tmp);
@@ -500,8 +499,8 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
         continue;
 
       /* Sanity check... basically unnecessary, but whatever */
-      assert(bfMatGetNumRows(block) == i1 - i0);
-      assert(bfMatGetNumCols(block) == j1 - j0);
+      BF_ASSERT(bfMatGetNumRows(block) == i1 - i0);
+      BF_ASSERT(bfMatGetNumCols(block) == j1 - j0);
 
       BfVec const *subvecView = bfVecGetSubvecViewConst(vec, j0, j1);
       HANDLE_ERROR();
@@ -518,7 +517,7 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;
@@ -640,7 +639,7 @@ BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlo
    * this later. */
   for (BfSize p = 0; p < NUM_ROW_BLOCKS(matBlockDense); ++p)
     for (BfSize q = 0; q < NUM_COL_BLOCKS(matBlockDense); ++q)
-      assert(bfMatGetType(BLOCK(matBlockDense, p, q)) != BF_TYPE_MAT_ZERO);
+      BF_ASSERT(bfMatGetType(BLOCK(matBlockDense, p, q)) != BF_TYPE_MAT_ZERO);
 
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
 
@@ -648,7 +647,7 @@ BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlo
   bfSizeArrayAppend(nonzeroColumnRanges, bfMatGetNumCols(mat));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return nonzeroColumnRanges;
@@ -797,7 +796,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
   HANDLE_ERROR();
 
   BfSize numBlocks = bfPtrArraySize(blocks);
-  assert(numBlocks == numRowBlocks*numColBlocks);
+  BF_ASSERT(numBlocks == numRowBlocks*numColBlocks);
 
   bfMatBlockInit(&matBlockDense->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE,
                  numBlocks, numRowBlocks, numColBlocks);
@@ -825,11 +824,11 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
       BfSize numCols = bfMatGetNumCols(block);
 
       if (ROW_OFFSET(matBlockDense, p + 1) != BF_SIZE_BAD_VALUE)
-        assert(ROW_OFFSET(matBlockDense, p + 1) == numRows);
+        BF_ASSERT(ROW_OFFSET(matBlockDense, p + 1) == numRows);
       ROW_OFFSET(matBlockDense, p + 1) = numRows;
 
       if (COL_OFFSET(matBlockDense, q + 1) != BF_SIZE_BAD_VALUE)
-        assert(COL_OFFSET(matBlockDense, q + 1) == numCols);
+        BF_ASSERT(COL_OFFSET(matBlockDense, q + 1) == numCols);
       COL_OFFSET(matBlockDense, q + 1) = numCols;
     }
   }
@@ -838,7 +837,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
   bfSizeRunningSum(numColBlocks + 1, &COL_OFFSET(matBlockDense, 0));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockDense;
@@ -877,7 +876,7 @@ BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks) {
   bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockDense, 0));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockDense;
@@ -916,7 +915,7 @@ BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks) {
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDense, 0));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockDense;

@@ -1,10 +1,10 @@
 #include <bf/mat_dense_complex.h>
 
-#include <assert.h>
 #include <math.h>
 
 #include <openblas/lapacke.h>
 
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -425,7 +425,7 @@ BfType bfMatDenseComplexGetType(BfMat const *mat) {
 
 BfSize bfMatDenseComplexNumBytes(BfMat const *mat) {
   (void)mat;
-  assert(false);
+  BF_ASSERT(false);
   return BF_SIZE_BAD_VALUE;
 }
 
@@ -447,7 +447,7 @@ void bfMatDenseComplexSave(BfMat const *mat, char const *path) {
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   fclose(fp);
@@ -596,9 +596,9 @@ void bfMatDenseComplexSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1,
 BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   BfSize numRows = mat->numRows;
 
-  assert(i0 < i1);
-  assert(i1 <= numRows);
-  assert(!bfMatIsTransposed(mat)); // TODO: implement
+  BF_ASSERT(i0 < i1);
+  BF_ASSERT(i1 <= numRows);
+  BF_ASSERT(!bfMatIsTransposed(mat)); // TODO: implement
 
   BEGIN_ERROR_HANDLING();
 
@@ -999,7 +999,7 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
 
   if (bfMatGetNumRows(otherMat) != m);
 
-  assert(mat->props & BF_MAT_PROPS_TRI);
+  BF_ASSERT(mat->props & BF_MAT_PROPS_TRI);
 
   if (mat->props & BF_MAT_PROPS_TRANS)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -1031,7 +1031,7 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
     /* ldb: */ p);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfMatDenseComplexToMat(resultMatDenseComplex);
@@ -1234,7 +1234,7 @@ BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *matDenseComplex) {
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return bfLuDenseComplexToLu(luDenseComplex);
@@ -1260,7 +1260,7 @@ static void divideCols_vecReal(BfMatDenseComplex *matDenseComplex, BfVec const *
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 
@@ -1348,7 +1348,7 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
 
   // TODO: see call to dgesvd in mat_dense_real.c to figure out proper
   // way to set leading dimensions in call to zgesvd below...
-  assert(m == n);
+  BF_ASSERT(m == n);
 
   /* compute the SVD */
   lapack_int info = LAPACKE_zgesvd(
@@ -1435,7 +1435,7 @@ void bfMatDenseComplexCooComplexAddInplace(BfMatDenseComplex *op1,
     BfSize i = op2->rowInd[k];
     BfSize j = op2->colInd[k];
     BfSize offset = i*op1->rowStride + j*op1->colStride;
-    assert(offset < numRows*numCols);
+    BF_ASSERT(offset < numRows*numCols);
     *(op1->data + offset) += op2->value[k];
   }
 
@@ -1461,7 +1461,7 @@ void bfMatDenseComplexCooRealAddInplace(BfMatDenseComplex *op1,
     BfSize i = op2->rowInd[k];
     BfSize j = op2->colInd[k];
     BfSize offset = i*op1->rowStride + j*op1->colStride;
-    assert(offset < numRows*numCols);
+    BF_ASSERT(offset < numRows*numCols);
     *(op1->data + offset) += op2->value[k];
   }
 
@@ -1544,23 +1544,23 @@ bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
   BfSize ldb = getLeadingDimension(op2);
   BfSize ldc = getLeadingDimension(result);
 
-  assert(m > 0 && n > 0 && k > 0);
+  BF_ASSERT(m > 0 && n > 0 && k > 0);
 
   if (transa == CblasNoTrans) {
-    assert(lda >= k);
+    BF_ASSERT(lda >= k);
   } else {
-    assert(transa == CblasTrans || transa == CblasConjTrans);
-    assert(lda >= m);
+    BF_ASSERT(transa == CblasTrans || transa == CblasConjTrans);
+    BF_ASSERT(lda >= m);
   }
 
   if (transb == CblasNoTrans) {
-    assert(ldb >= n);
+    BF_ASSERT(ldb >= n);
   } else {
-    assert(transb == CblasTrans || transb == CblasConjTrans);
-    assert(ldb >= k);
+    BF_ASSERT(transb == CblasTrans || transb == CblasConjTrans);
+    BF_ASSERT(ldb >= k);
   }
 
-  assert(ldc >= n);
+  BF_ASSERT(ldc >= n);
 
   cblas_zgemm(CblasRowMajor, transa, transb, m, n, k,
               &alpha, op1->data, lda, op2->data, ldb, &beta, result->data, ldc);
@@ -1580,7 +1580,7 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
                                    BfMatDenseComplex const *rhs)
 {
   BfMat const *lhsSuper = bfMatDenseComplexConstToMatConst(lhs);
-  assert(!bfMatIsTransposed(lhsSuper));
+  BF_ASSERT(!bfMatIsTransposed(lhsSuper));
 
   BfSize m = lhsSuper->numRows;
   BfSize n = lhsSuper->numCols;
@@ -1773,7 +1773,7 @@ BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCol
   bfMatDenseComplexInitViewFromPtr(matDenseComplex, numRows, numCols, data);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matDenseComplex;
@@ -1853,7 +1853,7 @@ void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize
   matDenseComplex->data = data;
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 }
 

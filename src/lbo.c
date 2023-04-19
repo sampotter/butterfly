@@ -1,7 +1,6 @@
 #include <bf/lbo.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -37,7 +36,7 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
 
   /* Fill colind */
   for (BfSize i = 0, j = 0; i < numVerts; ++i) {
-    assert(j == rowptr[i]);
+    BF_ASSERT(j == rowptr[i]);
 
     /* Find the position of i in vv */
     BfSize kmid = trimesh->vvOffset[i];

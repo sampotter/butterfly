@@ -1,7 +1,6 @@
 #include <bf/perm.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_perm.h>
@@ -75,7 +74,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
   bfMemCopy(perm->index, perm->size, sizeof(BfSize), permCopy->index);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return permCopy;

@@ -1,7 +1,6 @@
 #include <bf/mat_diag_real.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -266,11 +265,11 @@ void bfMatDiagRealSetConstant(BfMatDiagReal *mat, BfReal value) {
 
 BfMatDiagReal *
 bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
-  assert(i0 < i1);
-  assert(i1 <= mat->numElts);
+  BF_ASSERT(i0 < i1);
+  BF_ASSERT(i1 <= mat->numElts);
 
   BfMat *super = bfMatDiagRealToMat(mat);
-  assert(!bfMatIsTransposed(super)); // TODO: implement
+  BF_ASSERT(!bfMatIsTransposed(super)); // TODO: implement
 
   BEGIN_ERROR_HANDLING();
 

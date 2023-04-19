@@ -1,8 +1,8 @@
 #include <bf/eval_tree.h>
 
-#include <assert.h>
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/cheb.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -63,17 +63,17 @@ void evalTreeNodeInitRec(BfEvalTreeNode *node, BfEvalTree const *tree) {
   }
 
   if (node->isLeaf) {
-    assert(node->cheb != NULL);
-    assert(node->children == NULL);
+    BF_ASSERT(node->cheb != NULL);
+    BF_ASSERT(node->children == NULL);
   } else {
-    assert(node->cheb == NULL);
-    assert(node->children != NULL);
+    BF_ASSERT(node->cheb == NULL);
+    BF_ASSERT(node->children != NULL);
   }
 }
 
 BfReal evalTreeNodeGetValueRec(BfEvalTreeNode const *node, BfEvalTree const *tree, BfReal x) {
   if (node->isLeaf) {
-    assert(node->a <= x && x <= node->b);
+    BF_ASSERT(node->a <= x && x <= node->b);
     return bfChebStdEval(node->cheb, 2*(x - node->a)/(node->b - node->a) - 1);
   } else {
     for (BfSize i = 0; i < tree->k; ++i) {
@@ -82,7 +82,7 @@ BfReal evalTreeNodeGetValueRec(BfEvalTreeNode const *node, BfEvalTree const *tre
         return evalTreeNodeGetValueRec(child, tree, x);
     }
   }
-  assert(false);
+  BF_ASSERT(false);
 }
 
 BfReal bfEvalTreeGetValue(BfEvalTree const *tree, BfReal x) {
@@ -97,7 +97,7 @@ BfEvalTree *bfEvalTreeNew() {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return evalTree;

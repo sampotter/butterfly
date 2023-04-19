@@ -1,7 +1,6 @@
 #include <bf/mat_block_diag.h>
 
-#include <assert.h>
-
+#include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -163,7 +162,7 @@ BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
     rowCopy = cat;
   }
 
-  assert(rowCopy->size == numCols);
+  BF_ASSERT(rowCopy->size == numCols);
 
   END_ERROR_HANDLING() {}
 
@@ -238,7 +237,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
     indexedRowBlock->j0 = j0_;
     indexedRowBlock->mat = blockRowRange;
 
-    assert(indexedRowBlock->mat != NULL);
+    BF_ASSERT(indexedRowBlock->mat != NULL);
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
     HANDLE_ERROR();
@@ -253,7 +252,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
   END_ERROR_HANDLING() {
     bfMatBlockCooDeinitAndDealloc(&blockRow);
 
-    assert(false); // ???
+    BF_ASSERT(false); // ???
   }
 
   /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
@@ -369,7 +368,7 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return result;
@@ -454,7 +453,7 @@ BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
   }
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return resultMat;
@@ -615,7 +614,7 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks) {
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDiag, 0));
 
   END_ERROR_HANDLING() {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   return matBlockDiag;

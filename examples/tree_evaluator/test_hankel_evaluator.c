@@ -1,10 +1,10 @@
 #define _DEFAULT_SOURCE 1
 
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <bf/assert.h>
 #include <bf/bessel.h>
 #include <bf/cheb.h>
 #include <bf/const.h>
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
       X[i] = fmax(opts.r0, fmin(X[i], opts.r1));
     }
   } else {
-    assert(false);
+    BF_ASSERT(false);
   }
 
   /* check sqrt timings */
