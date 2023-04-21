@@ -498,6 +498,18 @@ void assembleButterfliedK(MultipleScatteringContext *context) {
   FILE *fp = fopen("blocks.txt", "w");
   bfPrintBlocks(context->KButterfly, 2, fp);
   fclose(fp);
+
+  printf("- saved blocks to blocks.txt\n");
+
+  BfSize numBytes = bfMatNumBytes(context->KButterfly);
+  printf("- size of factorization: ");
+  if (numBytes < 1024) printf("%lu B\n", numBytes);
+  else if (numBytes < 1024*1024) printf("%0.1f KB\n", numBytes/1024.0);
+  else if (numBytes < 1024*1024*1024) printf("%0.1f MB\n", numBytes/pow(1024, 2));
+  else printf("%0.1f GB\n", numBytes/pow(1024, 3));
+
+  BfReal numBytesDense = 8*pow(context->n, 2);
+  printf("- compression rate: %0.1f\n", numBytesDense/numBytes);
 }
 
 /* Extract components of BF matrix (NOTE: very expensive!!!): */
