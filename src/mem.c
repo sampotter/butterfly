@@ -13,6 +13,12 @@ BfPtr bfMemAlloc(BfSize n, BfSize size) {
 
   // TODO: check if n*size overflows
 
+  // Some things to try:
+  // - [ ] assert that size is a power of two
+  // - [ ] do aligned allocation
+  // - [ ] collect allocation statistics
+  // - [ ] better debugging...
+
   BfPtr ptr = malloc(n*size);
   if (ptr == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
