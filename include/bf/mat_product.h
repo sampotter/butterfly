@@ -8,6 +8,7 @@
 BfMat *bfMatProductCopy(BfMat const *mat);
 void bfMatProductDelete(BfMat **mat);
 BfType bfMatProductGetType(BfMat const *mat);
+BfSize bfMatProductNumBytes(BfMatProduct const *matProduct);
 BfSize bfMatProductGetNumRows(BfMat const *mat);
 BfSize bfMatProductGetNumCols(BfMat const *mat);
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec);

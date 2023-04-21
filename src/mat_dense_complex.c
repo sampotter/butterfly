@@ -180,7 +180,7 @@ static BfMatVtable MAT_VTABLE = {
   .EmptyLike = (__typeof__(&bfMatDenseComplexEmptyLike))bfMatDenseComplexEmptyLike,
   .ZerosLike = (__typeof__(&bfMatDenseComplexZerosLike))bfMatDenseComplexZerosLike,
   .GetType = (__typeof__(&bfMatDenseComplexGetType))bfMatDenseComplexGetType,
-  .NumBytes = (__typeof__(&bfMatDenseComplexNumBytes))bfMatDenseComplexNumBytes,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatDenseComplexNumBytes,
   .Save = (__typeof__(&bfMatDenseComplexSave))bfMatDenseComplexSave,
   .Print = (__typeof__(&bfMatDenseComplexPrint))bfMatDenseComplexPrint,
   .GetNumRows = (__typeof__(&bfMatDenseComplexGetNumRows))bfMatDenseComplexGetNumRows,
@@ -423,10 +423,9 @@ BfType bfMatDenseComplexGetType(BfMat const *mat) {
   return BF_TYPE_MAT_DENSE_COMPLEX;
 }
 
-BfSize bfMatDenseComplexNumBytes(BfMat const *mat) {
-  (void)mat;
-  BF_ASSERT(false);
-  return BF_SIZE_BAD_VALUE;
+BfSize bfMatDenseComplexNumBytes(BfMatDenseComplex const *matDenseComplex) {
+  BfMat const *mat = bfMatDenseComplexConstToMatConst(matDenseComplex);
+  return sizeof(BfComplex)*bfMatGetNumRows(mat)*bfMatGetNumCols(mat);
 }
 
 void bfMatDenseComplexSave(BfMat const *mat, char const *path) {

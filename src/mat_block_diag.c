@@ -32,6 +32,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowCopy = (__typeof__(&bfMatBlockDiagGetRowCopy))bfMatBlockDiagGetRowCopy,
   .Delete = (__typeof__(&bfMatBlockDiagDelete))bfMatBlockDiagDelete,
   .GetType = (__typeof__(&bfMatBlockDiagGetType))bfMatBlockDiagGetType,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatBlockDiagNumBytes,
   .GetNumRows = (__typeof__(&bfMatBlockDiagGetNumRows))bfMatBlockDiagGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockDiagGetNumCols))bfMatBlockDiagGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockDiagGetRowRangeCopy,
@@ -179,6 +180,15 @@ void bfMatBlockDiagDelete(BfMat **mat) {
 BfType bfMatBlockDiagGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_BLOCK_DIAG;
+}
+
+BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag) {
+  BfSize numBytes = 0;
+  for (BfSize i = 0; i < bfMatBlockDiagNumBlocks(matBlockDiag); ++i) {
+    BfMat const *block = bfMatBlockDiagGetBlockConst(matBlockDiag, i);
+    numBytes += bfMatNumBytes(block);
+  }
+  return numBytes;
 }
 
 BfSize bfMatBlockDiagGetNumRows(BfMat const *mat) {

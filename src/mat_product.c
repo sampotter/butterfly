@@ -11,6 +11,7 @@ static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatProductCopy))bfMatProductCopy,
   .Delete = (__typeof__(&bfMatProductDelete))bfMatProductDelete,
   .GetType = (__typeof__(&bfMatProductGetType))bfMatProductGetType,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatProductNumBytes,
   .GetNumRows = (__typeof__(&bfMatProductGetNumRows))bfMatProductGetNumRows,
   .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
@@ -59,6 +60,15 @@ void bfMatProductDelete(BfMat **mat) {
 BfType bfMatProductGetType(BfMat const *mat) {
   (void)mat;
   return BF_TYPE_MAT_PRODUCT;
+}
+
+BfSize bfMatProductNumBytes(BfMatProduct const *matProduct) {
+  BfSize numBytes = 0;
+  for (BfSize i = 0; i < bfMatProductNumFactors(matProduct); ++i) {
+    BfMat const *factor = bfMatProductGetFactorConst(matProduct, i);
+    numBytes += bfMatNumBytes(factor);
+  }
+  return numBytes;
 }
 
 bool bfMatProductInstanceOf(BfMat const *mat, BfType type) {

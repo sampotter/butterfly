@@ -14,7 +14,7 @@ void bfMatDenseComplexDelete(BfMat **mat);
 BfMat *bfMatDenseComplexEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 BfMat *bfMatDenseComplexZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 BfType bfMatDenseComplexGetType(BfMat const *mat);
-BfSize bfMatDenseComplexNumBytes(BfMat const *mat);
+BfSize bfMatDenseComplexNumBytes(BfMatDenseComplex const *matDenseComplex);
 void bfMatDenseComplexSave(BfMat const *mat, char const *path);
 void bfMatDenseComplexPrint(BfMat const *mat, FILE *fp);
 BfSize bfMatDenseComplexGetNumRows(BfMat const *mat);
