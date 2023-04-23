@@ -35,10 +35,24 @@ static BfSize getSize(BfMatPerm const *matPerm) {
   }
 }
 
+static BfSize numBytes(BfMatPerm const *matPerm) {
+  BfSize numBytes = sizeof(BfMatPermImpl);
+  switch (matPerm->impl->permType) {
+  case PERM_TYPE_BF:
+    numBytes += getSize(matPerm)*sizeof(BfSize);
+    break;
+  case PERM_TYPE_LAPACK:
+    numBytes += getSize(matPerm)*sizeof(BfLapackInt);
+    break;
+  }
+  return numBytes;
+}
+
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
   .GetType = (__typeof__(&bfMatGetType))bfMatPermGetType,
+  .NumBytes = (__typeof__(&bfMatNumBytes))bfMatPermNumBytes,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatPermGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatPermGetNumCols,
   .Solve = (__typeof__(&bfMatSolve))bfMatPermSolve,
@@ -48,6 +62,10 @@ static BfMatVtable MAT_VTABLE = {
 BfType bfMatPermGetType(BfMatPerm const *matPerm) {
   (void)matPerm;
   return BF_TYPE_MAT_PERM;
+}
+
+BfSize bfMatPermNumBytes(BfMatPerm const *matPerm) {
+  return numBytes(matPerm);
 }
 
 BfSize bfMatPermGetNumRows(BfMatPerm const *matPerm) {

@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfType bfMatPermGetType(BfMatPerm const *matPerm);
+BfSize bfMatPermNumBytes(BfMatPerm const *matPerm);
 BfSize bfMatPermGetNumRows(BfMatPerm const *matPerm);
 BfSize bfMatPermGetNumCols(BfMatPerm const *matPerm);
 BfMat *bfMatPermSolve(BfMatPerm const *matPerm, BfMat const *mat);
