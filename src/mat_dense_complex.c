@@ -1346,13 +1346,9 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
   if (superb == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  // TODO: see call to dgesvd in mat_dense_real.c to figure out proper
-  // way to set leading dimensions in call to zgesvd below...
-  BF_ASSERT(m == n);
-
   /* compute the SVD */
   lapack_int info = LAPACKE_zgesvd(
-    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, m, S->data, U->data, m,
+    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, n, S->data, U->data, m,
     VH->data, n, superb);
 
   /* check for invalid arguments */
