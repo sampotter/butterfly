@@ -54,20 +54,26 @@ if __name__ == '__main__':
             if output_path.exists():
                 continue
 
-            # set up the discretization (basically free) and check how
-            # many points it has---if there are too many, we break
-            # from the loop here and move on
-            #
-            # basically, we will continue generating smaller and
-            # smaller h until we hit the maximum number of DOFs
+            # run multiple_scattering just to set up the
+            # discretization of the domain to collect some stats
             cmd = ['./multiple_scattering', f'-k{k}', f'-r{r}', f'-a{a}', f'-b{b}', f'-h{h}']
             proc = subprocess.run(cmd, capture_output=True)
             lines = proc.stdout.decode('ascii').split('\n')
+
+            # bail if there are too many points in the domain (will
+            # run into memory issues)
             line = next(_ for _ in lines if 'Setting up discretization...' in _)
             num_points = int(line.split()[-3])
             if num_points > MAX_POINTS:
                 break
 
+            # bail if there are too many points per ellipse (block
+            # Jacobi preconditioner will be way too expensive)
+            line = next(_ for _ in lines if 'Setting up problem geometry...' in _)
+            num_ellipses = int(line.split()[-3])
+            if num_ellipses < np.sqrt(num_points)/2:
+                break
+            #
             print(f'{k=}, {r=}, {a=}, {b=}, {h=:0.1E}:')
             print(f'- {ppw=:0.1f}')
             print(f'- {ppe=:0.1f}')
