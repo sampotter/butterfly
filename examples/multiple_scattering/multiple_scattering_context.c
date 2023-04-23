@@ -111,7 +111,7 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
 
   int64_t ier = 0;
   hfmm2d_s_cd_p(
-    /* eps: */ context->tol,
+    /* eps: */ context->tolFmm,
     /* zk: */ context->k,
     /* ns: */ n,
     /* sources: */ (BfReal const *)&context->X->data[0],
@@ -181,6 +181,7 @@ void init(MultipleScatteringContext *context, Opts const *opts) {
 
   context->h = opts->h;
   context->tol = opts->tol;
+  context->tolFmm = BF_NAN;
   context->orderKR = opts->orderKR;
 
   context->bboxEval = opts->bboxEval;
@@ -615,6 +616,93 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
     context->MPerm = bfMatProductToMat(matProduct); }
 
   printf(" done [%0.2fs]\n", bfToc());
+
+  BfSize numBytes = bfMatNumBytes(context->M);
+  printf("- size of block Jacobi preconditioner: ");
+  if (numBytes < 1024) printf("%lu B\n", numBytes);
+  else if (numBytes < 1024*1024) printf("%0.1f KB\n", numBytes/1024.0);
+  else if (numBytes < 1024*1024*1024) printf("%0.1f MB\n", numBytes/pow(1024, 2));
+  else printf("%0.1f GB\n", numBytes/pow(1024, 3));
+}
+
+static BfReal getMaxRelErrForFmmTol(MultipleScatteringContext *context, BfReal tolFmm) {
+  BfSize const numTrials = 5;
+
+  BfReal oldTolFmm = context->tolFmm;
+
+  context->tolFmm = tolFmm;
+
+  /* Estimate the relative error between the FMM and BF by doing
+   * `numTrials` test multiplications and taking the largest
+   * relative maximum error. */
+  BfReal maxRelError = -BF_INFINITY;
+  for (BfSize _ = 0; _ < numTrials; ++_) {
+    /* Sample random test vector: */
+    BfMat *x; {
+      BfMatDenseComplex *_ = bfMatDenseComplexNew();
+      bfMatDenseComplexInit(_, context->n, 1);
+      bfComplexRandn(context->n, _->data);
+      x = bfMatDenseComplexToMat(_);
+    }
+
+    /* Permute test vector for BF multiply: */
+    BfMat *xPerm = bfMatCopy(x);
+    bfMatPermuteRows(xPerm, context->revPerm);
+
+    /* Do BF multiply: */
+    BfMat *yButterfly = bfMatMul(context->KButterfly, xPerm);
+    bfMatPermuteRows(yButterfly, context->perm);
+
+    /* Do FMM multiply: */
+    BfMat *yFmm = mulFmm(x, context);
+
+    /* Compute relative l2 error: */
+    BfVec *tmp1 = bfMatColDists(yButterfly, yFmm);
+    BfVec *tmp2 = bfMatColNorms(yButterfly);
+    BfVec *tmp3 = bfMatColNorms(yFmm);
+    BfReal denom = fmax(bfVecNormMax(tmp2), bfVecNormMax(tmp3));
+    BfReal relError = bfVecNormMax(tmp1)/denom;
+
+    maxRelError = fmax(maxRelError, relError);
+
+    bfMatDelete(&x);
+    bfMatDelete(&xPerm);
+    bfMatDelete(&yButterfly);
+    bfMatDelete(&yFmm);
+    bfVecDelete(&tmp1);
+    bfVecDelete(&tmp2);
+    bfVecDelete(&tmp3);
+  }
+
+  context->tolFmm = oldTolFmm;
+
+  return maxRelError;
+}
+
+void estimateFmmTol(MultipleScatteringContext *context) {
+  printf("Estimating FMM tolerance... ");
+  fflush(stdout);
+
+  BfReal tolFmm;
+
+  BfReal tolFmmInit = getMaxRelErrForFmmTol(context, 1e-15);
+
+  BfReal p = ceil(-log10(tolFmmInit)) - 0.5;
+  while (p > 0) {
+    tolFmm = pow(10, -p);
+    BfReal maxRelErr = getMaxRelErrForFmmTol(context, tolFmm);
+    if (tolFmm > maxRelErr)
+      break;
+    p -= 0.5;
+  }
+
+  BF_ASSERT(p > 0);
+
+  context->tolFmm = tolFmm;
+
+  printf("done [%0.2fs]\n", bfToc());
+
+  printf("- FMM tolerance: %g\n", context->tolFmm);
 }
 
 void computeLu(MultipleScatteringContext *context) {

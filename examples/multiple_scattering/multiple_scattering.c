@@ -33,6 +33,9 @@ int main(int argc, char *argv[]) {
   if (shouldAssemblePreconditioner(&opts))
     assemblePreconditioner(&context);
 
+  if (shouldEstimateFmmTol(&opts))
+    estimateFmmTol(&context);
+
   if (shouldAssembleFmmK(&opts))
     assembleFmmK(&context);
 

@@ -31,6 +31,7 @@ struct MultipleScatteringContext {
   /* Discretization parameters: */
   BfReal h;
   BfReal tol;
+  BfReal tolFmm;
   BfSize orderKR;
 
   /* Postprocessing parameters: */
@@ -114,6 +115,7 @@ void assembleDenseK(MultipleScatteringContext *context);
 void assembleButterfliedK(MultipleScatteringContext *context);
 void extractDenseButterfliedK(MultipleScatteringContext *context);
 void assembleFmmK(MultipleScatteringContext *context);
+void estimateFmmTol(MultipleScatteringContext *context);
 void assemblePreconditioner(MultipleScatteringContext *context);
 void computeLu(MultipleScatteringContext *context);
 void solveLu(MultipleScatteringContext *context);

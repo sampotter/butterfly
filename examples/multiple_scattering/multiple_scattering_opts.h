@@ -49,6 +49,7 @@ bool shouldAssembleDenseK(Opts const *opts);
 bool shouldAssembleButterfliedK(Opts const *opts);
 bool shouldExtractDenseButterfliedK(Opts const *opts);
 bool shouldAssembleFmmK(Opts const *opts);
+bool shouldEstimateFmmTol(Opts const *opts);
 bool shouldAssemblePreconditioner(Opts const *opts);
 bool shouldComputeLu(Opts const *opts);
 bool shouldSolveLu(Opts const *opts);

@@ -248,6 +248,10 @@ bool shouldAssembleFmmK(Opts const *opts) {
   return opts->doFmmGmres || opts->doFmmPreconditionedGmres;
 }
 
+bool shouldEstimateFmmTol(Opts const *opts) {
+  return opts->doFmmGmres || opts->doFmmPreconditionedGmres;
+}
+
 bool shouldAssemblePreconditioner(Opts const *opts) {
   return opts->doDensePreconditionedGmres
     || opts->doButterflyPreconditionedGmres
