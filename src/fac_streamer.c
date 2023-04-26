@@ -424,8 +424,8 @@ BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 
   BfFac *fac = NULL;
 
-  /* TODO: handle this case by taking the direct sum of the current
-   * partial factorizations... easy enough */
+  /* TODO: handle this case by blocking together the current partial
+   * factorizations... easy enough */
   if (!bfTreeIterIsDone(facStreamer->colTreeIter))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
