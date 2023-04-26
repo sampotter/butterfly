@@ -8,7 +8,7 @@
 #include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error_macros.h>
-#include <bf/fac.h>
+#include <bf/fac_helm2.h>
 #include <bf/helm2.h>
 #include <bf/mat_block.h>
 #include <bf/mat_block_coo.h>

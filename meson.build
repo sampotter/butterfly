@@ -38,7 +38,7 @@ butterfly_lib_src = [
   'src/ellipse.c',
   'src/error.c',
   'src/eval_tree.c',
-  'src/fac.c',
+  'src/fac_helm2.c',
   'src/fac_streamer.c',
 # 'src/fiedler_tree.c',
   'src/helm2.c',

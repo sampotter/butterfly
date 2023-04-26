@@ -3,7 +3,7 @@
 #include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/ellipse.h>
-#include <bf/fac.h>
+#include <bf/fac_helm2.h>
 #include <bf/helm2.h>
 #include <bf/linalg.h>
 #include <bf/lu.h>
