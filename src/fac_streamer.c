@@ -1194,7 +1194,7 @@ static PartialFac *mergeAndSplit(BfFacStreamer *facStreamer) {
 
   BfMatBlockDiag *Psi = NULL;
   BfMatBlockDiag *W0 = NULL;
-  BfMatBlockDense *W1 = NULL; // TODO: change this to BfMatBlockDense
+  BfMatBlockDense *W1 = NULL;
 
   // get PartialFacs for children of colNode
   BfPtrArray currentPartialFacs = getCurrentPartialFacs(facStreamer);
