@@ -5,6 +5,10 @@ import csv
 from glob import glob
 from pathlib import Path
 
+def get_size_in_bytes_from_str(s):
+    size = floats.split()[0]
+
+
 def get_row_from_raw_data_file(path):
     k, r, a, b, h = [float(_[1:]) for _ in str(path).split('/')[-1][:-4].split('_')]
     with open(path, 'r') as f:
@@ -36,6 +40,14 @@ def get_row_from_raw_data_file(path):
         line = next(_ for _ in lines if 'rel l2 error in sigma (FMM (preconditioned GMRES) vs butterfly (preconditioned GMRES))' in _)
         sigma_rel_err_bf_vs_FMM = float(line.split()[-1])
 
+        line = next(_ for _ in lines if 'size of factorization' in _)
+        bf_size = line.split()[-2]
+        bf_size *= {
+            'KB': 1024,
+            'MB': 1024**2,
+            'GB': 1024**3
+        }[line.split()[-1]]
+
     return {
         'k': k,
         'r': r,
@@ -51,7 +63,8 @@ def get_row_from_raw_data_file(path):
         'nit (FMM pGMRES)': fmm_pGMRES_nit,
         't (FMM pGMRES)': fmm_pGMRES_T,
         'MVP rel err (bf vs FMM)': MVP_rel_err_bf_vs_FMM,
-        'sigma rel err (bf vs FMM)': sigma_rel_err_bf_vs_FMM}
+        'sigma rel err (bf vs FMM)': sigma_rel_err_bf_vs_FMM,
+        'BF size (bytes)': bf_size}
 
 if __name__ == '__main__':
     results_dir_path = Path('results')
@@ -65,7 +78,7 @@ if __name__ == '__main__':
     csv_path = results_dir_path/'multiple_scattering_data.csv'
     assert not csv_path.exists()
 
-    fieldnames = ['k', 'r', 'a', 'b', 'h', 'ppw', 'ne', 'nx', 't (BF assemb)', 'nit (BF pGMRES)', 't (BF pGMRES)', 'nit (FMM pGMRES)', 't (FMM pGMRES)', 'MVP rel err (bf vs FMM)', 'sigma rel err (bf vs FMM)']
+    fieldnames = ['k', 'r', 'a', 'b', 'h', 'ppw', 'ne', 'nx', 't (BF assemb)', 'nit (BF pGMRES)', 't (BF pGMRES)', 'nit (FMM pGMRES)', 't (FMM pGMRES)', 'MVP rel err (bf vs FMM)', 'sigma rel err (bf vs FMM)', 'BF size (bytes)']
 
     with open(csv_path, 'w', newline='') as csvfile:
         csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
