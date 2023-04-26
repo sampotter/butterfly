@@ -3,10 +3,13 @@
 #include <stdbool.h>
 
 typedef struct BfRealArray BfRealArray;
+
 typedef struct BfSizeArray BfSizeArray;
 
 typedef struct BfPtrArray BfPtrArray;
 typedef struct BfConstPtrArray BfConstPtrArray;
+
+typedef struct BfConstNodeArray BfConstNodeArray;
 
 typedef struct BfMat BfMat;
 typedef struct BfMatBlock BfMatBlock;
@@ -53,6 +56,10 @@ typedef struct BfFiedlerTreeNode BfFiedlerTreeNode;
 
 typedef struct BfTreeIter BfTreeIter;
 typedef struct BfTreeIterPostOrder BfTreeIterPostOrder;
+
+typedef struct BfTreeNodeSpan BfTreeNodeSpan;
+
+typedef struct BfFac BfFac;
 
 typedef enum BfTypes {
   /* Mat hierarchy */

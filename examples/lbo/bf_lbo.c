@@ -216,7 +216,7 @@ int main(int argc, char const *argv[]) {
   bfPoints1InitEmpty(freqs, BF_ARRAY_DEFAULT_CAPACITY);
   HANDLE_ERROR();
 
-  BfFacStreamerSpec spec = {
+  BfFacSpec spec = {
     .rowTree = rowTree,
     .colTree = colTree,
     .rowTreeInitDepth = rowTreeOffset,
