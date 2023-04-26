@@ -103,10 +103,6 @@ Since we rely so heavily on using `NULL` as a tombstone value, we really need to
 
 There's a lot of useful stuff in [fac_streamer.c](./src/fac_streamer.c) related to working with contiguous spans of nodes. Given how much stuff we have to do with node spans when working with butterfly factorizations, it seems useful to break this off into a separate ADT.
 
-# Better assert
-
-[Ideas here.](https://nullprogram.com/blog/2022/06/26/)
-
 # Provenance tracking
 
 If I write my own interface to malloc, I can wrap it with a macro which will let me track where every object was allocated (i.e., which line number, what CPU time... could annotate with various bits of data).
