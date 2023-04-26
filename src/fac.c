@@ -331,7 +331,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
   *W0BlockPtr = W0Block;
 }
 
-static bool facsHaveContinguousRowSpans(BfPtrArray const *facs) {
+static bool facsHaveContiguousRowSpans(BfPtrArray const *facs) {
   for (BfSize k = 0; k < bfPtrArraySize(facs); ++k) {
     BfFac const *fac = bfPtrArrayGet(facs, k);
     if (!facHasContiguousRowSpan(fac))
@@ -345,7 +345,7 @@ static bool facsHaveContinguousRowSpans(BfPtrArray const *facs) {
 bool partialFacsHaveSameRowSpan(BfPtrArray const *facs) {
   BF_ASSERT(bfPtrArraySize(facs) >= 2);
 
-  if (!facsHaveContinguousRowSpans(facs)) {
+  if (!facsHaveContiguousRowSpans(facs)) {
     // TODO: this case is a little annoying and complicated and
     // doesn't matter for us right now. Handle it later if we need to
     // for some reason. (A later comment: unnecessary to handle? When
