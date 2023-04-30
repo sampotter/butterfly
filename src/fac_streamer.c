@@ -145,6 +145,7 @@ static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
   return currentPartialFacs;
 }
 
+#if BF_DEBUG
 static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
                                     BfTreeNode const *treeNode) {
   BfMat const *mat = NULL;
@@ -157,14 +158,18 @@ static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
   }
   return mat;
 }
+#endif
 
+#if BF_DEBUG
 static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat const *Phi) {
   MatWithTreeNodeKey *entry = bfMemAlloc(1, sizeof(MatWithTreeNodeKey));
   entry->treeNode = treeNode;
   entry->mat = bfMatCopy(Phi);
   bfPtrArrayAppend(facStreamer->prevPhis, entry);
 }
+#endif
 
+#if BF_DEBUG
 static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
   BfSize m = bfFacStreamerGetNumRows(facStreamer);
   BfSize n = bfTreeNodeGetNumPoints(currentColNode);
@@ -192,6 +197,7 @@ static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const
 
   addPrevPhi(facStreamer, currentColNode, bfMatDenseRealToMat(Phi));
 }
+#endif
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
   BEGIN_ERROR_HANDLING();
