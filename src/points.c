@@ -157,6 +157,26 @@ BfPoints1 *bfPoints1New() {
   return points;
 }
 
+BfPoints1 *bfPoints1Copy(BfPoints1 const *points) {
+  BEGIN_ERROR_HANDLING();
+
+  BfPoints1 *pointsCopy = bfPoints1New();
+  HANDLE_ERROR();
+
+  bfPoints1InitEmpty(pointsCopy, points->size);
+  HANDLE_ERROR();
+
+  bfMemCopy(points->data, points->size, sizeof(BfReal), pointsCopy->data);
+
+  pointsCopy->size = points->size;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return pointsCopy;
+}
+
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity) {
   BEGIN_ERROR_HANDLING();
 
@@ -258,6 +278,19 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
 
   END_ERROR_HANDLING() {
     bfMemFree(newData);
+  }
+}
+
+void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal)) {
+  BEGIN_ERROR_HANDLING();
+
+  for (BfSize i = 0; i < points->size; ++i) {
+    points->data[i] = func(points->data[i]);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
   }
 }
 

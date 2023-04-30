@@ -2,7 +2,10 @@
 
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/const.h>
+#include <bf/error.h>
+#include <bf/error_macros.h>
 #include <bf/mem.h>
 
 /** Utilities: */
@@ -46,8 +49,20 @@ BfReal bfChebStdGetErrorEstimate(BfChebStd const *cheb) {
  * them, returning the Chebysehv coefficients for f transformed to the
  * domain [-1, 1]. */
 void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, BfReal const *x) {
+  BEGIN_ERROR_HANDLING();
+
   BfSize n = cheb->order;
   BfReal *c = cheb->c;
+
+  bool shouldFreeX = false;
+  if (x == NULL) {
+    x = bfMemAlloc(n, sizeof(BfReal));
+    HANDLE_ERROR();
+
+    bfGetChebPts(n, (BfReal *)x);
+
+    shouldFreeX = true;
+  }
 
   BfReal *y = bfMemAlloc(n, sizeof(BfReal));
   for (BfSize j = 0; j < n; ++j)
@@ -84,6 +99,13 @@ void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, B
   c[0] /= n;
   for (BfSize i = 1; i < n; ++i) c[i] *= 2.0/n;
 
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  if (shouldFreeX)
+    bfMemFree((BfReal *)x);
+
   bfMemFree(v);
   bfMemFree(v1);
   bfMemFree(v0);
@@ -113,20 +135,38 @@ BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
   return c0 + c1*x;
 }
 
-BfReal bfChebEval(BfCheb const *cheb, BfReal x) {
-  BfReal d  = 0.0;
-  BfReal dd = 0.0;
+void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b) {
+  BEGIN_ERROR_HANDLING();
 
-  BfReal y  = (2.0*x - cheb->a_plus_b)/cheb->b_minus_a;
-  BfReal y2 = 2.0 * y;
+  cheb->c = bfMemAlloc(cheb->order, sizeof(BfReal));
+  HANDLE_ERROR();
 
-  for (int j = cheb->order; j >= 1; j--) {
-    BfReal temp = d;
-    d = y2*d - dd + cheb->c[j];
-    dd = temp;
+  cheb->order = d + 1;
+
+  cheb->a = a;
+  cheb->b = b;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
   }
+}
 
-  d = y*d - dd + 0.5 * cheb->c[0];
+void bfChebDeinit(BfCheb *cheb) {
+}
 
-  return d;
+void bfChebInterp(BfCheb *cheb, BfReal (*f)(BfReal), BfReal const *x) {
+  BEGIN_ERROR_HANDLING();
+
+  BfChebStd chebStd = {.order = cheb->order, .c = cheb->c};
+
+  bfChebStdInterp(&chebStd, f, cheb->a, cheb->b, x);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {}
+}
+
+BfReal bfChebEval(BfCheb const *cheb, BfReal x) {
+  BfChebStd chebStd = {.order = cheb->order, .c = cheb->c};
+  BfReal xStd = (2*x - cheb->a - cheb->b)/(cheb->b - cheb->a);
+  return bfChebStdEval(&chebStd, xStd);
 }

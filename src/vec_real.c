@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include <bf/assert.h>
+#include <bf/blas.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat.h>
@@ -13,7 +14,7 @@
 /** Interface: Vec */
 
 static BfVecVtable VEC_VTABLE = {
-  .Copy = (__typeof__(&bfVecRealCopy))bfVecRealCopy,
+  .Copy = (__typeof__(&bfVecCopy))bfVecRealCopy,
   .Delete = (__typeof__(&bfVecRealDelete))bfVecRealDelete,
   .GetType = (__typeof__(&bfVecRealGetType))bfVecRealGetType,
   .GetEltPtr = (__typeof__(&bfVecRealGetEltPtr))bfVecRealGetEltPtr,
@@ -28,16 +29,16 @@ static BfVecVtable VEC_VTABLE = {
   .AddInplace = (__typeof__(&bfVecAddInplace))bfVecRealAddInplace,
   .Permute = (__typeof__(&bfVecRealPermute))bfVecRealPermute,
   .Concat = (__typeof__(&bfVecRealConcat))bfVecRealConcat,
+  .Save = (__typeof__(&bfVecSave))bfVecRealSave,
+  .Daxpy = (__typeof__(&bfVecDaxpy))bfVecRealDaxpy,
+  .Dscal = (__typeof__(&bfVecDscal))bfVecRealDscal,
 };
 
-BfVec *bfVecRealCopy(BfVec const *vec) {
+BfVec *bfVecRealCopy(BfVecReal const *vecReal) {
   BEGIN_ERROR_HANDLING();
 
-  BfVecReal const *vecReal = NULL;
+  BfVec const *vec = bfVecRealConstToVecConst(vecReal);
   BfVecReal *copy = NULL;
-
-  vecReal = bfVecConstToVecRealConst(vec);
-  HANDLE_ERROR();
 
   copy = bfVecRealNew();
   HANDLE_ERROR();
@@ -312,6 +313,31 @@ BfVec *bfVecRealConcat(BfVec const *vec, BfVec const *otherVec) {
   }
 }
 
+void bfVecRealSave(BfVecReal const *vecReal, char const *path) {
+  bfVecRealDump(vecReal, path);
+}
+
+void bfVecRealDaxpy(BfVecReal *vecReal, BfReal scale, BfVecReal const *otherVecReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVec *vec = bfVecRealToVec(vecReal);
+  BfVec const *otherVec = bfVecRealConstToVecConst(otherVecReal);
+
+  BfSize n = vec->size;
+  if (n != otherVec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  cblas_daxpy(n, scale, otherVecReal->data, otherVecReal->stride, vecReal->data, vecReal->stride);
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+}
+
+void bfVecRealDscal(BfVecReal *vecReal, BfReal scale) {
+  cblas_dscal(vecReal->super.size, scale, vecReal->data, vecReal->stride);
+}
+
 /** Upcasting: */
 
 BfVec *bfVecRealToVec(BfVecReal *vecReal) {
@@ -352,6 +378,22 @@ BfVecReal *bfVecRealNew() {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   END_ERROR_HANDLING() {}
+
+  return vecReal;
+}
+
+BfVecReal *bfVecRealNewEmpty(BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal *vecReal = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(vecReal, n);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    BF_ASSERT(false);
+  }
 
   return vecReal;
 }

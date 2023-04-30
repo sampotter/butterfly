@@ -49,3 +49,4 @@ void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat);
 void bfMatCsrRealDump(BfMatCsrReal const *mat, char const *rowptrPath, char const *colindPath,
                       char const *dataPath);
 bool bfMatCsrRealHasSameSparsityPattern(BfMatCsrReal const *matCsrReal, BfMatCsrReal const *otherMatCsrReal);
+BfMatDiagReal *bfMatCsrRealLump(BfMatCsrReal const *matCsrReal);

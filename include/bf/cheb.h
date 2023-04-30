@@ -29,8 +29,11 @@ typedef struct {
   /* Order of Chebyshev series: */
   BfSize order;
 
-  BfReal a_plus_b;
-  BfReal b_minus_a;
+  BfReal a;
+  BfReal b;
 } BfCheb;
 
+void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b);
+void bfChebDeinit(BfCheb *cheb);
+void bfChebInterp(BfCheb *cheb, BfReal (*f)(BfReal), BfReal const *x);
 BfReal bfChebEval(BfCheb const *cheb, BfReal x);

@@ -2,6 +2,8 @@
 
 #include <math.h>
 
+#include "def.h"
+
 #define BF_PI         3.14159265358979323846264338328
 #define BF_TWO_PI     6.283185307179586
 #define BF_SQRT2      1.41421356237309504880168872421

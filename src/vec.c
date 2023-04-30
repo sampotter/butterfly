@@ -113,6 +113,14 @@ void bfVecSave(BfVec const *vec, char const *path) {
   vec->vtbl->Save(vec, path);
 }
 
+void bfVecDaxpy(BfVec *vec, BfReal scale, BfVec const *otherVec) {
+  vec->vtbl->Daxpy(vec, scale, otherVec);
+}
+
+void bfVecDscal(BfVec *vec, BfReal scale) {
+  vec->vtbl->Dscal(vec, scale);
+}
+
 /** Implementation: Vec */
 
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size) {

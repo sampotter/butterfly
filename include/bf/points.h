@@ -22,12 +22,14 @@ struct BfPoints1 {
 };
 
 BfPoints1 *bfPoints1New();
+BfPoints1 *bfPoints1Copy();
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity);
 void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal);
 void bfPoints1Deinit(BfPoints1 *points);
 bool bfPoints1IsSorted(BfPoints1 const *points);
 void bfPoints1Append(BfPoints1 *points, BfPoint1 point);
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints);
+void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal));
 
 struct BfPoints2 {
   BfPoint2 *data;

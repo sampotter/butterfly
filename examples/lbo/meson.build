@@ -1,5 +1,7 @@
 examples = [
   'bf_lbo',
+  'cheb_cov',
+  'lbo_cov',
 ]
 
 example_deps = [argtable3_dep, butterfly_dep, m_dep]
@@ -7,7 +9,7 @@ example_deps = [argtable3_dep, butterfly_dep, m_dep]
 foreach example : examples
   executable(
     example,
-    example + '.c',
+    [example + '.c', 'lbo.c'],
     dependencies : example_deps
   )
 endforeach
