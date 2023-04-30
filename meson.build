@@ -2,14 +2,17 @@ project('butterfly', 'c', default_options : ['c_std=c11'])
 
 pkg = import('pkgconfig')
 
-add_global_arguments('-DBF_DEBUG', language : 'c')
-add_global_arguments('-DBF_DOUBLE', language : 'c')
+if get_option('buildtype') == 'debug'
+  add_project_arguments('-DBF_DEBUG', language : 'c')
+endif
+
+add_project_arguments('-DBF_DOUBLE', language : 'c')
 
 host_system = host_machine.system()
 if host_system == 'linux'
-  add_global_arguments('-DBF_LINUX', language : 'c')
+  add_project_arguments('-DBF_LINUX', language : 'c')
 elif host_system == 'darwin'
-  add_global_arguments('-DBF_DARWIN', language : 'c')
+  add_project_arguments('-DBF_DARWIN', language : 'c')
 else
   error('unsupported platform:', host_system)
 endif
