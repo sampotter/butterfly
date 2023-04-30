@@ -373,13 +373,13 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   addPrevPhi(facStreamer, colNode, Phi);
 #endif
 
+  bfLogInfo("streamed [%lu, %lu)\n",
+            bfTreeNodeGetFirstIndex(colNode),
+            bfTreeNodeGetLastIndex(colNode));
+
 #if BF_DEBUG
   /* Some logging and sanity checks to do before continuing on with
    * the factorization. */
-
-  bfLogInfo("streamed [%lu, %lu)\n",
-         bfTreeNodeGetFirstIndex(colNode),
-         bfTreeNodeGetLastIndex(colNode));
 
   FILE *fp = fopen("Psi.txt", "w");
   bfMatPrintBlocksDeep(partialFac->Psi, fp, 0, 0, 0);
