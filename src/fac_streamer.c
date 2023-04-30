@@ -199,6 +199,21 @@ static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const
 }
 #endif
 
+static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
+  for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
+    BfTreeNode const *childColNode = currentColNode->child[k];
+    if (childColNode == NULL)
+      continue;
+    for (BfSize j = bfPtrArraySize(&facStreamer->partialFacs); j > 0; --j) {
+      BfFac *fac = bfPtrArrayGet(&facStreamer->partialFacs, j - 1);
+      if (fac->colNode != childColNode)
+        continue;
+      bfPtrArrayRemove(&facStreamer->partialFacs, j - 1);
+      bfFacDelete(&fac);
+    }
+  }
+}
+
 static void continueFactorizing(BfFacStreamer *facStreamer) {
   BEGIN_ERROR_HANDLING();
 
@@ -253,7 +268,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
 
-    // TODO: throw out old partial facs
+    deletePrevFacs(facStreamer, currentColNode);
+
 #if BF_DEBUG
     // TODO: throw out old prevPhis
 #endif
