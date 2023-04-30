@@ -222,9 +222,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     BfFac *mergedFac = mergeAndSplit(&currentPartialFacs, facStreamer->facSpec);
     HANDLE_ERROR();
 
-
 #if BF_DEBUG
-
+    /* Dump the merged factorization's blocks for plotting: */
     FILE *fp = fopen("Psi.txt", "w");
     bfMatPrintBlocksDeep(mergedFac->Psi, fp, 0, 0, 0);
     fclose(fp);
@@ -236,8 +235,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
       fclose(fp);
     }
 
-    {
-      BfMat const *Phi = getPhiByColNode(facStreamer, currentColNode);
+    /* Check the current relative error. */
+    { BfMat const *Phi = getPhiByColNode(facStreamer, currentColNode);
       BfSize n = bfMatGetNumCols(Phi);
       if (n > 0) {
         BF_ASSERT(Phi != NULL);
@@ -248,11 +247,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
         bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
       } else {
         bfLogInfo("- merged fac has no columns---skipping\n");
-      }
-    }
-
+      } }
 #endif
-
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
