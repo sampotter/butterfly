@@ -39,6 +39,7 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr);
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp, BfPtr aux);
 void bfPtrArrayReverse(BfPtrArray *arr);
 void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst);
+void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i);
 
 struct BfConstPtrArray {
   enum BfPtrArrayFlags flags;

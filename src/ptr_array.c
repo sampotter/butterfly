@@ -232,6 +232,21 @@ void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst) {
   END_ERROR_HANDLING() {}
 }
 
+void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i >= bfPtrArraySize(ptrArray))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  bfMemMove(ptrArray->data + i + 1, ptrArray->num_elts - i - 1, sizeof(BfSize), ptrArray->data + i);
+
+  --ptrArray->num_elts;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+}
+
 /** Implementation: ConstPtrArray */
 
 BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity() {

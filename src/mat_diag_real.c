@@ -14,9 +14,10 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowCopy = (__typeof__(&bfMatDiagRealGetRowCopy))bfMatDiagRealGetRowCopy,
   .Delete = (__typeof__(&bfMatDiagRealDelete))bfMatDiagRealDelete,
   .GetType = (__typeof__(&bfMatDiagRealGetType))bfMatDiagRealGetType,
-  .GetNumRows = (__typeof__(&bfMatDiagRealGetNumRows))bfMatDiagRealGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatDiagRealGetNumCols))bfMatDiagRealGetNumCols,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDiagRealGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatDiagRealGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatDiagRealGetRowRangeCopy))bfMatDiagRealGetRowRangeCopy,
+  .MulVec = (__typeof__(&bfMatMulVec))bfMatDiagRealMulVec,
 };
 
 BfMat *bfMatDiagRealGetView(BfMat *mat) {
@@ -83,22 +84,12 @@ BfType bfMatDiagRealGetType(BfMat const *mat) {
   return BF_TYPE_MAT_DIAG_REAL;
 }
 
-BfSize bfMatDiagRealGetNumRows(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_DIAG_REAL)) {
-    bfSetError(BF_ERROR_TYPE_ERROR);
-    return BF_SIZE_BAD_VALUE;
-  } else {
-    return mat->numRows;
-  }
+BfSize bfMatDiagRealGetNumRows(BfMatDiagReal const *matDiagReal) {
+  return matDiagReal->super.numRows;
 }
 
-BfSize bfMatDiagRealGetNumCols(BfMat const *mat) {
-  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_DIAG_REAL)) {
-    bfSetError(BF_ERROR_TYPE_ERROR);
-    return BF_SIZE_BAD_VALUE;
-  } else {
-    return mat->numCols;
-  }
+BfSize bfMatDiagRealGetNumCols(BfMatDiagReal const *matDiagReal) {
+  return matDiagReal->super.numCols;
 }
 
 BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
@@ -140,6 +131,48 @@ BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
     bfMatCooRealDeinitAndDealloc(&rowRange);
 
   return bfMatCooRealToMat(rowRange);
+}
+
+BfVec *mulVec_vecReal(BfMatDiagReal const *matDiagReal, BfVecReal const *vecReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfVecReal *result = NULL;
+
+  BfSize m = bfMatDiagRealGetNumRows(matDiagReal);
+  BfSize n = bfMatDiagRealGetNumCols(matDiagReal);
+
+  if (vecReal->super.size != n)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  result = bfVecRealNewWithValue(m, 0);
+
+  BfReal *writePtr = result->data;
+  BfReal const *scalePtr = matDiagReal->data;
+  BfReal const *readPtr = vecReal->data;
+
+  for (BfSize j = 0; j < n; ++j) {
+    *writePtr = *readPtr;
+    *writePtr *= *scalePtr;
+    writePtr += result->stride;
+    ++scalePtr;
+    readPtr += vecReal->stride;
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfVecRealToVec(result);
+}
+
+BfVec *bfMatDiagRealMulVec(BfMatDiagReal const *matDiagReal, BfVec const *vec) {
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    return mulVec_vecReal(matDiagReal, bfVecConstToVecRealConst(vec));
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 /* Upcasting: */
@@ -205,6 +238,24 @@ BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal d
     mat = NULL;
 
   return mat;
+}
+
+BfMatDiagReal *bfMatDiagRealNewFromData(BfSize numRows, BfSize numCols, BfReal const *data) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatDiagReal *matDiagReal = bfMatDiagRealNew();
+  HANDLE_ERROR();
+
+  bfMatDiagRealInit(matDiagReal, numRows, numCols);
+  HANDLE_ERROR();
+
+  bfMemCopy(data, matDiagReal->numElts, sizeof(BfReal), matDiagReal->data);
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return matDiagReal;
 }
 
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {

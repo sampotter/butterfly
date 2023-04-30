@@ -14,6 +14,39 @@
 #include <bf/size_array.h>
 #include <bf/tree_iter.h>
 
+void bfFacDeinit(BfFac *fac) {
+  fac->colNode = NULL;
+
+  bfConstNodeArrayDeinit(&fac->rowNodes);
+
+  bfMatDelete(&fac->Psi);
+  for (BfSize i = 0; i < fac->numW; ++i)
+    bfMatDelete(&fac->W[i]);
+}
+
+void bfFacDealloc(BfFac **facHandle) {
+  bfMemFree(*facHandle);
+  *facHandle = NULL;
+}
+
+void bfFacDelete(BfFac **facHandle) {
+  bfFacDeinit(*facHandle);
+  bfFacDealloc(facHandle);
+}
+
+BfMat *bfFacGetMat(BfFac const *fac) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMatProduct *matProduct = bfFacGetMatProduct(fac);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatProductToMat(matProduct);
+}
+
 BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
   BEGIN_ERROR_HANDLING();
 

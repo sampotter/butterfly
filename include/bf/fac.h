@@ -35,6 +35,8 @@ struct BfFac {
   BfMat **W;
 };
 
+void bfFacDelete(BfFac **fac);
+BfMat *bfFacGetMat(BfFac const *fac);
 BfMatProduct *bfFacGetMatProduct(BfFac const *fac);
 
 BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode, BfPtrArray *PsiBlocks, BfPtrArray *WBlocks);
