@@ -84,11 +84,13 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
   facStreamer->partialFacs = bfGetUninitializedPtrArray();
   HANDLE_ERROR();
 
-  facStreamer->prevPhis = bfPtrArrayNewWithDefaultCapacity();
-  HANDLE_ERROR();
-
   bfInitPtrArrayWithDefaultCapacity(&facStreamer->partialFacs);
   HANDLE_ERROR();
+
+#if BF_DEBUG
+  facStreamer->prevPhis = bfPtrArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+#endif
 
   END_ERROR_HANDLING() {
     bfFacStreamerDeinit(facStreamer);
