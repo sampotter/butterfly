@@ -1,10 +1,12 @@
 #include <bf/assert.h>
 #include <bf/const.h>
+#include <bf/fac_span.h>
 #include <bf/fac_streamer.h>
 #include <bf/interval_tree.h>
 #include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
+#include <bf/mat_dense_real.h>
 #include <bf/octree.h>
 #include <bf/rand.h>
 #include <bf/util.h>
@@ -26,13 +28,30 @@ static BfReal gammaFromFreq(BfReal omega) {
   return gamma_(pow(omega, 2));
 }
 
-static BfVec *sample_z(BfMat const *Phi, BfMat const *GammaLam) {
+static BfVec *sample_z(BfMat const *Phi, BfMat const *GammaLam, BfPerm const *rowPerm) {
   BfSize n = bfMatGetNumCols(GammaLam);
   BfVec *w = bfVecRealToVec(bfVecRealNewRandn(n));
   BfVec *x = bfMatMulVec(GammaLam, w);
   BfVec *z = bfMatMulVec(Phi, x);
+  bfVecPermute(z, rowPerm);
   bfVecDelete(&w);
   bfVecDelete(&x);
+  return z;
+}
+
+static BfVec *get_c(BfMat const *Phi, BfMat const *GammaLam, BfMat const *M, BfPerm const *rowPerm, BfPerm const *revRowPerm) {
+  BfSize n = bfMatGetNumCols(M);
+  BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, 0));
+  BfVec *tmp1 = bfMatMulVec(M, e);
+  bfVecPermute(tmp1, revRowPerm);
+  BfVec *tmp2 = bfMatRmulVec(Phi, tmp1);
+  tmp1 = bfMatMulVec(GammaLam, tmp2);
+  bfVecDelete(&tmp2);
+  tmp2 = bfMatMulVec(GammaLam, tmp1);
+  bfVecDelete(&tmp1);
+  BfVec *z = bfMatMulVec(Phi, tmp2);
+  bfVecPermute(z, rowPerm);
+  bfVecDelete(&tmp2);
   return z;
 }
 
@@ -71,6 +90,9 @@ int main(int argc, char const *argv[]) {
   BfSize rowTreeMaxDepth = bfTreeGetMaxDepth(rowTree);
   printf("row tree with depth %lu\n", rowTreeMaxDepth);
 
+  BfPerm const *rowPerm = bfTreeGetPermConst(rowTree);
+  BfPerm revRowPerm = bfPermGetReversePerm(rowPerm);
+
   if (freqTreeDepth == BF_SIZE_BAD_VALUE)
     freqTreeDepth = rowTreeMaxDepth - 3;
 
@@ -108,27 +130,29 @@ int main(int argc, char const *argv[]) {
     if (freqs->size >= numEigs) break;
   }
 
-  puts("finished streaming BF");
+  printf("finished streaming BF (actually factorized %lu eigenpairs)\n", freqs->size);
+
+  bfPoints1Save(freqs, "freqs.bin");
 
   BfPoints1 *gammaLam = bfPoints1Copy(freqs);
   bfPoints1Map(gammaLam, gammaFromFreq);
 
-  BfFac *fac = bfFacStreamerGetFac(facStreamer);
-  BfMat *Phi = bfFacGetMat(fac);
+  BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
+  BfMat *Phi = bfFacSpanGetMat(facSpan);
   BfMat *GammaLam = bfMatDiagRealToMat(
     bfMatDiagRealNewFromData(gammaLam->size, gammaLam->size, gammaLam->data));
 
   /** Sample z once and write it out to disk for plotting. */
 
-  BfVec *z = sample_z(Phi, GammaLam);
-  bfVecSave(z, "z.bin");
+  BfVec *z = sample_z(Phi, GammaLam, rowPerm);
+  bfVecSave(z, "z_lbo.bin");
   bfVecDelete(&z);
 
   /** Time how long it takes to sample z numSamples times. */
 
   bfToc();
   for (BfSize _ = 0; _ < numSamples; ++_) {
-    z = sample_z(Phi, GammaLam);
+    z = sample_z(Phi, GammaLam, rowPerm);
     bfVecDelete(&z);
   }
   printf("drew %lu samples [%0.1fs]\n", numSamples, bfToc());
@@ -136,8 +160,24 @@ int main(int argc, char const *argv[]) {
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
-//   BfVec *c = get_c(Phi, Lam);
-//   bfVecSave(c, "c.bin");
+  BfVec *c = get_c(Phi, GammaLam, M, rowPerm, &revRowPerm);
+  bfVecSave(c, "c_lbo.bin");
+
+  /* Extract dense Phi: */
+
+  BfSize m = bfMatGetNumRows(Phi);
+  BfSize n = bfMatGetNumCols(Phi);
+  BfMat *PhiDense = bfMatDenseRealToMat(bfMatDenseRealNewWithValue(m, n, BF_NAN));
+  for (BfSize j = 0; j < n; ++j) {
+    /* Get jth standard basis vector: */
+    BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, j));
+    BfVec *phi = bfMatMulVec(Phi, e);
+    bfVecPermute(phi, rowPerm);
+    bfMatSetCol(PhiDense, j, phi);
+    bfVecDelete(&phi);
+    bfVecDelete(&e);
+  }
+  bfMatSave(PhiDense, "PhiDense.bin");
 
   /* Clean up */
   bfTreeDelete(&rowTree);
