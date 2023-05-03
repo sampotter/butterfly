@@ -82,6 +82,37 @@ bool bfConstNodeArrayIsContiguous(BfConstNodeArray const *nodes) {
   return true;
 }
 
+bool bfConstNodeArrayIsSameSpan(BfConstNodeArray const *nodes, BfConstNodeArray const *otherNodes) {
+  BfSize numNodes = bfConstNodeArraySize(nodes);
+  if (numNodes <= 1)
+    return true;
+
+  if (numNodes != bfConstNodeArraySize(otherNodes))
+    return false;
+
+  BfTreeNode const *node = bfConstNodeArrayGetFirst(nodes);
+  BfTreeNode const *otherNode = bfConstNodeArrayGetFirst(otherNodes);
+
+  if (bfTreeNodeGetFirstIndex(node) != bfTreeNodeGetFirstIndex(otherNode))
+    return false;
+
+  for (BfSize i = 1; i < numNodes; ++i) {
+    BfSize i1 = bfTreeNodeGetLastIndex(node);
+    if (i1 != bfTreeNodeGetLastIndex(otherNode))
+      return false;
+
+    node = bfConstNodeArrayGet(nodes, i);
+    if (bfTreeNodeGetFirstIndex(node) != i1)
+      return false;
+
+    otherNode = bfConstNodeArrayGet(otherNodes, i);
+    if (bfTreeNodeGetFirstIndex(otherNode) != i1)
+      return false;
+  }
+
+  return true;
+}
+
 bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes) {
   BEGIN_ERROR_HANDLING();
 

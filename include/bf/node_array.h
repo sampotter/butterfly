@@ -20,6 +20,7 @@ BfTreeNode const *bfConstNodeArrayGetFirst(BfConstNodeArray const *nodes);
 BfTreeNode const *bfConstNodeArrayGetLast(BfConstNodeArray const *nodes);
 void bfConstNodeArrayExtend(BfConstNodeArray *nodes, BfConstNodeArray const *otherNodes);
 bool bfConstNodeArrayIsContiguous(BfConstNodeArray const *nodes);
+bool bfConstNodeArrayIsSameSpan(BfConstNodeArray const *nodes, BfConstNodeArray const *otherNodes);
 
 bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes);
 BfSize getMaxLastIndexForRowNodes(BfConstNodeArray const *nodes, BfTreeNode const **argmaxNodePtr);
