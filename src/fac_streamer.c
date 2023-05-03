@@ -450,17 +450,13 @@ BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 
   BfFac *fac = NULL;
 
-  /* TODO: handle this case by blocking together the current partial
-   * factorizations... easy enough */
-  if (!bfTreeIterIsDone(facStreamer->colTreeIter))
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  BfSize numFacs = bfPtrArraySize(&facStreamer->partialFacs);
+  if (numFacs != 1)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  bfPtrArrayGetLast(&facStreamer->partialFacs, (BfPtr *)&fac);
-  HANDLE_ERROR();
+  fac = bfPtrArrayGet(&facStreamer->partialFacs, 0);
 
-  END_ERROR_HANDLING() {
-    BF_ASSERT(false);
-  }
+  END_ERROR_HANDLING() {}
 
   return fac;
 }
