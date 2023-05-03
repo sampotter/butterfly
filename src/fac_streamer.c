@@ -209,6 +209,12 @@ static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *current
       if (fac->colNode != childColNode)
         continue;
       bfPtrArrayRemove(&facStreamer->partialFacs, j - 1);
+
+      /* NOTE: there are a lot of assumptions resting on the following
+       * line being correct. The most recently merged factorization
+       * has stolen some of the guts of this factorization. We want to
+       * make sure we free everything we need to free here, without
+       * accidentally freeing parts of the new factorization! */
       bfFacDelete(&fac);
     }
   }
