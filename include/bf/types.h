@@ -60,6 +60,7 @@ typedef struct BfTreeIterPostOrder BfTreeIterPostOrder;
 typedef struct BfTreeNodeSpan BfTreeNodeSpan;
 
 typedef struct BfFac BfFac;
+typedef struct BfFacSpan BfFacSpan;
 
 typedef enum BfTypes {
   /* Mat hierarchy */
