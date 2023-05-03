@@ -48,6 +48,7 @@ static BfMatVtable MAT_VTABLE = {
   .ScaleRows = (__typeof__(&bfMatScaleRows))bfMatDenseRealScaleRows,
   .Mul = (__typeof__(&bfMatMul))bfMatDenseRealMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatDenseRealMulVec,
+  .RmulVec = (__typeof__(&bfMatRmulVec))bfMatDenseRealRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
 };
 
@@ -1027,6 +1028,76 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
   switch (bfVecGetType(vec)) {
   case BF_TYPE_VEC_REAL:
     result = mulVec_vecReal(
+      matDenseReal, bfVecConstToVecRealConst(vec), m, n);
+    break;
+  default:
+    result = NULL;
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    break;
+  }
+
+  END_ERROR_HANDLING() {
+    BF_ASSERT(false);
+  }
+
+  return result;
+}
+
+static BfVec *rmulVec_vecReal(BfMatDenseReal const *matDenseReal,
+                              BfVecReal const *vecReal,
+                              BfSize m, BfSize n) {
+  BEGIN_ERROR_HANDLING();
+
+  enum CBLAS_TRANSPOSE trans =
+    getCblasTranspose(matDenseReal) == CblasNoTrans ? CblasTrans : CblasNoTrans;
+
+  BfVecReal *result = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInit(result, n);
+  HANDLE_ERROR();
+
+  BfSize lda = getLeadingDimension(matDenseReal);
+
+  BfReal alpha = 1, beta = 0;
+
+  if (lda > 0) {
+    cblas_dgemv(CblasRowMajor, trans, m, n, alpha,
+                matDenseReal->data, lda, vecReal->data,
+                vecReal->stride, beta, result->data,
+                result->stride);
+  } else {
+    BF_DIE();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_ASSERT(false);
+  }
+
+  return bfVecRealToVec(result);
+}
+
+BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+  BfVec *result = NULL;
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  if (m != vec->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (m == 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  matDenseReal = bfMatConstToMatDenseRealConst(mat);
+  HANDLE_ERROR();
+
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = rmulVec_vecReal(
       matDenseReal, bfVecConstToVecRealConst(vec), m, n);
     break;
   default:

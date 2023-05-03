@@ -24,6 +24,7 @@ void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
 void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec);
 BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherMat);
 BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);
+BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);
 void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
 struct BfMatDenseReal {

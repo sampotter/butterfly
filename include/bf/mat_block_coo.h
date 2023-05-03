@@ -15,6 +15,7 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1);
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2);
 BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec);
+BfVec *bfMatBlockCooRmulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec);
 void bfMatBlockCooNegate(BfMat *mat);
 BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo);
 void bfMatBlockCooPrintBlocksDeep(BfMatBlockCoo const *matBlockCoo, FILE *fp, BfSize i0, BfSize j0, BfSize depth);

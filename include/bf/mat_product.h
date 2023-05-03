@@ -15,6 +15,7 @@ BfSize bfMatProductGetNumCols(BfMat const *mat);
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec);
 BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec);
+BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat);
 
 /** Implementation: MatProduct */

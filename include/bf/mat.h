@@ -66,6 +66,7 @@ void bfMatSubInplace(BfMat *, BfMat const *);
 BfMat *bfMatMul(BfMat const *, BfMat const *);
 BfVec *bfMatMulVec(BfMat const *, BfVec const *);
 void bfMatMulInplace(BfMat *, BfMat const *);
+BfVec *bfMatRmulVec(BfMat const *, BfVec const *);
 BfMat *bfMatSolve(BfMat const *, BfMat const *);
 BfMat *bfMatSolveLU(BfMat const *, BfMat const *);
 BfMat *bfMatLstSq(BfMat const *, BfMat const *);
@@ -126,6 +127,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatMul) Mul;
   __typeof__(&bfMatMulVec) MulVec;
   __typeof__(&bfMatMulInplace) MulInplace;
+  __typeof__(&bfMatRmulVec) RmulVec;
   __typeof__(&bfMatSolve) Solve;
   __typeof__(&bfMatSolveLU) SolveLU;
   __typeof__(&bfMatLstSq) LstSq;

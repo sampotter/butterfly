@@ -18,6 +18,7 @@ static BfMatVtable MAT_VTABLE = {
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
   .Mul = (__typeof__(&bfMatProductMul))bfMatProductMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatProductMulVec,
+  .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
 };
 
@@ -219,6 +220,41 @@ BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec) {
     factor = bfMatProductGetFactorConst(matProduct, --i);
 
     result = bfMatMulVec(factor, prev);
+    HANDLE_ERROR();
+
+    bfVecDelete(&prev);
+
+    prev = result;
+  }
+
+  END_ERROR_HANDLING() {
+    bfVecDelete(&prev);
+    bfVecDelete(&result);
+  }
+
+  return result;
+}
+
+BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *factor = NULL;
+  BfVec *prev = NULL;
+  BfVec *result = NULL;
+
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+
+  BfSize i = 0;
+
+  factor = bfMatProductGetFactorConst(matProduct, i);
+
+  prev = bfMatRmulVec(factor, vec);
+  HANDLE_ERROR();
+
+  while (++i < numFactors) {
+    factor = bfMatProductGetFactorConst(matProduct, i);
+
+    result = bfMatRmulVec(factor, prev);
     HANDLE_ERROR();
 
     bfVecDelete(&prev);

@@ -40,6 +40,7 @@ static BfMatVtable MAT_VTABLE = {
   .ScaleCols = (__typeof__(&bfMatBlockDiagScaleCols))bfMatBlockDiagScaleCols,
   .Mul = (__typeof__(&bfMatBlockDiagMul))bfMatBlockDiagMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDiagMulVec,
+  .RmulVec = (__typeof__(&bfMatMulVec))bfMatBlockDiagRmulVec,
   .Negate = (__typeof__(&bfMatBlockDiagNegate))bfMatBlockDiagNegate,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDiagPrintBlocksDeep,
   .Solve = (__typeof__(&bfMatSolve))bfMatBlockDiagSolve,
@@ -398,6 +399,55 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
 
     /* Assign the result to the relevant part of `result`: */
     bfVecSetRange(result, i0, i1, tmp);
+  }
+
+  END_ERROR_HANDLING() {
+    BF_ASSERT(false);
+  }
+
+  return result;
+}
+
+BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
+
+  if (bfMatGetNumRows(mat) != vec->size)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfSize resultSize = bfMatGetNumCols(mat);
+
+  BfVec *result = NULL;
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+#if BF_DEBUG
+    result = bfVecRealToVec(bfVecRealNewWithValue(resultSize, BF_NAN));
+#else
+    result = bfVecRealToVec(bfVecRealNewEmpty(resultSize));
+#endif
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockDiag, k);
+
+    BfSize i0 = ROW_OFFSET(matBlockDiag, k);
+    BfSize i1 = i0 + bfMatGetNumRows(block);
+
+    BfSize j0 = COL_OFFSET(matBlockDiag, k);
+    BfSize j1 = j0 + bfMatGetNumCols(block);
+
+    /* Multiply the current block with the relevant part of `vec`: */
+    BfVec const *subvecView = bfVecGetSubvecViewConst(vec, i0, i1);
+    BfVec *tmp = bfMatRmulVec(block, subvecView);
+    bfVecDelete((BfVec **)&subvecView);
+
+    /* Assign the result to the relevant part of `result`: */
+    bfVecSetRange(result, j0, j1, tmp);
   }
 
   END_ERROR_HANDLING() {

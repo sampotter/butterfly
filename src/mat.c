@@ -179,6 +179,10 @@ void bfMatMulInplace(BfMat *mat, BfMat const *otherMat) {
   mat->vtbl->MulInplace(mat, otherMat);
 }
 
+BfVec *bfMatRmulVec(BfMat const *mat, BfVec const *otherMat) {
+  return mat->vtbl->RmulVec(mat, otherMat);
+}
+
 BfMat *bfMatSolve(BfMat const *mat, BfMat const *otherMat) {
   return mat->vtbl->Solve(mat, otherMat);
 }

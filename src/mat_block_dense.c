@@ -43,6 +43,7 @@ static BfMatVtable MAT_VTABLE = {
   .AddInplace = (__typeof__(&bfMatAddInplace))bfMatBlockDenseAddInplace,
   .Mul = (__typeof__(&bfMatBlockDenseMul))bfMatBlockDenseMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDenseMulVec,
+  .RmulVec = (__typeof__(&bfMatRmulVec))bfMatBlockDenseRmulVec,
   .ToType = (__typeof__(&bfMatBlockDenseToType))bfMatBlockDenseToType,
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep
@@ -544,6 +545,70 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
 
   END_ERROR_HANDLING() {
     BF_ASSERT(false);
+  }
+
+  return result;
+}
+
+BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
+
+  BfSize numCols = bfMatGetNumCols(mat);
+  BfSize numRowBlocks = bfMatBlockDenseGetNumRowBlocks(matBlockDense);
+  BfSize numColBlocks = bfMatBlockDenseGetNumColBlocks(matBlockDense);
+
+  BfVec *result = NULL;
+  switch (bfVecGetType(vec)) {
+  case BF_TYPE_VEC_REAL:
+    result = bfVecRealToVec(bfVecRealNewWithValue(numCols, 0));
+    break;
+  default:
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+  }
+
+  for (BfSize j = 0; j < numColBlocks; ++j) {
+    BfSize j0 = COL_OFFSET(matBlockDense, j);
+    BfSize j1 = COL_OFFSET(matBlockDense, j + 1);
+
+    /* If this is a degenerate block row, skip it */
+    if (j0 == j1)
+      continue;
+
+    BfVec *resultSubvecView = bfVecGetSubvecView(result, j0, j1);
+    HANDLE_ERROR();
+
+    for (BfSize i = 0; i < numRowBlocks; ++i) {
+      BfMat const *block = BLOCK(matBlockDense, i, j);
+
+      BfSize i0 = ROW_OFFSET(matBlockDense, i);
+      BfSize i1 = ROW_OFFSET(matBlockDense, i + 1);
+
+      /* Skip degenerate block columns */
+      if (i0 == i1)
+        continue;
+
+      /* Sanity check... basically unnecessary, but whatever */
+      BF_ASSERT(bfMatGetNumRows(block) == i1 - i0);
+      BF_ASSERT(bfMatGetNumCols(block) == j1 - j0);
+
+      BfVec const *subvecView = bfVecGetSubvecViewConst(vec, i0, i1);
+      HANDLE_ERROR();
+
+      BfVec *tmp = bfMatRmulVec(block, subvecView);
+      HANDLE_ERROR();
+
+      bfVecAddInplace(resultSubvecView, tmp);
+
+      bfVecDelete(&tmp);
+    }
+
+    bfVecDelete(&resultSubvecView);
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
   }
 
   return result;
