@@ -283,13 +283,11 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
 }
 
 void bfMatDeinit(BfMat *mat) {
-#if BF_DEBUG
   mat->vtbl = NULL;
   mat->props = BF_MAT_PROPS_NONE;
   mat->numRows = BF_SIZE_BAD_VALUE;
   mat->numCols = BF_SIZE_BAD_VALUE;
   mat->aux = NULL;
-#endif
 }
 
 BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype dtype) {
