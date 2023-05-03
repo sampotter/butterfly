@@ -30,6 +30,7 @@ bool bfPoints1IsSorted(BfPoints1 const *points);
 void bfPoints1Append(BfPoints1 *points, BfPoint1 point);
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints);
 void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal));
+void bfPoints1Save(BfPoints1 const *points, char const *path);
 
 struct BfPoints2 {
   BfPoint2 *data;

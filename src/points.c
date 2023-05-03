@@ -294,6 +294,21 @@ void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal)) {
   }
 }
 
+void bfPoints1Save(BfPoints1 const *points, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(points->data, points->size, sizeof(BfPoint1), fp);
+  // TODO: error-handling
+
+  END_ERROR_HANDLING() {}
+
+  fclose(fp);
+}
+
 /** Implementation: Points2 */
 
 BfPoints2 bfGetUninitializedPoints2() {
