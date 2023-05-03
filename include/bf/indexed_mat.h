@@ -1,5 +1,6 @@
 #pragma once
 
+#include "def.h"
 #include "types.h"
 
 struct BfIndexedMat {
@@ -12,3 +13,9 @@ struct BfIndexedMat {
   /* The indexed matrix. */
   BfMat *mat;
 };
+
+BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy);
+void bfIndexedMatInitFromMat(BfIndexedMat *indexedMat, BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy);
+void bfIndexedMatDeinit(BfIndexedMat *indexedMat);
+void bfIndexedMatDealloc(BfIndexedMat **indexedMat);
+void bfIndexedMatDelete(BfIndexedMat **indexedMat);

@@ -46,6 +46,7 @@ butterfly_lib_src = [
   'src/fac_streamer.c',
 # 'src/fiedler_tree.c',
   'src/helm2.c',
+  'src/indexed_mat.c',
   'src/interval_tree.c',
   'src/interval_tree_node.c',
   'src/lbo.c',
