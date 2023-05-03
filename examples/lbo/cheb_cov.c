@@ -177,7 +177,7 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(&gammaCheb, S, MLumpSqrtInv);
-  bfVecSave(z, "z.bin");
+  bfVecSave(z, "z_cheb.bin");
   bfVecDelete(&z);
 
   /** Time how long it takes to sample z numSamples times. */
@@ -193,7 +193,7 @@ int main(int argc, char const *argv[]) {
    ** on the mesh. */
 
   BfVec *c = get_c(&gammaCheb, S, MLumpSqrtInv);
-  bfVecSave(c, "c.bin");
+  bfVecSave(c, "c_cheb.bin");
 
   /** Clean up: */
 
