@@ -133,25 +133,6 @@ BfVec *partialFacMulVec(BfFac const *fac, BfVec const *x) {
   return y;
 }
 
-// TODO: this is just the invariant which distinguishes a NodeSpan
-// from a NodeArray. It should be pushed into tree_node_span.c and
-// only checked in a debug build...
-bool facHasContiguousRowSpan(BfFac const *fac) {
-  BfSize numRowNodes = bfConstNodeArraySize(&fac->rowNodes);
-  if (numRowNodes <= 1)
-    return true;
-  BfTreeNode const *rowNode = bfConstNodeArrayGet(&fac->rowNodes, 0);
-  BfSize i1Prev = bfTreeNodeGetLastIndex(rowNode);
-  for (BfSize k = 1; k < numRowNodes; ++k) {
-    rowNode = bfConstNodeArrayGet(&fac->rowNodes, k);
-    BfSize i0 = bfTreeNodeGetFirstIndex(rowNode);
-    if (i0 != i1Prev)
-      return false;
-    i1Prev = bfTreeNodeGetLastIndex(rowNode);
-  }
-  return true;
-}
-
 static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
                                      BfSize i0, BfSize j0, BfMat *mat) {
   BEGIN_ERROR_HANDLING();
@@ -378,7 +359,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
 static bool facsHaveContiguousRowSpans(BfPtrArray const *facs) {
   for (BfSize k = 0; k < bfPtrArraySize(facs); ++k) {
     BfFac const *fac = bfPtrArrayGet(facs, k);
-    if (!facHasContiguousRowSpan(fac))
+    if (!bfConstNodeArrayIsContiguous(&fac->rowNodes))
       return false;
   }
   return true;

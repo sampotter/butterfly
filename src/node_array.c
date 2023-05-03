@@ -66,6 +66,22 @@ void bfConstNodeArrayExtend(BfConstNodeArray *nodes, BfConstNodeArray const *oth
   bfConstPtrArrayExtend(&nodes->ptrArray, &otherNodes->ptrArray);
 }
 
+bool bfConstNodeArrayIsContiguous(BfConstNodeArray const *nodes) {
+  BfSize numNodes = bfConstNodeArraySize(nodes);
+  if (numNodes <= 1)
+    return true;
+
+  BfTreeNode const *node = bfConstNodeArrayGetFirst(nodes);
+  for (BfSize i = 1; i < numNodes; ++i) {
+    BfSize i1 = bfTreeNodeGetLastIndex(node);
+    node = bfConstNodeArrayGet(nodes, i);
+    if (bfTreeNodeGetFirstIndex(node) != i1)
+      return false;
+  }
+
+  return true;
+}
+
 bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes) {
   BEGIN_ERROR_HANDLING();
 
