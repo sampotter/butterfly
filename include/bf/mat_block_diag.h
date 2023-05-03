@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatBlockDiagCopy(BfMat const *mat);
+BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag);
 BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockDiagDelete(BfMat **mat);
 BfType bfMatBlockDiagGetType(BfMat const *mat);
@@ -49,7 +50,7 @@ BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
 /** Implementation: MatBlockDiag */
 
 BfMatBlockDiag *bfMatBlockDiagNew();
-BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks);
+BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);
 void bfMatBlockDiagDealloc(BfMatBlockDiag **mat);

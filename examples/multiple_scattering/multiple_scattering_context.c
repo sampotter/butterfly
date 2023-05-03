@@ -600,7 +600,8 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
     BfMat *MBlock = bfLuGetMatView(KBlockLu);
     bfPtrArrayAppend(MBlocks, MBlock);
   }
-  context->M = bfMatBlockDiagToMat(bfMatBlockDiagNewFromBlocks(MBlocks));
+  context->M = bfMatBlockDiagToMat(
+    bfMatBlockDiagNewFromBlocks(MBlocks, BF_POLICY_STEAL));
 
   /* Get the permuted version of M for use with the
    * butterfly-accelerated version: */

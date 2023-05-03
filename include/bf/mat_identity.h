@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity);
+BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity);
 void bfMatIdentityDelete(BfMatIdentity **matIdentity);
 BfType bfMatIdentityGetType(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity);

@@ -1,9 +1,9 @@
 #include <bf/mat.h>
 
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
@@ -11,12 +11,16 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatGetView(BfMat *mat) {
+  return mat->vtbl->GetView(mat);
+}
+
 BfMat *bfMatCopy(BfMat const *mat) {
   return mat->vtbl->Copy(mat);
 }
 
-BfMat *bfMatGetView(BfMat *mat) {
-  return mat->vtbl->GetView(mat);
+BfMat *bfMatSteal(BfMat *mat) {
+  return mat->vtbl->Steal(mat);
 }
 
 BfVec *bfMatGetRowCopy(BfMat const *mat, BfSize i) {
@@ -241,6 +245,19 @@ void bfMatDivideCols(BfMat *mat, BfVec const *vec) {
 
 /** Implementation: Mat */
 
+BfMat *bfMatGet(BfMat *mat, BfPolicy policy) {
+  switch (policy) {
+  case BF_POLICY_VIEW:
+    return bfMatGetView(mat);
+  case BF_POLICY_COPY:
+    return bfMatCopy(mat);
+  case BF_POLICY_STEAL:
+    return bfMatSteal(mat);
+  default:
+    BF_DIE();
+  }
+}
+
 void bfMatInvalidate(BfMat *mat) {
   mat->vtbl = NULL;
   mat->props = BF_MAT_PROPS_NONE; // TODO: need a default bad value here
@@ -304,4 +321,8 @@ BfMat *bfMatConjTrans(BfMat *mat) {
 bool bfMatIsBlock(BfMat const *mat) {
   BfType type = bfMatGetType(mat);
   return bfTypeDerivedFrom(type, BF_TYPE_MAT_BLOCK);
+}
+
+bool bfMatIsView(BfMat const *mat) {
+  return mat->props & BF_MAT_PROPS_VIEW;
 }

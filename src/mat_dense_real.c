@@ -30,6 +30,7 @@ static BfSize getLeadingDimension(BfMatDenseReal const *mat) {
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
   .GetView = (__typeof__(&bfMatGetView))bfMatDenseRealGetView,
+  .Steal = (__typeof__(&bfMatSteal))bfMatDenseRealSteal,
   .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatDenseRealGetType,
@@ -83,6 +84,28 @@ BfMat *bfMatDenseRealGetView(BfMat *mat) {
     matView = NULL;
 
   return matView;
+}
+
+BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatDenseRealToMat(matDenseReal);
+
+  if (bfMatIsView(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDenseReal *matDenseRealNew = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  *matDenseRealNew = *matDenseReal;
+
+  mat->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatDenseRealToMat(matDenseRealNew);
 }
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
@@ -731,7 +754,7 @@ void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
 void bfMatDenseRealDeinit(BfMatDenseReal *matDenseReal) {
   BfMat *mat = bfMatDenseRealToMat(matDenseReal);
 
-  if (!(mat->props & BF_MAT_PROPS_VIEW))
+  if (!bfMatIsView(mat))
     free(matDenseReal->data);
 
   matDenseReal->data = NULL;
@@ -972,6 +995,8 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
                 matDenseReal->data, lda, vecReal->data,
                 vecReal->stride, beta, result->data,
                 result->stride);
+  } else {
+    BF_DIE();
   }
 
   END_ERROR_HANDLING() {

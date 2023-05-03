@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat);
+BfMat *bfMatBlockCooSteal(BfMatBlockCoo *matBlockCoo);
 BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockCooDelete(BfMat **mat);
 BfType bfMatBlockCooGetType(BfMat const *mat);
@@ -63,10 +64,10 @@ BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBloc
 /** Implementation: MatBlockCoo */
 
 BfMatBlockCoo *bfMatBlockCooNew();
-BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets, BfSizeArray const *colOffsets, BfSizeArray const *rowInds, BfSizeArray const *colInds, BfPtrArray const *blocks);
-BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks);
-BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks);
-BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks);
+// BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets, BfSizeArray const *colOffsets, BfSizeArray const *rowInds, BfSizeArray const *colInds, BfPtrArray const *blocks);
+BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy);
+BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy);
+BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks, BfPolicy policy);
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows, BfSize numBlockCols, BfSize numBlocks);
 void bfMatBlockCooDeinit(BfMatBlockCoo *mat);
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat);

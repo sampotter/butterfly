@@ -112,19 +112,19 @@ void bfMatBlockInit(BfMatBlock *mat,
     bfMatBlockDeinit(mat);
 }
 
-void bfMatBlockDeinit(BfMatBlock *mat) {
-  bfMatDeinit(&mat->super);
+void bfMatBlockDeinit(BfMatBlock *matBlock) {
+  if (!bfMatIsView(&matBlock->super)) {
+    bfMemFree(matBlock->block);
+    bfMemFree(matBlock->rowOffset);
+    bfMemFree(matBlock->colOffset);
+  }
 
-  bfMemFree(mat->block);
-  bfMemFree(mat->rowOffset);
-  bfMemFree(mat->colOffset);
+  matBlock->vtbl = NULL;
+  matBlock->block = NULL;
+  matBlock->rowOffset = NULL;
+  matBlock->colOffset = NULL;
 
-#if BF_DEBUG
-  mat->vtbl = NULL;
-  mat->block = NULL;
-  mat->rowOffset = NULL;
-  mat->colOffset = NULL;
-#endif
+  bfMatDeinit(&matBlock->super);
 }
 
 void bfMatBlockDealloc(BfMatBlock **mat) {

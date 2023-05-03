@@ -29,6 +29,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatBlockDiagCopy))bfMatBlockDiagCopy,
+  .Steal = (__typeof__(&bfMatSteal))bfMatBlockDiagSteal,
   .GetRowCopy = (__typeof__(&bfMatBlockDiagGetRowCopy))bfMatBlockDiagGetRowCopy,
   .Delete = (__typeof__(&bfMatBlockDiagDelete))bfMatBlockDiagDelete,
   .GetType = (__typeof__(&bfMatBlockDiagGetType))bfMatBlockDiagGetType,
@@ -86,6 +87,28 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
   }
 
   return bfMatBlockDiagToMat(matBlockDiagCopy);
+}
+
+BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatBlockDiagToMat(matBlockDiag);
+
+  if (bfMatIsView(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockDiag *matBlockDiagNew = bfMatBlockDiagNew();
+  HANDLE_ERROR();
+
+  *matBlockDiagNew = *matBlockDiag;
+
+  mat->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatBlockDiagToMat(matBlockDiagNew);
 }
 
 BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
@@ -242,15 +265,12 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
     BfMat *blockRowRange = bfMatGetRowRangeCopy(block, i0__, i1__);
     HANDLE_ERROR();
 
-    BfIndexedMat *indexedRowBlock = bfMemAlloc(1, sizeof(BfIndexedMat));
-    if (indexedRowBlock == NULL)
-      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-    indexedRowBlock->i0 = i0_ < i0 ? 0 : i0_ - i0;
-    indexedRowBlock->j0 = j0_;
-    indexedRowBlock->mat = blockRowRange;
-
-    BF_ASSERT(indexedRowBlock->mat != NULL);
+    // TODO: explain how the indexing for i0 works
+    BfIndexedMat *indexedRowBlock = bfIndexedMatNewFromMat(
+      i0_ < i0 ? 0 : i0_ - i0,
+      j0_,
+      blockRowRange,
+      BF_POLICY_STEAL);
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
     HANDLE_ERROR();
@@ -259,7 +279,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
   BfSize m = i1 - i0;
   BfSize n = bfMatGetNumCols(bfMatBlockDiagConstToMatConst(matBlockDiag));
 
-  blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks);
+  blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -594,7 +614,7 @@ BfMatBlockDiag *bfMatBlockDiagNew() {
   return mat;
 }
 
-BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks) {
+BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
   BEGIN_ERROR_HANDLING();
 
   BfMatBlockDiag *matBlockDiag = bfMatBlockDiagNew();
@@ -613,7 +633,8 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks) {
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < numBlocks; ++i) {
-    BLOCK(matBlockDiag, i) = bfPtrArrayGet(blocks, i);
+    BfMat *block = bfPtrArrayGet(blocks, i);
+    BLOCK(matBlockDiag, i) = bfMatGet(block, policy);
   }
 
   ROW_OFFSET(matBlockDiag, 0) = 0;

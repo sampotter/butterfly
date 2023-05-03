@@ -30,6 +30,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatBlockDenseCopy))bfMatBlockDenseCopy,
+  .Steal = (__typeof__(&bfMatSteal))bfMatBlockDenseSteal,
   .GetRowCopy = (__typeof__(&bfMatBlockDenseGetRowCopy))bfMatBlockDenseGetRowCopy,
   .Delete = (__typeof__(&bfMatBlockDenseDelete))bfMatBlockDenseDelete,
   .GetType = (__typeof__(&bfMatBlockDenseGetType))bfMatBlockDenseGetType,
@@ -92,6 +93,28 @@ BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
   }
 
   return bfMatBlockDenseToMat(matBlockDenseCopy);
+}
+
+BfMat *bfMatBlockDenseSteal(BfMatBlockDense *matBlockDense) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatBlockDenseToMat(matBlockDense);
+
+  if (bfMatIsView(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatBlockDense *matBlockDenseNew = bfMatBlockDenseNew();
+  HANDLE_ERROR();
+
+  *matBlockDenseNew = *matBlockDense;
+
+  mat->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatBlockDenseToMat(matBlockDenseNew);
 }
 
 BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
@@ -332,7 +355,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   }
 
   BfMatBlockDense *result = bfMatBlockDenseNewFromBlocks(
-    p1 - p0, NUM_COL_BLOCKS(matBlockDense), blocks);
+    p1 - p0, NUM_COL_BLOCKS(matBlockDense), blocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -787,9 +810,7 @@ BfMatBlockDense *bfMatBlockDenseNew() {
   return matBlockDense;
 }
 
-BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
-                                              BfSize numColBlocks,
-                                              BfPtrArray *blocks) {
+BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks, BfPolicy policy) {
   BEGIN_ERROR_HANDLING();
 
   if (bfPtrArrayIsEmpty(blocks))
@@ -821,7 +842,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
 
       BfMat *block = bfPtrArrayGet(blocks, k);
 
-      BLOCK(matBlockDense, p, q) = block;
+      BLOCK(matBlockDense, p, q) = bfMatGet(block, policy);
 
       BfSize numRows = bfMatGetNumRows(block);
       BfSize numCols = bfMatGetNumCols(block);
@@ -846,7 +867,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks,
   return matBlockDense;
 }
 
-BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks) {
+BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
   BEGIN_ERROR_HANDLING();
 
   if (bfPtrArrayIsEmpty(blocks))
@@ -873,7 +894,7 @@ BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks) {
   ROW_OFFSET(matBlockDense, 0) = 0;
   for (BfSize k = 0; k < numBlocks; ++k) {
     block = bfPtrArrayGet(blocks, k);
-    BLOCK(matBlockDense, k, 0) = block;
+    BLOCK(matBlockDense, k, 0) = bfMatGet(block, policy);
     ROW_OFFSET(matBlockDense, k + 1) = bfMatGetNumRows(block);
   }
   bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockDense, 0));
@@ -885,7 +906,7 @@ BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks) {
   return matBlockDense;
 }
 
-BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks) {
+BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
   BEGIN_ERROR_HANDLING();
 
   if (bfPtrArrayIsEmpty(blocks))
@@ -912,7 +933,7 @@ BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks) {
   COL_OFFSET(matBlockDense, 0) = 0;
   for (BfSize k = 0; k < numBlocks; ++k) {
     block = bfPtrArrayGet(blocks, k);
-    BLOCK(matBlockDense, 0, k) = block;
+    BLOCK(matBlockDense, 0, k) = bfMatGet(block, policy);
     COL_OFFSET(matBlockDense, k + 1) = bfMatGetNumCols(block);
   }
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDense, 0));

@@ -6,6 +6,7 @@
 
 BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal);
 BfMat *bfMatDenseRealGetView(BfMat *mat);
+BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal);
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j);
 void bfMatDenseRealDelete(BfMat **mat);
 BfType bfMatDenseRealGetType(BfMat const *mat);

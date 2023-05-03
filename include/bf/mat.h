@@ -24,8 +24,9 @@ static BfMatProps const BF_MAT_PROPS_TRI = BF_MAT_PROPS_LOWER_TRI | BF_MAT_PROPS
 
 /** Interface: Mat */
 
-BfMat *bfMatCopy(BfMat const *);
 BfMat *bfMatGetView(BfMat *);
+BfMat *bfMatCopy(BfMat const *);
+BfMat *bfMatSteal(BfMat *);
 BfVec *bfMatGetRowCopy(BfMat const *, BfSize);
 BfVec *bfMatGetRowView(BfMat *, BfSize);
 BfVec *bfMatGetColView(BfMat *, BfSize);
@@ -83,8 +84,9 @@ BfMat *bfMatGetInverse(BfMat const *mat);
 void bfMatDivideCols(BfMat *, BfVec const *);
 
 typedef struct BfMatVtable {
-  __typeof__(&bfMatCopy) Copy;
   __typeof__(&bfMatGetView) GetView;
+  __typeof__(&bfMatCopy) Copy;
+  __typeof__(&bfMatSteal) Steal;
   __typeof__(&bfMatGetRowCopy) GetRowCopy;
   __typeof__(&bfMatGetRowView) GetRowView;
   __typeof__(&bfMatGetColView) GetColView;
@@ -154,6 +156,7 @@ struct BfMat {
 #endif
 };
 
+BfMat *bfMatGet(BfMat *mat, BfPolicy policy);
 void bfMatInvalidate(BfMat *mat);
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
 void bfMatDeinit(BfMat *mat);
@@ -163,3 +166,4 @@ bool bfMatIsTransposed(BfMat const *mat);
 BfMat *bfMatTrans(BfMat *mat);
 BfMat *bfMatConjTrans(BfMat *mat);
 bool bfMatIsBlock(BfMat const *mat);
+bool bfMatIsView(BfMat const *mat);

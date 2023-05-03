@@ -9,6 +9,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatCopy))bfMatIdentityCopy,
+  .Steal = (__typeof__(&bfMatSteal))bfMatIdentitySteal,
   .Delete = (__typeof__(&bfMatDelete))bfMatIdentityDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatIdentityGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatIdentityNumBytes,
@@ -39,6 +40,28 @@ BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
   }
 
   return bfMatIdentityToMat(copy);
+}
+
+BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatIdentityToMat(matIdentity);
+
+  if (bfMatIsView(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatIdentity *matIdentityNew = bfMatIdentityNew();
+  HANDLE_ERROR();
+
+  *matIdentityNew = *matIdentity;
+
+  mat->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatIdentityToMat(matIdentityNew);
 }
 
 void bfMatIdentityDelete(BfMatIdentity **matIdentity) {

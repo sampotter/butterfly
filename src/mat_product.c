@@ -9,6 +9,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .Copy = (__typeof__(&bfMatProductCopy))bfMatProductCopy,
+  .Steal = (__typeof__(&bfMatSteal))bfMatProductSteal,
   .Delete = (__typeof__(&bfMatProductDelete))bfMatProductDelete,
   .GetType = (__typeof__(&bfMatProductGetType))bfMatProductGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatProductNumBytes,
@@ -52,6 +53,28 @@ BfMat *bfMatProductCopy(BfMat const *mat) {
   }
 
   return bfMatProductToMat(matProductCopy);
+}
+
+BfMat *bfMatProductSteal(BfMatProduct *matProduct) {
+  BEGIN_ERROR_HANDLING();
+
+  BfMat *mat = bfMatProductToMat(matProduct);
+
+  if (bfMatIsView(mat))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatProduct *matProductNew = bfMatProductNew();
+  HANDLE_ERROR();
+
+  *matProductNew = *matProduct;
+
+  mat->props |= BF_MAT_PROPS_VIEW;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return bfMatProductToMat(matProductNew);
 }
 
 void bfMatProductDelete(BfMat **mat) {

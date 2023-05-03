@@ -85,7 +85,7 @@ BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   bfConstNodeArrayInitWithDefaultCapacity(&fac->rowNodes);
   HANDLE_ERROR();
 
-  BfMatBlockDiag *Psi = bfMatBlockDiagNewFromBlocks(PsiBlocks);
+  BfMatBlockDiag *Psi = bfMatBlockDiagNewFromBlocks(PsiBlocks, BF_POLICY_COPY);
   HANDLE_ERROR();
 
   fac->Psi = bfMatBlockDiagToMat(Psi);
@@ -96,7 +96,7 @@ BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   if (fac->W == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfMatBlockDense *W0 = bfMatBlockDenseNewColFromBlocks(WBlocks);
+  BfMatBlockDense *W0 = bfMatBlockDenseNewColFromBlocks(WBlocks, BF_POLICY_COPY);
   HANDLE_ERROR();
 
   fac->W[0] = bfMatBlockDenseToMat(W0);
@@ -329,15 +329,17 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
    * return these directly instead of wrapping them in a MatBlockDiag
    * and MatBlockCoo, respectively (what is done otherwise). */
   if (numSubblocks == 1) {
-    bfPtrArrayGetFirst(&PsiSubblocks, (BfPtr *)&PsiBlock);
-    bfPtrArrayGetFirst(&W0Subblocks, (BfPtr *)&W0Block);
+    PsiBlock = bfMatGet(bfPtrArrayGet(&PsiSubblocks, 0), BF_POLICY_STEAL);
+    W0Block = bfMatGet(bfPtrArrayGet(&W0Subblocks, 0), BF_POLICY_STEAL);
   } else {
     /* Diagonally concatenate the Psi subblocks we found */
-    PsiBlock = bfMatBlockDiagToMat(bfMatBlockDiagNewFromBlocks(&PsiSubblocks));
+    PsiBlock = bfMatBlockDiagToMat(
+      bfMatBlockDiagNewFromBlocks(&PsiSubblocks, BF_POLICY_STEAL));
     HANDLE_ERROR();
 
     /* ... and vertically concatenate the W row subblocks */
-    W0Block = bfMatBlockDenseToMat(bfMatBlockDenseNewColFromBlocks(&W0Subblocks));
+    W0Block = bfMatBlockDenseToMat(
+      bfMatBlockDenseNewColFromBlocks(&W0Subblocks, BF_POLICY_STEAL));
     HANDLE_ERROR();
   }
 
@@ -345,7 +347,16 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
     BF_ASSERT(false); // T_T
   }
 
+  for (BfSize i = 0; i < numSubblocks; ++i) {
+    BfMat *PsiSubblock = bfPtrArrayGet(&PsiSubblocks, i);
+    bfMatDelete(&PsiSubblock);
+  }
   bfPtrArrayDeinit(&PsiSubblocks);
+
+  for (BfSize i = 0; i < numSubblocks; ++i) {
+    BfMat *W0Subblock = bfPtrArrayGet(&W0Subblocks, i);
+    bfMatDelete(&W0Subblock);
+  }
   bfPtrArrayDeinit(&W0Subblocks);
 
   for (BfSize k = 0; k < numSubblocks; ++k) {
@@ -556,18 +567,18 @@ BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
   return mergeCut;
 }
 
-void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
+void getPsiAndW0BlocksByRowNode(BfPtrArray const *currentPartialFacs,
                                BfTreeNode const *rowNode,
-                               BfMat **PsiPtr, BfMat **WPtr) {
+                               BfMat **PsiPtr, BfMat **W0Ptr) {
   BEGIN_ERROR_HANDLING();
 
   BfMatBlockDense *Psi = NULL;
-  BfMatBlockDiag *W = NULL;
+  BfMatBlockDiag *W0 = NULL;
 
   if (PsiPtr == NULL)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  if (WPtr == NULL)
+  if (W0Ptr == NULL)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   BfPtrArray PsiBlocks;
@@ -591,27 +602,41 @@ void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs,
     bfPtrArrayAppend(&PsiBlocks, PsiBlock);
     HANDLE_ERROR();
 
-    /* Append the new W block */
+    /* Append the new W0 block */
     bfPtrArrayAppend(&W0Blocks, W0Block);
     HANDLE_ERROR();
   }
 
   /* Horizontally concatenate together the Psi blocks we found to get
    * the leading "Psi*" block. */
-  Psi = bfMatBlockDenseNewRowFromBlocks(&PsiBlocks);
+  Psi = bfMatBlockDenseNewRowFromBlocks(&PsiBlocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  /* Diagonally concatenate together the W row blocks we found to get
-   * the first column block of the permuted W factor. */
-  W = bfMatBlockDiagNewFromBlocks(&W0Blocks);
+  /* Diagonally concatenate together the W0 row blocks we found to get
+   * the first column block of the permuted W0 factor. */
+  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  for (BfSize i = 0; i < bfPtrArraySize(&PsiBlocks); ++i) {
+    BfMat *PsiBlock = bfPtrArrayGet(&PsiBlocks, i);
+    bfMatDelete(&PsiBlock);
+  }
+  bfPtrArrayDeinit(&PsiBlocks);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&W0Blocks); ++i) {
+    BfMat *W0Block = bfPtrArrayGet(&W0Blocks, i);
+    bfMatDelete(&W0Block);
+  }
+  bfPtrArrayDeinit(&W0Blocks);
 
   *PsiPtr = bfMatBlockDenseToMat(Psi);
-  *WPtr = bfMatBlockDiagToMat(W);
+  *W0Ptr = bfMatBlockDiagToMat(W0);
 
-  BF_ASSERT(bfMatGetNumCols(*PsiPtr) == bfMatGetNumRows(*WPtr));
+  BF_ASSERT(bfMatGetNumCols(*PsiPtr) == bfMatGetNumRows(*W0Ptr));
 }
 
 static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) {
@@ -780,28 +805,40 @@ bool getLowRankApproximation(BfFacSpec const *facSpec, BfMat const *PsiStarSubbl
   if (shouldFixSparsity) {
     // puts("WARN: make sure to check that remaining columns are actually zero!");
 
-    BfPtrArray blocks;
-    bfInitPtrArrayWithDefaultCapacity(&blocks);
+    BfPtrArray indexedBlocks;
+    bfInitPtrArrayWithDefaultCapacity(&indexedBlocks);
     HANDLE_ERROR();
 
     for (BfSize k = 0; k < numNonzeroColumnRanges; ++k) {
       BfSize j0 = bfSizeArrayGet(nonzeroColumnRanges, 2*k);
       BfSize j1 = bfSizeArrayGet(nonzeroColumnRanges, 2*k + 1);
+
       BfMat *block = bfMatGetColRangeCopy(W0Subblock, j0, j1);
-      BfIndexedMat *indexedBlock = bfMemAlloc(1, sizeof(BfIndexedMat));
-      indexedBlock->i0 = 0;
-      indexedBlock->j0 = j0;
-      indexedBlock->mat = block;
-      bfPtrArrayAppend(&blocks, indexedBlock);
+      HANDLE_ERROR();
+
+      BfIndexedMat *indexedBlock = bfIndexedMatNewFromMat(
+        0, j0, block, BF_POLICY_STEAL);
+      HANDLE_ERROR();
+
+      bfPtrArrayAppend(&indexedBlocks, indexedBlock);
     }
 
     BfMatBlockCoo *W0SubblockSparsified = bfMatBlockCooNewFromIndexedBlocks(
-      bfMatGetNumRows(W0Subblock), bfMatGetNumCols(W0Subblock), &blocks);
+      bfMatGetNumRows(W0Subblock),
+      bfMatGetNumCols(W0Subblock),
+      &indexedBlocks,
+      BF_POLICY_STEAL);
     HANDLE_ERROR();
 
     bfMatDelete(&W0Subblock);
 
     W0Subblock = bfMatBlockCooToMat(W0SubblockSparsified);
+
+    for (BfSize k = 0; k < bfPtrArraySize(&indexedBlocks); ++k) {
+      BfIndexedMat *indexedBlock = bfPtrArrayGet(&indexedBlocks, k);
+      bfIndexedMatDelete(&indexedBlock);
+    }
+    bfPtrArrayDeinit(&indexedBlocks);
   }
 
   END_ERROR_HANDLING() {
@@ -964,11 +1001,11 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
   }
 
   /* Diagonally concatenate the Psi subblocks. */
-  PsiBlock = bfMatBlockDiagNewFromBlocks(&PsiSubblocks);
+  PsiBlock = bfMatBlockDiagNewFromBlocks(&PsiSubblocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   /* Vertically concatenate the W0 subblocks. */
-  W0Block = bfMatBlockDenseNewColFromBlocks(&W0Subblocks);
+  W0Block = bfMatBlockDenseNewColFromBlocks(&W0Subblocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   END_ERROR_HANDLING() {
@@ -1092,7 +1129,7 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
 
     /* Get current row block of Psi. We simultaneously get the column
      * index ranges corresponding to each column subblock. */
-    getPsiAndWBlocksByRowNode(facs, rowNode, &PsiStarBlock, &W1Block);
+    getPsiAndW0BlocksByRowNode(facs, rowNode, &PsiStarBlock, &W1Block);
 
     bfPtrArrayAppend(&W1Blocks, W1Block);
     HANDLE_ERROR();
@@ -1124,15 +1161,15 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
 
   /* Diagonally concatenate the new Psi blocks to get the leading
    * factor of the merged butterfly factorization. */
-  Psi = bfMatBlockDiagNewFromBlocks(&PsiBlocks);
+  Psi = bfMatBlockDiagNewFromBlocks(&PsiBlocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   /* Diagonally concatenate together the new W0 blocks. */
-  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks);
+  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   /* Vertically concatenate the collected W1 blocks. */
-  W1 = bfMatBlockDenseNewColFromBlocks(&W1Blocks);
+  W1 = bfMatBlockDenseNewColFromBlocks(&W1Blocks, BF_POLICY_COPY);
   HANDLE_ERROR();
 
   /* Create and initialize the merged factorization. */
@@ -1170,18 +1207,22 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
       for (BfSize l = 0; l < bfPtrArraySize(facs); ++l) {
         BfFac const *fac = bfPtrArrayGet(facs, l);
 
-        BfMat *WkBlock = fac->W[k];
+        BfMat *WkBlock = bfMatGet(fac->W[k], BF_POLICY_COPY);
         BF_ASSERT(WkBlock != NULL);
 
         bfPtrArrayAppend(&WkBlocks, WkBlock);
         HANDLE_ERROR();
       }
 
-      BfMatBlockDiag *Wk = bfMatBlockDiagNewFromBlocks(&WkBlocks);
+      BfMatBlockDiag *Wk = bfMatBlockDiagNewFromBlocks(&WkBlocks, BF_POLICY_STEAL);
       HANDLE_ERROR();
 
       setPartialFacWBlock(mergedFac, k + 1, bfMatBlockDiagToMat(Wk));
 
+      for (BfSize l = 0; l < bfPtrArraySize(&WkBlocks); ++l) {
+        BfMat *WkBlock = bfPtrArrayGet(&WkBlocks, l);
+        bfMatDelete(&WkBlock);
+      }
       bfPtrArrayDeinit(&WkBlocks);
     }
 

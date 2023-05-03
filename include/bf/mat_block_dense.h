@@ -5,6 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatBlockDenseCopy(BfMat const *mat);
+BfMat *bfMatBlockDenseSteal(BfMatBlockDense *matBlockDense);
 BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockDenseDelete(BfMat **mat);
 BfType bfMatBlockDenseGetType(BfMat const *mat);
@@ -46,11 +47,10 @@ BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
 BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
 
 BfMatBlockDense *bfMatBlockDenseNew();
-BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks);
-BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks);
-BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks);
 void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
-                         BfSize numBlockCols);
+BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks, BfPolicy policy);
+BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy);
+BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
 void bfMatBlockDenseDealloc(BfMatBlockDense **mat);
 void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat);
