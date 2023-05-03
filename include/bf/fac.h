@@ -24,6 +24,8 @@ typedef struct BfFacSpec {
   BfSize minNumCols;
 } BfFacSpec;
 
+// TODO: BfFac could be a subtype of BfMatProduct
+
 struct BfFac {
   BfTreeNode const *colNode;
 
