@@ -18,7 +18,6 @@
 
 #define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
 #define NUM_COL_BLOCKS(mat) mat->super.super.numCols
-#define NUM_BLOCKS(mat) NUM_ROW_BLOCKS(mat)*NUM_COL_BLOCKS(mat)
 #define ROW_OFFSET(mat, k) mat->super.rowOffset[k]
 #define COL_OFFSET(mat, k) mat->super.colOffset[k]
 #define NUM_BLOCK_ROWS(mat, k) ROW_OFFSET(mat, k + 1) - ROW_OFFSET(mat, k)
