@@ -8,6 +8,7 @@
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/fac_span.h>
 #include <bf/indexed_mat.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
@@ -459,6 +460,10 @@ BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
   END_ERROR_HANDLING() {}
 
   return fac;
+}
+
+BfFacSpan *bfFacStreamerGetFacSpan(BfFacStreamer const *facStreamer) {
+  return bfFacSpanNewFromPtrArray(&facStreamer->partialFacs);
 }
 
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) {

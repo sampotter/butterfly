@@ -13,5 +13,6 @@ BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer);
 void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi);
 bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer);
 BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer);
+BfFacSpan *bfFacStreamerGetFacSpan(BfFacStreamer const *facStreamer);
 BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer);
 BfPerm const *bfFacStreamerGetRowTreeReversePerm(BfFacStreamer const *facStreamer);
