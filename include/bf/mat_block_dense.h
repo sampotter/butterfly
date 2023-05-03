@@ -32,26 +32,31 @@ BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize 
 BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize j);
 BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *matBlockDense, BfSize i, BfSize j);
 
+/** Upcasting: MatBlockDense -> Mat */
+
+BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense);
+BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense);
+
+/** Upcasting: MatBlockDense -> MatBlock */
+
+BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlockDense);
+
+/** Downcasting: Mat -> MatBlockDense */
+
+BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
+BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
+
 /** Implementation: MatBlockDense */
 
 struct BfMatBlockDense {
   BfMatBlock super;
 };
 
-/* Upcasting: */
-BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense);
-BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense);
-BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlock);
-
-/* Downcasting: */
-BfMatBlockDense *bfMatToMatBlockDense(BfMat *mat);
-BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat);
-
 BfMatBlockDense *bfMatBlockDenseNew();
-void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows,
 BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks, BfPolicy policy);
 BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy);
+void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
 void bfMatBlockDenseDealloc(BfMatBlockDense **mat);
 void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat);
