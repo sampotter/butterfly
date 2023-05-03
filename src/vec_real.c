@@ -417,6 +417,24 @@ BfVecReal *bfVecRealNewWithValue(BfSize n, BfReal value) {
   return vecReal;
 }
 
+BfVecReal *bfVecRealNewStdBasis(BfSize n, BfSize i) {
+  BEGIN_ERROR_HANDLING();
+
+  if (i >= n)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfVecReal *e = bfVecRealNewWithValue(n, 0);
+  HANDLE_ERROR();
+
+  e->data[i] = 1;
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  return e;
+}
+
 BfVecReal *bfVecRealNewRandn(BfSize n) {
   BEGIN_ERROR_HANDLING();
 

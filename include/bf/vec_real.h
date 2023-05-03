@@ -39,6 +39,7 @@ BfVecReal *bfVecRealNew();
 BfVecReal *bfVecRealNewEmpty(BfSize n);
 BfVecReal *bfVecRealNewWithValue(BfSize n, BfReal value);
 BfVecReal *bfVecRealNewRandn(BfSize n);
+BfVecReal *bfVecRealNewStdBasis(BfSize n, BfSize i);
 BfVecReal *bfVecRealFromFile(char const *path, BfSize size);
 void bfVecRealInit(BfVecReal *vecReal, BfSize size);
 void bfVecRealInitFrom(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal const *data);
