@@ -71,6 +71,13 @@ BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
   return matProduct;
 }
 
+BfSize bfFacGetNumBytes(BfFac const *fac) {
+  BfSize numBytes = bfMatNumBytes(fac->Psi);
+  for (BfSize k = 0; k < fac->numW; ++k)
+    numBytes += bfMatNumBytes(fac->W[k]);
+  return numBytes;
+}
+
 BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
                               BfPtrArray *PsiBlocks,
                               BfPtrArray *WBlocks) {

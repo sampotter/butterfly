@@ -40,6 +40,7 @@ struct BfFac {
 void bfFacDelete(BfFac **fac);
 BfMat *bfFacGetMat(BfFac const *fac);
 BfMatProduct *bfFacGetMatProduct(BfFac const *fac);
+BfSize bfFacGetNumBytes(BfFac const *fac);
 
 BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode, BfPtrArray *PsiBlocks, BfPtrArray *WBlocks);
 // void setPartialFacWBlock(PartialFac *partialFac, BfSize k, BfMat *W);
