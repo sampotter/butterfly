@@ -9,6 +9,7 @@ BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity);
 void bfMatIdentityDelete(BfMatIdentity **matIdentity);
 BfType bfMatIdentityGetType(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity);
+void bfMatIdentityDump(BfMatIdentity const *matIdentity, FILE *fp);
 BfSize bfMatIdentityGetNumRows(BfMatIdentity const *matIdentity);
 BfSize bfMatIdentityGetNumCols(BfMatIdentity const *matIdentity);
 BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0, BfSize i1);

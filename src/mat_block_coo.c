@@ -32,6 +32,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatBlockCooDelete))bfMatBlockCooDelete,
   .GetType = (__typeof__(&bfMatBlockCooGetType))bfMatBlockCooGetType,
   .NumBytes = (__typeof__(&bfMatBlockCooNumBytes))bfMatBlockCooNumBytes,
+  .Dump = (__typeof__(&bfMatDump))bfMatBlockCooDump,
   .GetNumRows = (__typeof__(&bfMatBlockCooGetNumRows))bfMatBlockCooGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockCooGetNumCols))bfMatBlockCooGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockCooGetRowRangeCopy,
@@ -234,6 +235,37 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
   num_bytes += 2*matBlockCoo->numBlocks*sizeof(BfSize);
 
   return num_bytes;
+}
+
+void bfMatBlockCooDump(BfMatBlockCoo const *matBlockCoo, FILE *fp) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Write number of row and column blocks: */
+  fwrite(&NUM_ROW_BLOCKS(matBlockCoo), sizeof(BfSize), 1, fp);
+  fwrite(&NUM_COL_BLOCKS(matBlockCoo), sizeof(BfSize), 1, fp);
+
+  /* Write number of blocks: */
+  BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo);
+  fwrite(&numBlocks, sizeof(BfSize), 1, fp);
+
+  /* Write the row and column indices: */
+  fwrite(&ROW_IND(matBlockCoo, 0), sizeof(BfSize), numBlocks, fp);
+  fwrite(&COL_IND(matBlockCoo, 0), sizeof(BfSize), numBlocks, fp);
+
+  /* Write the row and column offsets: */
+  fwrite(&ROW_OFFSET(matBlockCoo, 0), sizeof(BfSize), NUM_ROW_BLOCKS(matBlockCoo) + 1, fp);
+  fwrite(&COL_OFFSET(matBlockCoo, 0), sizeof(BfSize), NUM_COL_BLOCKS(matBlockCoo) + 1, fp);
+
+  /* Recursively dump the blocks: */
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *mat = BLOCK(matBlockCoo, k);
+    bfMatDump(mat, fp);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
 }
 
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat) {

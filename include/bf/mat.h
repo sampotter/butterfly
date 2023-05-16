@@ -37,6 +37,7 @@ BfMat *bfMatZerosLike(BfMat const *, BfSize, BfSize);
 BfType bfMatGetType(BfMat const *);
 BfSize bfMatNumBytes(BfMat const *);
 void bfMatSave(BfMat const *, char const *);
+void bfMatDump(BfMat const *, FILE *);
 void bfMatPrint(BfMat const *, FILE *);
 BfSize bfMatGetNumRows(BfMat const *);
 BfSize bfMatGetNumCols(BfMat const *);
@@ -98,6 +99,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatGetType) GetType;
   __typeof__(&bfMatNumBytes) NumBytes;
   __typeof__(&bfMatSave) Save;
+  __typeof__(&bfMatDump) Dump;
   __typeof__(&bfMatPrint) Print;
   __typeof__(&bfMatGetNumRows) GetNumRows;
   __typeof__(&bfMatGetNumCols) GetNumCols;

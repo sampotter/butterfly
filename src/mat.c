@@ -63,6 +63,14 @@ void bfMatSave(BfMat const *mat, char const *path) {
   mat->vtbl->Save(mat, path);
 }
 
+void bfMatDump(BfMat const *mat, FILE *fp) {
+  /* Serialize the type: */
+  BfType type = bfMatGetType(mat);
+  fwrite(&type, sizeof(BfType), 1, fp);
+
+  mat->vtbl->Dump(mat, fp);
+}
+
 void bfMatPrint(BfMat const *mat, FILE *fp) {
   mat->vtbl->Print(mat, fp);
 }

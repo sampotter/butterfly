@@ -33,6 +33,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatBlockDiagDelete))bfMatBlockDiagDelete,
   .GetType = (__typeof__(&bfMatBlockDiagGetType))bfMatBlockDiagGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatBlockDiagNumBytes,
+  .Dump = (__typeof__(&bfMatDump))bfMatBlockDiagDump,
   .GetNumRows = (__typeof__(&bfMatBlockDiagGetNumRows))bfMatBlockDiagGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockDiagGetNumCols))bfMatBlockDiagGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockDiagGetRowRangeCopy,
@@ -212,6 +213,32 @@ BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag) {
     numBytes += bfMatNumBytes(block);
   }
   return numBytes;
+}
+
+void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Serialize the number of blocks: */
+  BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
+  fwrite(&numBlocks, sizeof(BfSize), 1, fp);
+
+  // TODO: lift this restriction...
+  BF_ASSERT(NUM_ROW_BLOCKS(matBlockDiag) == NUM_COL_BLOCKS(matBlockDiag));
+
+  /* Serialize row and column offsets: */
+  fwrite(&ROW_OFFSET(matBlockDiag, 0), sizeof(BfSize), NUM_ROW_BLOCKS(matBlockDiag) + 1, fp);
+  fwrite(&COL_OFFSET(matBlockDiag, 0), sizeof(BfSize), NUM_COL_BLOCKS(matBlockDiag) + 1, fp);
+
+  /* Recursively write each diagonal blocks: */
+  for (BfSize k = 0; k < numBlocks; ++k) {
+    BfMat const *block = BLOCK(matBlockDiag, k);
+    bfMatDump(block, fp);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
 }
 
 BfSize bfMatBlockDiagGetNumRows(BfMat const *mat) {

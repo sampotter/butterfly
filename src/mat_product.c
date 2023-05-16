@@ -13,6 +13,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatProductDelete))bfMatProductDelete,
   .GetType = (__typeof__(&bfMatProductGetType))bfMatProductGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatProductNumBytes,
+  .Dump = (__typeof__(&bfMatDump))bfMatProductDump,
   .GetNumRows = (__typeof__(&bfMatProductGetNumRows))bfMatProductGetNumRows,
   .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
@@ -94,6 +95,25 @@ BfSize bfMatProductNumBytes(BfMatProduct const *matProduct) {
     numBytes += bfMatNumBytes(factor);
   }
   return numBytes;
+}
+
+void bfMatProductDump(BfMatProduct const *matProduct, FILE *fp) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Serialize the number of factors: */
+  BfSize numFactors = bfMatProductNumFactors(matProduct);
+  fwrite(&numFactors, sizeof(BfSize), 1, fp);
+
+  /* Recursively write each of the factors: */
+  for (BfSize k = 0; k < numFactors; ++k) {
+    BfMat const *factor = bfMatProductGetFactorConst(matProduct, k);
+    bfMatDump(factor, fp);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
 }
 
 bool bfMatProductInstanceOf(BfMat const *mat, BfType type) {

@@ -10,6 +10,7 @@ BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockDenseDelete(BfMat **mat);
 BfType bfMatBlockDenseGetType(BfMat const *mat);
 BfSize bfMatBlockDenseNumBytes(BfMat const *mat);
+void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp);
 BfSize bfMatBlockDenseGetNumRows(BfMat const *mat);
 BfSize bfMatBlockDenseGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1);

@@ -35,6 +35,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatBlockDenseDelete))bfMatBlockDenseDelete,
   .GetType = (__typeof__(&bfMatBlockDenseGetType))bfMatBlockDenseGetType,
   .NumBytes = (__typeof__(&bfMatBlockDenseNumBytes))bfMatBlockDenseNumBytes,
+  .Dump = (__typeof__(&bfMatDump))bfMatBlockDenseDump,
   .GetNumRows = (__typeof__(&bfMatBlockDenseGetNumRows))bfMatBlockDenseGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockDenseGetNumCols))bfMatBlockDenseGetNumCols,
   .GetRowRange = (__typeof__(&bfMatBlockDenseGetRowRange))bfMatBlockDenseGetRowRange,
@@ -203,6 +204,21 @@ BfSize bfMatBlockDenseNumBytes(BfMat const *mat) {
   num_bytes += 2*numBlocks*sizeof(BfSize);
 
   return num_bytes;
+}
+
+void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path) {
+  BEGIN_ERROR_HANDLING();
+
+  FILE *fp = fopen(path, "w");
+
+  bfMatBlockDenseDump(matBlockDense, fp);
+  HANDLE_ERROR();
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
+
+  fclose(fp);
 }
 
 BfSize bfMatBlockDenseGetNumRows(BfMat const *mat) {

@@ -10,6 +10,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockCooDelete(BfMat **mat);
 BfType bfMatBlockCooGetType(BfMat const *mat);
 BfSize bfMatBlockCooNumBytes(BfMat const *mat);
+void bfMatBlockCooDump(BfMatBlockCoo const *matBlockCoo, FILE *fp);
 BfSize bfMatBlockCooGetNumRows(BfMat const *mat);
 BfSize bfMatBlockCooGetNumCols(BfMat const *mat);
 BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1);

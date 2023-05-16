@@ -10,6 +10,7 @@ BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i);
 void bfMatBlockDiagDelete(BfMat **mat);
 BfType bfMatBlockDiagGetType(BfMat const *mat);
 BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag);
+void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp);
 bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfType type);
 BfSize bfMatBlockDiagGetNumRows(BfMat const *mat);
 BfSize bfMatBlockDiagGetNumCols(BfMat const *mat);

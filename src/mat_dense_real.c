@@ -36,6 +36,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetType = (__typeof__(&bfMatGetType))bfMatDenseRealGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatDenseRealNumBytes,
   .Save = (__typeof__(&bfMatSave))bfMatDenseRealSave,
+  .Dump = (__typeof__(&bfMatDump))bfMatDenseRealDump,
   .Print = (__typeof__(&bfMatPrint))bfMatDenseRealPrint,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDenseRealGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatDenseRealGetNumCols,
@@ -170,6 +171,33 @@ void bfMatDenseRealSave(BfMat const *mat, char const *path) {
   END_ERROR_HANDLING() {}
 
   fclose(fp);
+}
+
+void bfMatDenseRealDump(BfMatDenseReal const *matDenseReal, FILE *fp) {
+//   BEGIN_ERROR_HANDLING();
+
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
+
+  /* Write the number of rows: */
+  BfSize numRows = bfMatGetNumRows(mat);
+  fwrite(&numRows, sizeof(BfSize), 1, fp);
+
+  /* Write the number of columns: */
+  BfSize numCols = bfMatGetNumCols(mat);
+  fwrite(&numCols, sizeof(BfSize), 1, fp);
+
+  /* Write the contents of the matrix: */
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *readPtr = matDenseReal->data + i*matDenseReal->super.rowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      fwrite(readPtr, sizeof(BfReal), 1, fp);
+      readPtr += matDenseReal->super.colStride;
+    }
+  }
+
+//   END_ERROR_HANDLING() {
+//     BF_DIE();
+//   }
 }
 
 void bfMatDenseRealPrint(BfMat const *mat, FILE *fp) {

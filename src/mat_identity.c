@@ -13,6 +13,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatDelete))bfMatIdentityDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatIdentityGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatIdentityNumBytes,
+  .Dump = (__typeof__(&bfMatDump))bfMatIdentityDump,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatIdentityGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatIdentityGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatIdentityGetRowRangeCopy,
@@ -77,6 +78,14 @@ BfType bfMatIdentityGetType(BfMatIdentity const *matIdentity) {
 BfSize bfMatIdentityNumBytes(BfMatIdentity const *matIdentity) {
   (void)matIdentity;
   return 0;
+}
+
+void bfMatIdentityDump(BfMatIdentity const *matIdentity, FILE *fp) {
+  BfSize numRows = bfMatIdentityGetNumRows(matIdentity);
+  fwrite(&numRows, sizeof(BfSize), 1, fp);
+
+  BfSize numCols = bfMatIdentityGetNumRows(matIdentity);
+  fwrite(&numCols, sizeof(BfSize), 1, fp);
 }
 
 BfSize bfMatIdentityGetNumRows(BfMatIdentity const *matIdentity) {
