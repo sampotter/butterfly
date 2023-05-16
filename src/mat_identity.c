@@ -214,8 +214,7 @@ void bfMatIdentityInit(BfMatIdentity *matIdentity, BfSize n) {
 }
 
 void bfMatIdentityDeinit(BfMatIdentity *matIdentity) {
-  (void)matIdentity;
-  BF_ASSERT(false);
+  bfMatDeinit(&matIdentity->super);
 }
 
 void bfMatIdentityDealloc(BfMatIdentity **matIdentity) {
