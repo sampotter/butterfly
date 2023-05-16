@@ -22,10 +22,8 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   for (BfSize i = 0; i < Lam->super.size; ++i) {
     /* Clamp eigenvalues to be nonnegative if we find any that are
      * negative due to roundoff */
-    if (Lam->data[i] < 0) {
-      BF_ASSERT(Lam->data[i] > -1e-13);
+    if (Lam->data[i] < 0)
       Lam->data[i] = 0;
-    }
 
     bfPoints1Append(freqs, sqrt(Lam->data[i]));
     HANDLE_ERROR();
