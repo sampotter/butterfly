@@ -295,7 +295,9 @@ void bfMatDeinit(BfMat *mat) {
   mat->props = BF_MAT_PROPS_NONE;
   mat->numRows = BF_SIZE_BAD_VALUE;
   mat->numCols = BF_SIZE_BAD_VALUE;
+#if BF_DEBUG
   mat->aux = NULL;
+#endif
 }
 
 BfMat *bfMatFromFile(char const *path, BfSize numRows, BfSize numCols, BfDtype dtype) {
