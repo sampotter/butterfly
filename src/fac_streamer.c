@@ -45,12 +45,10 @@ struct BfFacStreamer {
   // TODO: change this to `BfConstPtrArray *partialFacs;`
   BfPtrArray partialFacs;
 
-#if BF_DEBUG
   /* An association list mapping from column tree nodes to contiguous
    * blocks of Phi. We use this to check how accurate each partial
    * factorization is as we stream them. */
   BfPtrArray *prevPhis;
-#endif
 };
 
 BfFacStreamer *bfFacStreamerNew() {
@@ -88,10 +86,12 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
   bfInitPtrArrayWithDefaultCapacity(&facStreamer->partialFacs);
   HANDLE_ERROR();
 
-#if BF_DEBUG
-  facStreamer->prevPhis = bfPtrArrayNewWithDefaultCapacity();
-  HANDLE_ERROR();
-#endif
+  if (facSpec->compareRelativeErrors) {
+    facStreamer->prevPhis = bfPtrArrayNewWithDefaultCapacity();
+    HANDLE_ERROR();
+  } else {
+    facStreamer->prevPhis = NULL;
+  }
 
   END_ERROR_HANDLING() {
     bfFacStreamerDeinit(facStreamer);
@@ -146,8 +146,7 @@ static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
   return currentPartialFacs;
 }
 
-#if BF_DEBUG
-static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
+static BfMat const *getPrevPhiByColNode(BfFacStreamer const *facStreamer,
                                     BfTreeNode const *treeNode) {
   BfMat const *mat = NULL;
   for (BfSize k = 0; k < bfPtrArraySize(facStreamer->prevPhis); ++k) {
@@ -159,27 +158,30 @@ static BfMat const *getPhiByColNode(BfFacStreamer const *facStreamer,
   }
   return mat;
 }
-#endif
 
-#if BF_DEBUG
 static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat const *Phi) {
   MatWithTreeNodeKey *entry = bfMemAlloc(1, sizeof(MatWithTreeNodeKey));
   entry->treeNode = treeNode;
   entry->mat = bfMatCopy(Phi);
   bfPtrArrayAppend(facStreamer->prevPhis, entry);
 }
-#endif
 
-#if BF_DEBUG
-static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
+static void deletePrevPhiByColNode(BfFacStreamer *facStreamer, BfTreeNode const *colNode) {
+  for (BfSize k = bfPtrArraySize(facStreamer->prevPhis); k > 0; --k) {
+    MatWithTreeNodeKey const *entry = bfPtrArrayGet(facStreamer->prevPhis, k - 1);
+    if (entry->treeNode == colNode)
+      bfPtrArrayRemove(facStreamer->prevPhis, k - 1);
+  }
+}
+
+static void addPrevPhiForChildNodesAndDeletePrev(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
   BfSize m = bfFacStreamerGetNumRows(facStreamer);
   BfSize n = bfTreeNodeGetNumPoints(currentColNode);
-  BfMatDenseReal *Phi = bfMatDenseRealNewWithValue(m, n, BF_NAN);
+  BfMatDenseReal *prevPhi = bfMatDenseRealNewWithValue(m, n, BF_NAN);
 
   /** Concatenate together children of the current colum node: */
   for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
     BfTreeNode const *childColNode = currentColNode->child[k];
-
     if (childColNode == NULL)
       continue;
 
@@ -190,15 +192,22 @@ static void addPrevPhiForChildNodes(BfFacStreamer *facStreamer, BfTreeNode const
     BfSize j0 = currentColNode->offset[k] - jOffset;
     BfSize j1 = currentColNode->offset[k + 1] - jOffset;
 
-    BfMatDenseReal const *PhiBlock = bfMatConstToMatDenseRealConst(
-      getPhiByColNode(facStreamer, childColNode));
+    BfMatDenseReal const *prevPhiBlock = bfMatConstToMatDenseRealConst(
+      getPrevPhiByColNode(facStreamer, childColNode));
 
-    bfMatDenseRealSetBlock(Phi, 0, m, j0, j1, PhiBlock);
+    bfMatDenseRealSetBlock(prevPhi, 0, m, j0, j1, prevPhiBlock);
   }
 
-  addPrevPhi(facStreamer, currentColNode, bfMatDenseRealToMat(Phi));
+  addPrevPhi(facStreamer, currentColNode, bfMatDenseRealToMat(prevPhi));
+
+  /** Delete the dense Phi blocks we just merged together: */
+  for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
+    BfTreeNode const *childColNode = currentColNode->child[k];
+    if (childColNode == NULL)
+      continue;
+    deletePrevPhiByColNode(facStreamer, childColNode);
+  }
 }
-#endif
 
 static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
   for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
@@ -221,6 +230,21 @@ static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *current
   }
 }
 
+/* Check the current relative error. */
+static void checkRelError(BfFacStreamer const *facStreamer, BfMat const *Phi, BfFac const *fac) {
+  BfSize n = bfMatGetNumCols(Phi);
+  if (n == 0) {
+    bfLogInfo("- merged fac has no columns---skipping\n");
+    return;
+  }
+
+  BfVec *x = bfVecRealToVec(bfVecRealNewRandn(n));
+  BfVec *y_gt = bfMatMulVec(Phi, x);
+  BfVec *y = partialFacMulVec(fac, x);
+  BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
+  bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
+}
+
 static void continueFactorizing(BfFacStreamer *facStreamer) {
   BEGIN_ERROR_HANDLING();
 
@@ -234,9 +258,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
               bfTreeNodeGetFirstIndex(currentColNode),
               bfTreeNodeGetLastIndex(currentColNode));
 
-#if BF_DEBUG
-    addPrevPhiForChildNodes(facStreamer, currentColNode);
-#endif
+    if (facStreamer->facSpec->compareRelativeErrors)
+      addPrevPhiForChildNodesAndDeletePrev(facStreamer, currentColNode);
 
     BfPtrArray currentPartialFacs = getCurrentPartialFacs(facStreamer);
     HANDLE_ERROR();
@@ -256,30 +279,20 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
       bfMatPrintBlocksDeep(mergedFac->W[k], fp, 0, 0, 0);
       fclose(fp);
     }
-
-    /* Check the current relative error. */
-    { BfMat const *Phi = getPhiByColNode(facStreamer, currentColNode);
-      BfSize n = bfMatGetNumCols(Phi);
-      if (n > 0) {
-        BF_ASSERT(Phi != NULL);
-        BfVec *x = bfVecRealToVec(bfVecRealNewRandn(n));
-        BfVec *y_gt = bfMatMulVec(Phi, x);
-        BfVec *y = partialFacMulVec(mergedFac, x);
-        BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
-        bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
-      } else {
-        bfLogInfo("- merged fac has no columns---skipping\n");
-      } }
 #endif
+
+    /* Check the relative error so far: */
+    if (facStreamer->facSpec->compareRelativeErrors) {
+      BfMat const *Phi = getPrevPhiByColNode(facStreamer, currentColNode);
+      BF_ASSERT(Phi != NULL);
+      checkRelError(facStreamer, Phi, mergedFac);
+    }
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
     HANDLE_ERROR();
 
+    /* Reclaim memory by freeing unused things at this point: */
     deletePrevFacs(facStreamer, currentColNode);
-
-#if BF_DEBUG
-    // TODO: throw out old prevPhis
-#endif
 
     bfTreeIterNext(facStreamer->colTreeIter);
     HANDLE_ERROR();
@@ -384,6 +397,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   BfFac *partialFac = makeLeafNodePartialFac(colNode, &PsiBlocks, &WBlocks);
   HANDLE_ERROR();
 
+  // TODO: this should go into makeLeafNodePartialFac
   for (BfSize i = 0; i < bfConstPtrArraySize(&rowNodes); ++i) {
     bfConstNodeArrayAppend(&partialFac->rowNodes, bfConstPtrArrayGet(&rowNodes, i));
     HANDLE_ERROR();
@@ -392,38 +406,24 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   addPartialFac(facStreamer, partialFac);
   HANDLE_ERROR();
 
-#if BF_DEBUG
-  addPrevPhi(facStreamer, colNode, Phi);
-#endif
+  if (facStreamer->facSpec->compareRelativeErrors)
+    addPrevPhi(facStreamer, colNode, Phi);
 
   bfLogInfo("streamed [%lu, %lu)\n",
             bfTreeNodeGetFirstIndex(colNode),
             bfTreeNodeGetLastIndex(colNode));
 
 #if BF_DEBUG
-  /* Some logging and sanity checks to do before continuing on with
-   * the factorization. */
-
   FILE *fp = fopen("Psi.txt", "w");
   bfMatPrintBlocksDeep(partialFac->Psi, fp, 0, 0, 0);
   fclose(fp);
   fp = fopen("W0.txt", "w");
   bfMatPrintBlocksDeep(partialFac->W[0], fp, 0, 0, 0);
   fclose(fp);
-
-  {
-    BfSize n = bfMatGetNumCols(Phi);
-    if (n > 0) {
-      BfVec *x = bfVecRealToVec(bfVecRealNewRandn(n));
-      BfVec *y_gt = bfMatMulVec(Phi, x);
-      BfVec *y = partialFacMulVec(partialFac, x);
-      BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
-      bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
-    } else {
-      bfLogInfo("- empty band---not checking error\n");
-    }
-  }
 #endif
+
+  if (facStreamer->facSpec->compareRelativeErrors)
+    checkRelError(facStreamer, Phi, partialFac);
 
   /* We're done with this node---move to the next one before
    * continuing to factorize. */

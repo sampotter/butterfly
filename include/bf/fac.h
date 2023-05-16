@@ -22,6 +22,10 @@ typedef struct BfFacSpec {
    * truncated SVD. This is used to prevent us from starting to low in
    * the column tree. */
   BfSize minNumCols;
+
+  /* Compare the relative errors while streaming the butterfly
+   * factorization. */
+  bool compareRelativeErrors;
 } BfFacSpec;
 
 // TODO: BfFac could be a subtype of BfMatProduct
