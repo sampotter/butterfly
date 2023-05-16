@@ -35,6 +35,7 @@ static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatBlockDenseDelete))bfMatBlockDenseDelete,
   .GetType = (__typeof__(&bfMatBlockDenseGetType))bfMatBlockDenseGetType,
   .NumBytes = (__typeof__(&bfMatBlockDenseNumBytes))bfMatBlockDenseNumBytes,
+  .Save = (__typeof__(&bfMatSave))bfMatBlockDenseSave,
   .Dump = (__typeof__(&bfMatDump))bfMatBlockDenseDump,
   .GetNumRows = (__typeof__(&bfMatBlockDenseGetNumRows))bfMatBlockDenseGetNumRows,
   .GetNumCols = (__typeof__(&bfMatBlockDenseGetNumCols))bfMatBlockDenseGetNumCols,
@@ -219,6 +220,29 @@ void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path)
   }
 
   fclose(fp);
+}
+
+void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp) {
+  BEGIN_ERROR_HANDLING();
+
+  /* Serialize the number of row and column blocks: */
+  fwrite(&NUM_ROW_BLOCKS(matBlockDense), sizeof(BfSize), 1, fp);
+  fwrite(&NUM_COL_BLOCKS(matBlockDense), sizeof(BfSize), 1, fp);
+
+  /* Serialize the row and column offsets: */
+  fwrite(&ROW_OFFSET(matBlockDense, 0), sizeof(BfSize), NUM_ROW_BLOCKS(matBlockDense) + 1, fp);
+  fwrite(&COL_OFFSET(matBlockDense, 0), sizeof(BfSize), NUM_COL_BLOCKS(matBlockDense) + 1, fp);
+
+  /* Recursively write each of the blocks: */
+  for (BfSize k = 0; k < NUM_BLOCKS(matBlockDense); ++k) {
+    BfMat const *block = LINEAR_BLOCK(matBlockDense, k);
+    bfMatDump(block, fp);
+    HANDLE_ERROR();
+  }
+
+  END_ERROR_HANDLING() {
+    BF_DIE();
+  }
 }
 
 BfSize bfMatBlockDenseGetNumRows(BfMat const *mat) {
