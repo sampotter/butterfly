@@ -200,9 +200,6 @@ int main(int argc, char *argv[]) {
   HANDLE_ERROR();
   printf("lambda_max = %g\n", lamMax);
 
-//   bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-//   bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
-
   /* The natural frequency of each eigenvector is the square root of
    * the associated eigenvalue. */
   BfReal freqMax = sqrt(lamMax);
@@ -273,10 +270,6 @@ int main(int argc, char *argv[]) {
   printf("- compressed size: %.1f MB\n", numBytesCompressed/pow(1024, 2));
   printf("- uncompressed size: %.1f MB\n", numBytesUncompressed/pow(1024, 2));
   printf("- compression rate: %.1f\n", numBytesUncompressed/numBytesCompressed);
-
-  bfMatSave(mat, "fac.bin");
-
-  /* TODO: prune factorization */
 
   END_ERROR_HANDLING() {}
 
