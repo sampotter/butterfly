@@ -684,7 +684,7 @@ void estimateFmmTol(MultipleScatteringContext *context) {
   printf("Estimating FMM tolerance... ");
   fflush(stdout);
 
-  BfReal tolFmm;
+  BfReal tolFmm = BF_NAN;
 
   BfReal tolFmmInit = getMaxRelErrForFmmTol(context, 1e-15);
 
