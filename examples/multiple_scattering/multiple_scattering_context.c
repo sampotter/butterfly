@@ -1054,5 +1054,5 @@ void doPostprocessing(MultipleScatteringContext *context) {
 }
 
 void deinit(MultipleScatteringContext *context, Opts *opts) {
-  BF_ASSERT(false);
+  BF_DIE();
 }
