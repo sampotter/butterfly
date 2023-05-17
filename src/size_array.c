@@ -39,7 +39,7 @@ BfSizeArray *bfSizeArrayNewIota(BfSize n) {
     bfSizeArrayAppend(sizeArray, i);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return sizeArray;
@@ -55,7 +55,7 @@ BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return sizeArray;
@@ -122,7 +122,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
   sizeArray->capacity = newCapacity;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfMemFree(oldData);
@@ -142,7 +142,7 @@ void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
   sizeArray->data[sizeArray->size++] = elt;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -209,7 +209,7 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
   ++sizeArray->size;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
 #if BF_DEBUG
@@ -256,7 +256,7 @@ BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
   elt = sizeArray->data[0];
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return elt;
@@ -273,7 +273,7 @@ BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
   elt = sizeArray->data[sizeArray->size - 1];
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return elt;

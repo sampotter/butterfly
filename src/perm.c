@@ -74,7 +74,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
   bfMemCopy(perm->index, perm->size, sizeof(BfSize), permCopy->index);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return permCopy;

@@ -569,7 +569,7 @@ BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfRea
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matDenseReal;
@@ -657,7 +657,7 @@ BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
   BF_ERROR_END() {
     bfMatDenseRealDeinitAndDealloc(&matDenseReal);
 
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matDenseReal;
@@ -870,7 +870,7 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
   *VTPtr = VT;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   free(dataCopy);
@@ -986,7 +986,7 @@ static BfMat *mul_matDiagReal(BfMatDenseReal const *matDenseReal,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfMatDenseRealToMat(newMatDenseReal);
@@ -1029,7 +1029,7 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfVecRealToVec(result);
@@ -1065,7 +1065,7 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;
@@ -1099,7 +1099,7 @@ static BfVec *rmulVec_vecReal(BfMatDenseReal const *matDenseReal,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfVecRealToVec(result);
@@ -1135,7 +1135,7 @@ BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *ve
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;

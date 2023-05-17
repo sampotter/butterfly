@@ -63,7 +63,7 @@ BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfMatDenseComplexToMat(solution);
@@ -73,46 +73,46 @@ BfMat *bfLuDenseComplexSolveLower(BfLuDenseComplex const *luDenseComplex, BfMat 
   (void)luDenseComplex;
   (void)B;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuDenseComplexSolveUpper(BfLuDenseComplex const *luDenseComplex, BfMat const *B, bool permute) {
   (void)luDenseComplex;
   (void)B;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuDenseComplexScale(BfLuDenseComplex const *luDenseComplex, BfMat const *B) {
   (void)luDenseComplex;
   (void)B;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfVec *bfLuDenseComplexSolveVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b) {
   (void)luDenseComplex;
   (void)b;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfVec *bfLuDenseComplexSolveLowerVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute) {
   (void)luDenseComplex;
   (void)b;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfVec *bfLuDenseComplexSolveUpperVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b, bool permute) {
   (void)luDenseComplex;
   (void)b;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfVec *bfLuDenseComplexScaleVec(BfLuDenseComplex const *luDenseComplex, BfVec const *b) {
   (void)luDenseComplex;
   (void)b;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
@@ -156,7 +156,7 @@ BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfMatProductToMat(PLU);
@@ -221,7 +221,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   luDenseComplex->impl->ipiv = ipiv;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 

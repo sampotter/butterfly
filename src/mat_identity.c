@@ -38,7 +38,7 @@ BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfMatIdentityToMat(copy);
@@ -134,7 +134,7 @@ BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;
@@ -152,7 +152,7 @@ BfVec *bfMatIdentityRmulVec(BfMatIdentity const *matIdentity, BfVec const *vec) 
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;

@@ -75,7 +75,7 @@ BfPoints2 *bfPoints2NewEmpty() {
   points->data = bfMemAlloc(points->capacity, sizeof(BfPoint2));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return points;
@@ -99,7 +99,7 @@ BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return points;
@@ -265,7 +265,7 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
     } else if (j < newPoints->size) {
       newData[k++] = newPoints->data[j++];
     } else {
-      BF_ASSERT(false);
+      BF_DIE();
     }
   }
   BF_ASSERT(i == points->size && j == newPoints->size && k == newSize);
@@ -507,7 +507,7 @@ void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
   bfMemCopy(&points->data[i], 1, sizeof(BfPoint2), p);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -534,7 +534,7 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
   pointsView->data = &points->data[i0];
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return pointsView;
@@ -593,7 +593,7 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
 
 void bfPoints3Deinit(BfPoints3 *points) {
   (void)points;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {

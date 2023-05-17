@@ -311,7 +311,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
         ++fv_index;
 //         ++fvn_index;
       } else {
-        BF_ASSERT(false);
+        BF_DIE();
       }
     }
 
@@ -332,7 +332,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 
 void bfTrimeshDeinit(BfTrimesh *trimesh) {
   (void)trimesh;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {

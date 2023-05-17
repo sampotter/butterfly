@@ -400,7 +400,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfPtrArrayDelete(&blocks);
@@ -584,7 +584,7 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;
@@ -778,7 +778,7 @@ BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlo
   bfSizeArrayAppend(nonzeroColumnRanges, bfMatGetNumCols(mat));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return nonzeroColumnRanges;
@@ -966,7 +966,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numCol
   bfSizeRunningSum(numColBlocks + 1, &COL_OFFSET(matBlockDense, 0));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matBlockDense;
@@ -1005,7 +1005,7 @@ BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy po
   bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockDense, 0));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matBlockDense;
@@ -1044,7 +1044,7 @@ BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy po
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDense, 0));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matBlockDense;

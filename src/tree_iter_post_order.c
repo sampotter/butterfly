@@ -140,7 +140,7 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 

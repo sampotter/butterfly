@@ -100,7 +100,7 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
 
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
   (void)facStreamer;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer) {
@@ -140,7 +140,7 @@ static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
   BF_ASSERT(!bfPtrArrayIsEmpty(&currentPartialFacs));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return currentPartialFacs;
@@ -299,7 +299,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -314,7 +314,7 @@ static void addPartialFac(BfFacStreamer *facStreamer, BfFac *partialFac) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -433,7 +433,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
   continueFactorizing(facStreamer);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfPtrArrayDeinit(&PsiBlocks);

@@ -395,6 +395,6 @@ void bfConstPtrArrayExtend(BfConstPtrArray *arr, BfConstPtrArray const *otherArr
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false); // roll back changes?
+    BF_DIE(); // roll back changes?
   }
 }

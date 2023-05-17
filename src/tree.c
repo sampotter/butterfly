@@ -33,7 +33,7 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
 
 void bfTreeDeinit(BfTree *tree) {
   (void)tree;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 bool bfTreeInstanceOf(BfTree const *tree, BfType type) {

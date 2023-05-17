@@ -373,7 +373,7 @@ static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 

@@ -673,7 +673,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     bfMatProductPostMultiply(prod, factor[numFactors - 1 - i]);
 
   BF_ERROR_END() {
-    BF_ASSERT(false); // TODO: need to think carefully about how to do this
+    BF_DIE(); // TODO: need to think carefully about how to do this
   }
 
   return prod;
@@ -929,7 +929,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgt
 
   BF_ERROR_END() {
     bfMatBlockDenseDeinitAndDealloc(&matBlockDense);
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfTreeLevelIterDeinit(&srcLevelIter);

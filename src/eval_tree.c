@@ -82,7 +82,7 @@ BfReal evalTreeNodeGetValueRec(BfEvalTreeNode const *node, BfEvalTree const *tre
         return evalTreeNodeGetValueRec(child, tree, x);
     }
   }
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfReal bfEvalTreeGetValue(BfEvalTree const *tree, BfReal x) {
@@ -97,7 +97,7 @@ BfEvalTree *bfEvalTreeNew() {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return evalTree;

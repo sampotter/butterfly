@@ -314,7 +314,7 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;

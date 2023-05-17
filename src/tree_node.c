@@ -47,7 +47,7 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
 
 void bfTreeNodeDeinit(BfTreeNode *treeNode) {
   (void)treeNode;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 bool bfTreeNodeInstanceOf(BfTreeNode const *treeNode, BfType type) {

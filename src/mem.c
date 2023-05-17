@@ -24,7 +24,7 @@ BfPtr bfMemAlloc(BfSize n, BfSize size) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return ptr;
@@ -40,7 +40,7 @@ BfPtr bfMemAllocAndZero(BfSize n, BfSize size) {
   bfMemZero(ptr, n, size);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return ptr;
@@ -58,7 +58,7 @@ BfPtr bfMemRealloc(BfPtr ptr, BfSize n, BfSize size) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return newPtr;

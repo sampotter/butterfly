@@ -231,7 +231,7 @@ BfReal bf_y0(BfReal x) {
   }
 
   // UNDERFLOW_ERROR(result);
-  BF_ASSERT(false); // TODO: throw error
+  BF_DIE(); // TODO: throw error
 }
 
 static BfComplex _H0_small_arg(BfReal x) {
@@ -263,7 +263,7 @@ BfComplex bf_H0(BfReal x) {
     return _H0_large_arg(x);
   else
     // UNDERFLOW_ERROR(result);
-    BF_ASSERT(false); // TODO: throw error
+    BF_DIE(); // TODO: throw error
 }
 
 /* TODO: pull in GSL code so we can create opportunities for

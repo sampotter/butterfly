@@ -30,7 +30,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return freqs;

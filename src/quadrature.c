@@ -44,7 +44,7 @@ static BfReal const *get_w_KR(BfSize order) {
   case 2: return w_KR_order2;
   case 6: return w_KR_order6;
   case 10: return w_KR_order10;
-  default: BF_ASSERT(false);
+  default: BF_DIE();
   }
 }
 
@@ -68,7 +68,7 @@ void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -120,7 +120,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -219,7 +219,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -266,7 +266,7 @@ void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offset
   bfMatAddInplace(mat, corr);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfMatDelete(&corr);

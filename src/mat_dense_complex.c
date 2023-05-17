@@ -446,7 +446,7 @@ void bfMatDenseComplexSave(BfMat const *mat, char const *path) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   fclose(fp);
@@ -1030,7 +1030,7 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
     /* ldb: */ p);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfMatDenseComplexToMat(resultMatDenseComplex);
@@ -1234,7 +1234,7 @@ BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *matDenseComplex) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return bfLuDenseComplexToLu(luDenseComplex);
@@ -1260,7 +1260,7 @@ static void divideCols_vecReal(BfMatDenseComplex *matDenseComplex, BfVec const *
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -1769,7 +1769,7 @@ BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCol
   bfMatDenseComplexInitViewFromPtr(matDenseComplex, numRows, numCols, data);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matDenseComplex;
@@ -1849,7 +1849,7 @@ void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize
   matDenseComplex->data = data;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 

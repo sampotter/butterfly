@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
       X[i] = fmax(opts.r0, fmin(X[i], opts.r1));
     }
   } else {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   /* check sqrt timings */

@@ -178,7 +178,7 @@ void bfVecRealSetRange(BfVecReal *vecReal, BfSize i0, BfSize i1,
       = *(otherVecReal->data + (i - i0)*otherVecReal->stride);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -262,7 +262,7 @@ void bfVecRealAddInplace(BfVecReal *vecReal, BfVec const *otherVec) {
       += *(otherVecReal->data + i*otherVecReal->stride);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -392,7 +392,7 @@ BfVecReal *bfVecRealNewEmpty(BfSize n) {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return vecReal;
@@ -411,7 +411,7 @@ BfVecReal *bfVecRealNewWithValue(BfSize n, BfReal value) {
     *(vecReal->data + i*vecReal->stride) = value;
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return vecReal;
@@ -447,7 +447,7 @@ BfVecReal *bfVecRealNewRandn(BfSize n) {
   bfRealRandn(n, vecReal->data);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return vecReal;

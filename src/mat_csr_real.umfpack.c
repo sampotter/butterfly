@@ -170,7 +170,7 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
   (void)U;
   (void)P;
   (void)Q;
-  BF_ASSERT(false);
+  BF_DIE();
 
   BF_ERROR_END() {}
 

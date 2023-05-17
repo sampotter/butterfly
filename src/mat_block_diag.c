@@ -312,7 +312,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
   BF_ERROR_END() {
     bfMatBlockCooDeinitAndDealloc(&blockRow);
 
-    BF_ASSERT(false); // ???
+    BF_DIE(); // ???
   }
 
   /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
@@ -428,7 +428,7 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;
@@ -477,7 +477,7 @@ BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *ve
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return result;
@@ -562,7 +562,7 @@ BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return resultMat;
@@ -724,7 +724,7 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy)
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDiag, 0));
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return matBlockDiag;

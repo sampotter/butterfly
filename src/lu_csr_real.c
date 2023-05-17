@@ -27,27 +27,27 @@ static BfLuVtable LU_VTABLE = {
 BfMat *bfLuCsrRealSolve(BfLuCsrReal const *luCsrReal, BfMat const *B) {
   (void)luCsrReal;
   (void)B;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuCsrRealSolveLower(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
   (void)luCsrReal;
   (void)B;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuCsrRealSolveUpper(BfLuCsrReal const *luCsrReal, BfMat const *B, bool permute) {
   (void)luCsrReal;
   (void)B;
   (void)permute;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 BfMat *bfLuCsrRealScale(BfLuCsrReal const *luCsrReal, BfMat const *B) {
   (void)luCsrReal;
   (void)B;
-  BF_ASSERT(false);
+  BF_DIE();
 }
 
 static BfVec *solve_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
@@ -210,7 +210,7 @@ BfLuCsrReal *bfLuCsrRealNew() {
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return luCsrReal;

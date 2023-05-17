@@ -156,7 +156,7 @@ static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -199,7 +199,7 @@ static void getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
   else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 }
 
@@ -213,7 +213,7 @@ BfPtrArray *getIndexedPsiSubblocksInRowRange(BfFac const *fac, BfSize i0Sel, BfS
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   return indexedPsiSubblocks;
@@ -332,7 +332,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false); // T_T
+    BF_DIE(); // T_T
   }
 
   for (BfSize i = 0; i < numSubblocks; ++i) {
@@ -383,7 +383,7 @@ bool partialFacsHaveSameRowSpan(BfPtrArray const *facs) {
     // for some reason. (A later comment: unnecessary to handle? When
     // would we ever have a Fac which doesn't have a contiguous row
     // span...?)
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   BfFac *fac;
@@ -747,7 +747,7 @@ bool getPsiAndW(BfFacSpec const *facSpec,
     success = false;
 
     /* TODO: make sure to free Psi and W if I allocated them... */
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfMatDelete(&block);
@@ -830,7 +830,7 @@ bool getLowRankApproximation(BfFacSpec const *facSpec, BfMat const *PsiStarSubbl
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   *PsiSubblockPtr = U;
@@ -1000,7 +1000,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
     bfConstNodeArrayDeinitAndDealloc(&epsRankCut);
 
     // TODO: free blocks
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfPtrArrayDeinit(&PsiSubblocks);
@@ -1226,7 +1226,7 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
   }
 
   BF_ERROR_END() {
-    BF_ASSERT(false);
+    BF_DIE();
   }
 
   bfPtrArrayDeinit(&PsiBlocks);
