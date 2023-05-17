@@ -7,7 +7,7 @@
 #include <bf/vectors.h>
 
 void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *rowptr = NULL;
   BfSize *colind = NULL;

@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
   bfSeed(opts.seed);
   bfSetLogLevel(opts.logLevel);
 
-  BEGIN_ERROR_HANDLING() {}
+  BF_ERROR_BEGIN() {}
 
   BfTrimesh trimesh;
   bfTrimeshInitFromObjFile(&trimesh, opts.objPath);

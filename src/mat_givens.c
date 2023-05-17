@@ -58,7 +58,7 @@ BfMatGivensComplex const *bfMatConstToMatGivensComplexConst(BfMat const *mat) {
 /** Implementation: MatGivensComplex */
 
 BfMatGivensComplex *bfMatGivensComplexNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatGivensComplex *mat = bfMemAlloc(1, sizeof(BfMatGivensComplex));
   if (mat == NULL)
@@ -72,7 +72,7 @@ BfMatGivensComplex *bfMatGivensComplexNew() {
 void bfMatGivensComplexInit(BfMatGivensComplex *mat, BfSize n,
                             BfSize srcInd, BfSize elimInd,
                             BfComplex c, BfComplex s) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, n, n);
   HANDLE_ERROR();

@@ -15,7 +15,7 @@ static void invalidate(BfRealArray *realArray) {
 }
 
 BfRealArray *bfRealArrayNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfRealArray *realArray = bfMemAlloc(1, sizeof(BfRealArray));
   if (realArray == NULL)
@@ -31,7 +31,7 @@ BfRealArray *bfRealArrayNew() {
 }
 
 BfRealArray *bfRealArrayNewWithDefaultCapacity() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfRealArray *realArray = bfRealArrayNew();
   HANDLE_ERROR();
@@ -47,7 +47,7 @@ BfRealArray *bfRealArrayNewWithDefaultCapacity() {
 }
 
 void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   realArray->size = 0;
   realArray->capacity = BF_ARRAY_DEFAULT_CAPACITY;
@@ -82,7 +82,7 @@ void bfRealArrayDeinitAndDealloc(BfRealArray **realArray) {
 }
 
 void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfReal *data = NULL, *oldData = NULL;
 
@@ -114,7 +114,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
 }
 
 void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (realArray->size == realArray->capacity) {
     bfRealArrayExpandCapacity(realArray, 2*realArray->capacity);
@@ -129,7 +129,7 @@ void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
 }
 
 BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *vecReal = bfVecRealNew();
   HANDLE_ERROR();
@@ -145,7 +145,7 @@ BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
 }
 
 BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);

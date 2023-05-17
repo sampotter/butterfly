@@ -51,7 +51,7 @@ BfQuadtree *bfTreeToQuadtree(BfTree *tree) {
 /** Implementation: Quadtree */
 
 BfQuadtree *bfQuadtreeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfQuadtree *quadtree = bfMemAlloc(1, sizeof(BfQuadtree));
   if (quadtree == NULL)
@@ -65,7 +65,7 @@ BfQuadtree *bfQuadtreeNew() {
 
 void bfQuadtreeInit(BfQuadtree *tree, BfPoints2 const *points,
                     BfVectors2 const *unitNormals) {
-  BEGIN_ERROR_HANDLING()
+  BF_ERROR_BEGIN()
 
   BfQuadtreeNode *root = bfQuadtreeNodeNew();
   HANDLE_ERROR();

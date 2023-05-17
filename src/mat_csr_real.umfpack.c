@@ -9,7 +9,7 @@
 #include <bf/rand.h>
 
 void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
 

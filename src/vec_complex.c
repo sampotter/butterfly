@@ -29,7 +29,7 @@ static BfVecVtable VEC_VTABLE = {
 };
 
 BfVec *bfVecComplexCopy(BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex const *vecComplex = NULL;
   BfVecComplex *copy = NULL;
@@ -67,7 +67,7 @@ BfType bfVecComplexGetType(BfVec const *vec) {
 }
 
 BfVec *bfVecComplexGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *vecComplex = NULL;
   BfVecComplex *view = NULL;
@@ -92,7 +92,7 @@ BfVec *bfVecComplexGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
 }
 
 void bfVecComplexPrint(BfVec const *vec, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex const *vecComplex = bfVecConstToVecComplexConst(vec);
   HANDLE_ERROR();
@@ -106,7 +106,7 @@ void bfVecComplexPrint(BfVec const *vec, FILE *fp) {
 }
 
 BfReal bfVecComplexNormMax(BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex const *vecComplex = NULL;
   BfReal norm;
@@ -128,7 +128,7 @@ BfReal bfVecComplexNormMax(BfVec const *vec) {
 }
 
 void bfVecComplexAddInplace(BfVec *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *vecComplex = NULL;
   BfVecComplex const *otherVecComplex = NULL;
@@ -169,7 +169,7 @@ mulInplace_givensComplex(BfVecComplex *vecComplex, BfMatGivensComplex const *giv
 }
 
 void bfVecComplexMulInplace(BfVec *vec, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *vecComplex = bfVecToVecComplex(vec);
   HANDLE_ERROR();
@@ -206,7 +206,7 @@ solveInplace_givensComplex(BfVecComplex *vecComplex, BfMatGivensComplex const *g
 }
 
 void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *vecComplex = bfVecToVecComplex(vec);
   HANDLE_ERROR();
@@ -228,7 +228,7 @@ void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat) {
 }
 
 BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex const *vecComplex = NULL;
   BfMatGivensComplex *givens = NULL;
@@ -294,7 +294,7 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
 }
 
 static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *cat = NULL;
 
@@ -333,7 +333,7 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
 }
 
 static BfVec *concat_vecReal(BfVec const *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *cat = NULL;
 
@@ -371,7 +371,7 @@ static BfVec *concat_vecReal(BfVec const *vec, BfVec const *otherVec) {
 }
 
 static BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *cat = NULL;
 
@@ -421,7 +421,7 @@ BfVec *bfVecComplexConcat(BfVec const *vec, BfVec const *otherVec) {
 }
 
 void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
@@ -468,7 +468,7 @@ BfVecComplex const *bfVecConstToVecComplexConst(BfVec const *vec) {
 /** Implementation: VecComplex */
 
 BfVecComplex *bfVecComplexNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *vecComplex = bfMemAlloc(1, sizeof(BfVecComplex));
   if (vecComplex == NULL)
@@ -480,7 +480,7 @@ BfVecComplex *bfVecComplexNew() {
 }
 
 BfVecComplex *bfVecComplexFromFile(char const *path, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "rb");
   if (fp == NULL)
@@ -517,7 +517,7 @@ BfVecComplex *bfVecComplexFromFile(char const *path, BfSize size) {
 }
 
 void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfVecInit(&vecComplex->super, &VEC_VTABLE, size);
 
@@ -532,7 +532,7 @@ void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size) {
 }
 
 void bfVecComplexInitView(BfVecComplex *vecComplex, BfSize size, BfSize stride, BfComplex *data) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (data == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);

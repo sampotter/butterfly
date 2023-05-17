@@ -48,7 +48,7 @@ BfIntervalTreeNode const *bfTreeNodeConstToIntervalTreeNodeConst(BfTreeNode cons
 }
 
 BfIntervalTreeNode *bfIntervalTreeNodeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfIntervalTreeNode *node = bfMemAlloc(1, sizeof(BfIntervalTreeNode));
   HANDLE_ERROR();
@@ -61,7 +61,7 @@ BfIntervalTreeNode *bfIntervalTreeNodeNew() {
 
 static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeNode,
                                                BfSize k, BfSize depth, BfSize maxDepth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfReal const a = intervalTreeNode->a;
   BfReal const b = intervalTreeNode->b;
@@ -98,7 +98,7 @@ static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeN
 void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *intervalTreeNode,
                                      BfIntervalTree const *intervalTree,
                                      BfReal a, BfReal b, BfSize k, BfSize maxDepth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfTreeNodeInit(&intervalTreeNode->super, &TreeNodeVtable,
                  true, (void *)intervalTree, k, BF_SIZE_BAD_VALUE, 0);

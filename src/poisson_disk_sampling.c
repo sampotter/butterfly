@@ -107,7 +107,7 @@ static bool sampleClosePointUniformly(BfPoint2 x, Workspace const *w, BfPoint2 y
 }
 
 BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSize k) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfReal width = bbox->max[0] - bbox->min[0];
   BfReal height = bbox->max[1] - bbox->min[1];

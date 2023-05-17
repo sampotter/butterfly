@@ -68,7 +68,7 @@ int main(int argc, char const *argv[]) {
 
   char const *normals_path_str = !strcmp(layerPotStr, "Sp") ? argv[5] : NULL;
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfReal K = atoi(K_str);
 

@@ -54,7 +54,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
   HANDLE_ERROR();
@@ -69,7 +69,7 @@ BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
 }
 
 BfMat *bfMatDenseRealGetView(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal *matDenseReal = bfMatToMatDenseReal(mat);
   HANDLE_ERROR();
@@ -89,7 +89,7 @@ BfMat *bfMatDenseRealGetView(BfMat *mat) {
 }
 
 BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatDenseRealToMat(matDenseReal);
 
@@ -111,7 +111,7 @@ BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
 }
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDense *matDense = NULL;
   BfMatDenseReal *matDenseReal = NULL;
@@ -155,7 +155,7 @@ BfSize bfMatDenseRealNumBytes(BfMatDenseReal const *matDenseReal) {
 }
 
 void bfMatDenseRealSave(BfMat const *mat, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal const *matDenseReal = bfMatConstToMatDenseRealConst(mat);
 
@@ -174,7 +174,7 @@ void bfMatDenseRealSave(BfMat const *mat, char const *path) {
 }
 
 void bfMatDenseRealDump(BfMatDenseReal const *matDenseReal, FILE *fp) {
-//   BEGIN_ERROR_HANDLING();
+//   BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
 
@@ -201,7 +201,7 @@ void bfMatDenseRealDump(BfMatDenseReal const *matDenseReal, FILE *fp) {
 }
 
 void bfMatDenseRealPrint(BfMat const *mat, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDense const *matDense = NULL;
   BfMatDenseReal const *matDenseReal = NULL;
@@ -244,7 +244,7 @@ BfSize bfMatDenseRealGetNumCols(BfMat const *mat) {
 }
 
 void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal const *rowReal = NULL;
   BfMatDense *matDense = NULL;
@@ -292,7 +292,7 @@ void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
 }
 
 void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal const *colReal = NULL;
   BfMatDense *matDense = NULL;
@@ -346,7 +346,7 @@ BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   BF_ASSERT(i1 <= numRows);
   BF_ASSERT(!bfMatIsTransposed(mat)); // TODO: implement
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *matView = bfMatGetView(mat);
 
@@ -365,7 +365,7 @@ BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
 }
 
 BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   HANDLE_ERROR();
@@ -409,7 +409,7 @@ BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
 }
 
 BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize j0, BfSize j1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (j0 > j1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -452,7 +452,7 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
 }
 
 void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
@@ -539,7 +539,7 @@ BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat) {
 /** Implementation: MatDenseReal */
 
 BfMatDenseReal *bfMatDenseRealNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal *mat = bfMemAlloc(1, sizeof(BfMatDenseReal));
   if (mat == NULL)
@@ -551,7 +551,7 @@ BfMatDenseReal *bfMatDenseRealNew() {
 }
 
 BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal *matDenseReal = bfMemAlloc(1, sizeof(BfMatDenseReal));
   if (matDenseReal == NULL)
@@ -576,7 +576,7 @@ BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfRea
 }
 
 BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseReal *matDenseReal = bfMatDenseRealNew();
   HANDLE_ERROR();
@@ -665,7 +665,7 @@ BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
 
 
 BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize numCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = NULL;
   BfMatDenseReal *matDenseReal = NULL;
@@ -708,7 +708,7 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
 }
 
 void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatDenseInit(&mat->super, &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
   HANDLE_ERROR();
@@ -723,7 +723,7 @@ void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
 
 void bfMatDenseRealInitCopy(BfMatDenseReal *matDenseReal,
                             BfMatDenseReal const *otherMatDenseReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *otherMat = bfMatDenseRealConstToMatConst(otherMatDenseReal);
 
@@ -756,7 +756,7 @@ void bfMatDenseRealInitCopy(BfMatDenseReal *matDenseReal,
 
 void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
                                  BfSize numCols, BfReal fillValue) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDense *matDense = NULL;
 
@@ -803,7 +803,7 @@ void bfMatDenseRealDeinitAndDealloc(BfMatDenseReal **mat) {
 
 void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
                        BfMatDiagReal **SPtr, BfMatDenseReal **VTPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *super = bfMatDenseRealConstToMatConst(mat);
 
@@ -880,7 +880,7 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
 void bfMatDenseRealSetBlock(BfMatDenseReal *matDenseReal,
                             BfSize i0, BfSize i1, BfSize j0, BfSize j1,
                             BfMatDenseReal const *block) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -922,7 +922,7 @@ void bfMatDenseRealSetBlock(BfMatDenseReal *matDenseReal,
 }
 
 static void scaleRows_vecReal(BfMatDenseReal *matDenseReal, BfVecReal const *vecReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatDenseRealToMat(matDenseReal);
 
@@ -956,7 +956,7 @@ void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec) {
 
 static BfMat *mul_matDiagReal(BfMatDenseReal const *matDenseReal,
                               BfMatDiagReal const *otherMatDiagReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   BfMat const *otherMat = bfMatDiagRealConstToMatConst(otherMatDiagReal);
@@ -1005,7 +1005,7 @@ BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherM
 static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
                              BfVecReal const *vecReal,
                              BfSize m, BfSize n) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   enum CBLAS_TRANSPOSE trans = getCblasTranspose(matDenseReal);
 
@@ -1036,7 +1036,7 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
 }
 
 BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   BfVec *result = NULL;
@@ -1074,7 +1074,7 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
 static BfVec *rmulVec_vecReal(BfMatDenseReal const *matDenseReal,
                               BfVecReal const *vecReal,
                               BfSize m, BfSize n) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   enum CBLAS_TRANSPOSE trans =
     getCblasTranspose(matDenseReal) == CblasNoTrans ? CblasTrans : CblasNoTrans;
@@ -1106,7 +1106,7 @@ static BfVec *rmulVec_vecReal(BfMatDenseReal const *matDenseReal,
 }
 
 BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   BfVec *result = NULL;

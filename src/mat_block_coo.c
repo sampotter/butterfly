@@ -45,7 +45,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = NULL;
   BfMatBlockCoo const *matBlockCoo = NULL;
@@ -94,7 +94,7 @@ BfMat *bfMatBlockCooCopy(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockCooSteal(BfMatBlockCoo *matBlockCoo) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatBlockCooToMat(matBlockCoo);
 
@@ -128,7 +128,7 @@ static int cmpColumnOrder(BfMatBlockCooEntry const **arg1,
 }
 
 BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVec *rowCopy = NULL;
   BfMatBlock const *matBlock = NULL;
@@ -238,7 +238,7 @@ BfSize bfMatBlockCooNumBytes(BfMat const *mat) {
 }
 
 void bfMatBlockCooDump(BfMatBlockCoo const *matBlockCoo, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Write number of row and column blocks: */
   fwrite(&NUM_ROW_BLOCKS(matBlockCoo), sizeof(BfSize), 1, fp);
@@ -283,7 +283,7 @@ BfSize bfMatBlockCooGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -358,7 +358,7 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
 }
 
 BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock1 = bfMatConstToMatBlockConst(op1);
   BfMatBlockCoo const *matBlockCoo1 = bfMatConstToMatBlockCooConst(op1);
@@ -403,7 +403,7 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
 }
 
 BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
 
@@ -450,7 +450,7 @@ BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
 }
 
 BfVec *bfMatBlockCooRmulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockCooConstToMatConst(matBlockCoo);
 
@@ -496,7 +496,7 @@ BfVec *bfMatBlockCooRmulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) 
 }
 
 void bfMatBlockCooNegate(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = NULL;
 
@@ -539,7 +539,7 @@ static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
 
 
 BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCoo) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *nonzeroColumnRanges = bfSizeArrayNew();
   HANDLE_ERROR();
@@ -635,7 +635,7 @@ BfSize bfMatBlockCooGetColOffset(BfMatBlockCoo const *matBlockCoo, BfSize j) {
 }
 
 BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatBlockCooConstToMatBlockConst(matBlockCoo);
 
@@ -736,7 +736,7 @@ void bfMatBlockCooInvalidate(BfMatBlockCoo *matBlockCoo) {
 }
 
 BfMatBlockCoo *bfMatBlockCooNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockCoo *matBlockCoo = bfMemAlloc(1, sizeof(BfMatBlockCoo));
   if (matBlockCoo == NULL)
@@ -756,7 +756,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets,
                                           BfSizeArray const *rowInds,
                                           BfSizeArray const *colInds,
                                           BfPtrArray const *blocks) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockCoo *matBlockCoo = bfMatBlockCooNew();
   HANDLE_ERROR();
@@ -784,7 +784,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets,
 }
 
 BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(blocks))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -838,7 +838,7 @@ BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy
 }
 
 BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(blocks))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -892,7 +892,7 @@ BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy
 }
 
 BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols, BfPtrArray *indexedBlocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockCoo *matBlockCoo = NULL;
 
@@ -1026,7 +1026,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols,
 void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
                        BfSize numBlockCols, BfSize numBlocks)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatBlockInit(&mat->super,
                  &MAT_VTABLE, &MAT_BLOCK_VTABLE,

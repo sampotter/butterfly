@@ -60,7 +60,7 @@ BfOctreeNode const *bfTreeNodeConstToOctreeNodeConst(BfTreeNode const *node) {
 /** Implementation: OctreeNode */
 
 BfOctreeNode *bfOctreeNodeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfOctreeNode *node = bfMemAlloc(1, sizeof(BfOctreeNode));
   if (node == NULL)
@@ -152,7 +152,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
                                     BfPoints3 const *points, BfBoundingBox3 boundingBox,
                                     BfSize i0, BfSize i1, BfSize *perm,
                                     BfSize currentDepth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BF_ASSERT(i0 <= i1);
 
@@ -265,7 +265,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
 }
 
 void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfTreeNodeInit(&node->super, &TreeNodeVtable,
                  true, (void *)tree, NUM_CHILDREN, BF_SIZE_BAD_VALUE, 0);
@@ -302,7 +302,7 @@ BfSphere bfOctreeNodeGetBoundingSphere(BfOctreeNode const *node) {
  * If `tree == NULL`, then this function will retrieve the containing
  * `BfOctree` from `node`, which takes `O(log N)` time. */
 BfPoints3 bfOctreeNodeGetPoints(BfOctreeNode const *octreeNode, BfOctree const *octree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints3 points;
 
@@ -326,7 +326,7 @@ BfPoints3 bfOctreeNodeGetPoints(BfOctreeNode const *octreeNode, BfOctree const *
 }
 
 BfVectors3 bfOctreeNodeGetUnitNormals(BfOctreeNode const *octreeNode, BfOctree const *octree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (octree->unitNormals == NULL)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);

@@ -1,6 +1,6 @@
 #pragma once
 
-#define BEGIN_ERROR_HANDLING()                  \
+#define BF_ERROR_BEGIN()                        \
   enum BfError __bf_error__;                    \
   bool __bf_erred__ = false;                    \
   (void)__bf_error__;                           \

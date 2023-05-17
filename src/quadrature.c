@@ -50,7 +50,7 @@ static BfReal const *get_w_KR(BfSize order) {
 
 void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
                                  BfSize n, BfComplex const *x, BfReal const *h, BfComplex *y) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (order != 2 && order != 6 && order != 10)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -102,7 +102,7 @@ static void apply_KR_correction_to_block(BfMat *mat, BfSize i0, BfSize i1, BfSiz
 
 void bf_apply_KR_correction(BfMat *mat, BfSize order,
                             BfKernelComplex K, BfPtr *aux) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (order != 2 && order != 6 && order != 10)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -125,7 +125,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
 }
 
 BfMat *bf_get_KR_corr_block_spmat(BfSize order, BfSize n, BfSize i0, BfSize i1, BfKernelComplex K, BfPtr *aux) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -175,7 +175,7 @@ void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
                                      BfTree const *tree,
                                      BfKernelComplex K, BfPtr *aux)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *corr = NULL;
 
@@ -203,7 +203,7 @@ void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
 }
 
 void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfKernelComplex K, BfPtr *aux) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfSizeArrayGetSize(offsets) < 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -224,7 +224,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
 }
 
 void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfTree const *tree, BfKernelComplex K, BfPtr *aux) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfSizeArrayGetSize(offsets) < 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);

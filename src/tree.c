@@ -19,7 +19,7 @@ BfType bfTreeGetType(BfTree const *tree) {
 /** Implementation: Tree */
 
 void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   tree->vtable = vtable;
   tree->root = root;
@@ -60,7 +60,7 @@ static void
 map_levelOrder(BfTree *tree, BfTreeNode *node,
                BfTreeTraversal traversal, BfTreeMapFunc func,
                void *arg) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTreeLevelIter iter;
   bfTreeLevelIterInit(&iter, traversal, node);
@@ -83,7 +83,7 @@ map_levelOrder(BfTree *tree, BfTreeNode *node,
 void bfTreeMap(BfTree *tree, BfTreeNode *node,
                    BfTreeTraversal traversal, BfTreeMapFunc func,
                    void *arg) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (node == NULL)
     node = tree->root;
@@ -105,7 +105,7 @@ static void
 mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
                     BfTreeTraversal traversal, BfTreeMapConstFunc func,
                     void *arg) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTreeLevelIter iter;
   bfTreeLevelIterInit(&iter, traversal, (BfTreeNode *)node);
@@ -127,7 +127,7 @@ mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
 
 void bfTreeMapConst(BfTree const *tree, BfTreeNode const *node,
                     BfTreeTraversal traversal, BfTreeMapConstFunc func, void *arg) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (node == NULL)
     node = tree->root;
@@ -150,7 +150,7 @@ BfSize bfTreeGetNumPoints(BfTree const *tree) {
 }
 
 BfTreeNode *bfTreeGetNode(BfTree *tree, BfSize depth, BfSize nodeIndex) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray levelNodes;
   BfTreeNode *node = NULL;
@@ -171,7 +171,7 @@ BfTreeNode *bfTreeGetNode(BfTree *tree, BfSize depth, BfSize nodeIndex) {
 }
 
 BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray levelNodes = bfGetUninitializedPtrArray();
 

@@ -31,7 +31,7 @@ static BfLuVtable LU_VTABLE = {
 };
 
 BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDenseComplex const *matDenseComplex = bfMatConstToMatDenseComplexConst(mat);
   HANDLE_ERROR();
@@ -116,7 +116,7 @@ BfVec *bfLuDenseComplexScaleVec(BfLuDenseComplex const *luDenseComplex, BfVec co
 }
 
 BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct *PLU = bfMatProductNew();
   HANDLE_ERROR();
@@ -177,7 +177,7 @@ BfLuDenseComplex *bfLuDenseComplexNew() {
 }
 
 void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfLuInit(&luDenseComplex->super, &LU_VTABLE);
 

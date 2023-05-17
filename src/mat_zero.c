@@ -17,7 +17,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecZero *rowCopy = NULL;
 
@@ -46,7 +46,7 @@ BfType bfMatZeroGetType(BfMat const *mat) {
 }
 
 BfSize bfMatZeroGetNumRows(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
@@ -61,7 +61,7 @@ BfSize bfMatZeroGetNumRows(BfMat const *mat) {
 }
 
 BfSize bfMatZeroGetNumCols(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
@@ -99,7 +99,7 @@ BfMatZero const *bfMatConstToMatZeroConst(BfMat const *mat) {
 /** Implementation: MatZero */
 
 BfMatZero *bfMatZeroNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatZero *mat = bfMemAlloc(1, sizeof(BfMatZero));
   if (mat == NULL)
@@ -111,7 +111,7 @@ BfMatZero *bfMatZeroNew() {
 }
 
 void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();

@@ -22,7 +22,7 @@ BfType bfMatSumGetType(BfMat const *mat) {
 }
 
 BfSize bfMatSumGetNumRows(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
@@ -37,7 +37,7 @@ BfSize bfMatSumGetNumRows(BfMat const *mat) {
 }
 
 BfSize bfMatSumGetNumCols(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
@@ -52,7 +52,7 @@ BfSize bfMatSumGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatSumMul(BfMat const *mat, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatSum const *matSum = NULL;
   BfMat *result = NULL;
@@ -102,7 +102,7 @@ BfMatSum const *bfMatConstToMatSumConst(BfMat const *mat) {
 /** Implementation: MatSum */
 
 BfMatSum *bfMatSumNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatSum *sum = bfMemAlloc(1, sizeof(BfMatSum));
   if (sum == NULL)
@@ -114,7 +114,7 @@ BfMatSum *bfMatSumNew() {
 }
 
 void bfMatSumInit(BfMatSum *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* We don't store the number of rows or columns in `mat->super`
    * since we always look up the number of rows and columns from the

@@ -59,7 +59,7 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
 }
 
 BfVectors2 *bfVectors2NewEmpty() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
   if (vectors == NULL)
@@ -83,7 +83,7 @@ BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat) {
 }
 
 BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVectors2 *vectors = NULL;
 
@@ -130,7 +130,7 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
 }
 
 void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
@@ -173,7 +173,7 @@ void bfGetVectorsByIndex(BfVectors2 const *vectors,
                         BfSize numInds, BfSize const *inds,
                         BfVectors2 *indexedVectors)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfInitEmptyVectors2(indexedVectors, numInds);
   HANDLE_ERROR();
@@ -193,7 +193,7 @@ void bfGetVectorsByIndex(BfVectors2 const *vectors,
 }
 
 void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
@@ -208,7 +208,7 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
 }
 
 void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Grow the array if we're at capacity */
   if (vectors->size == vectors->capacity) {
@@ -237,7 +237,7 @@ void bfVectors2Extend(BfVectors2 *vectors, BfVectors2 const *newVectors) {
 }
 
 void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i >= vectors->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -254,7 +254,7 @@ BfSize bfVectors2GetSize(BfVectors2 const *vectors) {
 }
 
 void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i >= vectors->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -267,7 +267,7 @@ void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
 }
 
 BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if ((i0 >= vectors->size && i1 > vectors->size) || i0 > vectors->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -310,7 +310,7 @@ void bfVectors3Deinit(BfVectors3 *vectors) {
 }
 
 void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfVectors3InitEmpty(indexedVectors, numInds);
   HANDLE_ERROR();

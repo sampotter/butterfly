@@ -37,7 +37,7 @@ BfMatDense const *bfMatConstToMatDenseConst(BfMat const *mat) {
 /** Implementation: MatDense */
 
 BfMatDense *bfMatDenseNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDense *mat = bfMemAlloc(1, sizeof(BfMatDense));
   if (mat == NULL)
@@ -52,7 +52,7 @@ void bfMatDenseInit(BfMatDense *matDense, BfMatVtable *matVtable,
                     BfMatDenseVtable *matDenseVtable,
                     BfSize numRows, BfSize numCols,
                     BfSize rowStride, BfSize colStride) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = &matDense->super;
 

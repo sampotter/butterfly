@@ -14,7 +14,7 @@ static void invalidate(BfSizeArray *sizeArray) {
 }
 
 BfSizeArray *bfSizeArrayNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *sizeArray = bfMemAlloc(1, sizeof(BfSizeArray));
   if (sizeArray == NULL)
@@ -30,7 +30,7 @@ BfSizeArray *bfSizeArrayNew() {
 }
 
 BfSizeArray *bfSizeArrayNewIota(BfSize n) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *sizeArray = bfSizeArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
@@ -46,7 +46,7 @@ BfSizeArray *bfSizeArrayNewIota(BfSize n) {
 }
 
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *sizeArray = bfSizeArrayNew();
   HANDLE_ERROR();
@@ -62,7 +62,7 @@ BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
 }
 
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   sizeArray->size = 0;
   sizeArray->capacity = 128;
@@ -97,7 +97,7 @@ void bfSizeArrayDeinitAndDealloc(BfSizeArray **sizeArray) {
 }
 
 void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *data = NULL, *oldData = NULL;
 
@@ -129,7 +129,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
 }
 
 void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (elt == BF_SIZE_BAD_VALUE)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -184,7 +184,7 @@ void bfSizeArraySort(BfSizeArray *sizeArray, BfSizeArrayComparator cmp, void *au
 }
 
 void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
 #if BF_DEBUG
   BF_ASSERT(bfSizeArrayIsSorted(sizeArray));
@@ -229,7 +229,7 @@ BfSize bfSizeArrayFindFirst(BfSizeArray const *sizeArray, BfSize elt) {
 }
 
 BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize elt = BF_SIZE_BAD_VALUE;
 
@@ -246,7 +246,7 @@ BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i) {
 }
 
 BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize elt = BF_SIZE_BAD_VALUE;
 
@@ -263,7 +263,7 @@ BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
 }
 
 BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize elt = BF_SIZE_BAD_VALUE;
 
@@ -286,7 +286,7 @@ BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray) {
 }
 
 void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (dst == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);

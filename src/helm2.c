@@ -64,7 +64,7 @@ BfComplex get_D_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfVector2 const 
 BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
                                 BfVector2 const nsrc, BfVector2 const ntgt,
                                 BfReal K, BfLayerPotential layerPot) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfComplex z;
 
@@ -91,7 +91,7 @@ BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
 
 static BfMat *
 get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = Xtgt->size; /* number of rows */
   BfSize n = Xsrc->size; /* number of columns */
@@ -126,7 +126,7 @@ get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
 static BfMat *
 get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
                        BfVectors2 const *Ntgt, BfReal K) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = Xtgt->size; /* number of rows */
   BfSize n = Xsrc->size; /* number of columns */
@@ -175,7 +175,7 @@ get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 static BfMat *
 get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
                     BfVectors2 const *Nsrc, BfReal K) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = Xtgt->size; /* number of rows */
   BfSize n = Xsrc->size; /* number of columns */
@@ -225,7 +225,7 @@ static BfMat *
 get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
                            BfVectors2 const *Nsrc, BfReal K,
                            BfComplex alpha, BfComplex beta) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = Xtgt->size; /* number of rows */
   BfSize n = Xsrc->size; /* number of columns */
@@ -281,7 +281,7 @@ bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
                        BfReal K, BfLayerPotential layerPot,
                        BfComplex const *alpha, BfComplex const *beta)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *kernelMat = NULL;
 
@@ -324,7 +324,7 @@ bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
                             BfReal K, BfLayerPotential layerPot,
                             BfComplex const *alpha, BfComplex const *beta)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (srcNormalsOrig != NULL
       && bfPoints2GetSize(srcPtsOrig) != bfVectors2GetSize(srcNormalsOrig))

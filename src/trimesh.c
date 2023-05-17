@@ -12,7 +12,7 @@
 #include <bf/util.h>
 
 static void initVf(BfTrimesh *trimesh) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   BfSize numFaces = bfTrimeshGetNumFaces(trimesh);
@@ -67,7 +67,7 @@ static void initVf(BfTrimesh *trimesh) {
 static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
                                          BfSize *nvvPtr, BfSize *capacityPtr,
                                          BfSize **vvPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize nvv = *nvvPtr;
   BfSize capacity = *capacityPtr;
@@ -120,7 +120,7 @@ static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
 }
 
 static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize nvv = 0, capacity = 16;
   BfSize *vv = bfMemAlloc(capacity, sizeof(BfSize));
@@ -137,7 +137,7 @@ static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
 }
 
 static void initVv(BfTrimesh *trimesh) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
 
@@ -177,7 +177,7 @@ static void initVv(BfTrimesh *trimesh) {
 void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
                                   char const *vertsPath,
                                   char const *facesPath) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfPoints3InitFromBinaryFile(&trimesh->verts, vertsPath);
 
@@ -209,7 +209,7 @@ void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
 }
 
 void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp;
   char *lineptr = NULL;

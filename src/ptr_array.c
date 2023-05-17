@@ -11,7 +11,7 @@
 /** Implementation: PtrArray */
 
 BfPtrArray *bfPtrArrayNewWithDefaultCapacity() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray *ptrArray = bfMemAlloc(1, sizeof(BfPtrArray));
   if (ptrArray == NULL)
@@ -37,7 +37,7 @@ BfPtrArray bfGetUninitializedPtrArray() {
 }
 
 void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
@@ -80,7 +80,7 @@ void bfPtrArrayDelete(BfPtrArray **arr) {
 }
 
 BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray arrCopy = {
     .flags = BF_PTR_ARRAY_FLAG_NONE,
@@ -109,7 +109,7 @@ bool bfPtrArrayIsEmpty(BfPtrArray const *arr) {
 }
 
 void extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BF_ASSERT(new_capacity > arr->capacity);
 
@@ -123,7 +123,7 @@ void extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
 }
 
 void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (arr->num_elts == arr->capacity) {
     extendPtrArray(arr, 2*arr->capacity);
@@ -136,7 +136,7 @@ void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr) {
 }
 
 BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtr ptr = NULL;
 
@@ -222,7 +222,7 @@ void bfPtrArrayReverse(BfPtrArray *arr) {
 }
 
 void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (dst == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -233,7 +233,7 @@ void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst) {
 }
 
 void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i >= bfPtrArraySize(ptrArray))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -250,7 +250,7 @@ void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i) {
 /** Implementation: ConstPtrArray */
 
 BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstPtrArray *constPtrArray = bfMemAlloc(1, sizeof(BfConstPtrArray));
   if (constPtrArray == NULL)
@@ -267,7 +267,7 @@ BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity() {
 }
 
 void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
@@ -336,7 +336,7 @@ void bfConstPtrArrayAppend(BfConstPtrArray *arr, BfConstPtr constPtr) {
 }
 
 BfConstPtr bfConstPtrArrayGet(BfConstPtrArray const *arr, BfSize pos) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstPtr ptr = NULL;
 
@@ -357,7 +357,7 @@ BfConstPtr bfConstPtrArrayPopLast(BfConstPtrArray *arr) {
 }
 
 BfConstPtr bfConstPtrArrayGetFirst(BfConstPtrArray const *arr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstPtr constPtr = NULL;
 
@@ -372,7 +372,7 @@ BfConstPtr bfConstPtrArrayGetFirst(BfConstPtrArray const *arr) {
 }
 
 BfConstPtr bfConstPtrArrayGetLast(BfConstPtrArray const *arr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstPtr constPtr = NULL;
 
@@ -387,7 +387,7 @@ BfConstPtr bfConstPtrArrayGetLast(BfConstPtrArray const *arr) {
 }
 
 void bfConstPtrArrayExtend(BfConstPtrArray *arr, BfConstPtrArray const *otherArr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   for (BfSize i = 0; i < bfConstPtrArraySize(otherArr); ++i) {
     bfConstPtrArrayAppend(arr, bfConstPtrArrayGet(otherArr, i));

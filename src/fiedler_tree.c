@@ -6,7 +6,7 @@
 
 void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree,
                                   BfTrimesh const *trimesh) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   (void)fiedlerTree;
   (void)trimesh;

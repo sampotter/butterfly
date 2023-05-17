@@ -24,7 +24,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatProductCopy(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct const *matProduct = NULL;
   BfMatProduct *matProductCopy = NULL;
@@ -58,7 +58,7 @@ BfMat *bfMatProductCopy(BfMat const *mat) {
 }
 
 BfMat *bfMatProductSteal(BfMatProduct *matProduct) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatProductToMat(matProduct);
 
@@ -98,7 +98,7 @@ BfSize bfMatProductNumBytes(BfMatProduct const *matProduct) {
 }
 
 void bfMatProductDump(BfMatProduct const *matProduct, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Serialize the number of factors: */
   BfSize numFactors = bfMatProductNumFactors(matProduct);
@@ -121,7 +121,7 @@ bool bfMatProductInstanceOf(BfMat const *mat, BfType type) {
 }
 
 BfSize bfMatProductGetNumRows(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *factor = NULL;
   BfSize numRows = BF_SIZE_BAD_VALUE;
@@ -140,7 +140,7 @@ BfSize bfMatProductGetNumRows(BfMat const *mat) {
 }
 
 BfSize bfMatProductGetNumCols(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct const *matProduct = NULL;
   BfMat const *factor = NULL;
@@ -165,7 +165,7 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
 }
 
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct *matProduct = bfMatToMatProduct(mat);
   HANDLE_ERROR();
@@ -182,7 +182,7 @@ void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
 }
 
 BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct const *matProduct = NULL;
   BfMat const *factor = NULL;
@@ -221,7 +221,7 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
 }
 
 BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *factor = NULL;
   BfVec *prev = NULL;
@@ -256,7 +256,7 @@ BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec) {
 }
 
 BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *factor = NULL;
   BfVec *prev = NULL;
@@ -291,7 +291,7 @@ BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec) {
 }
 
 BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numFactors = bfMatProductNumFactors(matProduct);
   if (numFactors == 0)
@@ -349,7 +349,7 @@ BfMatProduct const *bfMatConstToMatProductConst(BfMat const *mat) {
 /** Implementation: MatProduct */
 
 BfMatProduct *bfMatProductNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct *prod = bfMemAlloc(1, sizeof(BfMatProduct));
   if (prod == NULL)
@@ -361,7 +361,7 @@ BfMatProduct *bfMatProductNew() {
 }
 
 void bfMatProductInit(BfMatProduct *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* We don't store the number of rows or columns in `mat->super`
    * since we always look up the number of rows and columns from the
@@ -414,7 +414,7 @@ void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat) {
 }
 
 BfMat *bfMatProductPopLastFactor(BfMatProduct *matProduct) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *lastFactor = NULL;
   BfSize numFactors = bfMatProductNumFactors(matProduct);

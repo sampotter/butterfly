@@ -35,7 +35,7 @@ void bfFacDelete(BfFac **facHandle) {
 }
 
 BfMat *bfFacGetMat(BfFac const *fac) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct *matProduct = bfFacGetMatProduct(fac);
   HANDLE_ERROR();
@@ -48,7 +48,7 @@ BfMat *bfFacGetMat(BfFac const *fac) {
 }
 
 BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatProduct *matProduct = bfMatProductNew();
   HANDLE_ERROR();
@@ -81,7 +81,7 @@ BfSize bfFacGetNumBytes(BfFac const *fac) {
 BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
                               BfPtrArray *PsiBlocks,
                               BfPtrArray *WBlocks) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfFac *fac = bfMemAlloc(1, sizeof(BfFac));
   if (fac == NULL)
@@ -142,7 +142,7 @@ BfVec *partialFacMulVec(BfFac const *fac, BfVec const *x) {
 
 static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
                                      BfSize i0, BfSize j0, BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfIndexedMat *indexedMat = bfMemAlloc(1, sizeof(BfIndexedMat));
   if (indexedMat == NULL)
@@ -164,7 +164,7 @@ static void getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
                                                 BfSize i0Sel, BfSize i1Sel,
                                                 BfSize i0Parent, BfSize j0Parent,
                                                 BfPtrArray *indexedPsiSubblocks) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfType type = bfMatGetType(mat);
 
@@ -204,7 +204,7 @@ static void getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
 }
 
 BfPtrArray *getIndexedPsiSubblocksInRowRange(BfFac const *fac, BfSize i0Sel, BfSize i1Sel) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray *indexedPsiSubblocks = bfPtrArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
@@ -223,7 +223,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
                                              BfTreeNode const *rowNode,
                                              BfMat **PsiBlockPtr,
                                              BfMat **W0BlockPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (PsiBlockPtr == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -421,7 +421,7 @@ bool partialFacsHaveSameRowSpan(BfPtrArray const *facs) {
  * tree node in each `PartialFac`, collect them together into a
  * `ConstPtrArray`, and return it. */
 BfConstNodeArray getFirstRowNodes(BfPtrArray const *facs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstNodeArray rowNodes;
   bfConstNodeArrayInitWithDefaultCapacity(&rowNodes);
@@ -450,7 +450,7 @@ BfConstNodeArray getFirstRowNodes(BfPtrArray const *facs) {
  * `ConstPtrArray`, and return it. */
 // TODO: this function is unnecessary (see the merge cut function below)
 BfConstNodeArray getLastRowNodes(BfPtrArray const *facs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstNodeArray rowNodes;
   bfConstNodeArrayInitWithDefaultCapacity(&rowNodes);
@@ -475,7 +475,7 @@ BfConstNodeArray getLastRowNodes(BfPtrArray const *facs) {
 }
 
 BfConstNodeArray getRowNodesByFirstIndex(BfPtrArray const *facs, BfSize i0) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstNodeArray rowNodes;
   bfConstNodeArrayInitWithDefaultCapacity(&rowNodes);
@@ -500,7 +500,7 @@ BfConstNodeArray getRowNodesByFirstIndex(BfPtrArray const *facs, BfSize i0) {
 }
 
 BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numPartialFacs = bfPtrArraySize(partialFacs);
 
@@ -558,7 +558,7 @@ BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
 void getPsiAndW0BlocksByRowNode(BfPtrArray const *currentPartialFacs,
                                BfTreeNode const *rowNode,
                                BfMat **PsiPtr, BfMat **W0Ptr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDense *Psi = NULL;
   BfMatBlockDiag *W0 = NULL;
@@ -628,7 +628,7 @@ void getPsiAndW0BlocksByRowNode(BfPtrArray const *currentPartialFacs,
 }
 
 static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bool success = true;
 
@@ -657,7 +657,7 @@ static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) 
 }
 
 static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, BfMat **WPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Compute truncated SVD of the block. */
   BfMat *Psi = NULL;
@@ -696,7 +696,7 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
 bool getPsiAndW(BfFacSpec const *facSpec,
                 BfMat const *mat, BfTreeNode const *rowNode,
                 BfMat **PsiPtr, BfMat **WPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /** NOTE! This function is actually a bit redundant... The other
    * place in this file where we check the extreme cases of having too
@@ -757,7 +757,7 @@ bool getPsiAndW(BfFacSpec const *facSpec,
 
 bool getLowRankApproximation(BfFacSpec const *facSpec, BfMat const *PsiStarSubblock,
                              BfMat **PsiSubblockPtr, BfMat **W0SubblockPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *U = NULL;
   BfMatDiagReal *S = NULL;
@@ -848,7 +848,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
                                        BfConstNodeArray **epsRankCutPtr,
                                        BfMat **PsiBlockPtr,
                                        BfMat **W0BlockPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDiag *PsiBlock = NULL;
   BfMatBlockDense *W0Block = NULL;
@@ -1018,7 +1018,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
  * BFs. This function gets that node from an array of BFs, and
  * additionally checks that every BF has the same parent. */
 static BfTreeNode const *getCommonParent(BfPtrArray const *facs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTreeNode const *commonParent = NULL;
 
@@ -1044,7 +1044,7 @@ static BfTreeNode const *getCommonParent(BfPtrArray const *facs) {
 BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
   static int CALL_NUMBER = 0;
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfFac *mergedFac = NULL;
 

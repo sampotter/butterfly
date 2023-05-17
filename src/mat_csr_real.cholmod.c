@@ -8,7 +8,7 @@
 #include <bf/error_macros.h>
 
 BfMat *bfMatCsrRealCholesky(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
   HANDLE_ERROR();

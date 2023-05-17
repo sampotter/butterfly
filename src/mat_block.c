@@ -87,7 +87,7 @@ void bfMatBlockInit(BfMatBlock *mat,
                     BfMatVtable *matVtbl, BfMatBlockVtable *matBlockVtbl,
                     BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, matVtbl, numBlockRows, numBlockCols);
   HANDLE_ERROR();

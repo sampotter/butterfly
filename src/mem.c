@@ -9,7 +9,7 @@
 #include <bf/error_macros.h>
 
 BfPtr bfMemAlloc(BfSize n, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   // TODO: check if n*size overflows
 
@@ -31,7 +31,7 @@ BfPtr bfMemAlloc(BfSize n, BfSize size) {
 }
 
 BfPtr bfMemAllocAndZero(BfSize n, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtr ptr = bfMemAlloc(n, size);
   if (ptr == NULL)
@@ -51,7 +51,7 @@ void bfMemFree(BfPtr ptr) {
 }
 
 BfPtr bfMemRealloc(BfPtr ptr, BfSize n, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtr newPtr = realloc(ptr, n*size);
   if (newPtr == NULL)

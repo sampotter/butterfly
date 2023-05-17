@@ -47,7 +47,7 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfReal K = atoi(argv[1]);
 

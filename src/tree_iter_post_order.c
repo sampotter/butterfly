@@ -17,7 +17,7 @@ typedef struct {
 /* Make a new StackNode from a TreeNode and initialize the index to
  * the first of its children which should be visited. */
 StackNode *makeStackNode(BfTreeNode *treeNode) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   StackNode *stackNode = bfMemAlloc(1, sizeof(StackNode));
   if (stackNode == NULL)
@@ -68,7 +68,7 @@ BfType bfTreeIterPostOrderGetType(BfTreeIterPostOrder const *iter) {
 }
 
 BfTreeNode *bfTreeIterPostOrderGetCurrentNode(BfTreeIterPostOrder *iter) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   StackNode *stackNode = NULL;
   BfTreeNode *treeNode = NULL;
@@ -95,7 +95,7 @@ bool bfTreeIterPostOrderIsDone(BfTreeIterPostOrder const *iter) {
 }
 
 static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   while (stackNode->nextChild != BF_SIZE_BAD_VALUE) {
     stackNode = makeStackNode(
@@ -110,7 +110,7 @@ static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
 }
 
 void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(&iter->stack))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -163,7 +163,7 @@ BfTreeIter *bfTreeIterPostOrderToTreeIter(BfTreeIterPostOrder *iter) {
 /** Implementation: TreeIterPostOrder */
 
 BfTreeIterPostOrder *bfTreeIterPostOrderNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTreeIterPostOrder *iter = bfMemAlloc(1, sizeof(BfTreeIterPostOrder));
   if (iter == NULL)
@@ -176,7 +176,7 @@ BfTreeIterPostOrder *bfTreeIterPostOrderNew() {
 }
 
 void bfTreeIterPostOrderInit(BfTreeIterPostOrder *iter, BfTree const *tree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfTreeIterInit(&iter->super, &TREE_ITER_VTABLE, tree);
 

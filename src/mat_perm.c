@@ -77,7 +77,7 @@ BfSize bfMatPermGetNumCols(BfMatPerm const *matPerm) {
 }
 
 static BfMat *solve_matDenseComplex(BfMatPerm const *matPerm, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = bfMatGetNumRows(otherMat);
   BfSize n = bfMatGetNumCols(otherMat);
@@ -136,7 +136,7 @@ BfMat *bfMatPermSolve(BfMatPerm const *matPerm, BfMat const *mat) {\
 }
 
 BfMat *bfMatPermGetInverse(BfMatPerm const *matPerm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (matPerm->impl->permType != PERM_TYPE_BF)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -167,7 +167,7 @@ BfMat *bfMatPermToMat(BfMatPerm *matPerm) {
 /** Implementation: MatPerm */
 
 BfMatPerm *bfMatPermNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatPerm *matPerm = bfMemAlloc(1, sizeof(BfMatPerm));
   if (matPerm == NULL)
@@ -179,7 +179,7 @@ BfMatPerm *bfMatPermNew() {
 }
 
 BfMatPerm *bfMatPermNewFromPerm(BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatPerm *matPerm = bfMatPermNew();
   HANDLE_ERROR();
@@ -195,7 +195,7 @@ BfMatPerm *bfMatPermNewFromPerm(BfPerm const *perm) {
 }
 
 BfMatPerm *bfMatPermNewViewFromLapackPivots(BfSize size, BfLapackInt *ipiv) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatPerm *matPerm = bfMatPermNew();
   HANDLE_ERROR();
@@ -211,7 +211,7 @@ BfMatPerm *bfMatPermNewViewFromLapackPivots(BfSize size, BfLapackInt *ipiv) {
 }
 
 void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&matPerm->super, &MAT_VTABLE, perm->size, perm->size);
   HANDLE_ERROR();
@@ -226,7 +226,7 @@ void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm) {
 }
 
 void bfMatPermInitViewFromLapackPivots(BfMatPerm *matPerm, BfSize size, BfLapackInt *ipiv) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&matPerm->super, &MAT_VTABLE, size, size);
   HANDLE_ERROR();

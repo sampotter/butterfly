@@ -35,7 +35,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
                               BfComplex const *alpha, BfComplex const *beta,
                               BfPtrArray const *srcLevelNodes,
                               BfPtrArray const *tgtLevelNodes) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* there should only be one target node at the starting level of
    * the target tree when we begin the traversal */
@@ -205,7 +205,7 @@ static bool makeFactorIterNext(MakeFactorIter *iter) {
  * TODO: explain how it works...
  */
 static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* neither the source nor target levels should be empty */
   BF_ASSERT(!bfPtrArrayIsEmpty(srcLevelNodes));
@@ -379,7 +379,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
 }
 
 static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes, BfComplex const *alpha, BfComplex const *beta) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* the current level of the target node tree shouldn't be empty */
   BF_ASSERT(!bfPtrArrayIsEmpty(tgtLevelNodes));
@@ -531,7 +531,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
                   BfTreeLevelIter *srcLevelIter,
                   BfTreeLevelIter *tgtLevelIter)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numFactors = 0;
 
@@ -627,7 +627,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
 }
 
 BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfTreeLevelIter *srcLevelIter, BfTreeLevelIter *tgtLevelIter, BfSize numFactors) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* allocate space for the butterfly factors
    *
@@ -690,7 +690,7 @@ static BfPtrArray getChildrenAsPtrArray(BfQuadtreeNode const *node) {
 }
 
 static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfReal K, BfLayerPotential layerPot, BfComplex const *alpha, BfComplex const *beta, BfQuadtreeNode const *srcNode, BfQuadtreeNode const *tgtNode) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints2 srcPts, tgtPts;
   BfVectors2 srcNormals, *srcNormalsPtr = NULL;
@@ -756,7 +756,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *srcTree, BfQuadtree const *tgtTree
                             BfQuadtreeNode const *srcNode,
                             BfQuadtreeNode const *tgtNode,
                             BfSize level) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPtrArray srcChildNodes, tgtChildNodes;
 
@@ -801,7 +801,7 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree con
                                        BfPtrArray const *tgtNodes,
                                        BfSize level,
                                        BfMatBlockDense *blockMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *super = &blockMat->super;
   BfMat *mat = NULL;
@@ -878,7 +878,7 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree con
 BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
                                 BfReal K, BfLayerPotential layerPot,
                                 BfComplex const *alpha, BfComplex const *beta) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   // TODO: ugh. Should actually be passing these TreeLevelIters to
   // this function, not the trees themselves. Can fix this up later.

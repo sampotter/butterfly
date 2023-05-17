@@ -60,7 +60,7 @@ BfQuadtreeNode const *bfTreeNodeConstToQuadtreeNodeConst(BfTreeNode const *node)
 /** Implementation: QuadtreeNode */
 
 BfQuadtreeNode *bfQuadtreeNodeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfQuadtreeNode *node = bfMemAlloc(1, sizeof(BfQuadtreeNode));
   if (node == NULL)
@@ -87,7 +87,7 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
                                       BfPoints2 const *points, BfBbox2 bbox,
                                       BfSize i0, BfSize i1, BfSize *perm,
                                       BfSize currentDepth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BF_ASSERT(i0 <= i1);
 
@@ -243,7 +243,7 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
 }
 
 void bfQuadtreeNodeInitRoot(BfQuadtreeNode *node, BfQuadtree const *tree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfTreeNodeInit(&node->super, &TreeNodeVtable,
                  true, (void *)tree, NUM_CHILDREN, BF_SIZE_BAD_VALUE, 0);
@@ -288,7 +288,7 @@ BfCircle bfQuadtreeNodeGetBoundingCircle(BfQuadtreeNode const *node) {
  * `BfQuadtree` from `node`, which takes `O(log N)` time. */
 BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
                                   BfQuadtree const *quadtree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints2 points;
 
@@ -313,7 +313,7 @@ BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
 
 BfVectors2 bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *quadtreeNode,
                                         BfQuadtree const *quadtree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVectors2 unitNormals = bfGetUninitializedVectors2();
 

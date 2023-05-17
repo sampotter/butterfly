@@ -12,7 +12,7 @@ typedef enum {
 } PermType;
 
 BfPerm *bfPermNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPerm *perm = bfMemAlloc(1, sizeof(BfPerm));
   if (perm == NULL)
@@ -26,7 +26,7 @@ BfPerm *bfPermNew() {
 }
 
 void bfPermInitEmpty(BfPerm *perm, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   perm->index = bfMemAlloc(size, sizeof(BfSize));
   if (perm->index == NULL)
@@ -59,7 +59,7 @@ void bfPermDelete(BfPerm **perm) {
 }
 
 BfPerm *bfPermCopy(BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPerm *permCopy = bfPermNew();
   HANDLE_ERROR();
@@ -81,7 +81,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
 }
 
 BfPerm bfPermIdentity(BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPerm perm = {.index = bfMemAlloc(size, sizeof(BfSize)), .size = size};
 
@@ -101,7 +101,7 @@ BfPerm bfPermIdentity(BfSize size) {
 }
 
 BfPerm bfPermGetReversePerm(BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPerm revPerm = {
     .index = bfMemAlloc(perm->size, sizeof(BfSize)),

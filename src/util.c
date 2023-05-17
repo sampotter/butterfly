@@ -97,7 +97,7 @@ void bfPrintBlocks(BfMat const *mat, BfSize level, FILE *fp) {
 }
 
 BfSize bfGetFileSizeInBytes(char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numBytes = BF_SIZE_BAD_VALUE;
 
@@ -116,7 +116,7 @@ BfSize bfGetFileSizeInBytes(char const *path) {
 }
 
 void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "rb");
   if (fp == NULL)

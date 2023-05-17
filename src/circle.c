@@ -25,7 +25,7 @@ BfPoints2 bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints) {
 }
 
 BfVectors2 bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   (void)circ; /* Don't actually use this... just for consistency in
                * the interface */

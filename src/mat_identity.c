@@ -23,7 +23,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = bfMatIdentityGetNumRows(matIdentity);
   BfSize numCols = bfMatIdentityGetNumCols(matIdentity);
@@ -45,7 +45,7 @@ BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
 }
 
 BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatIdentityToMat(matIdentity);
 
@@ -97,7 +97,7 @@ BfSize bfMatIdentityGetNumCols(BfMatIdentity const *matIdentity) {
 }
 
 BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatIdentityConstToMatConst(matIdentity);
 
@@ -123,7 +123,7 @@ BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0,
 }
 
 BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatIdentityConstToMatConst(matIdentity);
 
@@ -141,7 +141,7 @@ BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
 }
 
 BfVec *bfMatIdentityRmulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatIdentityConstToMatConst(matIdentity);
 
@@ -191,7 +191,7 @@ BfMatIdentity *bfMatToMatIdentity(BfMat *mat) {
 /** Implementation: MatIdentity */
 
 BfMatIdentity *bfMatIdentityNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatIdentity *matIdentity = bfMemAlloc(1, sizeof(BfMatIdentity));
   if (matIdentity == NULL)
@@ -203,7 +203,7 @@ BfMatIdentity *bfMatIdentityNew() {
 }
 
 void bfMatIdentityInit(BfMatIdentity *matIdentity, BfSize n) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&matIdentity->super, &MAT_VTABLE, n, n);
   HANDLE_ERROR();

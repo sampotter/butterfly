@@ -41,7 +41,7 @@ BfSize bfTruncSpecGetNumTerms(BfTruncSpec const *truncSpec, BfMatDiagReal const 
 BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
                     BfReal tol, BfSize maxNumIter, BfSize *numIter,
                     BfMat const *M) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Solution of the system */
   BfMat *X = NULL;
@@ -290,7 +290,7 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   double *resid = NULL;
   double *V = NULL;
@@ -437,7 +437,7 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   double *resid = NULL;
   double *V = NULL;
@@ -669,7 +669,7 @@ dnaupd:
 
 void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
                     BfReal sigma, BfMat **PhiPtr, BfVecReal **LambdaPtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *Phi = NULL;
   BfVecReal *Lambda = NULL;
@@ -754,7 +754,7 @@ get_shifted_eigs:
 
 bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfMat **VTPtr,
                        BfTruncSpec const *truncSpec, BfBackend backend) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bool truncated = true;
 

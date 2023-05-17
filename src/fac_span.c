@@ -7,7 +7,7 @@
 #include <bf/mem.h>
 
 BfFacSpan *bfFacSpanNewFromPtrArray(BfPtrArray const *facs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfFacSpan *facSpan = bfMemAlloc(1, sizeof(BfFacSpan));
   HANDLE_ERROR();
@@ -25,7 +25,7 @@ BfFacSpan *bfFacSpanNewFromPtrArray(BfPtrArray const *facs) {
 static bool facsHaveSameRowSpan(BfPtrArray const *facs) {
   BF_ASSERT(!bfPtrArrayIsEmpty(facs));
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Get the first factorization and compare all the others' row spans
    * to this one's row span. */
@@ -54,7 +54,7 @@ static bool facsHaveSameRowSpan(BfPtrArray const *facs) {
 static bool facsDetermineContiguousColNodeSpan(BfPtrArray const *facs) {
   BF_ASSERT(!bfPtrArrayIsEmpty(facs));
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bool contiguous = false;
 
@@ -81,7 +81,7 @@ static bool facsDetermineContiguousColNodeSpan(BfPtrArray const *facs) {
 }
 
 void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *facs) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(facs))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -106,7 +106,7 @@ void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *facs) {
 }
 
 BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDense *matBlockDense = NULL;
 

@@ -21,7 +21,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatDiagRealGetView(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal *view = bfMemAlloc(1, sizeof(BfMatDiagReal));
   if (view == NULL)
@@ -42,7 +42,7 @@ BfMat *bfMatDiagRealGetView(BfMat *mat) {
 }
 
 BfVec *bfMatDiagRealGetRowCopy(BfMat const *mat, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = bfMatGetNumRows(mat);
   if (i >= numRows)
@@ -93,7 +93,7 @@ BfSize bfMatDiagRealGetNumCols(BfMatDiagReal const *matDiagReal) {
 }
 
 BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal const *matDiagReal = NULL;
   BfMatCooReal *rowRange = NULL;
@@ -134,7 +134,7 @@ BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
 }
 
 BfVec *mulVec_vecReal(BfMatDiagReal const *matDiagReal, BfVecReal const *vecReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *result = NULL;
 
@@ -208,7 +208,7 @@ BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat) {
 /* Implementation: MatDiagReal */
 
 BfMatDiagReal *bfMatDiagRealNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal *mat = bfMemAlloc(1, sizeof(BfMatDiagReal));
   if (mat == NULL)
@@ -224,7 +224,7 @@ BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols) {
 }
 
 BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal diagValue) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal *mat = bfMatDiagRealNew();
   HANDLE_ERROR();
@@ -241,7 +241,7 @@ BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal d
 }
 
 BfMatDiagReal *bfMatDiagRealNewFromData(BfSize numRows, BfSize numCols, BfReal const *data) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal *matDiagReal = bfMatDiagRealNew();
   HANDLE_ERROR();
@@ -259,7 +259,7 @@ BfMatDiagReal *bfMatDiagRealNewFromData(BfSize numRows, BfSize numCols, BfReal c
 }
 
 void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
@@ -276,7 +276,7 @@ void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
 
 void bfMatDiagRealInitView(BfMatDiagReal *mat, BfSize numRows, BfSize numCols,
                            BfReal *data) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
@@ -322,7 +322,7 @@ bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
   BfMat *super = bfMatDiagRealToMat(mat);
   BF_ASSERT(!bfMatIsTransposed(super)); // TODO: implement
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatDiagReal *matView = bfMatDiagRealNew();
   HANDLE_ERROR();
@@ -342,7 +342,7 @@ BfMatDenseComplex *
 bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
                                BfMatDenseComplex const *rhs)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *lhsSuper = bfMatDiagRealConstToMatConst(lhs);
   BfMat const *rhsSuper = bfMatDenseComplexConstToMatConst(rhs);
@@ -380,7 +380,7 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
 }
 
 BfVec *bfMatDiagRealGetVecView(BfMatDiagReal *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *vecReal = bfVecRealNew();
   HANDLE_ERROR();

@@ -50,7 +50,7 @@ BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree) {
 /** Implementation: IntervalTree */
 
 BfIntervalTree *bfIntervalTreeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfIntervalTree *intervalTree = bfMemAlloc(1, sizeof(BfIntervalTree));
   HANDLE_ERROR();
@@ -62,7 +62,7 @@ BfIntervalTree *bfIntervalTreeNew() {
 }
 
 void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize maxDepth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfIntervalTreeNode *root = bfIntervalTreeNodeNew();
   HANDLE_ERROR();
@@ -137,7 +137,7 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
 }
 
 void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *points, bool rebuildTree) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (rebuildTree)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);

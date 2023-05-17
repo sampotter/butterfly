@@ -11,7 +11,7 @@
 #include <math.h>
 
 BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints1 *freqs = bfPoints1New();
   HANDLE_ERROR();
@@ -38,7 +38,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
 
 void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
                                   BfMat const *L, BfMat const *M) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *Phi = NULL;
   BfVecReal *Lam = NULL;

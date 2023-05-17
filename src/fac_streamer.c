@@ -52,7 +52,7 @@ struct BfFacStreamer {
 };
 
 BfFacStreamer *bfFacStreamerNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfFacStreamer *facStreamer = bfMemAlloc(1, sizeof(BfFacStreamer));
   if (facStreamer == NULL)
@@ -65,7 +65,7 @@ BfFacStreamer *bfFacStreamerNew() {
 }
 
 void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   facStreamer->facSpec = facSpec;
 
@@ -110,7 +110,7 @@ BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer) {
 /* Find the current partial factorizations associated with each of the
  * children of the current column node and return them in PtrArray. */
 static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTreeNode const *currentColNode = bfFacStreamerGetCurrentColumnNode(facStreamer);
   BF_ASSERT(!bfTreeNodeIsLeaf(currentColNode));
@@ -246,7 +246,7 @@ static void checkRelError(BfFacStreamer const *facStreamer, BfMat const *Phi, Bf
 }
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Continue the post-order traversal until the next leaf node */
   while (!bfTreeIterIsDone(facStreamer->colTreeIter)) {
@@ -304,7 +304,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 }
 
 static void addPartialFac(BfFacStreamer *facStreamer, BfFac *partialFac) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BF_ASSERT(bfFacStreamerGetNumRows(facStreamer) == partialFacGetNumRows(partialFac));
 
@@ -325,7 +325,7 @@ static void addPartialFac(BfFacStreamer *facStreamer, BfFac *partialFac) {
  *
  * TODO: this function is a mess! should be cleaned up! */
 void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Get the current column tree leaf node */
   BfTreeNode const *colNode = bfFacStreamerGetCurrentColumnNode(facStreamer);
@@ -447,7 +447,7 @@ bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer) {
 }
 
 BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfFac *fac = NULL;
 

@@ -7,7 +7,7 @@
 #include <bf/mem.h>
 
 BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfIndexedMat *indexedMat = bfMemAlloc(1, sizeof(BfIndexedMat));
   HANDLE_ERROR();
@@ -23,7 +23,7 @@ BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy 
 }
 
 void bfIndexedMatInitFromMat(BfIndexedMat *indexedMat, BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   indexedMat->i0 = i0;
   indexedMat->j0 = j0;

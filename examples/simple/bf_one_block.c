@@ -40,7 +40,7 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfLayerPotential layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
   if (!strcmp(layerPotStr, "S")) {

@@ -47,7 +47,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = NULL;
   BfMatBlockDiag const *matBlockDiag = NULL;
@@ -91,7 +91,7 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatBlockDiagToMat(matBlockDiag);
 
@@ -113,7 +113,7 @@ BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag) {
 }
 
 BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVec *rowCopy = NULL;
   BfMatBlock const *matBlock = NULL;
@@ -216,7 +216,7 @@ BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag) {
 }
 
 void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Serialize the number of blocks: */
   BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
@@ -256,7 +256,7 @@ BfSize bfMatBlockDiagGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -325,7 +325,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
 }
 
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = bfMatToMatBlock(mat);
   HANDLE_ERROR();
@@ -348,7 +348,7 @@ void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
 }
 
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
   BfMatBlockDiag const *matBlockDiag = bfMatConstToMatBlockDiagConst(mat);
@@ -386,7 +386,7 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
 }
 
 BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
 
@@ -435,7 +435,7 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
 }
 
 BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockDiagConstToMatConst(matBlockDiag);
 
@@ -484,7 +484,7 @@ BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *ve
 }
 
 void bfMatBlockDiagNegate(BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = NULL;
   BfMatBlockDiag *matBlockDiag = NULL;
@@ -523,7 +523,7 @@ void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
 
 BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
                              BfMatDenseComplex const *otherMatDenseComplex) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   // (m x n) (n x p) = (m x p)
 
@@ -601,7 +601,7 @@ BfSize bfMatBlockDiagGetNumColBlocks(BfMatBlockDiag const *matBlockDiag) {
 }
 
 BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
   HANDLE_ERROR();
@@ -679,7 +679,7 @@ BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat) {
 /** Implementation: MatBlockDiag */
 
 BfMatBlockDiag *bfMatBlockDiagNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDiag *mat = bfMemAlloc(1, sizeof(BfMatBlockDiag));
   if (mat == NULL)
@@ -691,7 +691,7 @@ BfMatBlockDiag *bfMatBlockDiagNew() {
 }
 
 BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDiag *matBlockDiag = bfMatBlockDiagNew();
   HANDLE_ERROR();
@@ -731,7 +731,7 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy)
 }
 
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numRows, BfSize numCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numBlocks = numRows < numCols ? numRows : numCols;
 
@@ -756,7 +756,7 @@ void bfMatBlockDiagDeinitAndDealloc(BfMatBlockDiag **mat) {
 }
 
 BfMat *bfMatBlockDiagGetBlock(BfMatBlockDiag *matBlockDiag, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = bfMatBlockDiagToMatBlock(matBlockDiag);
   BfMat *block = NULL;
@@ -778,7 +778,7 @@ BfMat *bfMatBlockDiagGetBlock(BfMatBlockDiag *matBlockDiag, BfSize i) {
 }
 
 BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
   BfMat const *block = NULL;
@@ -800,7 +800,7 @@ BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfS
 }
 
 void bfMatBlockDiagSetBlock(BfMatBlockDiag *matBlockDiag, BfSize i, BfMat *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatBlockDiagConstToMatBlockConst(matBlockDiag);
 

@@ -46,7 +46,7 @@ BfSize bfMatCooRealGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatCooRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -89,7 +89,7 @@ BfMat *bfMatCooRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
 }
 
 BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (j0 > j1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -132,7 +132,7 @@ BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
 }
 
 void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *rowIndPerm = NULL;
 
@@ -167,7 +167,7 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
 }
 
 void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *colIndPerm = NULL;
 
@@ -238,7 +238,7 @@ BfMatCooReal const *bfMatConstToMatCooRealConst(BfMat const *mat) {
 /** Implementation: MatCooReal */
 
 BfMatCooReal *bfMatCooRealNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCooReal *mat = bfMemAlloc(1, sizeof(BfMatCooReal));
   if (mat == NULL)
@@ -251,7 +251,7 @@ BfMatCooReal *bfMatCooRealNew() {
 
 void bfMatCooRealInitEmpty(BfMatCooReal *mat, BfSize numRows,
                               BfSize numCols, BfSize numElts) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();

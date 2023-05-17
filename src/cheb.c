@@ -49,7 +49,7 @@ BfReal bfChebStdGetErrorEstimate(BfChebStd const *cheb) {
  * them, returning the Chebysehv coefficients for f transformed to the
  * domain [-1, 1]. */
 void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, BfReal const *x) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize n = cheb->order;
   BfReal *c = cheb->c;
@@ -136,7 +136,7 @@ BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
 }
 
 void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   cheb->c = bfMemAlloc(cheb->order, sizeof(BfReal));
   HANDLE_ERROR();
@@ -155,7 +155,7 @@ void bfChebDeinit(BfCheb *cheb) {
 }
 
 void bfChebInterp(BfCheb *cheb, BfReal (*f)(BfReal), BfReal const *x) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfChebStd chebStd = {.order = cheb->order, .c = cheb->c};
 

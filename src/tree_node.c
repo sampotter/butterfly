@@ -17,7 +17,7 @@ BfType bfTreeNodeGetType(BfTreeNode const *node) {
 void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
                     void *parent, BfSize maxNumChildren, BfSize index,
                     BfSize depth) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   treeNode->vtbl = vtbl;
   treeNode->isRoot = isRoot;
@@ -149,7 +149,7 @@ bool bfTreeNodeIsEmpty(BfTreeNode const *treeNode) {
 }
 
 bool bfTreeNodeIsDescendant(BfTreeNode const *treeNode, BfTreeNode const *otherTreeNode) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bool isDescendant = false;
 

@@ -52,7 +52,7 @@ BfSize bfMatCooComplexGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -95,7 +95,7 @@ BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
 }
 
 BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (j0 > j1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -138,7 +138,7 @@ BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
 }
 
 void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *rowIndPerm = NULL;
 
@@ -173,7 +173,7 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
 }
 
 void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize *colIndPerm = NULL;
 
@@ -208,7 +208,7 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
 }
 
 static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCooComplex const *matCooComplex = NULL;
   BfMatDenseComplex const *matDenseComplex = NULL;
@@ -260,7 +260,7 @@ static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
 }
 
 static void expand(BfMatCooComplex *matCooComplex) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize newCapacity = 2*matCooComplex->capacity;
 
@@ -320,7 +320,7 @@ static int compare(BfSize k0, BfSize k1, void *aux) {
 
 static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
                                   BfMatCooComplex const *otherMatCooComplex) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *indexArray = bfSizeArrayNewIota(matCooComplex->numElts);
   HANDLE_ERROR();
@@ -434,7 +434,7 @@ BfMatCooComplex const *bfMatConstToMatCooComplexConst(BfMat const *mat) {
 /** Implementation: MatCooComplex */
 
 BfMatCooComplex *bfMatCooComplexNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCooComplex *mat = bfMemAlloc(1, sizeof(BfMatCooComplex));
   if (mat == NULL)
@@ -447,7 +447,7 @@ BfMatCooComplex *bfMatCooComplexNew() {
 
 void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows,
                               BfSize numCols, BfSize numElts) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();

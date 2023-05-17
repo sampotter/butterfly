@@ -48,7 +48,7 @@ BfOctree *bfTreeToOctree(BfTree *tree) {
 /** Implementation: Octree */
 
 BfOctree *bfOctreeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfOctree *octree = bfMemAlloc(1, sizeof(BfOctree));
   if (octree == NULL)
@@ -62,7 +62,7 @@ BfOctree *bfOctreeNew() {
 
 void bfOctreeInit(BfOctree *tree, BfPoints3 const *points,
                   BfVectors3 const *unitNormals) {
-  BEGIN_ERROR_HANDLING()
+  BF_ERROR_BEGIN()
 
   BfOctreeNode *root = bfOctreeNodeNew();
   HANDLE_ERROR();
@@ -112,7 +112,7 @@ static void writeBoxes(BfTree const *tree, BfTreeNode const *treeNode, WriteBoxe
 }
 
 void bfOctreeSaveBoxesToTextFile(BfOctree const *octree, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfTree const *tree = bfOctreeConstToTreeConst(octree);
 

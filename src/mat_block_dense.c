@@ -52,7 +52,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = NULL;
   BfMatBlockDense const *matBlockDense = NULL;
@@ -99,7 +99,7 @@ BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockDenseSteal(BfMatBlockDense *matBlockDense) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatBlockDenseToMat(matBlockDense);
 
@@ -121,7 +121,7 @@ BfMat *bfMatBlockDenseSteal(BfMatBlockDense *matBlockDense) {
 }
 
 BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVec *rowCopy = NULL;
   BfMatBlock const *matBlock = NULL;
@@ -208,7 +208,7 @@ BfSize bfMatBlockDenseNumBytes(BfMat const *mat) {
 }
 
 void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "w");
 
@@ -223,7 +223,7 @@ void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path)
 }
 
 void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Serialize the number of row and column blocks: */
   fwrite(&NUM_ROW_BLOCKS(matBlockDense), sizeof(BfSize), 1, fp);
@@ -260,7 +260,7 @@ BfSize bfMatBlockDenseGetNumCols(BfMat const *mat) {
 }
 
 BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = bfMatToMatBlock(mat);
 
@@ -314,7 +314,7 @@ BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
 
 BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
                                       BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -409,7 +409,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
 }
 
 void bfMatBlockDenseScaleCols(BfMatBlockDense *matBlockDense, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatBlockDenseToMat(matBlockDense);
 
@@ -434,7 +434,7 @@ void bfMatBlockDenseScaleCols(BfMatBlockDense *matBlockDense, BfVec const *vec) 
 }
 
 void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *mat = bfMatBlockDenseToMat(matBlockDense);
 
@@ -483,7 +483,7 @@ void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *othe
 }
 
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
   BfMatBlockDense const *matBlockDense = bfMatConstToMatBlockDenseConst(mat);
@@ -527,7 +527,7 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
 
 BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
                              BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
 
@@ -591,7 +591,7 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
 }
 
 BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
 
@@ -655,7 +655,7 @@ BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const 
 }
 
 static BfMat *toType_cooComplex(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCooComplex *matCooComplex = NULL;
 
@@ -758,7 +758,7 @@ BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type) {
 }
 
 BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSizeArray *nonzeroColumnRanges = bfSizeArrayNew();
   HANDLE_ERROR();
@@ -849,7 +849,7 @@ BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize 
 }
 
 BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *block = NULL;
 
@@ -903,7 +903,7 @@ BfMatBlockDense const *bfMatConstToMatBlockDenseConst(BfMat const *mat) {
 /** Implementation: */
 
 BfMatBlockDense *bfMatBlockDenseNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlockDense *matBlockDense = bfMemAlloc(1, sizeof(BfMatBlockDense));
   if (matBlockDense == NULL)
@@ -916,7 +916,7 @@ BfMatBlockDense *bfMatBlockDenseNew() {
 }
 
 BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(blocks))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -973,7 +973,7 @@ BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numCol
 }
 
 BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(blocks))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -1012,7 +1012,7 @@ BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy po
 }
 
 BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfPtrArrayIsEmpty(blocks))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -1052,7 +1052,7 @@ BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy po
 
 void bfMatBlockDenseInit(BfMatBlockDense *mat,
                          BfSize numRowBlocks, BfSize numColBlocks) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numBlocks = numRowBlocks*numColBlocks;
 
@@ -1080,7 +1080,7 @@ void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
 }
 
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMat *block = NULL;
 
@@ -1099,7 +1099,7 @@ BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
 
 void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
                              BfMat *block) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i >= NUM_ROW_BLOCKS(mat))
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
@@ -1119,7 +1119,7 @@ void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,
 }
 
 void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize oldNumColBlocks = BF_SIZE_BAD_VALUE;
 
@@ -1179,7 +1179,7 @@ void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
 }
 
 void bfMatBlockDenseAppendRow(BfMatBlockDense *mat, BfSize numBlockRows) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatBlock *matBlock = NULL;
 

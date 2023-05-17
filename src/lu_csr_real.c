@@ -51,7 +51,7 @@ BfMat *bfLuCsrRealScale(BfLuCsrReal const *luCsrReal, BfMat const *B) {
 }
 
 static BfVec *solve_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *x = bfVecRealNew();
   HANDLE_ERROR();
@@ -90,7 +90,7 @@ BfVec *bfLuCsrRealSolveVec(BfLuCsrReal const *luCsrReal, BfVec const *b) {
 }
 
 static BfVec *solveLowerVec_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b, bool permute) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *x = bfVecRealNew();
   HANDLE_ERROR();
@@ -129,7 +129,7 @@ BfVec *bfLuCsrRealSolveLowerVec(BfLuCsrReal const *luCsrReal, BfVec const *b, bo
 }
 
 static BfVec *solveUpperVec_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b, bool permute) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *x = bfVecRealNew();
   HANDLE_ERROR();
@@ -168,7 +168,7 @@ BfVec *bfLuCsrRealSolveUpperVec(BfLuCsrReal const *luCsrReal, BfVec const *b, bo
 }
 
 static BfVec *scale_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecReal *x = bfVecRealNew();
   HANDLE_ERROR();
@@ -204,7 +204,7 @@ BfVec *bfLuCsrRealScaleVec(BfLuCsrReal const *luCsrReal, BfVec const *b) {
 /** Implementation: LuCsrReal */
 
 BfLuCsrReal *bfLuCsrRealNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfLuCsrReal *luCsrReal = bfMemAlloc(1, sizeof(BfLuCsrReal));
   HANDLE_ERROR();
@@ -217,7 +217,7 @@ BfLuCsrReal *bfLuCsrRealNew() {
 }
 
 void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfLuInit(&luCsrReal->super, &LU_VTABLE);
 
@@ -304,7 +304,7 @@ void bfLuCsrRealDeinitAndDealloc(BfLuCsrReal **luCsrReal) {
   bfLuCsrRealDealloc(luCsrReal);
 }
 void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   int *Lp = NULL;
   int *Lj = NULL;

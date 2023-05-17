@@ -62,7 +62,7 @@ void bfPoint3Copy(BfPoint3 x, BfPoint3 const y) {
 }
 
 BfPoints2 *bfPoints2NewEmpty() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints2 *points = bfMemAlloc(1, sizeof(BfPoints2));
   if (points == NULL)
@@ -82,7 +82,7 @@ BfPoints2 *bfPoints2NewEmpty() {
 }
 
 BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints2 *points = bfPoints2NewEmpty();
   HANDLE_ERROR();
@@ -110,7 +110,7 @@ BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat) {
 }
 
 BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints2 *points = NULL;
 
@@ -140,7 +140,7 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
 /** Implementation: Points1 */
 
 BfPoints1 *bfPoints1New() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints1 *points = bfMemAlloc(1, sizeof(BfPoints1));
   if (points == NULL)
@@ -158,7 +158,7 @@ BfPoints1 *bfPoints1New() {
 }
 
 BfPoints1 *bfPoints1Copy(BfPoints1 const *points) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfPoints1 *pointsCopy = bfPoints1New();
   HANDLE_ERROR();
@@ -178,7 +178,7 @@ BfPoints1 *bfPoints1Copy(BfPoints1 const *points) {
 }
 
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   points->data = bfMemAlloc(capacity, sizeof(BfPoint1));
   if (points->data == NULL)
@@ -218,7 +218,7 @@ bool bfPoints1IsSorted(BfPoints1 const *points) {
 }
 
 void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Grow the array if we're at capacity */
   if (points->size == points->capacity) {
@@ -238,7 +238,7 @@ void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
 }
 
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (!bfPoints1IsSorted(points))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -282,7 +282,7 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
 }
 
 void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal)) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   for (BfSize i = 0; i < points->size; ++i) {
     points->data[i] = func(points->data[i]);
@@ -295,7 +295,7 @@ void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal)) {
 }
 
 void bfPoints1Save(BfPoints1 const *points, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
@@ -334,7 +334,7 @@ void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints) {
 }
 
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
@@ -400,7 +400,7 @@ void bfGetPointsByIndex(BfPoints2 const *points,
                         BfSize numInds, BfSize const *inds,
                         BfPoints2 *indexedPoints)
 {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfInitEmptyPoints2(indexedPoints, numInds);
   HANDLE_ERROR();
@@ -425,7 +425,7 @@ void bfPrintPoints2(BfPoints2 const *points) {
 }
 
 void bfSavePoints2(BfPoints2 const *points, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
@@ -447,7 +447,7 @@ void bfSavePoints2(BfPoints2 const *points, char const *path) {
  * It is the responsibility of the caller to free the returned
  * array. */
 BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize m = X->size, n = Y->size;
 
@@ -470,7 +470,7 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
 }
 
 void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* Grow the array if we're at capacity */
   if (points->size == points->capacity) {
@@ -499,7 +499,7 @@ void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints) {
 }
 
 void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (i >= points->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -516,7 +516,7 @@ BfSize bfPoints2GetSize(BfPoints2 const *points) {
 }
 
 BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if ((i0 >= points->size && i1 > points->size) || i0 > points->size)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -556,7 +556,7 @@ void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {
 }
 
 void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
@@ -614,7 +614,7 @@ BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
 }
 
 void bfPoints3GetByIndex(BfPoints3 const *points, BfSize numInds, BfSize const *inds, BfPoints3 *indexedPoints) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfPoints3InitEmpty(indexedPoints, numInds);
   HANDLE_ERROR();

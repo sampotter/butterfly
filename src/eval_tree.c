@@ -90,7 +90,7 @@ BfReal bfEvalTreeGetValue(BfEvalTree const *tree, BfReal x) {
 }
 
 BfEvalTree *bfEvalTreeNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfEvalTree *evalTree = bfMemAlloc(1, sizeof(BfEvalTree));
   if (evalTree == NULL)

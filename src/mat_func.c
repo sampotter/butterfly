@@ -14,7 +14,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
@@ -33,7 +33,7 @@ BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc) {
 }
 
 BfSize bfMatFuncGetNumCols(BfMatFunc const *matFunc) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
@@ -52,7 +52,7 @@ BfSize bfMatFuncGetNumCols(BfMatFunc const *matFunc) {
 }
 
 BfMat *bfMatFuncMul(BfMatFunc const *matFunc, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (bfMatFuncGetNumCols(matFunc) != bfMatGetNumRows(otherMat))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -86,7 +86,7 @@ BfMat const *bfMatFuncConstToMatConst(BfMatFunc const *matFunc) {
 /** Implementation: MatFunc */
 
 BfMatFunc *bfMatFuncNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatFunc *matFunc = bfMemAlloc(1, sizeof(BfMatFunc));
   if (matFunc == NULL)

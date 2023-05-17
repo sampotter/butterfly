@@ -24,7 +24,7 @@ BfType bfVecZeroGetType(BfVec const *vec) {
 }
 
 static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecComplex *cat = NULL;
 
@@ -61,7 +61,7 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
 }
 
 BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BF_ASSERT(bfVecGetType(vec) == BF_TYPE_VEC_ZERO);
   BF_ASSERT(bfVecGetType(otherVec) == BF_TYPE_VEC_ZERO);
@@ -109,7 +109,7 @@ BfVecZero const *bfVecConstToVecZeroConst(BfVec const *vec) {
 /** Implementation: VecZero */
 
 BfVecZero *bfVecZeroNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVecZero *vecZero = bfMemAlloc(1, sizeof(BfVecZero));
   if (vecZero == NULL)
@@ -121,7 +121,7 @@ BfVecZero *bfVecZeroNew() {
 }
 
 void bfVecZeroInit(BfVecZero *vecZero, BfSize size) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bfVecInit(&vecZero->super, &VEC_VTABLE, size);
   HANDLE_ERROR();

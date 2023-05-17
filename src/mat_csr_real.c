@@ -20,7 +20,7 @@ static BfMatVtable MAT_VTABLE = {
 };
 
 BfMat *bfMatCsrRealCopy(BfMat const *mat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
   HANDLE_ERROR();
@@ -69,7 +69,7 @@ BfSize bfMatCsrRealGetNumCols(BfMat const *mat) {
 }
 
 void bfMatCsrRealScale(BfMat *mat, BfComplex scalar) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   if (cimag(scalar) != 0)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -88,7 +88,7 @@ void bfMatCsrRealScale(BfMat *mat, BfComplex scalar) {
 }
 
 void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal *matCsrReal = bfMatToMatCsrReal(mat);
   HANDLE_ERROR();
@@ -108,7 +108,7 @@ void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat) {
 }
 
 static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
   HANDLE_ERROR();
@@ -144,7 +144,7 @@ static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
 }
 
 BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfVec *result = NULL;
 
@@ -201,7 +201,7 @@ BfMatCsrReal const *bfMatConstToMatCsrRealConst(BfMat const *mat) {
 /** Implementation: MatCsrReal */
 
 BfMatCsrReal *bfMatCsrRealNew() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfMatCsrReal *mat = bfMemAlloc(1, sizeof(BfMatCsrReal));
   if (mat == NULL)
@@ -215,7 +215,7 @@ BfMatCsrReal *bfMatCsrRealNew() {
 void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
                       BfSize const *rowptr, BfSize const *colind,
                       BfReal const *data) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize nnz = rowptr[numRows];
 
@@ -268,7 +268,7 @@ void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat) {
 
 void bfMatCsrRealDump(BfMatCsrReal const *matCsrReal, char const *rowptrPath,
                       char const *colindPath, char const *dataPath) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize numRows = matCsrReal->super.numRows;
   BfSize nnz = matCsrReal->rowptr[numRows];

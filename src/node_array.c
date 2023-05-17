@@ -6,7 +6,7 @@
 #include <bf/mem.h>
 
 BfConstNodeArray *bfConstNodeArrayNewWithDefaultCapacity() {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfConstNodeArray *nodeArray = bfMemAlloc(1, sizeof(BfConstNodeArray));
   HANDLE_ERROR();
@@ -114,7 +114,7 @@ bool bfConstNodeArrayIsSameSpan(BfConstNodeArray const *nodes, BfConstNodeArray 
 }
 
 bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   bool sameFirstIndex = true;
 
@@ -139,7 +139,7 @@ bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes) {
 
 BfSize getMaxLastIndexForRowNodes(BfConstNodeArray const *nodes,
                                   BfTreeNode const **argmaxNodePtr) {
-  BEGIN_ERROR_HANDLING();
+  BF_ERROR_BEGIN();
 
   BfSize i1Max = BF_SIZE_BAD_VALUE;
   BfTreeNode const *argmaxNode = NULL;
