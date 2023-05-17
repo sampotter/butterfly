@@ -40,7 +40,7 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
   if (treeNode->child == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfTreeNodeDeinit(treeNode);
   }
 }
@@ -170,7 +170,7 @@ repeat:
     goto repeat;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     isDescendant = false;
   }
 

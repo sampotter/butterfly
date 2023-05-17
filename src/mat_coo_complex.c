@@ -88,7 +88,7 @@ BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooComplexDeinitAndDealloc(&rowRange);
 
   return bfMatCooComplexToMat(rowRange);
@@ -131,7 +131,7 @@ BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooComplexDeinitAndDealloc(&colRange);
 
   return bfMatCooComplexToMat(colRange);
@@ -165,7 +165,7 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
   bfMemFree(matCooComplex->rowInd);
   matCooComplex->rowInd = rowIndPerm;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(rowIndPerm);
   }
 
@@ -200,7 +200,7 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
   bfMemFree(matCooComplex->colInd);
   matCooComplex->colInd = colIndPerm;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(colIndPerm);
   }
 
@@ -253,7 +253,7 @@ static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
     bfVecDelete(&rowVec);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -294,7 +294,7 @@ static void expand(BfMatCooComplex *matCooComplex) {
 
   matCooComplex->capacity = newCapacity;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMemFree(oldRowInd);
   bfMemFree(oldColInd);
@@ -372,7 +372,7 @@ static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
     ++matCooComplex->numElts;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -440,7 +440,7 @@ BfMatCooComplex *bfMatCooComplexNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -468,7 +468,7 @@ void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows,
 
   mat->capacity = numElts;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(mat->rowInd);
     bfMemFree(mat->colInd);
     bfMemFree(mat->value);

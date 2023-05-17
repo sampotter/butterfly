@@ -18,7 +18,7 @@ BfPerm *bfPermNew() {
   if (perm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     perm = NULL;
   }
 
@@ -37,7 +37,7 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
 
   perm->size = size;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPermDeinit(perm);
   }
 }
@@ -73,7 +73,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
 
   bfMemCopy(perm->index, perm->size, sizeof(BfSize), permCopy->index);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -91,7 +91,7 @@ BfPerm bfPermIdentity(BfSize size) {
   for (BfSize i = 0; i < size; ++i)
     perm.index[i] = i;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(perm.index);
     perm.index = NULL;
     perm.size = BF_SIZE_BAD_VALUE;
@@ -114,7 +114,7 @@ BfPerm bfPermGetReversePerm(BfPerm const *perm) {
   for (BfSize i = 0; i < revPerm.size; ++i)
     revPerm.index[perm->index[i]] = i;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(revPerm.index);
     revPerm.index = NULL;
     revPerm.size = BF_SIZE_BAD_VALUE;

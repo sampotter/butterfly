@@ -40,7 +40,7 @@ BfMat *bfFacGetMat(BfFac const *fac) {
   BfMatProduct *matProduct = bfFacGetMatProduct(fac);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -64,7 +64,7 @@ BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -108,7 +108,7 @@ BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
 
   fac->W[0] = bfMatBlockDenseToMat(W0);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     fac = NULL;
   }
 
@@ -155,7 +155,7 @@ static void appendIndexedPsiSubblock(BfPtrArray *indexedPsiSubblocks,
   bfPtrArrayAppend(indexedPsiSubblocks, indexedMat);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -198,7 +198,7 @@ static void getIndexedPsiSubblocksInRowRangeRec(BfMat *mat,
 
   else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -212,7 +212,7 @@ BfPtrArray *getIndexedPsiSubblocksInRowRange(BfFac const *fac, BfSize i0Sel, BfS
   getIndexedPsiSubblocksInRowRangeRec(fac->Psi, i0Sel, i1Sel, 0, 0, indexedPsiSubblocks);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -331,7 +331,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false); // T_T
   }
 
@@ -438,7 +438,7 @@ BfConstNodeArray getFirstRowNodes(BfPtrArray const *facs) {
     bfConstNodeArrayAppend(&rowNodes, rowNode);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstNodeArrayDeinit(&rowNodes);
   }
 
@@ -467,7 +467,7 @@ BfConstNodeArray getLastRowNodes(BfPtrArray const *facs) {
     bfConstNodeArrayAppend(&rowNodes, rowNode);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstNodeArrayDeinit(&rowNodes);
   }
 
@@ -492,7 +492,7 @@ BfConstNodeArray getRowNodesByFirstIndex(BfPtrArray const *facs, BfSize i0) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstNodeArrayDeinit(&rowNodes);
   }
 
@@ -548,7 +548,7 @@ BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
     BF_ASSERT(bfConstNodeArraySize(&rowNodes) == numPartialFacs);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstNodeArrayDeinit(&mergeCut);
   }
 
@@ -605,7 +605,7 @@ void getPsiAndW0BlocksByRowNode(BfPtrArray const *currentPartialFacs,
   W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -643,7 +643,7 @@ static bool getPsiAndW_skinny(BfMat const *block, BfMat **PsiPtr, BfMat **WPtr) 
   bfMatIdentityInit(W, n);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     success = false;
 
     bfMatDelete(&Psi);
@@ -676,7 +676,7 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     success = false;
   }
 
@@ -743,7 +743,7 @@ bool getPsiAndW(BfFacSpec const *facSpec,
   else
     success = getPsiAndW_normal(block, facSpec->tol, PsiPtr, WPtr);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     success = false;
 
     /* TODO: make sure to free Psi and W if I allocated them... */
@@ -829,7 +829,7 @@ bool getLowRankApproximation(BfFacSpec const *facSpec, BfMat const *PsiStarSubbl
     bfPtrArrayDeinit(&indexedBlocks);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -996,7 +996,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
   W0Block = bfMatBlockDenseNewColFromBlocks(&W0Subblocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstNodeArrayDeinitAndDealloc(&epsRankCut);
 
     // TODO: free blocks
@@ -1034,7 +1034,7 @@ static BfTreeNode const *getCommonParent(BfPtrArray const *facs) {
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -1225,7 +1225,7 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
 #endif
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

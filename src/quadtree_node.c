@@ -66,7 +66,7 @@ BfQuadtreeNode *bfQuadtreeNodeNew() {
   if (node == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return node;
 }
@@ -235,7 +235,7 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
               (offset[q] < offset[q + 1] && child[q] != NULL));
 #endif
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
       bfMemFree(child[q]);
     }
@@ -261,7 +261,7 @@ void bfQuadtreeNodeInitRoot(BfQuadtreeNode *node, BfQuadtree const *tree) {
                             tree->super.perm.index, 0);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 // void bfQuadtreeNodeDeinit(BfQuadtreeNode *node);
@@ -306,7 +306,7 @@ BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
   bfGetPointsByIndex(quadtree->points, numInds, inds, &points);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return points;
 }
@@ -334,7 +334,7 @@ BfVectors2 bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *quadtreeNode,
   bfGetVectorsByIndex(quadtree->unitNormals, numInds, inds, &unitNormals);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return unitNormals;
 }

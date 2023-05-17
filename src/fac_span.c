@@ -15,7 +15,7 @@ BfFacSpan *bfFacSpanNewFromPtrArray(BfPtrArray const *facs) {
   bfFacSpanInitFromPtrArray(facSpan, facs);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -44,7 +44,7 @@ static bool facsHaveSameRowSpan(BfPtrArray const *facs) {
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -71,7 +71,7 @@ static bool facsDetermineContiguousColNodeSpan(BfPtrArray const *facs) {
 
   contiguous = bfConstNodeArrayIsContiguous(&colNodes);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -100,7 +100,7 @@ void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *facs) {
   for (BfSize i = 0; i < facSpan->numFacs; ++i)
     facSpan->fac[i] = bfPtrArrayGet(facs, i);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -123,7 +123,7 @@ BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan) {
 
   matBlockDense = bfMatBlockDenseNewRowFromBlocks(rowBlocks, BF_POLICY_STEAL);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 

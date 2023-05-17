@@ -62,7 +62,7 @@ BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
   bfMatDenseRealInitCopy(matDenseRealCopy, matDenseReal);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
 
   return bfMatDenseRealToMat(matDenseRealCopy);
@@ -82,7 +82,7 @@ BfMat *bfMatDenseRealGetView(BfMat *mat) {
 
   matView->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     matView = NULL;
 
   return matView;
@@ -103,7 +103,7 @@ BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
 
   mat->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -132,7 +132,7 @@ BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
 
   bfVecRealInitView(colView, m, stride, data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecRealDeinitAndDealloc(&colView);
 
   return bfVecRealToVec(colView);
@@ -168,7 +168,7 @@ void bfMatDenseRealSave(BfMat const *mat, char const *path) {
   fwrite(matDenseReal->data, sizeof(BfReal), numElts, fp);
   /* TODO: error-handling */
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }
@@ -195,7 +195,7 @@ void bfMatDenseRealDump(BfMatDenseReal const *matDenseReal, FILE *fp) {
     }
   }
 
-//   END_ERROR_HANDLING() {
+//   BF_ERROR_END() {
 //     BF_DIE();
 //   }
 }
@@ -232,7 +232,7 @@ void bfMatDenseRealPrint(BfMat const *mat, FILE *fp) {
   }
   fprintf(fp, "]\n");
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfSize bfMatDenseRealGetNumRows(BfMat const *mat) {
@@ -288,7 +288,7 @@ void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
     srcPtr += rowReal->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
@@ -336,7 +336,7 @@ void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
     srcPtr += colReal->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
@@ -358,7 +358,7 @@ BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
     submat->data += bfMatDenseRealToMatDense(submat)->rowStride*i0;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&matView);
 
   return matView;
@@ -401,7 +401,7 @@ BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
   }
 
@@ -444,7 +444,7 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
   }
 
@@ -487,7 +487,7 @@ void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMatDelete(&matPerm);
 }
@@ -545,7 +545,7 @@ BfMatDenseReal *bfMatDenseRealNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -568,7 +568,7 @@ BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfRea
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -654,7 +654,7 @@ BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDenseRealDeinitAndDealloc(&matDenseReal);
 
     BF_ASSERT(false);
@@ -701,7 +701,7 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
   if (fread(matDenseReal->data, sizeof(BfReal), size, fp) != size)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseRealDeinitAndDealloc(&matDenseReal);
 
   return matDenseReal;
@@ -717,7 +717,7 @@ void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseDeinit(&mat->super);
 }
 
@@ -751,7 +751,7 @@ void bfMatDenseRealInitCopy(BfMatDenseReal *matDenseReal,
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
@@ -776,7 +776,7 @@ void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseRealDeinit(matDenseReal);
 }
 
@@ -869,7 +869,7 @@ void bfMatDenseRealSvd(BfMatDenseReal const *mat, BfMatDenseReal **UPtr,
   *SPtr = S;
   *VTPtr = VT;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -918,7 +918,7 @@ void bfMatDenseRealSetBlock(BfMatDenseReal *matDenseReal,
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void scaleRows_vecReal(BfMatDenseReal *matDenseReal, BfVecReal const *vecReal) {
@@ -940,7 +940,7 @@ static void scaleRows_vecReal(BfMatDenseReal *matDenseReal, BfVecReal const *vec
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec) {
@@ -985,7 +985,7 @@ static BfMat *mul_matDiagReal(BfMatDenseReal const *matDenseReal,
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1028,7 +1028,7 @@ static BfVec *mulVec_vecReal(BfMatDenseReal const *matDenseReal,
     BF_DIE();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1064,7 +1064,7 @@ BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec
     break;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1098,7 +1098,7 @@ static BfVec *rmulVec_vecReal(BfMatDenseReal const *matDenseReal,
     BF_DIE();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1134,7 +1134,7 @@ BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *ve
     break;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

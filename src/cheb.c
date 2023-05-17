@@ -99,7 +99,7 @@ void bfChebStdInterp(BfChebStd *cheb, BfReal (*f)(BfReal), BfReal a, BfReal b, B
   c[0] /= n;
   for (BfSize i = 1; i < n; ++i) c[i] *= 2.0/n;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -146,7 +146,7 @@ void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b) {
   cheb->a = a;
   cheb->b = b;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -162,7 +162,7 @@ void bfChebInterp(BfCheb *cheb, BfReal (*f)(BfReal), BfReal const *x) {
   bfChebStdInterp(&chebStd, f, cheb->a, cheb->b, x);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfReal bfChebEval(BfCheb const *cheb, BfReal x) {

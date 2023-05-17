@@ -96,7 +96,7 @@ BfEvalTree *bfEvalTreeNew() {
   if (evalTree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

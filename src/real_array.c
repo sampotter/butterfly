@@ -23,7 +23,7 @@ BfRealArray *bfRealArrayNew() {
 
   invalidate(realArray);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     realArray = NULL;
   }
 
@@ -39,7 +39,7 @@ BfRealArray *bfRealArrayNewWithDefaultCapacity() {
   bfRealArrayInitWithDefaultCapacity(realArray);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -61,7 +61,7 @@ void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
     realArray->data[i] = BF_NAN;
 #endif
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     invalidate(realArray);
   }
 }
@@ -106,7 +106,7 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
   realArray->data = data;
   realArray->capacity = newCapacity;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -123,7 +123,7 @@ void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
 
   realArray->data[realArray->size++] = elt;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -137,7 +137,7 @@ BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
   bfVecRealInitView(vecReal, realArray->size, 1, realArray->data);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -161,7 +161,7 @@ BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1) {
   bfVecRealInitView(vecReal, size, 1, realArray->data + i0);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

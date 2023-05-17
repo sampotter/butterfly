@@ -153,7 +153,7 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

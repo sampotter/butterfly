@@ -82,7 +82,7 @@ BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
     bfMatBlockDiagSetBlock(matBlockDiagCopy, i, blockCopy);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&blockCopy);
     bfMatBlockDiagDeinitAndDealloc(&matBlockDiagCopy);
   }
@@ -105,7 +105,7 @@ BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag) {
 
   mat->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -192,7 +192,7 @@ BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i) {
 
   BF_ASSERT(rowCopy->size == numCols);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return rowCopy;
 }
@@ -236,7 +236,7 @@ void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -309,7 +309,7 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
   blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatBlockCooDeinitAndDealloc(&blockRow);
 
     BF_ASSERT(false); // ???
@@ -344,7 +344,7 @@ void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec) {
     bfVecDelete(&subvec);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
@@ -379,7 +379,7 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
     bfMatDelete(&resultRows);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -427,7 +427,7 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
     bfVecSetRange(result, i0, i1, tmp);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -476,7 +476,7 @@ BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *ve
     bfVecSetRange(result, j0, j1, tmp);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -500,7 +500,7 @@ void bfMatBlockDiagNegate(BfMat *mat) {
   for (BfSize i = 0; i < numBlocks; ++i)
     bfMatNegate(bfMatBlockDiagGetBlock(matBlockDiag, i));
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp,
@@ -561,7 +561,7 @@ BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
     bfMatDelete(&resultBlock);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -629,7 +629,7 @@ BfMat *bfMatBlockDiagGetBlockCopy(BfMatBlockDiag const *matBlockDiag, BfSize i, 
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&block);
   }
 
@@ -685,7 +685,7 @@ BfMatBlockDiag *bfMatBlockDiagNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -723,7 +723,7 @@ BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy)
   bfSizeRunningSum(numBlocks + 1, &ROW_OFFSET(matBlockDiag, 0));
   bfSizeRunningSum(numBlocks + 1, &COL_OFFSET(matBlockDiag, 0));
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -738,7 +738,7 @@ void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numRows, BfSize numCols) {
   bfMatBlockInit(&mat->super, &MAT_VTABLE, &MAT_BLOCK_VTABLE, numBlocks, numRows, numCols);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat) {
@@ -771,7 +771,7 @@ BfMat *bfMatBlockDiagGetBlock(BfMatBlockDiag *matBlockDiag, BfSize i) {
 
   block = matBlockDiag->super.block[i];
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     block = NULL;
 
   return block;
@@ -793,7 +793,7 @@ BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfS
 
   block = matBlockDiag->super.block[i];
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     block = NULL;
 
   return block;
@@ -814,5 +814,5 @@ void bfMatBlockDiagSetBlock(BfMatBlockDiag *matBlockDiag, BfSize i, BfMat *mat) 
 
   matBlockDiag->super.block[i] = mat;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }

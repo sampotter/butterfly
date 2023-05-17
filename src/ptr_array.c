@@ -20,7 +20,7 @@ BfPtrArray *bfPtrArrayNewWithDefaultCapacity() {
   bfInitPtrArrayWithDefaultCapacity(ptrArray);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     ptrArray = NULL;
   }
 
@@ -48,7 +48,7 @@ void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
   arr->capacity = capacity;
   arr->num_elts = 0;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPtrArrayDeinit(arr);
   }
 }
@@ -94,7 +94,7 @@ BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
 
   bfMemCopy(arr->data, arr->num_elts, sizeof(BfPtr), arrCopy.data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMemFree(arrCopy.data);
 
   return arrCopy;
@@ -119,7 +119,7 @@ void extendPtrArray(BfPtrArray *arr, BfSize new_capacity) {
   arr->data = new_data;
   arr->capacity = new_capacity;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr) {
@@ -132,7 +132,7 @@ void bfPtrArrayAppend(BfPtrArray *arr, BfPtr ptr) {
 
   arr->data[arr->num_elts++] = ptr;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos) {
@@ -145,7 +145,7 @@ BfPtr bfPtrArrayGet(BfPtrArray const *arr, BfSize pos) {
 
   ptr = arr->data[pos];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return ptr;
 }
@@ -229,7 +229,7 @@ void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst) {
 
   bfMemCopy(ptrArray->data, ptrArray->num_elts, sizeof(BfPtr), dst);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i) {
@@ -242,7 +242,7 @@ void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i) {
 
   --ptrArray->num_elts;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -259,7 +259,7 @@ BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity() {
   bfConstPtrArrayInitWithDefaultCapacity(constPtrArray);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     constPtrArray = NULL;
   }
 
@@ -278,7 +278,7 @@ void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity) {
   arr->capacity = capacity;
   arr->num_elts = 0;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfConstPtrArrayDeinit(arr);
   }
 }
@@ -345,7 +345,7 @@ BfConstPtr bfConstPtrArrayGet(BfConstPtrArray const *arr, BfSize pos) {
 
   ptr = arr->data[pos];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return ptr;
 }
@@ -366,7 +366,7 @@ BfConstPtr bfConstPtrArrayGetFirst(BfConstPtrArray const *arr) {
 
   constPtr = arr->data[0];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return constPtr;
 }
@@ -381,7 +381,7 @@ BfConstPtr bfConstPtrArrayGetLast(BfConstPtrArray const *arr) {
 
   constPtr = arr->data[arr->num_elts - 1];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return constPtr;
 }
@@ -394,7 +394,7 @@ void bfConstPtrArrayExtend(BfConstPtrArray *arr, BfConstPtrArray const *otherArr
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false); // roll back changes?
   }
 }

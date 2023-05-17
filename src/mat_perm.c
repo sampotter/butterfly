@@ -118,7 +118,7 @@ static BfMat *solve_matDenseComplex(BfMatPerm const *matPerm, BfMat const *other
 
   else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -147,7 +147,7 @@ BfMat *bfMatPermGetInverse(BfMatPerm const *matPerm) {
   BfMatPerm *matPermInverse = bfMatPermNewFromPerm(&permInverse);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -173,7 +173,7 @@ BfMatPerm *bfMatPermNew() {
   if (matPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return matPerm;
 }
@@ -187,7 +187,7 @@ BfMatPerm *bfMatPermNewFromPerm(BfPerm const *perm) {
   bfMatPermInitFromPerm(matPerm, perm);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -203,7 +203,7 @@ BfMatPerm *bfMatPermNewViewFromLapackPivots(BfSize size, BfLapackInt *ipiv) {
   bfMatPermInitViewFromLapackPivots(matPerm, size, ipiv);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -220,7 +220,7 @@ void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm) {
   matPerm->impl->permType = PERM_TYPE_BF;
   matPerm->impl->perm = bfPermCopy(perm);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -238,7 +238,7 @@ void bfMatPermInitViewFromLapackPivots(BfMatPerm *matPerm, BfSize size, BfLapack
   matPerm->impl->permLapack.size = size;
   matPerm->impl->permLapack.ipiv = ipiv;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }

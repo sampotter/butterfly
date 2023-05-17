@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
   printf("- uncompressed size: %.1f MB\n", numBytesUncompressed/pow(1024, 2));
   printf("- compression rate: %.1f\n", numBytesUncompressed/numBytesCompressed);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   /* Clean up */
   bfTreeDelete(&rowTree);

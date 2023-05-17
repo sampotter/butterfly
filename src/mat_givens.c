@@ -64,7 +64,7 @@ BfMatGivensComplex *bfMatGivensComplexNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -82,7 +82,7 @@ void bfMatGivensComplexInit(BfMatGivensComplex *mat, BfSize n,
   mat->c = c;
   mat->s = s;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatGivensComplexDeinit(mat);
 }
 

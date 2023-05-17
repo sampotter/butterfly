@@ -67,7 +67,7 @@ void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -119,7 +119,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
   apply_KR_correction_to_block(mat, 0, m, order, K, aux);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -161,7 +161,7 @@ BfMat *bf_get_KR_corr_block_spmat(BfSize order, BfSize n, BfSize i0, BfSize i1, 
   if (k != 2*m*order)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooComplexDeinitAndDealloc(&corr);
 
   return bfMatCooComplexToMat(corr);
@@ -197,7 +197,7 @@ void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
 
   bfMatAddInplace(mat, corr);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMatDelete(&corr);
 }
@@ -218,7 +218,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
     i0 = i1;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -265,7 +265,7 @@ void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offset
 
   bfMatAddInplace(mat, corr);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

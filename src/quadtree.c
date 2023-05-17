@@ -57,7 +57,7 @@ BfQuadtree *bfQuadtreeNew() {
   if (quadtree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     quadtree = NULL;
 
   return quadtree;
@@ -79,7 +79,7 @@ void bfQuadtreeInit(BfQuadtree *tree, BfPoints2 const *points,
   bfQuadtreeNodeInitRoot(root, tree);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfQuadtreeDeinit(tree);
 }
 

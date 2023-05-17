@@ -82,7 +82,7 @@ BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     z = NAN;
   }
 
@@ -115,7 +115,7 @@ get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
   bfMemFree(r);
@@ -164,7 +164,7 @@ get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
   bfMemFree(r);
@@ -213,7 +213,7 @@ get_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
   bfMemFree(r);
@@ -267,7 +267,7 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&kernelMat);
 
   bfMemFree(r);
@@ -310,7 +310,7 @@ bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return kernelMat;
 }
@@ -353,7 +353,7 @@ bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
   BfMat *Z_shift = bfMatLstSq(Z_equiv, Z_orig);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&Z_shift);
 
   bfMatDelete(&Z_orig);

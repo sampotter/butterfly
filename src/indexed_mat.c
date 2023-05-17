@@ -15,7 +15,7 @@ BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy 
   bfIndexedMatInitFromMat(indexedMat, i0, j0, mat, policy);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -31,7 +31,7 @@ void bfIndexedMatInitFromMat(BfIndexedMat *indexedMat, BfSize i0, BfSize j0, BfM
   indexedMat->mat = bfMatGet(mat, policy);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }

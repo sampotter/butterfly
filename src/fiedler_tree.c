@@ -13,5 +13,5 @@ void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree,
 
   RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }

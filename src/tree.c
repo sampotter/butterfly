@@ -27,7 +27,7 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
   tree->perm = bfPermIdentity(size);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfTreeDeinit(tree);
 }
 
@@ -77,7 +77,7 @@ map_levelOrder(BfTree *tree, BfTreeNode *node,
 
   bfTreeLevelIterDeinit(&iter);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfTreeMap(BfTree *tree, BfTreeNode *node,
@@ -98,7 +98,7 @@ void bfTreeMap(BfTree *tree, BfTreeNode *node,
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void
@@ -122,7 +122,7 @@ mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
 
   bfTreeLevelIterDeinit(&iter);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfTreeMapConst(BfTree const *tree, BfTreeNode const *node,
@@ -142,7 +142,7 @@ void bfTreeMapConst(BfTree const *tree, BfTreeNode const *node,
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfSize bfTreeGetNumPoints(BfTree const *tree) {
@@ -161,7 +161,7 @@ BfTreeNode *bfTreeGetNode(BfTree *tree, BfSize depth, BfSize nodeIndex) {
   node = bfPtrArrayGet(&levelNodes, nodeIndex);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     node = NULL;
   }
 
@@ -190,7 +190,7 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
   levelNodes = bfPtrArrayCopy(&iter.levelNodes);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfPtrArrayDeinit(&levelNodes);
 
   bfTreeLevelIterDeinit(&iter);

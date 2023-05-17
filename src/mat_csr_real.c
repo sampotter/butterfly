@@ -34,7 +34,7 @@ BfMat *bfMatCsrRealCopy(BfMat const *mat) {
   bfMatCsrRealInit(copy, m, n, matCsrReal->rowptr, matCsrReal->colind, matCsrReal->data);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatCsrRealDeinitAndDealloc(&copy);
   }
 
@@ -84,7 +84,7 @@ void bfMatCsrRealScale(BfMat *mat, BfComplex scalar) {
   for (BfSize i = 0; i < nnz; ++i)
     matCsrReal->data[i] *= scalar_;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat) {
@@ -104,7 +104,7 @@ void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat) {
   for (BfSize i = 0; i < nnz; ++i)
     matCsrReal->data[i] += otherMatCsrReal->data[i];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
@@ -136,7 +136,7 @@ static BfVec *mulVec_vecReal(BfMat const *mat, BfVecReal const *vecReal) {
     dst += result->stride;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&result);
   }
 
@@ -157,7 +157,7 @@ BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec) {
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecDelete(&result);
   }
 
@@ -207,7 +207,7 @@ BfMatCsrReal *bfMatCsrRealNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -238,7 +238,7 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
   bfMemCopy(colind, nnz, sizeof(BfSize), mat->colind);
   bfMemCopy(data, nnz, sizeof(BfSize), mat->data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCsrRealDeinit(mat);
 }
 
@@ -299,7 +299,7 @@ void bfMatCsrRealDump(BfMatCsrReal const *matCsrReal, char const *rowptrPath,
   fwrite(matCsrReal->data, sizeof(BfReal), nnz, fp);
   fclose(fp);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     // TODO: delete all files
     fclose(fp);
   }

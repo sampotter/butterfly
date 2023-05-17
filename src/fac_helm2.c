@@ -129,7 +129,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
 #endif
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
@@ -368,7 +368,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
     } while (makeFactorIterNext(&srcIter));
   } while (makeFactorIterNext(&tgtIter));
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFreePoints2(&srcChildPts);
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtChildPts);
@@ -476,7 +476,7 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
   mat->super.colOffset[0] = 0;
   bfSizeRunningSum(numBlocks + 1, mat->super.colOffset);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
     bfMatBlockDiagDeinitAndDealloc(&mat);
@@ -618,7 +618,7 @@ bfFacHelm2Prepare(BfQuadtreeNode const *srcNode,
   numFactors = allRankEstimatesAreOK(tgtNode, K, &srcLevelIter->levelNodes) ?
       currentSrcDepth - currentTgtDepth + 2 : 0;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfTreeLevelIterDeinit(srcLevelIter);
     bfTreeLevelIterDeinit(tgtLevelIter);
   }
@@ -672,7 +672,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
   for (BfSize i = 0; i < numFactors; ++i)
     bfMatProductPostMultiply(prod, factor[numFactors - 1 - i]);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false); // TODO: need to think carefully about how to do this
   }
 
@@ -714,7 +714,7 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree
   Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, srcNormalsPtr, tgtNormalsPtr, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&Z);
 
   return Z;
@@ -786,7 +786,7 @@ facHelm2MakeMultilevel_diag(BfQuadtree const *srcTree, BfQuadtree const *tgtTree
   BF_ASSERT(bfMatGetNumRows(mat) == bfTreeNodeGetNumPoints(&tgtNode->super));
   BF_ASSERT(bfMatGetNumCols(mat) == bfTreeNodeGetNumPoints(&srcNode->super));
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfPtrArrayDeinit(&srcChildNodes);
   bfPtrArrayDeinit(&tgtChildNodes);
@@ -872,7 +872,7 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree con
   }
 #endif
 
-  END_ERROR_HANDLING() { /* TODO: ... */ }
+  BF_ERROR_END() { /* TODO: ... */ }
 }
 
 BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
@@ -927,7 +927,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgt
   facHelm2MakeMultilevel_rec(srcTree, tgtTree, K, layerPot, alpha, beta, srcLevelNodes, tgtLevelNodes, 2, matBlockDense);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatBlockDenseDeinitAndDealloc(&matBlockDense);
     BF_ASSERT(false);
   }

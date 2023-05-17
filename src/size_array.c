@@ -22,7 +22,7 @@ BfSizeArray *bfSizeArrayNew() {
 
   invalidate(sizeArray);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     sizeArray = NULL;
   }
 
@@ -38,7 +38,7 @@ BfSizeArray *bfSizeArrayNewIota(BfSize n) {
   for (BfSize i = 0; i < n; ++i)
     bfSizeArrayAppend(sizeArray, i);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -54,7 +54,7 @@ BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   bfSizeArrayInitWithDefaultCapacity(sizeArray);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -76,7 +76,7 @@ void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
     sizeArray->data[i] = BF_SIZE_BAD_VALUE;
 #endif
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     invalidate(sizeArray);
   }
 }
@@ -121,7 +121,7 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
   sizeArray->data = data;
   sizeArray->capacity = newCapacity;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -141,7 +141,7 @@ void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
 
   sizeArray->data[sizeArray->size++] = elt;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -208,7 +208,7 @@ void bfSizeArrayInsertSorted(BfSizeArray *sizeArray, BfSize elt) {
 
   ++sizeArray->size;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -238,7 +238,7 @@ BfSize bfSizeArrayGet(BfSizeArray const *sizeArray, BfSize i) {
 
   elt = sizeArray->data[i];
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     elt = BF_SIZE_BAD_VALUE;
   }
 
@@ -255,7 +255,7 @@ BfSize bfSizeArrayGetFirst(BfSizeArray const *sizeArray) {
 
   elt = sizeArray->data[0];
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -272,7 +272,7 @@ BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray) {
 
   elt = sizeArray->data[sizeArray->size - 1];
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -293,7 +293,7 @@ void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst) {
 
   bfMemCopy(sizeArray->data, sizeArray->size, sizeof(BfSize), dst);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfSize bfSizeArrayGetSize(BfSizeArray const *sizeArray) {

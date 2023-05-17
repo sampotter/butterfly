@@ -82,7 +82,7 @@ BfMat *bfMatCooRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooRealDeinitAndDealloc(&rowRange);
 
   return bfMatCooRealToMat(rowRange);
@@ -125,7 +125,7 @@ BfMat *bfMatCooRealGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooRealDeinitAndDealloc(&colRange);
 
   return bfMatCooRealToMat(colRange);
@@ -159,7 +159,7 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   bfMemFree(matCooReal->rowInd);
   matCooReal->rowInd = rowIndPerm;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(rowIndPerm);
   }
 
@@ -194,7 +194,7 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   bfMemFree(matCooReal->colInd);
   matCooReal->colInd = colIndPerm;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(colIndPerm);
   }
 
@@ -244,7 +244,7 @@ BfMatCooReal *bfMatCooRealNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -270,7 +270,7 @@ void bfMatCooRealInitEmpty(BfMatCooReal *mat, BfSize numRows,
   if (mat->value == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(mat->rowInd);
     bfMemFree(mat->colInd);
     bfMemFree(mat->value);

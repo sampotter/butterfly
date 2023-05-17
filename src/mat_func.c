@@ -25,7 +25,7 @@ BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc) {
 
   numRows = matFunc->super.numRows;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -44,7 +44,7 @@ BfSize bfMatFuncGetNumCols(BfMatFunc const *matFunc) {
 
   numCols = matFunc->super.numCols;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -66,7 +66,7 @@ BfMat *bfMatFuncMul(BfMatFunc const *matFunc, BfMat const *otherMat) {
   if (bfMatGetNumCols(result) != bfMatGetNumCols(otherMat))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -92,7 +92,7 @@ BfMatFunc *bfMatFuncNew() {
   if (matFunc == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return matFunc;
 }

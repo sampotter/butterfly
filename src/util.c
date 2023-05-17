@@ -108,7 +108,7 @@ BfSize bfGetFileSizeInBytes(char const *path) {
   fseek(fp, SEEK_END, 0);
   numBytes = ftell(fp);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 
@@ -124,7 +124,7 @@ void bfReadFileToMemory(char const *path, BfSize numBytes, BfByte *ptr) {
 
   fread(ptr, numBytes, sizeof(BfByte), fp);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }

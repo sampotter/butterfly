@@ -66,7 +66,7 @@ BfOctreeNode *bfOctreeNodeNew() {
   if (node == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return node;
 }
@@ -257,7 +257,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
               (offset[q] < offset[q + 1] && child[q] != NULL));
 #endif
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     for (BfSize q = 0; q < NUM_CHILDREN; ++q) {
       bfMemFree(child[q]);
     }
@@ -283,7 +283,7 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
                           tree->super.perm.index, 0);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 // void bfOctreeNodeDeinit(BfOctreeNode *node);
@@ -320,7 +320,7 @@ BfPoints3 bfOctreeNodeGetPoints(BfOctreeNode const *octreeNode, BfOctree const *
   bfPoints3GetByIndex(octree->points, numInds, inds, &points);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return points;
 }
@@ -346,7 +346,7 @@ BfVectors3 bfOctreeNodeGetUnitNormals(BfOctreeNode const *octreeNode, BfOctree c
   bfVectors3GetByIndex(octree->unitNormals, numInds, inds, &unitNormals);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return unitNormals;
 }

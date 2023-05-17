@@ -38,7 +38,7 @@ fillWithLrLevelOrderNodePtrs(BfPtrArray *nodes, BfTreeNode *current)
   }
 #endif
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static
@@ -81,7 +81,7 @@ findLevelOrderOffsets(BfPtrArray *nodes, BfSize *numLevels, BfSize **offsets)
     prev = node;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(*offsets);
   }
 }
@@ -118,7 +118,7 @@ static void treeLevelIterInit_lrLevelOrder(BfTreeLevelIter *iter, BfTreeNode *no
     &iter->levelNodes);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPtrArrayDeinit(&iter->nodes);
     bfMemFree(info);
   }
@@ -154,7 +154,7 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
     &iter->levelNodes);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPtrArrayDeinit(&iter->nodes);
     bfMemFree(info);
   }
@@ -180,7 +180,7 @@ void bfTreeLevelIterInit(BfTreeLevelIter *iter, BfTreeTraversal traversal, BfTre
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void currentDepth_levelOrder(BfTreeLevelIter const *iter, BfSize *depth) {
@@ -194,7 +194,7 @@ static void currentDepth_levelOrder(BfTreeLevelIter const *iter, BfSize *depth) 
 
   *depth = node->depth;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfSize bfTreeLevelIterCurrentDepth(BfTreeLevelIter const *iter) {
@@ -210,7 +210,7 @@ BfSize bfTreeLevelIterCurrentDepth(BfTreeLevelIter const *iter) {
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return depth;
 }

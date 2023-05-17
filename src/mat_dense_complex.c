@@ -77,7 +77,7 @@ static BfVec *bfMatDenseComplexDenseComplexColDists(
     *resultPtr++ = sum;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     result = NULL;
 
   return bfVecRealToVec(result);
@@ -125,7 +125,7 @@ static BfVec *bfMatDenseComplexDenseComplexColDots(
     *resultPtr++ = dot;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     result = NULL;
 
   return bfVecComplexToVec(result);
@@ -146,7 +146,7 @@ void bfMatDenseComplexScaleCols_real(BfMatDenseComplex *mat, BfVec const *vec) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexScaleCols_complex(BfMatDenseComplex *mat, BfVec const *vec) {
@@ -164,7 +164,7 @@ void bfMatDenseComplexScaleCols_complex(BfMatDenseComplex *mat, BfVec const *vec
     cblas_zscal(m, readPtr, writePtr, mat->rowStride);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 /** Interface: Mat */
@@ -241,7 +241,7 @@ BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&copy);
 
   return bfMatDenseComplexToMat(copy);
@@ -261,7 +261,7 @@ BfMat *bfMatDenseComplexGetView(BfMat *mat) {
 
   matView->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     matView = NULL;
 
   return matView;
@@ -296,7 +296,7 @@ BfVec *bfMatDenseComplexGetRowCopy(BfMat const *mat, BfSize i) {
     readPtr += matDenseComplex->colStride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(rowCopy);
 }
@@ -316,7 +316,7 @@ BfVec *bfMatDenseComplexGetRowView(BfMat *mat, BfSize i) {
 
   bfVecComplexInitView(rowView, n, stride, data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&rowView);
 
   return bfVecComplexToVec(rowView);
@@ -337,7 +337,7 @@ BfVec *bfMatDenseComplexGetColView(BfMat *mat, BfSize j) {
 
   bfVecComplexInitView(colView, m, stride, data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&colView);
 
   return bfVecComplexToVec(colView);
@@ -365,7 +365,7 @@ BfVec *bfMatDenseComplexGetColRangeView(BfMat *mat, BfSize i0, BfSize i1, BfSize
 
   bfVecComplexInitView(colView, i1 - i0, stride, data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&colView);
 
   return bfVecComplexToVec(colView);
@@ -392,7 +392,7 @@ BfMat *bfMatDenseComplexEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCo
   bfMatDenseComplexInit(result, numRows, numCols);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return bfMatDenseComplexToMat(result);
@@ -412,7 +412,7 @@ BfMat *bfMatDenseComplexZerosLike(BfMat const *mat, BfSize numRows, BfSize numCo
   zeros = bfMatDenseComplexZeros(numRows, numCols);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&zeros);
 
   return bfMatDenseComplexToMat(zeros);
@@ -445,7 +445,7 @@ void bfMatDenseComplexSave(BfMat const *mat, char const *path) {
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -471,7 +471,7 @@ void bfMatDenseComplexPrint(BfMat const *mat, FILE *fp) {
     fprintf(fp, "\n");
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfSize bfMatDenseComplexGetNumRows(BfMat const *mat) {
@@ -530,7 +530,7 @@ void bfMatDenseComplexSetRow(BfMat *mat, BfSize i, BfVec const *rowVec) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexSetCol(BfMat *mat, BfSize j, BfVec const *vec) {
@@ -557,7 +557,7 @@ void bfMatDenseComplexSetCol(BfMat *mat, BfSize j, BfVec const *vec) {
     inPtr += vecComplex->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1,
@@ -589,7 +589,7 @@ void bfMatDenseComplexSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1,
     inPtr += vecComplex->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
@@ -611,7 +611,7 @@ BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
     submat->data += submat->rowStride*i0;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&matView);
 
   return matView;
@@ -637,7 +637,7 @@ BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
     matDenseComplexView->data += matDenseComplexView->colStride*j0;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&matDenseComplexView);
 
   return bfMatDenseComplexToMat(matDenseComplexView);
@@ -659,7 +659,7 @@ void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const 
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
@@ -692,7 +692,7 @@ void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMatDelete(&matPerm);
 }
@@ -714,7 +714,7 @@ BfVec *bfMatDenseComplexColDists(BfMat const *mat, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     result = NULL;
 
   return result;
@@ -737,7 +737,7 @@ BfVec *bfMatDenseComplexColDots(BfMat const *mat, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     result = NULL;
 
   return result;
@@ -763,7 +763,7 @@ BfVec *bfMatDenseComplexColNorms(BfMat const *mat) {
     *writePtr = cblas_dznrm2(m, readPtr, matDenseComplex->rowStride);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecRealDeinitAndDealloc(&colNorms);
 
   return bfVecRealToVec(colNorms);
@@ -806,7 +806,7 @@ void bfMatDenseComplexScaleCols(BfMat *mat, BfVec const *vec) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
@@ -835,7 +835,7 @@ void bfMatDenseComplexAddInplace(BfMat *mat, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat) {
@@ -856,7 +856,7 @@ BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return result;
 }
@@ -899,7 +899,7 @@ void bfMatDenseComplexSubInplace(BfMat *mat, BfMat const *otherMat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2) {
@@ -919,7 +919,7 @@ BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -948,7 +948,7 @@ mulVec_complex(BfMatDenseComplex const *matDenseComplex,
               lda, vecComplex->data, vecComplex->stride, &beta, result->data,
               result->stride);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&result);
 
   return result;
@@ -977,7 +977,7 @@ BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecDelete(&result);
 
   return result;
@@ -1029,7 +1029,7 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
     /* b: */ resultMatDenseComplex->data,
     /* ldb: */ p);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1073,7 +1073,7 @@ BfMat *bfMatDenseComplexSolveLU(BfMat const *A, BfMat const *B) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -1096,7 +1096,7 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -1125,7 +1125,7 @@ bool bfMatDenseComplexIsUpperTri(BfMat const *mat) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return upperTri;
 }
@@ -1145,7 +1145,7 @@ backwardSolveVec_complex(BfMatDenseComplex const *matDenseComplex,
   cblas_ztrsv(CblasRowMajor, CblasUpper, trans, CblasNonUnit, m,
               matDenseComplex->data, lda, result->data, result->stride);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(result);
 }
@@ -1177,7 +1177,7 @@ BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecDelete(&result);
 
   return result;
@@ -1200,7 +1200,7 @@ void bfMatDenseComplexNegate(BfMat *mat) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1) {
@@ -1217,7 +1217,7 @@ BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i
   blockView->colStride = mat->colStride;
   blockView->data = mat->data + i0*mat->rowStride + j0*mat->colStride;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfMatDenseComplexToMat(blockView);
 }
@@ -1233,7 +1233,7 @@ BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *matDenseComplex) {
   bfLuDenseComplexInit(luDenseComplex, mat);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1259,7 +1259,7 @@ static void divideCols_vecReal(BfMatDenseComplex *matDenseComplex, BfVec const *
     cblas_zdscal(numRows, 1/alpha, writePtr, matDenseComplex->rowStride);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -1315,7 +1315,7 @@ void bfMatDenseComplexSet(BfMatDenseComplex *dst, BfMatDenseComplex const *src) 
       *(dstData + j*dstColStride) = *(srcData + j*srcColStride);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
@@ -1359,7 +1359,7 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
   if (info > 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMatDenseComplexToMat(U)->props |= BF_MAT_PROPS_ORTHO;
   bfMatDenseComplexToMat(VH)->props |= BF_MAT_PROPS_ORTHO;
@@ -1387,7 +1387,7 @@ void bfMatDenseComplexDenseComplexAddInplace(BfMatDenseComplex *op1,
   for (BfSize i = 0; i < numRows*numCols; ++i)
     op1->data[i] += op2->data[i];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexDiagRealAddInplace(BfMatDenseComplex *op1,
@@ -1409,7 +1409,7 @@ void bfMatDenseComplexDiagRealAddInplace(BfMatDenseComplex *op1,
   for (BfSize i = 0; i < op2->numElts; ++i)
     *(op1->data + i*stride) += op2->data[i];
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexCooComplexAddInplace(BfMatDenseComplex *op1,
@@ -1435,7 +1435,7 @@ void bfMatDenseComplexCooComplexAddInplace(BfMatDenseComplex *op1,
     *(op1->data + offset) += op2->value[k];
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfMatDenseComplexCooRealAddInplace(BfMatDenseComplex *op1,
@@ -1461,7 +1461,7 @@ void bfMatDenseComplexCooRealAddInplace(BfMatDenseComplex *op1,
     *(op1->data + offset) += op2->value[k];
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMatDenseComplex *
@@ -1502,7 +1502,7 @@ bfMatDenseComplexDenseComplexSub(BfMatDenseComplex const *op1,
     }
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
@@ -1563,7 +1563,7 @@ bfMatDenseComplexDenseComplexMul(BfMatDenseComplex const *op1,
 
   /* TODO: handle cblas errors  */
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     if (result != NULL)
       bfMatDenseComplexDeinitAndDealloc(&result);
   }
@@ -1637,7 +1637,7 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
   BfMat *result = bfMatMul(Vk, tmp2);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDelete(&result);
 
   bfMatDenseComplexDeinitAndDealloc(&U);
@@ -1710,7 +1710,7 @@ bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A,
   if (error != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR)
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     free(ipiv);
 
   return X;
@@ -1755,7 +1755,7 @@ BfMatDenseComplex *bfMatDenseComplexNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -1768,7 +1768,7 @@ BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCol
 
   bfMatDenseComplexInitViewFromPtr(matDenseComplex, numRows, numCols, data);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1789,7 +1789,7 @@ BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
   for (BfSize i = 0; i < numRows*numCols; ++i)
     zeros->data[i] = 0;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&zeros);
 
   return zeros;
@@ -1812,7 +1812,7 @@ BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, B
   if (fread(matDenseComplex->data, sizeof(BfComplex), size, fp) != size)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&matDenseComplex);
 
   return matDenseComplex;
@@ -1832,7 +1832,7 @@ void bfMatDenseComplexInit(BfMatDenseComplex *mat,
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDeinit(&mat->super);
 }
 
@@ -1848,7 +1848,7 @@ void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize
   matDenseComplex->colStride = 1;
   matDenseComplex->data = data;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }

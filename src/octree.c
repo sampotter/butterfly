@@ -54,7 +54,7 @@ BfOctree *bfOctreeNew() {
   if (octree == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     octree = NULL;
 
   return octree;
@@ -76,7 +76,7 @@ void bfOctreeInit(BfOctree *tree, BfPoints3 const *points,
   bfOctreeNodeInitRoot(root, tree);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfOctreeDeinit(tree);
 }
 
@@ -125,7 +125,7 @@ void bfOctreeSaveBoxesToTextFile(BfOctree const *octree, char const *path) {
   bfTreeMapConst(tree, NULL, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfTreeMapConstFunc)writeBoxes, &wkspc);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }

@@ -71,7 +71,7 @@ BfVectors2 *bfVectors2NewEmpty() {
 
   vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfPoint2));
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -102,7 +102,7 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
   vectors->capacity = BF_SIZE_BAD_VALUE;
   vectors->isView = true;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(vectors);
     vectors = NULL;
   }
@@ -158,7 +158,7 @@ void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
   fread(vectors->data, sizeof(BfPoint2), vectors->size, fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(vectors->data);
   }
 
@@ -187,7 +187,7 @@ void bfGetVectorsByIndex(BfVectors2 const *vectors,
     indexedVector[i][1] = vector[j][1];
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFreeVectors2(indexedVectors);
   }
 }
@@ -202,7 +202,7 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   fwrite(vectors->data, vectors->size, sizeof(BfPoint2), fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }
@@ -224,7 +224,7 @@ void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
   /* Append new point */
   bfMemCopy(p, 1, sizeof(BfPoint2), &vectors->data[vectors->size++]);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfVectors2Extend(BfVectors2 *vectors, BfVectors2 const *newVectors) {
@@ -244,7 +244,7 @@ void bfVectors2Get(BfVectors2 const *vectors, BfSize i, BfVector2 v) {
 
   bfMemCopy(&vectors->data[i], 1, sizeof(BfVector2), v);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -261,7 +261,7 @@ void bfVectors2Set(BfVectors2 *vectors, BfSize i, BfVector2 const v) {
 
   bfMemCopy(v, 1, sizeof(BfVector2), &vectors->data[i]);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -284,7 +284,7 @@ BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
   vectorsView->isView = true;
   vectorsView->data = &vectors->data[i0];
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -318,7 +318,7 @@ void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize cons
   for (BfSize i = 0; i < numInds; ++i)
     bfVector3Copy(indexedVectors->data[i], vectors->data[inds[i]]);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVectors3Deinit(indexedVectors);
   }
 }

@@ -270,7 +270,7 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   if (numIter != NULL)
     *numIter = j;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -417,7 +417,7 @@ dnaupd:
   if (fabs(di[0]) > 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     eigmax = NAN;
   }
 
@@ -644,7 +644,7 @@ dnaupd:
   *LambdaPtr = Lambda;
   *PhiPtr = bfMatDenseRealToMat(Phi);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&Lambda);
     bfMatDenseRealDeinitAndDealloc(&Phi);
 
@@ -743,7 +743,7 @@ get_shifted_eigs:
   *PhiPtr = Phi;
   *LambdaPtr = Lambda;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&Phi);
     bfVecRealDeinitAndDealloc(&Lambda);
 
@@ -820,7 +820,7 @@ bool bfGetTruncatedSvd(BfMat const *mat, BfMat **UPtr, BfMatDiagReal **SPtr, BfM
     VT = VkT;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 

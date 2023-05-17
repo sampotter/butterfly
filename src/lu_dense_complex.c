@@ -62,7 +62,7 @@ BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const
   if (info != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -155,7 +155,7 @@ BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
   bfMatProductPostMultiply(PLU, U);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -220,7 +220,7 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
   luDenseComplex->impl->data = a;
   luDenseComplex->impl->ipiv = ipiv;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }

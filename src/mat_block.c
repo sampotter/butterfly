@@ -108,7 +108,7 @@ void bfMatBlockInit(BfMatBlock *mat,
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
   bfSizeSetConstant(numBlockCols + 1, mat->colOffset, BF_SIZE_BAD_VALUE);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatBlockDeinit(mat);
 }
 

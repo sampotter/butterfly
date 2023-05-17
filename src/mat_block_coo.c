@@ -85,7 +85,7 @@ BfMat *bfMatBlockCooCopy(BfMat const *mat) {
     matBlockCooCopy->super.block[k] = blockCopy;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&blockCopy);
     bfMatBlockCooDeinitAndDealloc(&matBlockCooCopy);
   }
@@ -108,7 +108,7 @@ BfMat *bfMatBlockCooSteal(BfMatBlockCoo *matBlockCoo) {
 
   mat->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -197,7 +197,7 @@ BfVec *bfMatBlockCooGetRowCopy(BfMat const *mat, BfSize i) {
 
   BF_ASSERT(rowCopy->size == bfMatGetNumCols(mat));
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   for (BfSize k = 0; k < bfPtrArraySize(&blocks); ++k)
     bfMemFree(bfPtrArrayGet(&blocks, k));
@@ -263,7 +263,7 @@ void bfMatBlockCooDump(BfMatBlockCoo const *matBlockCoo, FILE *fp) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -344,7 +344,7 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
   blockRow = bfMatBlockCooNewFromIndexedBlocks(m, n, &indexedRowBlocks, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -395,7 +395,7 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
     bfMatDelete(&tmp);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -442,7 +442,7 @@ BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
     bfVecDelete(&resultSubvecView);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -488,7 +488,7 @@ BfVec *bfMatBlockCooRmulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) 
     bfVecDelete(&resultSubvecView);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -508,7 +508,7 @@ void bfMatBlockCooNegate(BfMat *mat) {
   for (BfSize i = 0; i < numBlocks; ++i)
     bfMatNegate(matBlock->block[i]);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
@@ -579,7 +579,7 @@ BfSizeArray *bfMatBlockCooGetNonzeroColumnRanges(BfMatBlockCoo const *matBlockCo
 
   BF_ASSERT(j0Next == n);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -672,7 +672,7 @@ BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize
       RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatZeroDeinitAndDealloc(&zeroBlock);
   }
 
@@ -744,7 +744,7 @@ BfMatBlockCoo *bfMatBlockCooNew() {
 
   bfMatBlockCooInvalidate(matBlockCoo);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     matBlockCoo = NULL;
   }
 
@@ -776,7 +776,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets,
   bfSizeArrayCopyData(rowInds, matBlockCoo->rowInd);
   bfSizeArrayCopyData(colInds, matBlockCoo->colInd);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatBlockCooDeinitAndDealloc(&matBlockCoo);
   }
 
@@ -830,7 +830,7 @@ BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy
     COL_IND(matBlockCoo, k) = 0;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -884,7 +884,7 @@ BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy
     COL_IND(matBlockCoo, k) = k;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -1008,7 +1008,7 @@ BfMatBlockCoo *bfMatBlockCooNewFromIndexedBlocks(BfSize numRows, BfSize numCols,
     &rowOffsets, &colOffsets, &rowInds, &colInds, &blocks);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatBlockCooDeinitAndDealloc(&matBlockCoo);
   }
 
@@ -1049,7 +1049,7 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
   for (BfSize i = 0; i < numBlocks; ++i)
     mat->colInd[i] = BF_SIZE_BAD_VALUE;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatBlockDeinit(&mat->super);
     bfMemFree(mat->rowInd);
     bfMemFree(mat->colInd);

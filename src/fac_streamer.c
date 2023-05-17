@@ -58,7 +58,7 @@ BfFacStreamer *bfFacStreamerNew() {
   if (facStreamer == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     facStreamer = NULL;
 
   return facStreamer;
@@ -93,7 +93,7 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
     facStreamer->prevPhis = NULL;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFacStreamerDeinit(facStreamer);
   }
 }
@@ -139,7 +139,7 @@ static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
 
   BF_ASSERT(!bfPtrArrayIsEmpty(&currentPartialFacs));
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -298,7 +298,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -313,7 +313,7 @@ static void addPartialFac(BfFacStreamer *facStreamer, BfFac *partialFac) {
   bfPtrArrayAppend(&facStreamer->partialFacs, partialFac);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -432,7 +432,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
 
   continueFactorizing(facStreamer);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -457,7 +457,7 @@ BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 
   fac = bfPtrArrayGet(&facStreamer->partialFacs, 0);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return fac;
 }

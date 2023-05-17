@@ -66,7 +66,7 @@ BfMat *bfMatCsrRealCholesky(BfMat const *mat) {
   BfMatCsrReal *R = bfMatCsrRealNew();
   bfMatCsrRealInit(R, n, n, R_rowptr, R_sparse->i, R_sparse->x);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCsrRealDeinitAndDealloc(&R);
 
   cholmod_free_factor(&R_factor, c);

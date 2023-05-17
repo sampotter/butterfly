@@ -31,7 +31,7 @@ BfSize bfMatSumGetNumRows(BfMat const *mat) {
 
   numRows = bfMatGetNumRows(bfMatSumGetTermConst(matSum, 0));
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numRows;
 }
@@ -46,7 +46,7 @@ BfSize bfMatSumGetNumCols(BfMat const *mat) {
 
   numCols = bfMatGetNumCols(bfMatSumGetTermConst(matSum, 0));
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numCols;
 }
@@ -76,7 +76,7 @@ BfMat *bfMatSumMul(BfMat const *mat, BfMat const *otherMat) {
     bfMatDelete(&prod);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDelete(&result);
 
   return result;
@@ -108,7 +108,7 @@ BfMatSum *bfMatSumNew() {
   if (sum == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return sum;
 }
@@ -126,7 +126,7 @@ void bfMatSumInit(BfMatSum *mat) {
   bfInitPtrArray(&mat->termArr, /* capacity: */ 4);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfPtrArrayDeinit(&mat->termArr);
 }
 

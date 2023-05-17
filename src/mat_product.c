@@ -49,7 +49,7 @@ BfMat *bfMatProductCopy(BfMat const *mat) {
     bfMatProductPostMultiply(matProductCopy, factorCopy);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&factorCopy);
     bfMatProductDeinitAndDealloc(&matProductCopy);
   }
@@ -72,7 +72,7 @@ BfMat *bfMatProductSteal(BfMatProduct *matProduct) {
 
   mat->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -111,7 +111,7 @@ void bfMatProductDump(BfMatProduct const *matProduct, FILE *fp) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -134,7 +134,7 @@ BfSize bfMatProductGetNumRows(BfMat const *mat) {
 
   numRows = bfMatGetNumRows(factor);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numRows;
 }
@@ -159,7 +159,7 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
 
   numCols = bfMatGetNumCols(factor);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numCols;
 }
@@ -178,7 +178,7 @@ void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
 
   bfMatScaleCols(factor, vec);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
@@ -212,7 +212,7 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
     prev = result;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatDelete(&prev);
     bfMatDelete(&result);
   }
@@ -247,7 +247,7 @@ BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec) {
     prev = result;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecDelete(&prev);
     bfVecDelete(&result);
   }
@@ -282,7 +282,7 @@ BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec) {
     prev = result;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecDelete(&prev);
     bfVecDelete(&result);
   }
@@ -313,7 +313,7 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
     result = _;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -355,7 +355,7 @@ BfMatProduct *bfMatProductNew() {
   if (prod == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return prod;
 }
@@ -373,7 +373,7 @@ void bfMatProductInit(BfMatProduct *mat) {
   bfInitPtrArray(&mat->factorArr, /* capacity: */ 4);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfPtrArrayDeinit(&mat->factorArr);
 }
 
@@ -424,7 +424,7 @@ BfMat *bfMatProductPopLastFactor(BfMatProduct *matProduct) {
 
   lastFactor = bfPtrArrayPopLast(&matProduct->factorArr);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     lastFactor = NULL;
 
   return lastFactor;

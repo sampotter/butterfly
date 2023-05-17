@@ -21,6 +21,6 @@
     }                                           \
   } while (0);
 
-#define END_ERROR_HANDLING()                    \
+#define BF_ERROR_END()                    \
 __bf_cleanup__:                                 \
   if (__bf_erred__)

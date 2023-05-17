@@ -251,5 +251,5 @@ int main(int argc, char const *argv[]) {
   printf("- dense GMRES: %g\n", error_l2_dense_GMRES/phi_l2_norm);
   printf("- BF GMRES: %g\n", error_l2_BF_GMRES/phi_l2_norm);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }

@@ -43,7 +43,7 @@ BfMatDense *bfMatDenseNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -63,7 +63,7 @@ void bfMatDenseInit(BfMatDense *matDense, BfMatVtable *matVtable,
   matDense->rowStride = rowStride;
   matDense->colStride = colStride;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDeinit(mat);
 }
 

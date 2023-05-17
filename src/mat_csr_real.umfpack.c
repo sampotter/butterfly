@@ -172,7 +172,7 @@ void bfMatCsrRealLU(BfMat const *mat, BfMat **L, BfMat **U, BfPerm *P, BfPerm *Q
   (void)Q;
   BF_ASSERT(false);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   umfpack_di_free_symbolic(&symbolic);
   umfpack_di_free_numeric(&numeric);

@@ -53,7 +53,7 @@ static void initVf(BfTrimesh *trimesh) {
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(trimesh->vfOffset);
     trimesh->vfOffset = NULL;
 
@@ -116,7 +116,7 @@ static void fillWithAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i,
   *capacityPtr = capacity;
   *vvPtr = vv;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
@@ -127,7 +127,7 @@ static size_t countAdjacentVertsUsingVf(BfTrimesh const *trimesh, BfSize i) {
   fillWithAdjacentVertsUsingVf(trimesh, i, &nvv, &capacity, &vv);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     nvv = BF_SIZE_BAD_VALUE;
   }
 
@@ -171,7 +171,7 @@ static void initVv(BfTrimesh *trimesh) {
     fillWithAdjacentVertsUsingVf(trimesh, i, &nvv, &capacity, &vv);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
@@ -205,7 +205,7 @@ void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
   initVv(trimesh);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
@@ -324,7 +324,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
   initVv(trimesh);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfTrimeshDeinit(trimesh);
 
   fclose(fp);

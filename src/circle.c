@@ -44,7 +44,7 @@ BfVectors2 bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
     vector[i][1] = sin(theta);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfFreeVectors2(&unitNormals);
 
   return unitNormals;

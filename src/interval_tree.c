@@ -55,7 +55,7 @@ BfIntervalTree *bfIntervalTreeNew() {
   BfIntervalTree *intervalTree = bfMemAlloc(1, sizeof(BfIntervalTree));
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     intervalTree = NULL;
 
   return intervalTree;
@@ -75,7 +75,7 @@ void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, B
   bfIntervalTreeNodeInitEmptyRoot(root, intervalTree, a, b, k, maxDepth);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     // bfIntervalTreeDeinit(intervalTree);
   }
 }
@@ -154,5 +154,5 @@ void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *poin
   recursivelySiftNodes(root, points, &intervalTree->super.perm);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }

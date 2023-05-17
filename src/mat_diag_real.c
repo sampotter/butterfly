@@ -33,7 +33,7 @@ BfMat *bfMatDiagRealGetView(BfMat *mat) {
 
   bfMatDiagRealToMat(view)->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(view);
     view = NULL;
   }
@@ -69,7 +69,7 @@ BfVec *bfMatDiagRealGetRowCopy(BfMat const *mat, BfSize i) {
   /* Set ith element to corresponding diagonal entry of mat */
   *(rowCopy->data + i*rowCopy->stride) = *(matDiagReal->data + i);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecRealDeinitAndDealloc(&rowCopy);
 
   return bfVecRealToVec(rowCopy);
@@ -127,7 +127,7 @@ BfMat *bfMatDiagRealGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
     rowRange->value[k] = *ptr++;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatCooRealDeinitAndDealloc(&rowRange);
 
   return bfMatCooRealToMat(rowRange);
@@ -158,7 +158,7 @@ BfVec *mulVec_vecReal(BfMatDiagReal const *matDiagReal, BfVecReal const *vecReal
     readPtr += vecReal->stride;
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -214,7 +214,7 @@ BfMatDiagReal *bfMatDiagRealNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -234,7 +234,7 @@ BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal d
 
   bfMatDiagRealSetConstant(mat, diagValue);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     mat = NULL;
 
   return mat;
@@ -251,7 +251,7 @@ BfMatDiagReal *bfMatDiagRealNewFromData(BfSize numRows, BfSize numCols, BfReal c
 
   bfMemCopy(data, matDiagReal->numElts, sizeof(BfReal), matDiagReal->data);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -270,7 +270,7 @@ void bfMatDiagRealInit(BfMatDiagReal *mat, BfSize numRows, BfSize numCols) {
   if (mat->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDiagRealDeinit(mat);
 }
 
@@ -286,7 +286,7 @@ void bfMatDiagRealInitView(BfMatDiagReal *mat, BfSize numRows, BfSize numCols,
   mat->numElts = numRows < numCols ? numRows : numCols;
   mat->data = data;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDiagRealDeinit(mat);
 }
 
@@ -332,7 +332,7 @@ bfMatDiagRealGetDiagBlock(BfMatDiagReal *mat, BfSize i0, BfSize i1) {
 
   bfMatDiagRealInitView(matView, numElts, numElts, data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDiagRealDeinitAndDealloc(&matView);
 
   return matView;
@@ -373,7 +373,7 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
 
   bfMemZero(resultPtr, (m - k)*n, sizeof(BfComplex));
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&result);
 
   return result;
@@ -387,7 +387,7 @@ BfVec *bfMatDiagRealGetVecView(BfMatDiagReal *mat) {
 
   bfVecRealInitView(vecReal, mat->numElts, 1, mat->data);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecRealDeinitAndDealloc(&vecReal);
 
   return bfVecRealToVec(vecReal);

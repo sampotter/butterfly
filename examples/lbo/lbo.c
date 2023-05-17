@@ -29,7 +29,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -114,7 +114,7 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   bfFacStreamerFeed(facStreamer, Phi);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfPoints1Deinit(newFreqs);
   bfMatDelete(&Phi);

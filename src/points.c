@@ -74,7 +74,7 @@ BfPoints2 *bfPoints2NewEmpty() {
 
   points->data = bfMemAlloc(points->capacity, sizeof(BfPoint2));
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -98,7 +98,7 @@ BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -129,7 +129,7 @@ BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDen
   points->capacity = BF_SIZE_BAD_VALUE;
   points->isView = true;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(points);
     points = NULL;
   }
@@ -150,7 +150,7 @@ BfPoints1 *bfPoints1New() {
   points->size = BF_SIZE_BAD_VALUE;
   points->capacity = BF_SIZE_BAD_VALUE;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     points = NULL;
   }
 
@@ -170,7 +170,7 @@ BfPoints1 *bfPoints1Copy(BfPoints1 const *points) {
 
   pointsCopy->size = points->size;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -188,7 +188,7 @@ void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity) {
   points->capacity = capacity;
   points->isView = false;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPoints1Deinit(points);
   }
 }
@@ -234,7 +234,7 @@ void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
   /* Append new point */
   points->data[points->size++] = point;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) {
@@ -276,7 +276,7 @@ void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) 
   points->size = newSize;
   points->capacity = newSize;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(newData);
   }
 }
@@ -289,7 +289,7 @@ void bfPoints1Map(BfPoints1 *points, BfReal (*func)(BfReal)) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 }
@@ -304,7 +304,7 @@ void bfPoints1Save(BfPoints1 const *points, char const *path) {
   fwrite(points->data, points->size, sizeof(BfPoint1), fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }
@@ -362,7 +362,7 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
   fread(points->data, sizeof(BfPoint2), points->size, fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(points->data);
   }
 
@@ -414,7 +414,7 @@ void bfGetPointsByIndex(BfPoints2 const *points,
     indexedPoint[i][1] = point[j][1];
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfFreePoints2(indexedPoints);
   }
 }
@@ -434,7 +434,7 @@ void bfSavePoints2(BfPoints2 const *points, char const *path) {
   fwrite(points->data, points->size, sizeof(BfPoint2), fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   fclose(fp);
 }
@@ -464,7 +464,7 @@ BfReal *bfPoints2PairwiseDists(BfPoints2 const *X, BfPoints2 const *Y) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return r;
 }
@@ -486,7 +486,7 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
   /* Append new point */
   bfMemCopy(p, 1, sizeof(BfPoint2), &points->data[points->size++]);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints) {
@@ -506,7 +506,7 @@ void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p) {
 
   bfMemCopy(&points->data[i], 1, sizeof(BfPoint2), p);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -533,7 +533,7 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
   pointsView->isView = true;
   pointsView->data = &points->data[i0];
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -584,7 +584,7 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
   fread(points->data, sizeof(BfPoint3), points->size, fp);
   // TODO: error-handling
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMemFree(points->data);
   }
 
@@ -622,7 +622,7 @@ void bfPoints3GetByIndex(BfPoints3 const *points, BfSize numInds, BfSize const *
   for (BfSize i = 0; i < numInds; ++i)
     bfPoint3Copy(indexedPoints->data[i], points->data[inds[i]]);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfPoints3Deinit(indexedPoints);
   }
 }

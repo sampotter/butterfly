@@ -53,7 +53,7 @@ BfIntervalTreeNode *bfIntervalTreeNodeNew() {
   BfIntervalTreeNode *node = bfMemAlloc(1, sizeof(BfIntervalTreeNode));
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     node = NULL;
 
   return node;
@@ -92,7 +92,7 @@ static void intervalTreeNodeInitEmptyRecursive(BfIntervalTreeNode *intervalTreeN
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *intervalTreeNode,
@@ -112,7 +112,7 @@ void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *intervalTreeNode,
   intervalTreeNodeInitEmptyRecursive(intervalTreeNode, k, 0, maxDepth);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     // bfIntervalTreeNodeDeinit(intervalTreeNode);
   }
 }

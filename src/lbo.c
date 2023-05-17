@@ -137,7 +137,7 @@ void bfLboGetFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
   *L = bfMatCsrRealToMat(L_csr);
   *M = bfMatCsrRealToMat(M_csr);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatCsrRealDeinitAndDealloc(&L_csr);
     bfMatCsrRealDeinitAndDealloc(&M_csr);
   }

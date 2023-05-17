@@ -55,7 +55,7 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
     readPtr += vecComplex->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(cat);
 }
@@ -72,7 +72,7 @@ BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
   bfVecZeroInit(cat, vec->size + otherVec->size);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecZeroToVec(cat);
 }
@@ -115,7 +115,7 @@ BfVecZero *bfVecZeroNew() {
   if (vecZero == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return vecZero;
 }
@@ -126,7 +126,7 @@ void bfVecZeroInit(BfVecZero *vecZero, BfSize size) {
   bfVecInit(&vecZero->super, &VEC_VTABLE, size);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecDeinit(&vecZero->super);
 }
 

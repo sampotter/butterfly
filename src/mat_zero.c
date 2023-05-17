@@ -35,7 +35,7 @@ BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
 
   bfVecZeroInit(rowCopy, numCols);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecZeroToVec(rowCopy);
 }
@@ -55,7 +55,7 @@ BfSize bfMatZeroGetNumRows(BfMat const *mat) {
 
   numRows = matZero->super.numRows;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numRows;
 }
@@ -70,7 +70,7 @@ BfSize bfMatZeroGetNumCols(BfMat const *mat) {
 
   numCols = matZero->super.numCols;
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return numCols;
 }
@@ -105,7 +105,7 @@ BfMatZero *bfMatZeroNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return mat;
 }
@@ -116,7 +116,7 @@ void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols) {
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatDeinit(&mat->super);
 }
 

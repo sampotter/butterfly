@@ -33,7 +33,7 @@ StackNode *makeStackNode(BfTreeNode *treeNode) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return stackNode;
 }
@@ -83,7 +83,7 @@ BfTreeNode *bfTreeIterPostOrderGetCurrentNode(BfTreeIterPostOrder *iter) {
 
   treeNode = stackNode->treeNode;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     treeNode = NULL;
   }
 
@@ -106,7 +106,7 @@ static void pushNewChildNodes(BfPtrArray *stack, StackNode *stackNode) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
@@ -139,7 +139,7 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
     /* ... otherwise, `stackNode` is the next node to visit */
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 }
@@ -169,7 +169,7 @@ BfTreeIterPostOrder *bfTreeIterPostOrderNew() {
   if (iter == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     iter = NULL;
 
   return iter;
@@ -198,5 +198,5 @@ void bfTreeIterPostOrderInit(BfTreeIterPostOrder *iter, BfTree const *tree) {
     HANDLE_ERROR();
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }

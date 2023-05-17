@@ -72,7 +72,7 @@ static BfVec *solve_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&x);
   }
 
@@ -111,7 +111,7 @@ static BfVec *solveLowerVec_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal cons
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&x);
   }
 
@@ -150,7 +150,7 @@ static BfVec *solveUpperVec_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal cons
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&x);
   }
 
@@ -180,7 +180,7 @@ static BfVec *scale_vecReal(BfLuCsrReal const *luCsrReal, BfVecReal const *b) {
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfVecRealDeinitAndDealloc(&x);
   }
 
@@ -209,7 +209,7 @@ BfLuCsrReal *bfLuCsrRealNew() {
   BfLuCsrReal *luCsrReal = bfMemAlloc(1, sizeof(BfLuCsrReal));
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -273,7 +273,7 @@ void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat) {
   if (status)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfLuCsrRealDeinit(luCsrReal);
   }
 }
@@ -415,7 +415,7 @@ void bfLuCsrRealDump(BfLuCsrReal const *luCsrReal) {
   fwrite(Rs, sizeof(double), n, fp);
   fclose(fp);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMemFree(Lp);
   bfMemFree(Lj);

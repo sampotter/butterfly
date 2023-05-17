@@ -298,7 +298,7 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   puts("wrote simulation information to info.txt");
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     puts("error!");
   }
 

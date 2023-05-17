@@ -51,7 +51,7 @@ BfVec *bfVecComplexCopy(BfVec const *vec) {
     outPtr += copy->stride;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&copy);
 
   return bfVecComplexToVec(copy);
@@ -85,7 +85,7 @@ BfVec *bfVecComplexGetSubvecView(BfVec *vec, BfSize i0, BfSize i1) {
   bfVecComplexInitView(view, size, stride, data);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&view);
 
   return bfVecComplexToVec(view);
@@ -102,7 +102,7 @@ void bfVecComplexPrint(BfVec const *vec, FILE *fp) {
     fprintf(fp, "%g + i*%g\n", creal(z), cimag(z));
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfReal bfVecComplexNormMax(BfVec const *vec) {
@@ -121,7 +121,7 @@ BfReal bfVecComplexNormMax(BfVec const *vec) {
     if (zabs > norm) norm = zabs;
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     norm = NAN;
 
   return norm;
@@ -150,7 +150,7 @@ void bfVecComplexAddInplace(BfVec *vec, BfVec const *otherVec) {
     inPtr += otherVecComplex->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void
@@ -187,7 +187,7 @@ void bfVecComplexMulInplace(BfVec *vec, BfMat const *mat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 static void
@@ -224,7 +224,7 @@ void bfVecComplexSolveInplace(BfVec *vec, BfMat const *mat) {
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 }
 
 BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize elimInd) {
@@ -287,7 +287,7 @@ BfMat *bfVecComplexGetGivensRotation(BfVec const *vec, BfSize srcInd, BfSize eli
 
   bfMatGivensComplexInit(givens, vec->size, srcInd, elimInd, c, s);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfMatGivensComplexDeinitAndDealloc(&givens);
 
   return bfMatGivensComplexToMat(givens);
@@ -327,7 +327,7 @@ static BfVec *concat_vecComplex(BfVec const *vec, BfVec const *otherVec) {
     readPtr += otherVecComplex->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(cat);
 }
@@ -365,7 +365,7 @@ static BfVec *concat_vecReal(BfVec const *vec, BfVec const *otherVec) {
     realReadPtr += vecReal->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(cat);
 }
@@ -401,7 +401,7 @@ static BfVec *concat_vecZero(BfVec const *vec, BfVec const *otherVec) {
     writePtr += cat->stride;
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return bfVecComplexToVec(cat);
 }
@@ -432,7 +432,7 @@ void bfVecComplexSave(BfVecComplex const *vecComplex, char const *path) {
     fwrite(ptr, sizeof(BfComplex), 1, fp);
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -474,7 +474,7 @@ BfVecComplex *bfVecComplexNew() {
   if (vecComplex == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return vecComplex;
 }
@@ -508,7 +508,7 @@ BfVecComplex *bfVecComplexFromFile(char const *path, BfSize size) {
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
   }
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecComplexDeinitAndDealloc(&vecComplex);
 
   fclose(fp);
@@ -527,7 +527,7 @@ void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size) {
   if (vecComplex->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecDeinit(&vecComplex->super);
 }
 
@@ -544,7 +544,7 @@ void bfVecComplexInitView(BfVecComplex *vecComplex, BfSize size, BfSize stride, 
   vecComplex->stride = stride;
   vecComplex->data = data;
 
-  END_ERROR_HANDLING()
+  BF_ERROR_END()
     bfVecDeinit(&vecComplex->super);
 }
 

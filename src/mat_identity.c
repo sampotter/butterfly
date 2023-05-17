@@ -37,7 +37,7 @@ BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
   bfMatIdentityInit(copy, numRows);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -59,7 +59,7 @@ BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity) {
 
   mat->props |= BF_MAT_PROPS_VIEW;
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -117,7 +117,7 @@ BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0,
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return rowRangeCopy;
 }
@@ -133,7 +133,7 @@ BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
   BfVec *result = bfVecCopy(vec);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -151,7 +151,7 @@ BfVec *bfMatIdentityRmulVec(BfMatIdentity const *matIdentity, BfVec const *vec) 
   BfVec *result = bfVecCopy(vec);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_ASSERT(false);
   }
 
@@ -197,7 +197,7 @@ BfMatIdentity *bfMatIdentityNew() {
   if (matIdentity == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return matIdentity;
 }
@@ -208,7 +208,7 @@ void bfMatIdentityInit(BfMatIdentity *matIdentity, BfSize n) {
   bfMatInit(&matIdentity->super, &MAT_VTABLE, n, n);
   HANDLE_ERROR();
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     bfMatIdentityDeinit(matIdentity);
   }
 }

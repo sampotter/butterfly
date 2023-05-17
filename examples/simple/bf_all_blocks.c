@@ -188,7 +188,7 @@ int main(int argc, char const *argv[]) {
   printf("saved dense version of BF'd kernel matrix to A_BF_dense.bin [%0.2fs]\n", bfToc());
 #endif
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   bfMatDelete(&y_BF);
   bfMatDelete(&y_dense);

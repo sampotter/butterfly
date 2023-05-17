@@ -13,7 +13,7 @@ BfConstNodeArray *bfConstNodeArrayNewWithDefaultCapacity() {
 
   bfConstNodeArrayInitWithDefaultCapacity(nodeArray);
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     BF_DIE();
   }
 
@@ -132,7 +132,7 @@ bool nodesHaveSameFirstIndex(BfConstNodeArray const *nodes) {
     }
   }
 
-  END_ERROR_HANDLING() {}
+  BF_ERROR_END() {}
 
   return sameFirstIndex;
 }
@@ -159,7 +159,7 @@ BfSize getMaxLastIndexForRowNodes(BfConstNodeArray const *nodes,
     }
   }
 
-  END_ERROR_HANDLING() {
+  BF_ERROR_END() {
     i1Max = BF_SIZE_BAD_VALUE;
     argmaxNode = NULL;
   }
