@@ -29,7 +29,7 @@
 
 typedef struct {
   BfTreeNode const *treeNode;
-  BfMat const *mat;
+  BfMat *mat;
 } MatWithTreeNodeKey;
 
 struct BfFacStreamer {
@@ -99,8 +99,35 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
 }
 
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
-  (void)facStreamer;
-  BF_DIE();
+  facStreamer->facSpec = NULL;
+
+  bfTreeIterDelete(&facStreamer->colTreeIter);
+
+  bfPermDeinit(&facStreamer->rowTreeReversePerm);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&facStreamer->partialFacs); ++i) {
+    BfFac *fac = bfPtrArrayGet(&facStreamer->partialFacs, i);
+    bfFacDelete(&fac);
+  }
+  bfPtrArrayDeinit(&facStreamer->partialFacs);
+
+  for (BfSize i = 0; i < bfPtrArraySize(facStreamer->prevPhis); ++i) {
+    MatWithTreeNodeKey *entry = bfPtrArrayGet(facStreamer->prevPhis, i);
+    BF_ASSERT(!bfMatIsView(entry->mat));
+    bfMatDelete(&entry->mat);
+    bfMemFree(entry);
+  }
+  bfPtrArrayDelete(&facStreamer->prevPhis);
+}
+
+void bfFacStreamerDealloc(BfFacStreamer **facStreamer) {
+  bfMemFree(*facStreamer);
+  *facStreamer = NULL;
+}
+
+void bfFacStreamerDelete(BfFacStreamer **facStreamer) {
+  bfFacStreamerDeinit(*facStreamer);
+  bfFacStreamerDealloc(facStreamer);
 }
 
 BfSize bfFacStreamerGetNumRows(BfFacStreamer const *facStreamer) {
@@ -146,31 +173,38 @@ static BfPtrArray getCurrentPartialFacs(BfFacStreamer const *facStreamer) {
   return currentPartialFacs;
 }
 
-static BfMat const *getPrevPhiByColNode(BfFacStreamer const *facStreamer,
-                                    BfTreeNode const *treeNode) {
+static BfMat const *getPrevPhiViewByColNode(BfFacStreamer const *facStreamer,
+                                            BfTreeNode const *treeNode) {
   BfMat const *mat = NULL;
   for (BfSize k = 0; k < bfPtrArraySize(facStreamer->prevPhis); ++k) {
     MatWithTreeNodeKey const *entry = bfPtrArrayGet(facStreamer->prevPhis, k);
     if (entry->treeNode == treeNode) {
-      mat = entry->mat;
+      mat = bfMatGetView(entry->mat);
       break;
     }
   }
   return mat;
 }
 
-static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat const *Phi) {
+/* Have `facStreamer` store `Phi` so that we can check relative errors
+ * without having to recompute bands of eigenvectors later. After
+ * calling this function, `facStreamer` owns `Phi`. */
+static void addPrevPhi(BfFacStreamer *facStreamer, BfTreeNode const *treeNode, BfMat *Phi) {
   MatWithTreeNodeKey *entry = bfMemAlloc(1, sizeof(MatWithTreeNodeKey));
   entry->treeNode = treeNode;
-  entry->mat = bfMatCopy(Phi);
+  entry->mat = bfMatGet(Phi, BF_POLICY_STEAL);
   bfPtrArrayAppend(facStreamer->prevPhis, entry);
 }
 
 static void deletePrevPhiByColNode(BfFacStreamer *facStreamer, BfTreeNode const *colNode) {
   for (BfSize k = bfPtrArraySize(facStreamer->prevPhis); k > 0; --k) {
-    MatWithTreeNodeKey const *entry = bfPtrArrayGet(facStreamer->prevPhis, k - 1);
-    if (entry->treeNode == colNode)
+    MatWithTreeNodeKey *entry = bfPtrArrayGet(facStreamer->prevPhis, k - 1);
+    if (entry->treeNode == colNode) {
+      BF_ASSERT(!bfMatIsView(entry->mat));
+      bfMatDelete(&entry->mat);
+      bfMemFree(entry);
       bfPtrArrayRemove(facStreamer->prevPhis, k - 1);
+    }
   }
 }
 
@@ -192,10 +226,9 @@ static void addPrevPhiForChildNodesAndDeletePrev(BfFacStreamer *facStreamer, BfT
     BfSize j0 = currentColNode->offset[k] - jOffset;
     BfSize j1 = currentColNode->offset[k + 1] - jOffset;
 
-    BfMatDenseReal const *prevPhiBlock = bfMatConstToMatDenseRealConst(
-      getPrevPhiByColNode(facStreamer, childColNode));
-
-    bfMatDenseRealSetBlock(prevPhi, 0, m, j0, j1, prevPhiBlock);
+    BfMat const *prevPhiBlock = getPrevPhiViewByColNode(facStreamer, childColNode);
+    bfMatDenseRealSetBlock(prevPhi, 0, m, j0, j1, bfMatConstToMatDenseRealConst(prevPhiBlock));
+    bfMatDelete((BfMat **)&prevPhiBlock);
   }
 
   addPrevPhi(facStreamer, currentColNode, bfMatDenseRealToMat(prevPhi));
@@ -207,20 +240,31 @@ static void addPrevPhiForChildNodesAndDeletePrev(BfFacStreamer *facStreamer, BfT
       continue;
     deletePrevPhiByColNode(facStreamer, childColNode);
   }
+
+  BF_ASSERT(bfMatIsView(bfMatDenseRealToMat(prevPhi)));
+  bfMatDenseRealDelete(&prevPhi);
 }
 
 static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *currentColNode) {
+  /* Iterate over each of the children of the current column node: */
   for (BfSize k = 0; k < currentColNode->maxNumChildren; ++k) {
     BfTreeNode const *childColNode = currentColNode->child[k];
     if (childColNode == NULL)
       continue;
+
+    /* Find the partial factorization corresponding to the current
+     * child column node: */
     for (BfSize j = bfPtrArraySize(&facStreamer->partialFacs); j > 0; --j) {
       BfFac *fac = bfPtrArrayGet(&facStreamer->partialFacs, j - 1);
       if (fac->colNode != childColNode)
         continue;
+
+      /* Remove it from the array of partial factorizations: */
       bfPtrArrayRemove(&facStreamer->partialFacs, j - 1);
 
-      /* NOTE: there are a lot of assumptions resting on the following
+      /* Free the partial factorization for the current column node.
+       *
+       * NOTE: there are a lot of assumptions resting on the following
        * line being correct. The most recently merged factorization
        * has stolen some of the guts of this factorization. We want to
        * make sure we free everything we need to free here, without
@@ -243,6 +287,9 @@ static void checkRelError(BfFacStreamer const *facStreamer, BfMat const *Phi, Bf
   BfVec *y = partialFacMulVec(fac, x);
   BfReal rel_error = bfVecDistMax(y, y_gt)/bfVecNormMax(y_gt);
   bfLogInfo("- rel max error for random MVP: %g\n", rel_error);
+  bfVecDelete(&y);
+  bfVecDelete(&y_gt);
+  bfVecDelete(&x);
 }
 
 static void continueFactorizing(BfFacStreamer *facStreamer) {
@@ -264,7 +311,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     BfPtrArray currentPartialFacs = getCurrentPartialFacs(facStreamer);
     HANDLE_ERROR();
 
-    BfFac *mergedFac = mergeAndSplit(&currentPartialFacs, facStreamer->facSpec);
+    BfFac *mergedFac = mergeAndSplit(
+      &currentPartialFacs, facStreamer->facSpec, BF_POLICY_STEAL);
     HANDLE_ERROR();
 
 #if BF_DEBUG
@@ -283,9 +331,10 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
     /* Check the relative error so far: */
     if (facStreamer->facSpec->compareRelativeErrors) {
-      BfMat const *Phi = getPrevPhiByColNode(facStreamer, currentColNode);
+      BfMat const *Phi = getPrevPhiViewByColNode(facStreamer, currentColNode);
       BF_ASSERT(Phi != NULL);
       checkRelError(facStreamer, Phi, mergedFac);
+      bfMatDelete((BfMat **)&Phi);
     }
 
     bfPtrArrayAppend(&facStreamer->partialFacs, mergedFac);
@@ -296,6 +345,8 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
 
     bfTreeIterNext(facStreamer->colTreeIter);
     HANDLE_ERROR();
+
+    bfPtrArrayDeinit(&currentPartialFacs);
   }
 
   BF_ERROR_END() {
@@ -324,7 +375,7 @@ static void addPartialFac(BfFacStreamer *facStreamer, BfFac *partialFac) {
  *   `facStreamer->colTree`.
  *
  * TODO: this function is a mess! should be cleaned up! */
-void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
+void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat *Phi) {
   BF_ERROR_BEGIN();
 
   /* Get the current column tree leaf node */
@@ -383,6 +434,8 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
       continue;
     }
 
+    BF_ASSERT(Psi == NULL);
+    BF_ASSERT(W == NULL);
     BF_ASSERT(!bfTreeNodeIsLeaf(rowNode));
 
     /* Push the children of the current row node onto the stack in
@@ -394,7 +447,11 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
     }
   }
 
-  BfFac *partialFac = makeLeafNodePartialFac(colNode, &PsiBlocks, &WBlocks);
+  /* Create a new leaf node BF. When we do this, we steal the blocks
+   * from PsiBlocks and WBlocks, so that we don't need to worry about
+   * freeing them from this scope. */
+  BfFac *partialFac = makeLeafNodePartialFac(
+    colNode, &PsiBlocks, &WBlocks, BF_POLICY_STEAL, BF_POLICY_STEAL);
   HANDLE_ERROR();
 
   // TODO: this should go into makeLeafNodePartialFac
@@ -436,8 +493,18 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat const *Phi) {
     BF_DIE();
   }
 
+  for (BfSize i = 0; i < bfPtrArraySize(&PsiBlocks); ++i) {
+    BfMat *PsiBlock = bfPtrArrayGet(&PsiBlocks, i);
+    bfMatDelete(&PsiBlock);
+  }
   bfPtrArrayDeinit(&PsiBlocks);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&WBlocks); ++i) {
+    BfMat *WBlock = bfPtrArrayGet(&WBlocks, i);
+    bfMatDelete(&WBlock);
+  }
   bfPtrArrayDeinit(&WBlocks);
+
   bfConstPtrArrayDeinit(&rowNodes);
   bfPtrArrayDeinit(&stack);
 }

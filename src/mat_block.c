@@ -114,7 +114,10 @@ void bfMatBlockInit(BfMatBlock *mat,
 
 void bfMatBlockDeinit(BfMatBlock *matBlock) {
   if (!bfMatIsView(&matBlock->super)) {
+    for (BfSize i = 0; i < bfMatBlockNumBlocks(matBlock); ++i)
+      bfMatDelete(&matBlock->block[i]);
     bfMemFree(matBlock->block);
+
     bfMemFree(matBlock->rowOffset);
     bfMemFree(matBlock->colOffset);
   }

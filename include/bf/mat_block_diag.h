@@ -4,6 +4,7 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatBlockDiagGetView(BfMatBlockDiag *matBlockDiag);
 BfMat *bfMatBlockDiagCopy(BfMat const *mat);
 BfMat *bfMatBlockDiagSteal(BfMatBlockDiag *matBlockDiag);
 BfVec *bfMatBlockDiagGetRowCopy(BfMat const *mat, BfSize i);

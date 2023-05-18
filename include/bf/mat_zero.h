@@ -5,6 +5,7 @@
 /** Interface: MatZero */
 
 BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i);
+void bfMatZeroDelete(BfMatZero **matZero);
 BfType bfMatZeroGetType(BfMat const *mat);
 BfSize bfMatZeroGetNumRows(BfMat const *mat);
 BfSize bfMatZeroGetNumCols(BfMat const *mat);

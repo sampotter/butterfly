@@ -42,11 +42,11 @@ struct BfFac {
 };
 
 void bfFacDelete(BfFac **fac);
-BfMat *bfFacGetMat(BfFac const *fac);
-BfMatProduct *bfFacGetMatProduct(BfFac const *fac);
+BfMat *bfFacGetMat(BfFac const *fac, BfPolicy policy);
+BfMatProduct *bfFacGetMatProduct(BfFac const *fac, BfPolicy policy);
 BfSize bfFacGetNumBytes(BfFac const *fac);
 
-BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode, BfPtrArray *PsiBlocks, BfPtrArray *WBlocks);
+BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode, BfPtrArray *PsiBlocks, BfPtrArray *WBlocks, BfPolicy PsiBlockPolicy, BfPolicy WBlockPolicy);
 // void setPartialFacWBlock(PartialFac *partialFac, BfSize k, BfMat *W);
 BfSize partialFacGetNumRows(BfFac const *fac);
 BfVec *partialFacMulVec(BfFac const *fac, BfVec const *x);
@@ -69,4 +69,4 @@ bool getPsiAndW(BfFacSpec const *facSpec, BfMat const *mat, BfTreeNode const *ro
 // void getPsiAndWBlocksByRowNode(BfPtrArray const *currentPartialFacs, BfTreeNode const *rowNode, BfMat **PsiPtr, BfMat **WPtr);
 // bool getLowRankApproximation(BfFacStreamer const *facStreamer, BfMat const *PsiStarSubblock, BfMat **PsiSubblockPtr, BfMat **W0SubblockPtr);
 // void findEpsilonRankCutAndGetNewBlocks(BfFacStreamer const *facStreamer, BfTreeNode const *rootRowNode, BfMat const *PsiStarBlock, BfConstPtrArray **epsRankCutPtr, BfMat **PsiBlockPtr, BfMat **W0BlockPtr);
-BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec);
+BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec, BfPolicy policy);

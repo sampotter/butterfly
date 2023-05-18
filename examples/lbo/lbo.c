@@ -116,7 +116,7 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
 
   BF_ERROR_END() {}
 
-  bfPoints1Deinit(newFreqs);
+  bfPoints1Delete(&newFreqs);
   bfMatDelete(&Phi);
   bfVecRealDeinitAndDealloc(&Lam);
 }

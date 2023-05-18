@@ -26,6 +26,7 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatBlockCooGetView,
   .Copy = (__typeof__(&bfMatBlockCooCopy))bfMatBlockCooCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatBlockCooSteal,
   .GetRowCopy = (__typeof__(&bfMatBlockCooGetRowCopy))bfMatBlockCooGetRowCopy,
@@ -43,6 +44,25 @@ static BfMatVtable MAT_VTABLE = {
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockCooGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockCooPrintBlocksDeep,
 };
+
+BfMat *bfMatBlockCooGetView(BfMatBlockCoo const *matBlockCoo) {
+  BF_ERROR_BEGIN();
+
+  BfMatBlockCoo *matBlockCooView = bfMatBlockCooNew();
+  HANDLE_ERROR();
+
+  *matBlockCooView = *matBlockCoo;
+
+  BfMat *matView = bfMatBlockCooToMat(matBlockCooView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matView;
+}
 
 BfMat *bfMatBlockCooCopy(BfMat const *mat) {
   BF_ERROR_BEGIN();
@@ -336,6 +356,8 @@ BfMat *bfMatBlockCooGetRowRangeCopy(BfMatBlockCoo const *matBlockCoo, BfSize i0,
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
     HANDLE_ERROR();
+
+    bfMatDelete(&blockRowRange);
   }
 
   BfSize m = i1 - i0;
@@ -440,6 +462,8 @@ BfVec *bfMatBlockCooMulVec(BfMatBlockCoo const *matBlockCoo, BfVec const *vec) {
     BfVec *resultSubvecView = bfVecGetSubvecView(result, i0, i1);
     bfVecAddInplace(resultSubvecView, tmp);
     bfVecDelete(&resultSubvecView);
+
+    bfVecDelete(&tmp);
   }
 
   BF_ERROR_END() {
@@ -646,7 +670,7 @@ BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize
   BfSize k = 0;
   for (; k < numBlocks; ++k) {
     if (ROW_IND(matBlockCoo, k) == i && COL_IND(matBlockCoo, k) == j) {
-      block = BLOCK(matBlockCoo, k);
+      block = bfMatGet(BLOCK(matBlockCoo, k), BF_POLICY_VIEW);
       break;
     }
   }
@@ -673,7 +697,7 @@ BfMat const *bfMatBlockCooGetBlockConst(BfMatBlockCoo const *matBlockCoo, BfSize
   }
 
   BF_ERROR_END() {
-    bfMatZeroDeinitAndDealloc(&zeroBlock);
+    BF_DIE();
   }
 
   return block;
@@ -1057,8 +1081,6 @@ void bfMatBlockCooInit(BfMatBlockCoo *mat, BfSize numBlockRows,
 }
 
 void bfMatBlockCooDeinit(BfMatBlockCoo *matBlockCoo) {
-  matBlockCoo->numBlocks = BF_SIZE_BAD_VALUE;
-
   BfMat *mat = bfMatBlockCooToMat(matBlockCoo);
   if (!bfMatIsView(mat)) {
     bfMemFree(matBlockCoo->rowInd);
@@ -1069,6 +1091,8 @@ void bfMatBlockCooDeinit(BfMatBlockCoo *matBlockCoo) {
   matBlockCoo->colInd = NULL;
 
   bfMatBlockDeinit(&matBlockCoo->super);
+
+  matBlockCoo->numBlocks = BF_SIZE_BAD_VALUE;
 }
 
 void bfMatBlockCooDealloc(BfMatBlockCoo **mat) {

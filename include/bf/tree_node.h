@@ -9,10 +9,11 @@ typedef void (*BfTreeMapConstFunc)(BfTree const *, BfTreeNode const *, void *);
 /** Interface: TreeNode */
 
 BfType bfTreeNodeGetType(BfTreeNode const *);
-BfSize bfTreeNodeGetArity(BfTreeNode const *);
+void bfTreeNodeDelete(BfTreeNode **treeNode);
 
 typedef struct BfTreeNodeVtable {
   __typeof__(&bfTreeNodeGetType) GetType;
+  __typeof__(&bfTreeNodeDelete) Delete;
 } BfTreeNodeVtable;
 
 /** Implementation: TreeNode */

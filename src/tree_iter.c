@@ -12,6 +12,10 @@ BfType bfTreeIterGetType(BfTreeIter const *iter) {
   return iter->vtable->GetType(iter);
 }
 
+void bfTreeIterDelete(BfTreeIter **treeIter) {
+  (*treeIter)->vtable->Delete(treeIter);
+}
+
 BfTreeNode *bfTreeIterGetCurrentNode(BfTreeIter *iter) {
   return iter->vtable->GetCurrentNode(iter);
 }

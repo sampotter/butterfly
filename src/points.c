@@ -210,6 +210,16 @@ void bfPoints1Deinit(BfPoints1 *points) {
   points->capacity = BF_SIZE_BAD_VALUE;
 }
 
+void bfPoints1Dealloc(BfPoints1 **points) {
+  bfMemFree(*points);
+  *points = NULL;
+}
+
+void bfPoints1Delete(BfPoints1 **points) {
+  bfPoints1Deinit(*points);
+  bfPoints1Dealloc(points);
+}
+
 bool bfPoints1IsSorted(BfPoints1 const *points) {
   for (BfSize i = 1; i < points->size; ++i)
     if (points->data[i - 1] > points->data[i])
@@ -592,8 +602,10 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
 }
 
 void bfPoints3Deinit(BfPoints3 *points) {
-  (void)points;
-  BF_DIE();
+  bfMemFree(points->data);
+  points->data = NULL;
+
+  points->size = BF_SIZE_BAD_VALUE;
 }
 
 BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {

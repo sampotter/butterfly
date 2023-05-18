@@ -22,6 +22,9 @@ void bfFacDeinit(BfFac *fac) {
   bfMatDelete(&fac->Psi);
   for (BfSize i = 0; i < fac->numW; ++i)
     bfMatDelete(&fac->W[i]);
+
+  bfMemFree(fac->W);
+  fac->W = NULL;
 }
 
 void bfFacDealloc(BfFac **facHandle) {
@@ -34,10 +37,10 @@ void bfFacDelete(BfFac **facHandle) {
   bfFacDealloc(facHandle);
 }
 
-BfMat *bfFacGetMat(BfFac const *fac) {
+BfMat *bfFacGetMat(BfFac const *fac, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
-  BfMatProduct *matProduct = bfFacGetMatProduct(fac);
+  BfMatProduct *matProduct = bfFacGetMatProduct(fac, policy);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -47,7 +50,7 @@ BfMat *bfFacGetMat(BfFac const *fac) {
   return bfMatProductToMat(matProduct);
 }
 
-BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
+BfMatProduct *bfFacGetMatProduct(BfFac const *fac, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
   BfMatProduct *matProduct = bfMatProductNew();
@@ -56,11 +59,11 @@ BfMatProduct *bfFacGetMatProduct(BfFac const *fac) {
   bfMatProductInit(matProduct);
   HANDLE_ERROR();
 
-  bfMatProductPostMultiply(matProduct, fac->Psi);
+  bfMatProductPostMultiply(matProduct, bfMatGet(fac->Psi, policy));
   HANDLE_ERROR();
 
   for (BfSize k = 0; k < fac->numW; ++k) {
-    bfMatProductPostMultiply(matProduct, fac->W[k]);
+    bfMatProductPostMultiply(matProduct, bfMatGet(fac->W[k], policy));
     HANDLE_ERROR();
   }
 
@@ -80,7 +83,9 @@ BfSize bfFacGetNumBytes(BfFac const *fac) {
 
 BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
                               BfPtrArray *PsiBlocks,
-                              BfPtrArray *WBlocks) {
+                              BfPtrArray *WBlocks,
+                              BfPolicy PsiBlockPolicy,
+                              BfPolicy WBlockPolicy) {
   BF_ERROR_BEGIN();
 
   BfFac *fac = bfMemAlloc(1, sizeof(BfFac));
@@ -92,7 +97,7 @@ BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   bfConstNodeArrayInitWithDefaultCapacity(&fac->rowNodes);
   HANDLE_ERROR();
 
-  BfMatBlockDiag *Psi = bfMatBlockDiagNewFromBlocks(PsiBlocks, BF_POLICY_COPY);
+  BfMatBlockDiag *Psi = bfMatBlockDiagNewFromBlocks(PsiBlocks, PsiBlockPolicy);
   HANDLE_ERROR();
 
   fac->Psi = bfMatBlockDiagToMat(Psi);
@@ -103,7 +108,7 @@ BfFac *makeLeafNodePartialFac(BfTreeNode const *colNode,
   if (fac->W == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfMatBlockDense *W0 = bfMatBlockDenseNewColFromBlocks(WBlocks, BF_POLICY_COPY);
+  BfMatBlockDense *W0 = bfMatBlockDenseNewColFromBlocks(WBlocks, WBlockPolicy);
   HANDLE_ERROR();
 
   fac->W[0] = bfMatBlockDenseToMat(W0);
@@ -337,12 +342,14 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
 
   for (BfSize i = 0; i < numSubblocks; ++i) {
     BfMat *PsiSubblock = bfPtrArrayGet(&PsiSubblocks, i);
+    BF_ASSERT(bfMatIsView(PsiSubblock));
     bfMatDelete(&PsiSubblock);
   }
   bfPtrArrayDeinit(&PsiSubblocks);
 
   for (BfSize i = 0; i < numSubblocks; ++i) {
     BfMat *W0Subblock = bfPtrArrayGet(&W0Subblocks, i);
+    BF_ASSERT(bfMatIsView(W0Subblock));
     bfMatDelete(&W0Subblock);
   }
   bfPtrArrayDeinit(&W0Subblocks);
@@ -516,26 +523,34 @@ BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
   bfConstNodeArrayInitWithDefaultCapacity(&mergeCut);
   HANDLE_ERROR();
 
+  /** Figure out the first value of i1: */
+
   BfConstNodeArray rowNodes = getFirstRowNodes(partialFacs);
   HANDLE_ERROR();
 
   BF_ASSERT(bfConstNodeArraySize(&rowNodes) == numPartialFacs);
   BF_ASSERT(nodesHaveSameFirstIndex(&rowNodes));
 
-  BfConstNodeArray lastRowNodes = getLastRowNodes(partialFacs);
-  HANDLE_ERROR();
-
   BfTreeNode const *rowNode = NULL;
   BfSize i1 = getMaxLastIndexForRowNodes(&rowNodes, &rowNode);
+
+  bfConstNodeArrayDeinit(&rowNodes);
+
+  /** Figure out the last value of i1: */
+
+  BfConstNodeArray lastRowNodes = getLastRowNodes(partialFacs);
+  HANDLE_ERROR();
 
   bfConstNodeArrayAppend(&mergeCut, rowNode);
   HANDLE_ERROR();
 
   BfSize i1Final = getMaxLastIndexForRowNodes(&lastRowNodes, NULL);
 
-  while (i1 != i1Final) {
-    bfConstNodeArrayDeinit(&rowNodes);
+  bfConstNodeArrayDeinit(&lastRowNodes);
 
+  /** Find the merge cut: */
+
+  while (i1 != i1Final) {
     rowNodes = getRowNodesByFirstIndex(partialFacs, i1);
     HANDLE_ERROR();
 
@@ -546,6 +561,8 @@ BfConstNodeArray getMergeCut(BfPtrArray const *partialFacs) {
     HANDLE_ERROR();
 
     BF_ASSERT(bfConstNodeArraySize(&rowNodes) == numPartialFacs);
+
+    bfConstNodeArrayDeinit(&rowNodes);
   }
 
   BF_ERROR_END() {
@@ -611,12 +628,14 @@ void getPsiAndW0BlocksByRowNode(BfPtrArray const *currentPartialFacs,
 
   for (BfSize i = 0; i < bfPtrArraySize(&PsiBlocks); ++i) {
     BfMat *PsiBlock = bfPtrArrayGet(&PsiBlocks, i);
+    BF_ASSERT(bfMatIsView(PsiBlock));
     bfMatDelete(&PsiBlock);
   }
   bfPtrArrayDeinit(&PsiBlocks);
 
   for (BfSize i = 0; i < bfPtrArraySize(&W0Blocks); ++i) {
     BfMat *W0Block = bfPtrArrayGet(&W0Blocks, i);
+    BF_ASSERT(bfMatIsView(W0Block));
     bfMatDelete(&W0Block);
   }
   bfPtrArrayDeinit(&W0Blocks);
@@ -674,6 +693,8 @@ static bool getPsiAndW_normal(BfMat const *block, BfReal tol, BfMat **PsiPtr, Bf
 
     bfMatScaleRows(W, s);
     HANDLE_ERROR();
+
+    bfVecDelete(&s);
   }
 
   BF_ERROR_END() {
@@ -838,6 +859,7 @@ bool getLowRankApproximation(BfFacSpec const *facSpec, BfMat const *PsiStarSubbl
 
   bfVecDelete(&s);
   bfMatDiagRealDeinitAndDealloc(&S);
+  bfSizeArrayDeinitAndDealloc(&nonzeroColumnRanges);
 
   return truncated;
 }
@@ -928,9 +950,9 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
 
       PsiSubblock = bfMatIdentityToMat(identity);
 
-      W0Subblock = PsiStarSubblock;
+      W0Subblock = bfMatGet(PsiStarSubblock, BF_POLICY_STEAL);
 
-      goto next;
+      goto append;
     }
 
     /* If the new Psi subblock has too few columns, we omit an
@@ -939,7 +961,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
      *
      * TODO: can we do this before slicing above to save a bit of time? */
     if (numColsPsiStarSubblock < facSpec->minNumCols) {
-      PsiSubblock = PsiStarSubblock;
+      PsiSubblock = bfMatGet(PsiStarSubblock, BF_POLICY_STEAL);;
 
       BfMatIdentity *identity = bfMatIdentityNew();
       HANDLE_ERROR();
@@ -949,7 +971,7 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
 
       W0Subblock = bfMatIdentityToMat(identity);
 
-      goto next;
+      goto append;
     }
 
     bool truncated = getLowRankApproximation(
@@ -971,10 +993,14 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
         if (child != NULL)
           bfConstPtrArrayAppend(&stack, child);
       }
-      continue;
+
+      bfMatDelete(&PsiSubblock);
+      bfMatDelete(&W0Subblock);
+
+      goto cleanup;
     }
 
-  next:
+  append:
     /* Append the current row node to the epsilon-rank cut. */
     bfConstNodeArrayAppend(epsRankCut, rowNode);
     HANDLE_ERROR();
@@ -986,6 +1012,9 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
     /* Append the W0 subblock. */
     bfPtrArrayAppend(&W0Subblocks, W0Subblock);
     HANDLE_ERROR();
+
+  cleanup:
+    bfMatDelete(&PsiStarSubblock);
   }
 
   /* Diagonally concatenate the Psi subblocks. */
@@ -997,14 +1026,21 @@ void findEpsilonRankCutAndGetNewBlocks(BfFacSpec const *facSpec,
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    bfConstNodeArrayDeinitAndDealloc(&epsRankCut);
-
-    // TODO: free blocks
     BF_DIE();
   }
 
+  for (BfSize i = 0; i < bfPtrArraySize(&PsiSubblocks); ++i) {
+    BfMat *PsiSubblock = bfPtrArrayGet(&PsiSubblocks, i);
+    bfMatDelete(&PsiSubblock);
+  }
   bfPtrArrayDeinit(&PsiSubblocks);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&W0Subblocks); ++i) {
+    BfMat *W0Subblock = bfPtrArrayGet(&W0Subblocks, i);
+    bfMatDelete(&W0Subblock);
+  }
   bfPtrArrayDeinit(&W0Subblocks);
+
   bfConstPtrArrayDeinit(&stack);
 
   *epsRankCutPtr = epsRankCut;
@@ -1041,7 +1077,7 @@ static BfTreeNode const *getCommonParent(BfPtrArray const *facs) {
   return commonParent;
 }
 
-BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
+BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec, BfPolicy policy) {
   static int CALL_NUMBER = 0;
 
   BF_ERROR_BEGIN();
@@ -1144,20 +1180,21 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
     bfPtrArrayAppend(&W0Blocks, W0Block);
     HANDLE_ERROR();
 
+    bfMatDelete(&PsiStarBlock);
     bfConstNodeArrayDeinitAndDealloc(&epsRankCut);
   }
 
   /* Diagonally concatenate the new Psi blocks to get the leading
    * factor of the merged butterfly factorization. */
-  Psi = bfMatBlockDiagNewFromBlocks(&PsiBlocks, BF_POLICY_STEAL);
+  Psi = bfMatBlockDiagNewFromBlocks(&PsiBlocks, policy);
   HANDLE_ERROR();
 
   /* Diagonally concatenate together the new W0 blocks. */
-  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks, BF_POLICY_STEAL);
+  W0 = bfMatBlockDiagNewFromBlocks(&W0Blocks, policy);
   HANDLE_ERROR();
 
   /* Vertically concatenate the collected W1 blocks. */
-  W1 = bfMatBlockDenseNewColFromBlocks(&W1Blocks, BF_POLICY_COPY);
+  W1 = bfMatBlockDenseNewColFromBlocks(&W1Blocks, policy);
   HANDLE_ERROR();
 
   /* Create and initialize the merged factorization. */
@@ -1195,7 +1232,7 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
       for (BfSize l = 0; l < bfPtrArraySize(facs); ++l) {
         BfFac const *fac = bfPtrArrayGet(facs, l);
 
-        BfMat *WkBlock = bfMatGet(fac->W[k], BF_POLICY_COPY);
+        BfMat *WkBlock = bfMatGet(fac->W[k], policy);
         BF_ASSERT(WkBlock != NULL);
 
         bfPtrArrayAppend(&WkBlocks, WkBlock);
@@ -1229,8 +1266,26 @@ BfFac *mergeAndSplit(BfPtrArray const *facs, BfFacSpec const *facSpec) {
     BF_DIE();
   }
 
+  bfConstNodeArrayDeinit(&mergeCut);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&PsiBlocks); ++i) {
+    BfMat *PsiBlock = bfPtrArrayGet(&PsiBlocks, i);
+    bfMatDelete(&PsiBlock);
+  }
   bfPtrArrayDeinit(&PsiBlocks);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&W0Blocks); ++i) {
+    BfMat *W0Block = bfPtrArrayGet(&W0Blocks, i);
+    BF_ASSERT(bfMatIsView(W0Block));
+    bfMatDelete(&W0Block);
+  }
   bfPtrArrayDeinit(&W0Blocks);
+
+  for (BfSize i = 0; i < bfPtrArraySize(&W1Blocks); ++i) {
+    BfMat *W1Block = bfPtrArrayGet(&W1Blocks, i);
+    BF_ASSERT(bfMatIsView(W1Block));
+    bfMatDelete(&W1Block);
+  }
   bfPtrArrayDeinit(&W1Blocks);
 
   ++CALL_NUMBER;

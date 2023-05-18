@@ -28,8 +28,8 @@ static BfSize getLeadingDimension(BfMatDenseReal const *mat) {
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
-  .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
   .GetView = (__typeof__(&bfMatGetView))bfMatDenseRealGetView,
+  .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatDenseRealSteal,
   .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
@@ -53,21 +53,6 @@ static BfMatVtable MAT_VTABLE = {
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
 };
 
-BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
-  BF_ERROR_BEGIN();
-
-  BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
-  HANDLE_ERROR();
-
-  bfMatDenseRealInitCopy(matDenseRealCopy, matDenseReal);
-  HANDLE_ERROR();
-
-  BF_ERROR_END()
-    bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
-
-  return bfMatDenseRealToMat(matDenseRealCopy);
-}
-
 BfMat *bfMatDenseRealGetView(BfMat *mat) {
   BF_ERROR_BEGIN();
 
@@ -86,6 +71,21 @@ BfMat *bfMatDenseRealGetView(BfMat *mat) {
     matView = NULL;
 
   return matView;
+}
+
+BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal) {
+  BF_ERROR_BEGIN();
+
+  BfMatDenseReal *matDenseRealCopy = bfMatDenseRealNew();
+  HANDLE_ERROR();
+
+  bfMatDenseRealInitCopy(matDenseRealCopy, matDenseReal);
+  HANDLE_ERROR();
+
+  BF_ERROR_END()
+    bfMatDenseRealDeinitAndDealloc(&matDenseRealCopy);
+
+  return bfMatDenseRealToMat(matDenseRealCopy);
 }
 
 BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
@@ -138,8 +138,8 @@ BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
   return bfVecRealToVec(colView);
 }
 
-void bfMatDenseRealDelete(BfMat **mat) {
-  bfMatDenseRealDeinitAndDealloc((BfMatDenseReal **)mat);
+void bfMatDenseRealDelete(BfMatDenseReal **matDenseReal) {
+  bfMatDenseRealDeinitAndDealloc(matDenseReal);
 }
 
 BfType bfMatDenseRealGetType(BfMat const *mat) {
@@ -618,6 +618,8 @@ BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat) {
         bfMatDenseRealSetBlock(matDenseReal, i0, i1, j0, j1, block_);
 
         bfMatDenseRealDeinitAndDealloc(&block_);
+
+        bfMatDelete((BfMat **)&block);
       }
     }
   }

@@ -13,12 +13,18 @@
 /** Interface: Tree -> IntervalTree */
 
 static BfTreeVtable TreeVtable = {
-  .GetType = (__typeof__(&bfTreeGetType))bfIntervalTreeGetType
+  .GetType = (__typeof__(&bfTreeGetType))bfIntervalTreeGetType,
+  .Delete = (__typeof__(&bfTreeDelete))bfIntervalTreeDelete
 };
 
 BfType bfIntervalTreeGetType(BfTree const *tree) {
   (void)tree;
   return BF_TYPE_INTERVAL_TREE;
+}
+
+void bfIntervalTreeDelete(BfIntervalTree **intervalTree) {
+  bfIntervalTreeDeinit(*intervalTree);
+  bfIntervalTreeDealloc(intervalTree);
 }
 
 /** Downcasting: Tree -> IntervalTree */
@@ -134,6 +140,17 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
 
     recursivelySiftNodes(child, points, perm);
   }
+}
+
+void bfIntervalTreeDeinit(BfIntervalTree *intervalTree) {
+  intervalTree->points = NULL;
+
+  bfTreeDeinit(&intervalTree->super);
+}
+
+void bfIntervalTreeDealloc(BfIntervalTree **intervalTree) {
+  bfMemFree(*intervalTree);
+  *intervalTree = NULL;
 }
 
 void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *points, bool rebuildTree) {

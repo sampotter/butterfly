@@ -12,6 +12,10 @@ BfType bfTreeNodeGetType(BfTreeNode const *node) {
   return node->vtbl->GetType(node);
 }
 
+void bfTreeNodeDelete(BfTreeNode **treeNode) {
+  (*treeNode)->vtbl->Delete(treeNode);
+}
+
 /** Implementation: TreeNode */
 
 void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
@@ -46,8 +50,27 @@ void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
 }
 
 void bfTreeNodeDeinit(BfTreeNode *treeNode) {
-  (void)treeNode;
-  BF_DIE();
+  for (BfSize i = 0; i < treeNode->maxNumChildren; ++i)
+    if (treeNode->child[i])
+      bfTreeNodeDelete(&treeNode->child[i]);
+
+  treeNode->vtbl = NULL;
+  treeNode->isRoot = false;
+  treeNode->index = BF_SIZE_BAD_VALUE;
+  treeNode->parent = NULL;
+  treeNode->maxNumChildren = BF_SIZE_BAD_VALUE;
+  treeNode->depth = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(treeNode->offset);
+  treeNode->offset = NULL;
+
+  bfMemFree(treeNode->child);
+  treeNode->child = NULL;
+}
+
+void bfTreeNodeDealloc(BfTreeNode **treeNode) {
+  bfMemFree(*treeNode);
+  *treeNode = NULL;
 }
 
 bool bfTreeNodeInstanceOf(BfTreeNode const *treeNode, BfType type) {

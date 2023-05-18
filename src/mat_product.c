@@ -378,12 +378,13 @@ void bfMatProductInit(BfMatProduct *mat) {
 }
 
 void bfMatProductDeinit(BfMatProduct *prod) {
-  for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
-    BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
-    bfMatDelete(&mat);
+  if (!bfMatIsView(&prod->super)) {
+    for (BfSize i = 0; i < bfPtrArraySize(&prod->factorArr); ++i) {
+      BfMat *mat = bfPtrArrayGet(&prod->factorArr, i);
+      bfMatDelete(&mat);
+    }
+    bfPtrArrayDeinit(&prod->factorArr);
   }
-
-  bfPtrArrayDeinit(&prod->factorArr);
 }
 
 void bfMatProductDealloc(BfMatProduct **prod) {

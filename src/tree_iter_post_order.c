@@ -38,6 +38,10 @@ StackNode *makeStackNode(BfTreeNode *treeNode) {
   return stackNode;
 }
 
+void deleteStackNode(StackNode *stackNode) {
+  bfMemFree(stackNode);
+}
+
 void incStackNodeChild(StackNode *stackNode) {
   BF_ASSERT(stackNode->nextChild != BF_SIZE_BAD_VALUE);
 
@@ -65,6 +69,11 @@ void incStackNodeChild(StackNode *stackNode) {
 BfType bfTreeIterPostOrderGetType(BfTreeIterPostOrder const *iter) {
   (void)iter;
   return BF_TYPE_TREE_ITER_POST_ORDER;
+}
+
+void bfTreeIterPostOrderDelete(BfTreeIterPostOrder **iter) {
+  bfTreeIterPostOrderDeinit(*iter);
+  bfTreeIterPostOrderDealloc(iter);
 }
 
 BfTreeNode *bfTreeIterPostOrderGetCurrentNode(BfTreeIterPostOrder *iter) {
@@ -117,12 +126,12 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
 
   /* Start by popping the current stack node off the stack used to
    * drive the iterator */
-  bfPtrArrayPopLast(&iter->stack);
+  StackNode *stackNode = bfPtrArrayPopLast(&iter->stack);
+  deleteStackNode(stackNode);
 
   /* If the stack still has nodes on it, we need to inspect the next
    * stack node to decide what to do. */
   if (!bfPtrArrayIsEmpty(&iter->stack)) {
-    StackNode *stackNode = NULL;
     bfPtrArrayGetLast(&iter->stack, (BfPtr *)&stackNode);
 
     /* If this node has more children to visit beneath it, we
@@ -148,6 +157,7 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter) {
   .FUNC_NAME = (__typeof__(&bfTreeIter##FUNC_NAME))bfTreeIterPostOrder##FUNC_NAME
 static BfTreeIterVtable TREE_ITER_VTABLE = {
   _(GetType),
+  _(Delete),
   _(GetCurrentNode),
   _(IsDone),
   _(Next)
@@ -199,4 +209,19 @@ void bfTreeIterPostOrderInit(BfTreeIterPostOrder *iter, BfTree const *tree) {
   }
 
   BF_ERROR_END() {}
+}
+
+void bfTreeIterPostOrderDeinit(BfTreeIterPostOrder *iter) {
+  for (BfSize i = 0; i < bfPtrArraySize(&iter->stack); ++i) {
+    StackNode *stackNode = bfPtrArrayGet(&iter->stack, i);
+    deleteStackNode(stackNode);
+  }
+  bfPtrArrayDeinit(&iter->stack);
+
+  bfTreeIterDeinit(&iter->super);
+}
+
+void bfTreeIterPostOrderDealloc(BfTreeIterPostOrder **iter) {
+  bfMemFree(*iter);
+  *iter = NULL;
 }

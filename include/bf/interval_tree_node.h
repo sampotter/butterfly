@@ -5,6 +5,7 @@
 /** Interface: */
 
 BfType bfIntervalTreeNodeGetType(BfTreeNode const *treeNode);
+void bfIntervalTreeNodeDelete(BfIntervalTreeNode **intervalTreeNode);
 
 /** Upcasting: IntervalTreeNode -> TreeNode */
 
@@ -38,3 +39,5 @@ BfIntervalTreeNode *bfIntervalTreeNodeNew();
 void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *node,
                                      BfIntervalTree const *intervalTree,
                                      BfReal a, BfReal b, BfSize k, BfSize maxDepth);
+void bfIntervalTreeNodeDeinit(BfIntervalTreeNode *intervalTreeNode);
+void bfIntervalTreeNodeDealloc(BfIntervalTreeNode **intervalTreeNode);

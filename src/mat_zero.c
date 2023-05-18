@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -11,6 +12,7 @@
 
 static BfMatVtable MAT_VTABLE = {
   .GetRowCopy = (__typeof__(&bfMatZeroGetRowCopy))bfMatZeroGetRowCopy,
+  .Delete = (__typeof__(&bfMatDelete))bfMatZeroDelete,
   .GetType = (__typeof__(&bfMatZeroGetType))bfMatZeroGetType,
   .GetNumRows = (__typeof__(&bfMatZeroGetNumRows))bfMatZeroGetNumRows,
   .GetNumCols = (__typeof__(&bfMatZeroGetNumCols))bfMatZeroGetNumCols,
@@ -38,6 +40,10 @@ BfVec *bfMatZeroGetRowCopy(BfMat const *mat, BfSize i) {
   BF_ERROR_END() {}
 
   return bfVecZeroToVec(rowCopy);
+}
+
+void bfMatZeroDelete(BfMatZero **matZero) {
+  bfMatZeroDeinitAndDealloc(matZero);
 }
 
 BfType bfMatZeroGetType(BfMat const *mat) {
@@ -105,7 +111,9 @@ BfMatZero *bfMatZeroNew() {
   if (mat == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return mat;
 }
@@ -116,12 +124,13 @@ void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols) {
   bfMatInit(&mat->super, &MAT_VTABLE, numRows, numCols);
   HANDLE_ERROR();
 
-  BF_ERROR_END()
-    bfMatDeinit(&mat->super);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfMatZeroDeinit(BfMatZero *mat) {
-  (void)mat;
+  bfMatDeinit(&mat->super);
 }
 
 void bfMatZeroDealloc(BfMatZero **mat) {

@@ -8,6 +8,7 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatIdentityGetView,
   .Copy = (__typeof__(&bfMatCopy))bfMatIdentityCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatIdentitySteal,
   .Delete = (__typeof__(&bfMatDelete))bfMatIdentityDelete,
@@ -21,6 +22,25 @@ static BfMatVtable MAT_VTABLE = {
   .RmulVec = (__typeof__(&bfMatMulVec))bfMatIdentityRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatIdentityPrintBlocksDeep,
 };
+
+BfMat *bfMatIdentityGetView(BfMatIdentity *matIdentity) {
+  BF_ERROR_BEGIN();
+
+  BfMatIdentity *matIdentityView = bfMatIdentityNew();
+  HANDLE_ERROR();
+
+  *matIdentityView = *matIdentity;
+
+  BfMat *matView = bfMatIdentityToMat(matIdentityView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matView;
+}
 
 BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity) {
   BF_ERROR_BEGIN();

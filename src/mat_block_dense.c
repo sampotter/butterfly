@@ -29,6 +29,7 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatBlockDenseGetView,
   .Copy = (__typeof__(&bfMatBlockDenseCopy))bfMatBlockDenseCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatBlockDenseSteal,
   .GetRowCopy = (__typeof__(&bfMatBlockDenseGetRowCopy))bfMatBlockDenseGetRowCopy,
@@ -50,6 +51,25 @@ static BfMatVtable MAT_VTABLE = {
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep
 };
+
+BfMat *bfMatBlockDenseGetView(BfMatBlockDense *matBlockDense) {
+  BF_ERROR_BEGIN();
+
+  BfMatBlockDense *matBlockDenseView = bfMatBlockDenseNew();
+  HANDLE_ERROR();
+
+  *matBlockDenseView = *matBlockDense;
+
+  BfMat *matView = bfMatBlockDenseToMat(matBlockDenseView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matView;
+}
 
 BfMat *bfMatBlockDenseCopy(BfMat const *mat) {
   BF_ERROR_BEGIN();
@@ -403,6 +423,10 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
     BF_DIE();
   }
 
+  for (BfSize i = 0; i < bfPtrArraySize(blocks); ++i) {
+    BfMat *block = bfPtrArrayGet(blocks, i);
+    bfMatDelete(&block);
+  }
   bfPtrArrayDelete(&blocks);
 
   return bfMatBlockDenseToMat(result);
@@ -578,6 +602,7 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
       bfVecAddInplace(resultSubvecView, tmp);
 
       bfVecDelete(&tmp);
+      bfVecDelete((BfVec **)&subvecView);
     }
 
     bfVecDelete(&resultSubvecView);
@@ -859,9 +884,11 @@ BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, 
   if (j >= NUM_COL_BLOCKS(mat))
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
 
-  block = mat->super.block[i*NUM_COL_BLOCKS(mat) + j];
+  block = bfMatGet(mat->super.block[i*NUM_COL_BLOCKS(mat) + j], BF_POLICY_VIEW);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return block;
 }

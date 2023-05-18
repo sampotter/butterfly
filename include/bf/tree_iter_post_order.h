@@ -6,6 +6,7 @@
 /** Interface: TreeIter */
 
 BfType bfTreeIterPostOrderGetType(BfTreeIterPostOrder const *iter);
+void bfTreeIterPostOrderDelete(BfTreeIterPostOrder **iter);
 BfTreeNode *bfTreeIterPostOrderGetCurrentNode(BfTreeIterPostOrder *iter);
 bool bfTreeIterPostOrderIsDone(BfTreeIterPostOrder const *iter);
 void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter);
@@ -24,3 +25,4 @@ BfTreeIter *bfTreeIterPostOrderToTreeIter(BfTreeIterPostOrder *iter);
 BfTreeIterPostOrder *bfTreeIterPostOrderNew();
 void bfTreeIterPostOrderInit(BfTreeIterPostOrder *iter, BfTree const *tree);
 void bfTreeIterPostOrderDeinit(BfTreeIterPostOrder *iter);
+void bfTreeIterPostOrderDealloc(BfTreeIterPostOrder **iter);

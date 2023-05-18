@@ -8,7 +8,7 @@ BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal);
 BfMat *bfMatDenseRealGetView(BfMat *mat);
 BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal);
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j);
-void bfMatDenseRealDelete(BfMat **mat);
+void bfMatDenseRealDelete(BfMatDenseReal **matDenseReal);
 BfType bfMatDenseRealGetType(BfMat const *mat);
 BfSize bfMatDenseRealNumBytes(BfMatDenseReal const *);
 void bfMatDenseRealSave(BfMat const *mat, char const *path);

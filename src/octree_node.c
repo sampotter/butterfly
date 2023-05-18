@@ -19,12 +19,18 @@ static BfSize const LEAF_SIZE_THRESHOLD = 1;
 /** Interface(TreeNode, OctreeNode) */
 
 static BfTreeNodeVtable TreeNodeVtable = {
-  .GetType = (__typeof__(&bfTreeNodeGetType))bfOctreeNodeGetType
+  .GetType = (__typeof__(&bfTreeNodeGetType))bfOctreeNodeGetType,
+  .Delete = (__typeof__(&bfTreeNodeDelete))bfOctreeNodeDelete
 };
 
 BfType bfOctreeNodeGetType(BfTreeNode const *treeNode) {
   (void)treeNode;
   return BF_TYPE_OCTREE_NODE;
+}
+
+void bfOctreeNodeDelete(BfOctreeNode **octreeNode) {
+  bfOctreeNodeDeinit(*octreeNode);
+  bfOctreeNodeDealloc(octreeNode);
 }
 
 /** Upcasting: OctreeNode -> TreeNode */
@@ -286,9 +292,15 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   BF_ERROR_END() {}
 }
 
-// void bfOctreeNodeDeinit(BfOctreeNode *node);
-// void bfOctreeNodeDealloc(BfOctreeNode **node);
-// void bfOctreeNodeDeinitAndDealloc(BfOctreeNode **node);
+void bfOctreeNodeDeinit(BfOctreeNode *octreeNode) {
+  bfTreeNodeDeinit(&octreeNode->super);
+}
+
+void bfOctreeNodeDealloc(BfOctreeNode **octreeNode) {
+  bfMemFree(*octreeNode);
+  *octreeNode = NULL;
+}
+
 // BfOctreeNode *bfOctreeNodeGetChild(BfOctreeNode *node, BfSize i);
 // BfOctreeNode const *bfOctreeNodeGetChildConst(BfOctreeNode const *node, BfSize i);
 

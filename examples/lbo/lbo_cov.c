@@ -138,7 +138,7 @@ int main(int argc, char const *argv[]) {
   bfPoints1Map(gammaLam, gammaFromFreq);
 
   BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
-  BfMat *Phi = bfFacSpanGetMat(facSpan);
+  BfMat *Phi = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
   BfMat *GammaLam = bfMatDiagRealToMat(
     bfMatDiagRealNewFromData(gammaLam->size, gammaLam->size, gammaLam->data));
 

@@ -331,8 +331,24 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 }
 
 void bfTrimeshDeinit(BfTrimesh *trimesh) {
-  (void)trimesh;
-  BF_DIE();
+  bfPoints3Deinit(&trimesh->verts);
+
+  bfMemFree(trimesh->faces);
+  trimesh->faces = NULL;
+
+  trimesh->numFaces = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(trimesh->vfOffset);
+  trimesh->vfOffset = NULL;
+
+  bfMemFree(trimesh->vf);
+  trimesh->vf = NULL;
+
+  bfMemFree(trimesh->vvOffset);
+  trimesh->vvOffset = NULL;
+
+  bfMemFree(trimesh->vv);
+  trimesh->vv = NULL;
 }
 
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {

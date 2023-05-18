@@ -17,6 +17,7 @@
 
 static BfTreeVtable TreeVtable = {
   .GetType = (__typeof__(&bfTreeGetType))bfOctreeGetType,
+  .Delete = (__typeof__(&bfTreeDelete))bfOctreeDelete
 };
 
 BfType bfOctreeGetType(BfOctree const *tree) {
@@ -80,8 +81,18 @@ void bfOctreeInit(BfOctree *tree, BfPoints3 const *points,
     bfOctreeDeinit(tree);
 }
 
-void bfOctreeDeinit(BfOctree *tree) {
-  bfTreeDeinit(&tree->super);
+void bfOctreeDeinit(BfOctree *octree) {
+  bfTreeDeinit(&octree->super);
+}
+
+void bfOctreeDealloc(BfOctree **octree) {
+  bfMemFree(*octree);
+  *octree = NULL;
+}
+
+void bfOctreeDelete(BfOctree **octree) {
+  bfOctreeDeinit(*octree);
+  bfOctreeDealloc(octree);
 }
 
 typedef struct {

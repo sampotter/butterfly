@@ -32,8 +32,9 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
 }
 
 void bfTreeDeinit(BfTree *tree) {
-  (void)tree;
-  BF_DIE();
+  tree->vtable = NULL;
+  bfPermDeinit(&tree->perm);
+  bfTreeNodeDelete(&tree->root);
 }
 
 bool bfTreeInstanceOf(BfTree const *tree, BfType type) {

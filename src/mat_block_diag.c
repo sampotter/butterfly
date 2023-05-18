@@ -27,6 +27,7 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatBlockDiagGetView,
   .Copy = (__typeof__(&bfMatBlockDiagCopy))bfMatBlockDiagCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatBlockDiagSteal,
   .GetRowCopy = (__typeof__(&bfMatBlockDiagGetRowCopy))bfMatBlockDiagGetRowCopy,
@@ -45,6 +46,25 @@ static BfMatVtable MAT_VTABLE = {
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDiagPrintBlocksDeep,
   .Solve = (__typeof__(&bfMatSolve))bfMatBlockDiagSolve,
 };
+
+BfMat *bfMatBlockDiagGetView(BfMatBlockDiag *matBlockDiag) {
+  BF_ERROR_BEGIN();
+
+  BfMatBlockDiag *matBlockDiagView = bfMatBlockDiagNew();
+  HANDLE_ERROR();
+
+  *matBlockDiagView = *matBlockDiag;
+
+  BfMat *matView = bfMatBlockDiagToMat(matBlockDiagView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matView;
+}
 
 BfMat *bfMatBlockDiagCopy(BfMat const *mat) {
   BF_ERROR_BEGIN();
@@ -211,6 +231,7 @@ BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag) {
   for (BfSize i = 0; i < bfMatBlockDiagNumBlocks(matBlockDiag); ++i) {
     BfMat const *block = bfMatBlockDiagGetBlockConst(matBlockDiag, i);
     numBytes += bfMatNumBytes(block);
+    bfMatDelete((BfMat **)&block);
   }
   return numBytes;
 }
@@ -301,6 +322,8 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
 
     bfPtrArrayAppend(&indexedRowBlocks, indexedRowBlock);
     HANDLE_ERROR();
+
+    bfMatDelete(&blockRowRange);
   }
 
   BfSize m = i1 - i0;
@@ -315,9 +338,12 @@ BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize 
     BF_DIE(); // ???
   }
 
-  /* Free the BfIndexedMat wrappers (but not the wrapped mats!) */
-  for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k)
-    bfMemFree(bfPtrArrayGet(&indexedRowBlocks, k));
+  for (BfSize k = 0; k < bfPtrArraySize(&indexedRowBlocks); ++k) {
+    BfIndexedMat *indexedRowBlock = bfPtrArrayGet(&indexedRowBlocks, k);
+    BF_ASSERT(bfMatIsView(indexedRowBlock->mat));
+    bfMatDelete(&indexedRowBlock->mat);
+    bfMemFree(indexedRowBlock);
+  }
 
   bfPtrArrayDeinit(&indexedRowBlocks);
 
@@ -425,6 +451,8 @@ BfVec *bfMatBlockDiagMulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *vec
 
     /* Assign the result to the relevant part of `result`: */
     bfVecSetRange(result, i0, i1, tmp);
+
+    bfVecDelete(&tmp);
   }
 
   BF_ERROR_END() {
@@ -791,10 +819,11 @@ BfMat const *bfMatBlockDiagGetBlockConst(BfMatBlockDiag const *matBlockDiag, BfS
   if (i >= numColBlocks)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  block = matBlockDiag->super.block[i];
+  block = bfMatGet(matBlockDiag->super.block[i], BF_POLICY_VIEW);
 
-  BF_ERROR_END()
-    block = NULL;
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return block;
 }

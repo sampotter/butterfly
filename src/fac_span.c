@@ -105,7 +105,24 @@ void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *facs) {
   }
 }
 
-BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan) {
+void bfFacSpanDeinit(BfFacSpan *facSpan) {
+  facSpan->numFacs = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(facSpan->fac);
+  facSpan->fac = NULL;
+}
+
+void bfFacSpanDealloc(BfFacSpan **facSpan) {
+  bfMemFree(*facSpan);
+  *facSpan = NULL;
+}
+
+void bfFacSpanDelete(BfFacSpan **facSpan) {
+  bfFacSpanDeinit(*facSpan);
+  bfFacSpanDealloc(facSpan);
+}
+
+BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
   BfMatBlockDense *matBlockDense = NULL;
@@ -114,7 +131,7 @@ BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan) {
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < facSpan->numFacs; ++i) {
-    BfMat *rowBlock = bfFacGetMat(facSpan->fac[i]);
+    BfMat *rowBlock = bfFacGetMat(facSpan->fac[i], policy);
     HANDLE_ERROR();
 
     bfPtrArrayAppend(rowBlocks, rowBlock);
@@ -127,6 +144,10 @@ BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan) {
     BF_DIE();
   }
 
+  for (BfSize i = 0; i < bfPtrArraySize(rowBlocks); ++i) {
+    BfMat *rowBlock = bfPtrArrayGet(rowBlocks, i);
+    bfMatDelete(&rowBlock);
+  }
   bfPtrArrayDelete(&rowBlocks);
 
   return bfMatBlockDenseToMat(matBlockDense);

@@ -26,6 +26,8 @@ BfPoints1 *bfPoints1Copy();
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity);
 void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal);
 void bfPoints1Deinit(BfPoints1 *points);
+void bfPoints1Dealloc(BfPoints1 **points);
+void bfPoints1Delete(BfPoints1 **points);
 bool bfPoints1IsSorted(BfPoints1 const *points);
 void bfPoints1Append(BfPoints1 *points, BfPoint1 point);
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints);

@@ -4,6 +4,7 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatIdentityGetView(BfMatIdentity *matIdentity);
 BfMat *bfMatIdentityCopy(BfMatIdentity const *matIdentity);
 BfMat *bfMatIdentitySteal(BfMatIdentity *matIdentity);
 void bfMatIdentityDelete(BfMatIdentity **matIdentity);

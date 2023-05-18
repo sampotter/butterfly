@@ -4,6 +4,7 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatBlockDenseGetView(BfMatBlockDense *matBlockDense);
 BfMat *bfMatBlockDenseCopy(BfMat const *mat);
 BfMat *bfMatBlockDenseSteal(BfMatBlockDense *matBlockDense);
 BfVec *bfMatBlockDenseGetRowCopy(BfMat const *mat, BfSize i);

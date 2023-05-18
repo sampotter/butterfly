@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -9,12 +10,18 @@
 /** Interface: */
 
 static BfTreeNodeVtable TreeNodeVtable = {
-  .GetType = (__typeof__(&bfTreeNodeGetType))bfIntervalTreeNodeGetType
+  .GetType = (__typeof__(&bfTreeNodeGetType))bfIntervalTreeNodeGetType,
+  .Delete = (__typeof__(&bfTreeNodeDelete))bfIntervalTreeNodeDelete
 };
 
 BfType bfIntervalTreeNodeGetType(BfTreeNode const *treeNode) {
   (void)treeNode;
   return BF_TYPE_INTERVAL_TREE_NODE;
+}
+
+void bfIntervalTreeNodeDelete(BfIntervalTreeNode **intervalTreeNode) {
+  bfIntervalTreeNodeDeinit(*intervalTreeNode);
+  bfIntervalTreeNodeDealloc(intervalTreeNode);
 }
 
 /** Upcasting: IntervalTreeNode -> TreeNode */
@@ -115,4 +122,16 @@ void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *intervalTreeNode,
   BF_ERROR_END() {
     // bfIntervalTreeNodeDeinit(intervalTreeNode);
   }
+}
+
+void bfIntervalTreeNodeDeinit(BfIntervalTreeNode *intervalTreeNode) {
+  intervalTreeNode->a = BF_NAN;
+  intervalTreeNode->b = BF_NAN;
+
+  bfTreeNodeDeinit(&intervalTreeNode->super);
+}
+
+void bfIntervalTreeNodeDealloc(BfIntervalTreeNode **intervalTreeNode) {
+  bfMemFree(*intervalTreeNode);
+  *intervalTreeNode = NULL;
 }

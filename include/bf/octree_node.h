@@ -4,6 +4,7 @@
 /** Interface: TreeNode */
 
 BfType bfOctreeNodeGetType(BfTreeNode const *treeNode);
+void bfOctreeNodeDelete(BfOctreeNode **octreeNode);
 
 /** OctreeNode: */
 

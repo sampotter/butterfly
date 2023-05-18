@@ -162,26 +162,21 @@ int main(int argc, char *argv[]) {
   HANDLE_ERROR();
 
   BfSize numVerts = bfTrimeshGetNumVerts(&trimesh);
-
   printf("loaded triangle mesh from %s (%lu verts)\n", opts.objPath, numVerts);
 
-  // TODO: implement
-//   /* Build fiedler tree */
-//   BfFiedlerTree fiedlerTree;
-//   bfFiedlerTreeInitFromTrimesh(&fiedlerTree, trimesh, &L, &M);
-//   BfTree *rowTree = bfFiedlerTreeToTree(&fiedlerTree);
+  BfOctree *octree = bfOctreeNew();
+  HANDLE_ERROR();
 
-  BfOctree octree;
-  bfOctreeInit(&octree, &trimesh.verts, NULL);
+  bfOctreeInit(octree, &trimesh.verts, NULL);
   HANDLE_ERROR();
 
   char const *octreeBoxesPath = "octree_boxes.txt";
-  bfOctreeSaveBoxesToTextFile(&octree, octreeBoxesPath);
+  bfOctreeSaveBoxesToTextFile(octree, octreeBoxesPath);
   HANDLE_ERROR();
   printf("wrote octree cells to %s\n", octreeBoxesPath);
 
   /* Upcast the spatial tree to get the row tree */
-  BfTree *rowTree = bfOctreeToTree(&octree);
+  BfTree *rowTree = bfOctreeToTree(octree);
 
   BfSize rowTreeDepth = bfTreeGetMaxDepth(rowTree);
   printf("row tree has depth %lu\n", rowTreeDepth);
@@ -259,7 +254,7 @@ int main(int argc, char *argv[]) {
   printf("finished streaming butterfly factorization [%.2fs]\n", bfToc());
 
   BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
-  BfMat *mat = bfFacSpanGetMat(facSpan);
+  BfMat *mat = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
 
   BfSize numEigs = bfMatGetNumCols(mat);
   printf("- streamed %lu eigs (%1.1f%% of total)\n", numEigs, (100.0*numEigs)/numVerts);
@@ -273,10 +268,15 @@ int main(int argc, char *argv[]) {
 
   BF_ERROR_END() {}
 
-  /* Clean up */
-  bfTreeDelete(&rowTree);
-  bfOctreeDeinit(&octree);
+  /** Clean up: */
+
+  bfMatDelete(&mat);
+  bfFacSpanDelete(&facSpan);
+  bfFacStreamerDelete(&facStreamer);
+  bfPoints1Delete(&freqs);
+  bfTreeDelete(&colTree);
   bfMatDelete(&M);
   bfMatDelete(&L);
+  bfTreeDelete(&rowTree);
   bfTrimeshDeinit(&trimesh);
 }

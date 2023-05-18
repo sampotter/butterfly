@@ -11,6 +11,7 @@ struct BfIntervalTree {
 };
 
 BfType bfIntervalTreeGetType(BfTree const *tree);
+void bfIntervalTreeDelete(BfIntervalTree **intervalTree);
 
 /** Interface: Tree -> IntervalTree */
 
@@ -23,4 +24,6 @@ BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree);
 
 BfIntervalTree *bfIntervalTreeNew();
 void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize depth);
+void bfIntervalTreeDeinit(BfIntervalTree *intervalTree);
+void bfIntervalTreeDealloc(BfIntervalTree **intervalTree);
 void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *points, bool rebuildTree);

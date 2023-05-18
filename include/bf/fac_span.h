@@ -9,4 +9,7 @@ struct BfFacSpan {
 
 BfFacSpan *bfFacSpanNewFromPtrArray(BfPtrArray const *ptrArray);
 void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *ptrArray);
-BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan);
+void bfFacSpanDeinit(BfFacSpan *facSpan);
+void bfFacSpanDealloc(BfFacSpan **facSpan);
+void bfFacSpanDelete(BfFacSpan **facSpan);
+BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan, BfPolicy policy);

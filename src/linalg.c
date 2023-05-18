@@ -425,6 +425,7 @@ dnaupd:
 
   bfMemFree(resid);
   bfMemFree(V);
+  bfMemFree(select);
   bfMemFree(workd);
   bfMemFree(workl);
   bfMemFree(workev);
@@ -662,6 +663,7 @@ dnaupd:
 
   bfMemFree(resid);
   bfMemFree(V);
+  bfMemFree(select);
   bfMemFree(workd);
   bfMemFree(workl);
   bfMemFree(workev);
