@@ -4,6 +4,7 @@
 
 /** Interface: Lu */
 
+void bfLuDenseComplexDelete(BfLuDenseComplex **luDenseComplex);
 BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const *B);
 BfMat *bfLuDenseComplexSolveLower(BfLuDenseComplex const *luDenseComplex, BfMat const *B, bool permute);
 BfMat *bfLuDenseComplexSolveUpper(BfLuDenseComplex const *luDenseComplex, BfMat const *B, bool permute);

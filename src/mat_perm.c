@@ -51,6 +51,7 @@ static BfSize numBytes(BfMatPerm const *matPerm) {
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatDelete))bfMatPermDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatPermGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatPermNumBytes,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatPermGetNumRows,
@@ -244,10 +245,18 @@ void bfMatPermInitViewFromLapackPivots(BfMatPerm *matPerm, BfSize size, BfLapack
 }
 
 void bfMatPermDeinit(BfMatPerm *matPerm) {
-  BF_ASSERT(matPerm->impl->permType == PERM_TYPE_LAPACK);
-
-  if (!(matPerm->super.props &= BF_MAT_PROPS_VIEW))
-    free(matPerm->impl->permLapack.ipiv);
+  if (!bfMatIsView(&matPerm->super)) {
+    switch (matPerm->impl->permType) {
+    case PERM_TYPE_BF:
+      bfPermDelete(&matPerm->impl->perm);
+      break;
+    case PERM_TYPE_LAPACK:
+      free(matPerm->impl->permLapack.ipiv);
+      break;
+    default:
+      BF_DIE();
+    }
+  }
 
   free(matPerm->impl);
   matPerm->impl = NULL;

@@ -8,6 +8,7 @@
 /** Interface: MatProduct */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatProductGetView,
   .Copy = (__typeof__(&bfMatProductCopy))bfMatProductCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatProductSteal,
   .Delete = (__typeof__(&bfMatProductDelete))bfMatProductDelete,
@@ -22,6 +23,24 @@ static BfMatVtable MAT_VTABLE = {
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
 };
+
+BfMat *bfMatProductGetView(BfMatProduct *matProduct) {
+  BF_ERROR_BEGIN();
+
+  BfMatProduct *matProductView = bfMatProductNew();
+  HANDLE_ERROR();
+
+  *matProductView = *matProduct;
+
+  BfMat *matView = bfMatProductToMat(matProductView);
+
+  matView->props |= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END()
+    matView = NULL;
+
+  return matView;
+}
 
 BfMat *bfMatProductCopy(BfMat const *mat) {
   BF_ERROR_BEGIN();

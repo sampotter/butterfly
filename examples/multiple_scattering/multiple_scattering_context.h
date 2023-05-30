@@ -69,6 +69,9 @@ struct MultipleScatteringContext {
   BfMat *KFmm;
   BfLu *KLu;
 
+  /* Array of LU decompositions backing M. */
+  BfPtrArray *KBlockLus;
+
   BfMat *M;
   BfMat *MPerm;
 

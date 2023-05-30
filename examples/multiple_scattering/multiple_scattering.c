@@ -69,5 +69,5 @@ int main(int argc, char *argv[]) {
   if (shouldDoPostprocessing(&opts))
     doPostprocessing(&context);
 
-  // deinit(&context, &opts);
+  deinit(&context, &opts);
 }

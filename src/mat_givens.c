@@ -10,10 +10,15 @@
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatDelete))bfMatGivensComplexDelete,
   .GetType = (__typeof__(&bfMatGivensComplexGetType))bfMatGivensComplexGetType,
   .GetNumRows = (__typeof__(&bfMatGivensComplexGetNumRows))bfMatGivensComplexGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGivensComplexGetNumCols))bfMatGivensComplexGetNumCols,
 };
+
+void bfMatGivensComplexDelete(BfMatGivensComplex **matGivensComplex) {
+  bfMatGivensComplexDeinitAndDealloc(matGivensComplex);
+}
 
 BfType bfMatGivensComplexGetType(BfMat const *mat) {
   (void)mat;

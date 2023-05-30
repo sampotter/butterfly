@@ -176,7 +176,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetRowView = (__typeof__(&bfMatDenseComplexGetRowView))bfMatDenseComplexGetRowView,
   .GetColView = (__typeof__(&bfMatDenseComplexGetColView))bfMatDenseComplexGetColView,
   .GetColRangeView = (__typeof__(&bfMatDenseComplexGetColRangeView))bfMatDenseComplexGetColRangeView,
-  .Delete = (__typeof__(&bfMatDenseComplexDelete))bfMatDenseComplexDelete,
+  .Delete = (__typeof__(&bfMatDelete))bfMatDenseComplexDelete,
   .EmptyLike = (__typeof__(&bfMatDenseComplexEmptyLike))bfMatDenseComplexEmptyLike,
   .ZerosLike = (__typeof__(&bfMatDenseComplexZerosLike))bfMatDenseComplexZerosLike,
   .GetType = (__typeof__(&bfMatDenseComplexGetType))bfMatDenseComplexGetType,
@@ -371,8 +371,8 @@ BfVec *bfMatDenseComplexGetColRangeView(BfMat *mat, BfSize i0, BfSize i1, BfSize
   return bfVecComplexToVec(colView);
 }
 
-void bfMatDenseComplexDelete(BfMat **mat) {
-  bfMatDenseComplexDeinitAndDealloc((BfMatDenseComplex **)mat);
+void bfMatDenseComplexDelete(BfMatDenseComplex **matDenseComplex) {
+  bfMatDenseComplexDeinitAndDealloc(matDenseComplex);
 }
 
 BfMat *bfMatDenseComplexEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols) {
@@ -659,7 +659,11 @@ void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const 
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMatDenseComplexDelete(&matRows);
 }
 
 void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
@@ -1637,16 +1641,17 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
   BfMat *result = bfMatMul(Vk, tmp2);
   HANDLE_ERROR();
 
-  BF_ERROR_END()
-    bfMatDenseComplexDelete(&result);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   bfMatDenseComplexDeinitAndDealloc(&U);
   bfMatDiagRealDeinitAndDealloc(&S);
   bfMatDenseComplexDeinitAndDealloc(&VH);
 
-  bfMatDenseComplexDelete(&UkH);
+  bfMatDelete(&UkH);
   bfMatDiagRealDeinitAndDealloc(&Sk);
-  bfMatDenseComplexDelete(&Vk);
+  bfMatDelete(&Vk);
 
   bfMatDelete(&tmp1);
   bfMatDelete(&tmp2);
@@ -1858,6 +1863,8 @@ void bfMatDenseComplexDeinit(BfMatDenseComplex *mat) {
     free(mat->data);
 
   mat->data = NULL;
+
+  bfMatDeinit(&mat->super);
 }
 
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat) {

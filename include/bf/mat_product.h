@@ -5,6 +5,7 @@
 
 /** Interface: Mat */
 
+BfMat *bfMatProductGetView(BfMatProduct *matProduct);
 BfMat *bfMatProductCopy(BfMat const *mat);
 BfMat *bfMatProductSteal(BfMatProduct *matProduct);
 void bfMatProductDelete(BfMat **mat);

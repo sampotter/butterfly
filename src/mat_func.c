@@ -8,10 +8,15 @@
 /** Interface: MatFunc */
 
 static BfMatVtable MAT_VTABLE = {
+  .Delete = (__typeof__(&bfMatDelete))bfMatFuncDelete,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatFuncGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumRows))bfMatFuncGetNumCols,
   .Mul = (__typeof__(&bfMatMul))bfMatFuncMul,
 };
+
+void bfMatFuncDelete(BfMatFunc **matFunc) {
+  bfMatFuncDeinitAndDealloc(matFunc);
+}
 
 BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc) {
   BF_ERROR_BEGIN();
@@ -104,7 +109,12 @@ void bfMatFuncInit(BfMatFunc *matFunc, BfSize numRows, BfSize numCols, MatMulFun
   matFunc->aux = aux;
 }
 
-void bfMatFuncDeinit(BfMatFunc *matFunc) {}
+void bfMatFuncDeinit(BfMatFunc *matFunc) {
+  matFunc->matMul = NULL;
+  matFunc->aux = NULL;
+
+  bfMatDeinit(&matFunc->super);
+}
 
 void bfMatFuncDealloc(BfMatFunc **matFunc) {
   bfMemFree(*matFunc);

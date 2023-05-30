@@ -4,6 +4,7 @@
 
 /** Interface: Mat */
 
+void bfMatGivensComplexDelete(BfMatGivensComplex **matGivensComplex);
 BfType bfMatGivensComplexGetType(BfMat const *mat);
 BfSize bfMatGivensComplexGetNumRows(BfMat const *mat);
 BfSize bfMatGivensComplexGetNumCols(BfMat const *mat);

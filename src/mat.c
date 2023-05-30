@@ -8,6 +8,7 @@
 #include <bf/error_macros.h>
 #include <bf/mat_dense_complex.h>
 #include <bf/mat_dense_real.h>
+#include <bf/mem.h>
 
 /** Interface: Mat */
 
@@ -287,6 +288,7 @@ void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols) {
   mat->numCols = numCols;
 #if BF_DEBUG
   mat->aux = NULL;
+  mat->auxDelete = NULL;
 #endif
 }
 
@@ -296,7 +298,12 @@ void bfMatDeinit(BfMat *mat) {
   mat->numRows = BF_SIZE_BAD_VALUE;
   mat->numCols = BF_SIZE_BAD_VALUE;
 #if BF_DEBUG
+  if (mat->aux != NULL) {
+    mat->auxDelete(mat->aux);
+    bfMemFree(mat->aux);
+  }
   mat->aux = NULL;
+  mat->auxDelete = NULL;
 #endif
 }
 

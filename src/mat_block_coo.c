@@ -394,7 +394,6 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
   BfSize numBlocks = bfMatBlockCooNumBlocks(matBlockCoo1);
 
   BfMat *result = NULL;
-  BfMat *block = NULL;
   BfMat *op2Rows = NULL;
   BfMat *tmp = NULL;
   BfMat *resultRows = NULL;
@@ -408,13 +407,14 @@ BfMat *bfMatBlockCooMul(BfMat const *op1, BfMat const *op2) {
     j0 = matBlock1->colOffset[matBlockCoo1->colInd[k]];
     j1 = matBlock1->colOffset[matBlockCoo1->colInd[k] + 1];
 
-    block = matBlock1->block[k];
     op2Rows = bfMatGetRowRange((BfMat *)op2, j0, j1);
-    tmp = bfMatMul(block, op2Rows);
+    tmp = bfMatMul(matBlock1->block[k], op2Rows);
     resultRows = bfMatGetRowRange(result, i0, i1);
     bfMatAddInplace(resultRows, tmp);
 
+    bfMatDelete(&resultRows);
     bfMatDelete(&tmp);
+    bfMatDelete(&op2Rows);
   }
 
   BF_ERROR_END()

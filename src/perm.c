@@ -64,8 +64,7 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
   BfPerm *permCopy = bfPermNew();
   HANDLE_ERROR();
 
-  bfPermInitEmpty(permCopy, perm->size);
-  HANDLE_ERROR();
+  permCopy->size = perm->size;
 
   permCopy->index = bfMemAlloc(perm->size, sizeof(BfSize));
   if (permCopy->index == NULL)

@@ -18,6 +18,14 @@
 
 static BfSize const MAX_DENSE_MATRIX_SIZE = 128*128;
 
+#if BF_DEBUG
+static void facAuxDelete(BfFacAux *facAux) {
+  bfFreePoints2(&facAux->srcPts[0]);
+  bfFreePoints2(&facAux->srcPts[1]);
+  bfFreePoints2(&facAux->tgtPts);
+}
+#endif
+
 static BfSize
 getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
   for (BfSize i = 0; i < 4; ++i)
@@ -122,11 +130,15 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtCircPts;
     mat->super.block[i]->aux = facAux;
+    mat->super.block[i]->auxDelete = (BfAuxDeleteFunc)facAuxDelete;
 #else
     bfFreePoints2(&srcPts);
     bfFreePoints2(&tgtCircPts);
     bfFreePoints2(&srcCircPts);
 #endif
+
+    bfFreeVectors2(&srcNormals);
+    bfFreeVectors2(&srcCircNormals);
   }
 
   BF_ERROR_END() {
@@ -358,11 +370,15 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
       facAux->srcPts[1] = srcPts;
       facAux->tgtPts = tgtChildPts;
       mat->super.block[blockIndex]->aux = facAux;
+      mat->super.block[blockIndex]->auxDelete = (BfAuxDeleteFunc)facAuxDelete;
 #else
       bfFreePoints2(&srcChildPts);
       bfFreePoints2(&srcPts);
       bfFreePoints2(&tgtChildPts);
 #endif
+
+      bfFreeVectors2(&srcChildNormals);
+      bfFreeVectors2(&srcNormals);
 
       ++blockIndex;
     } while (makeFactorIterNext(&srcIter));
@@ -462,10 +478,19 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     facAux->srcPts[1] = srcCircPts;
     facAux->tgtPts = tgtPts;
     mat->super.block[i]->aux = facAux;
+    mat->super.block[i]->auxDelete = (BfAuxDeleteFunc)facAuxDelete;
 #else
     bfFreePoints2(&srcCircPts);
     bfFreePoints2(&tgtPts);
 #endif
+
+    if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
+      bfFreeVectors2(&srcNormals);
+    }
+
+    if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
+      bfFreeVectors2(&tgtNormals);
+    }
   }
 
   /* compute running sum of rows to get row offsets */
@@ -676,6 +701,8 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     BF_DIE(); // TODO: need to think carefully about how to do this
   }
 
+  bfMemFree(factor);
+
   return prod;
 }
 
@@ -714,8 +741,20 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree
   Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, srcNormalsPtr, tgtNormalsPtr, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
-  BF_ERROR_END()
-    bfMatDelete(&Z);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfFreePoints2(&srcPts);
+  bfFreePoints2(&tgtPts);
+
+  if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
+    bfFreeVectors2(&srcNormals);
+  }
+
+  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
+    bfFreeVectors2(&tgtNormals);
+  }
 
   return Z;
 }
@@ -727,17 +766,30 @@ facHelm2MakeMultilevel_separated(BfQuadtree const *srcTree, BfQuadtree const *tg
                                  BfComplex const *alpha, BfComplex const *beta,
                                  BfQuadtreeNode const *srcNode,
                                  BfQuadtreeNode const *tgtNode) {
+  BF_ERROR_BEGIN();
+
+  BfMat *fac = NULL;
+
   BfTreeLevelIter srcLevelIter, tgtLevelIter;
   BfSize numFactors = bfFacHelm2Prepare(
     srcNode, tgtNode, K, &srcLevelIter, &tgtLevelIter);
 
-  if (numFactors == 0)
-    return facHelm2MakeMultilevel_dense(srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode);
+  fac = numFactors == 0 ?
+    facHelm2MakeMultilevel_dense(
+      srcTree, tgtTree, K, layerPot, alpha, beta, srcNode, tgtNode) :
+    bfMatProductToMat(
+      bfFacHelm2Make(
+        srcTree, tgtTree, K, layerPot, alpha, beta, &srcLevelIter, &tgtLevelIter, numFactors));
+  HANDLE_ERROR();
 
-  BfMatProduct *factorization = bfFacHelm2Make(
-    srcTree, tgtTree, K, layerPot, alpha, beta, &srcLevelIter, &tgtLevelIter, numFactors);
+  bfTreeLevelIterDeinit(&srcLevelIter);
+  bfTreeLevelIterDeinit(&tgtLevelIter);
 
-  return bfMatProductToMat(factorization);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return fac;
 }
 
 static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,

@@ -97,15 +97,15 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   if (X0 != NULL && numRhs != bfMatGetNumCols(X0))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  V = bfMemAlloc((maxNumIter + 1), sizeof(BfMatDenseComplex *));
+  V = bfMemAllocAndZero(maxNumIter + 1, sizeof(BfMatDenseComplex *));
   if (V == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  H = bfMemAlloc(maxNumIter, sizeof(BfMatDenseComplex *));
+  H = bfMemAllocAndZero(maxNumIter, sizeof(BfMatDenseComplex *));
   if (H == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  J = bfMemAlloc(maxNumIter, numRhs*sizeof(BfMat *));
+  J = bfMemAllocAndZero(numRhs*maxNumIter, sizeof(BfMat *));
   if (J == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -249,6 +249,7 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
       }
 #endif
       bfMatSetColRange(Hp, i, 0, i + 1, h);
+      bfVecDelete(&h);
     }
 
     /* Extract the version of V for this RHS */
@@ -256,6 +257,7 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     for (BfSize i = 0; i < j; ++i) {
       BfVec *v = bfMatGetColView(V[i], p);
       bfMatSetCol(Vp, i, v);
+      bfVecDelete(&v);
     }
 
     /* Solve for the coefficients representing x - x0 in the V-basis */
@@ -265,6 +267,13 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
     BfVec *x = bfMatMulVec(Vp, y);
     bfVecAddInplace(x, x0);
     bfMatSetCol(X, p, x);
+
+    bfMatDelete(&Hp);
+    bfMatDelete(&Vp);
+    bfVecDelete(&s);
+    bfVecDelete(&y);
+    bfVecDelete(&x0);
+    bfVecDelete(&x);
   }
 
   if (numIter != NULL)
@@ -273,6 +282,30 @@ BfMat *bfSolveGMRES(BfMat const *A, BfMat const *B, BfMat *X0,
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  for (BfSize i = 0; i < maxNumIter + 1; ++i)
+    if (V[i] != NULL)
+      bfMatDelete(&V[i]);
+
+  for (BfSize i = 0; i < maxNumIter; ++i)
+    if (H[i] != NULL)
+      bfMatDelete(&H[i]);
+
+  for (BfSize i = 0; i < numRhs*maxNumIter; ++i)
+    if (J[i] != NULL)
+      bfMatDelete(&J[i]);
+
+  bfVecDelete(&RNorm);
+  bfMatDelete(&R);
+
+  bfMemFree(V);
+  bfMemFree(H);
+  bfMemFree(J);
+
+  bfMatDelete(&S);
+
+  if (X0 != NULL)
+    bfMatDelete(&X0);
 
   return X;
 }

@@ -228,11 +228,8 @@ BfType bfMatBlockDiagGetType(BfMat const *mat) {
 
 BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag) {
   BfSize numBytes = 0;
-  for (BfSize i = 0; i < bfMatBlockDiagNumBlocks(matBlockDiag); ++i) {
-    BfMat const *block = bfMatBlockDiagGetBlockConst(matBlockDiag, i);
-    numBytes += bfMatNumBytes(block);
-    bfMatDelete((BfMat **)&block);
-  }
+  for (BfSize i = 0; i < bfMatBlockDiagNumBlocks(matBlockDiag); ++i)
+    numBytes += bfMatNumBytes(BLOCK(matBlockDiag, i));
   return numBytes;
 }
 
@@ -384,7 +381,6 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
   BfSize numBlocks = bfMatBlockDiagNumBlocks(matBlockDiag);
 
   BfMat *result = NULL;
-  BfMat *block = NULL;
   BfMat *op2Rows = NULL;
   BfMat *resultRows = NULL;
 
@@ -397,12 +393,12 @@ BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other) {
     j0 = matBlock->colOffset[i];
     j1 = matBlock->colOffset[i + 1];
 
-    block = matBlock->block[i];
     op2Rows = bfMatGetRowRange((BfMat *)other, j0, j1);
-    resultRows = bfMatMul(block, op2Rows);
+    resultRows = bfMatMul(matBlock->block[i], op2Rows);
     bfMatSetRowRange(result, i0, i1, resultRows);
 
     bfMatDelete(&resultRows);
+    bfMatDelete(&op2Rows);
   }
 
   BF_ERROR_END()
@@ -587,6 +583,7 @@ BfMat *solve_matDenseComplex(BfMatBlockDiag const *matBlockDiag,
     BfMat *resultBlock = bfMatSolve(block, otherBlock);
     bfMatSetRowRange(resultMat, i0, i1, resultBlock);
     bfMatDelete(&resultBlock);
+    bfMatDelete((BfMat **)&otherBlock);
   }
 
   BF_ERROR_END() {

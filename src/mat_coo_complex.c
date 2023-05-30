@@ -375,6 +375,9 @@ static void addInplace_cooComplex(BfMatCooComplex *matCooComplex,
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  bfSizeArrayDeinitAndDealloc(&indexArray);
+  bfSizeArrayDeinitAndDealloc(&otherIndexArray);
 }
 
 void bfMatCooComplexAddInplace(BfMatCooComplex *matCooComplex, BfMat const *otherMat) {

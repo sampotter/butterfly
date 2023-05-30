@@ -157,6 +157,8 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
     BF_DIE();
   }
 
+  bfSizeArrayDeinitAndDealloc(&activeList);
+
   bfMemFree(w.cellIndex);
 
   return w.samples;

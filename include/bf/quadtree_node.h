@@ -4,6 +4,7 @@
 /** Interface: TreeNode */
 
 BfType bfQuadtreeNodeGetType(BfTreeNode const *treeNode);
+void bfQuadtreeNodeDelete(BfQuadtreeNode **quadtreeNode);
 
 /** QuadtreeNode: */
 

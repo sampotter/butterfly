@@ -19,6 +19,7 @@ struct BfLuDenseComplexImpl {
 /** Interface: Lu */
 
 static BfLuVtable LU_VTABLE = {
+  .Delete = (__typeof__(&bfLuDelete))bfLuDenseComplexDelete,
   .Solve = (__typeof__(&bfLuSolve))bfLuDenseComplexSolve,
   .SolveLower = (__typeof__(&bfLuSolveLower))bfLuDenseComplexSolveLower,
   .SolveUpper = (__typeof__(&bfLuSolveUpper))bfLuDenseComplexSolveUpper,
@@ -29,6 +30,11 @@ static BfLuVtable LU_VTABLE = {
   .ScaleVec = (__typeof__(&bfLuScaleVec))bfLuDenseComplexScaleVec,
   .GetMatView = (__typeof__(&bfLuGetMatView))bfLuDenseComplexGetMatView,
 };
+
+void bfLuDenseComplexDelete(BfLuDenseComplex **luDenseComplex) {
+  bfLuDenseComplexDeinit(*luDenseComplex);
+  bfLuDenseComplexDealloc(luDenseComplex);
+}
 
 BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const *mat) {
   BF_ERROR_BEGIN();
@@ -226,14 +232,9 @@ void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat) {
 }
 
 void bfLuDenseComplexDeinit(BfLuDenseComplex *luDenseComplex) {
-  luDenseComplex->impl->m = 0;
-  luDenseComplex->impl->n = 0;
-
   free(luDenseComplex->impl->data);
-  luDenseComplex->impl->data = NULL;
-
   free(luDenseComplex->impl->ipiv);
-  luDenseComplex->impl->ipiv = NULL;
+  free(luDenseComplex->impl);
 }
 
 void bfLuDenseComplexDealloc(BfLuDenseComplex **luDenseComplex) {

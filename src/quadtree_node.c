@@ -19,12 +19,18 @@ static BfSize const LEAF_SIZE_THRESHOLD = 1;
 /** Interface(TreeNode, QuadtreeNode) */
 
 static BfTreeNodeVtable TreeNodeVtable = {
-  .GetType = (__typeof__(&bfTreeNodeGetType))bfQuadtreeNodeGetType
+  .GetType = (__typeof__(&bfTreeNodeGetType))bfQuadtreeNodeGetType,
+  .Delete = (__typeof__(&bfTreeNodeDelete))bfQuadtreeNodeDelete,
 };
 
 BfType bfQuadtreeNodeGetType(BfTreeNode const *treeNode) {
   (void)treeNode;
   return BF_TYPE_QUADTREE_NODE;
+}
+
+void bfQuadtreeNodeDelete(BfQuadtreeNode **quadtreeNode) {
+  bfQuadtreeNodeDeinit(*quadtreeNode);
+  bfQuadtreeNodeDealloc(quadtreeNode);
 }
 
 /** Upcasting: QuadtreeNode -> TreeNode */
@@ -264,8 +270,15 @@ void bfQuadtreeNodeInitRoot(BfQuadtreeNode *node, BfQuadtree const *tree) {
   BF_ERROR_END() {}
 }
 
-// void bfQuadtreeNodeDeinit(BfQuadtreeNode *node);
-// void bfQuadtreeNodeDealloc(BfQuadtreeNode **node);
+void bfQuadtreeNodeDeinit(BfQuadtreeNode *quadtreeNode) {
+  bfTreeNodeDeinit(&quadtreeNode->super);
+}
+
+void bfQuadtreeNodeDealloc(BfQuadtreeNode **quadtreeNode) {
+  bfMemFree(*quadtreeNode);
+  *quadtreeNode = NULL;
+}
+
 // void bfQuadtreeNodeDeinitAndDealloc(BfQuadtreeNode **node);
 // BfQuadtreeNode *bfQuadtreeNodeGetChild(BfQuadtreeNode *node, BfSize i);
 // BfQuadtreeNode const *bfQuadtreeNodeGetChildConst(BfQuadtreeNode const *node, BfSize i);

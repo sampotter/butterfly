@@ -482,7 +482,7 @@ void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *othe
       BfMat *otherBlock = bfMatGetColRangeCopy(otherRows, j0, j1);
 
       if (bfMatIsZero(otherBlock))
-        continue;
+        goto next;
 
       BfMat *block = bfMatBlockDenseGetBlock(matBlockDense, i_blk, j_blk);
 
@@ -500,7 +500,12 @@ void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *othe
         bfMatAddInplace(block, otherBlock);
       else
         bfMatBlockDenseSetBlock(matBlockDense, i_blk, j_blk, newBlock);
+
+    next:
+      bfMatDelete(&otherBlock);
     }
+
+    bfMatDelete((BfMat **)&otherRows);
   }
 
   BF_ERROR_END() {}
@@ -540,7 +545,10 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
       tmp = bfMatMul(block, op2Rows);
       bfMatAddInplace(resultRows, tmp);
       bfMatDelete(&tmp);
+      bfMatDelete((BfMat **)&op2Rows);
+      bfMatDelete((BfMat **)&block);
     }
+    bfMatDelete(&resultRows);
   }
 
   BF_ERROR_END()

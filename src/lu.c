@@ -2,6 +2,10 @@
 
 /** Interface: Lu */
 
+void bfLuDelete(BfLu **lu) {
+  (*lu)->vtbl->Delete(lu);
+}
+
 BfMat *bfLuSolve(BfLu const *lu, BfMat const *B) {
   return lu->vtbl->Solve(lu, B);
 }

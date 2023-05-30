@@ -154,6 +154,9 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
       /* x: */ &sigmaPtr[i0],
       /* h: */ &w[i0],
       /* y: */ &uPtr[i0]);
+
+    bfMemFree(XBlock);
+    bfMemFree(NBlock);
   }
 
   /** Multiply by I/2: */
@@ -221,6 +224,8 @@ void init(MultipleScatteringContext *context, Opts const *opts) {
   context->KButterflyDense = NULL;
   context->KLu = NULL;
 
+  context->KBlockLus = NULL;
+
   context->M = NULL;
   context->MPerm = NULL;
 
@@ -237,6 +242,8 @@ void init(MultipleScatteringContext *context, Opts const *opts) {
   context->sigmaLu = NULL;
   context->sigmaDense = NULL;
   context->sigmaDensePrecondLeft = NULL;
+  context->sigmaFmm = NULL;
+  context->sigmaFmmPrecondLeft = NULL;
   context->sigmaButterfly = NULL;
   context->sigmaButterflyPrecondLeft = NULL;
 
@@ -534,6 +541,7 @@ void extractDenseButterfliedK(MultipleScatteringContext *context) {
     bfMatSetCol(context->KButterflyDense, j, kjVecView);
     bfVecDelete(&kjVecView);
     bfMatDelete(&kj);
+    bfMatDelete(&ej);
   }
 
   printf(" done [%0.2fs]\n", bfToc());
@@ -553,6 +561,8 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
   fflush(stdout);
 
   bfToc();
+
+  context->KBlockLus = bfPtrArrayNewWithDefaultCapacity();
 
   /* Build block Jacobi preconditioner: */
   BfPtrArray *MBlocks = bfPtrArrayNewWithDefaultCapacity();
@@ -594,11 +604,19 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
       BfMat *oneHalfEye = bfMatDiagRealToMat(bfMatDiagRealNewConstant(nBlock, nBlock, 0.5));
       bfMatAddInplace(KBlock, oneHalfEye);
       bfMatDelete(&oneHalfEye);
+
+      // TODO: need to implement Dealloc for Points2 and Vectors2...
+      bfMemFree(XBlock);
+      bfMemFree(NBlock);
     }
 
     BfLu *KBlockLu = bfMatGetLu(KBlock);
+    bfPtrArrayAppend(context->KBlockLus, KBlockLu);
+
     BfMat *MBlock = bfLuGetMatView(KBlockLu);
     bfPtrArrayAppend(MBlocks, MBlock);
+
+    bfMatDelete(&KBlock);
   }
   context->M = bfMatBlockDiagToMat(
     bfMatBlockDiagNewFromBlocks(MBlocks, BF_POLICY_STEAL));
@@ -612,7 +630,7 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
     BfMatProduct *matProduct = bfMatProductNew();
     bfMatProductInit(matProduct);
     bfMatProductPostMultiply(matProduct, matPerm);
-    bfMatProductPostMultiply(matProduct, context->M);
+    bfMatProductPostMultiply(matProduct, bfMatGet(context->M, BF_POLICY_VIEW));
     bfMatProductPostMultiply(matProduct, matPermInverse);
     context->MPerm = bfMatProductToMat(matProduct); }
 
@@ -624,6 +642,12 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
   else if (numBytes < 1024*1024) printf("%0.1f KB\n", numBytes/1024.0);
   else if (numBytes < 1024*1024*1024) printf("%0.1f MB\n", numBytes/pow(1024, 2));
   else printf("%0.1f GB\n", numBytes/pow(1024, 3));
+
+  for (BfSize i = 0; i < bfPtrArraySize(MBlocks); ++i) {
+    BfMat *MBlock = bfPtrArrayGet(MBlocks, i);
+    bfMatDelete(&MBlock);
+  }
+  bfPtrArrayDelete(&MBlocks);
 }
 
 static BfReal getMaxRelErrForFmmTol(MultipleScatteringContext *context, BfReal tolFmm) {
@@ -858,18 +882,21 @@ void collectAndPrintStats(MultipleScatteringContext *context) {
     bfToc();
     yTestDense = bfMatMul(context->K, context->rhs);
     printf("- did test dense MVP [%0.2fs]\n", bfToc());
+    bfMatDelete(&yTestDense);
   }
 
   if (context->KButterfly) {
     bfToc();
     yTestButterfly = bfMatMul(context->KButterfly, context->rhsPerm);
     bfMatPermuteRows(yTestButterfly, context->perm);
+    bfMatDelete(&yTestButterfly);
     printf("- did test butterfly MVP [%0.2fs]\n", bfToc());
   }
 
   if (context->KFmm) {
     bfToc();
     yTestFmm = bfMatMul(context->KFmm, context->rhs);
+    bfMatDelete(&yTestFmm);
     printf("- did test FMM MVP [%0.2fs]\n", bfToc());
   }
 
@@ -934,6 +961,9 @@ void collectAndPrintStats(MultipleScatteringContext *context) {
       BfVecReal *l2Norm_j = bfVecToVecReal(bfMatColNorms(sigma[j]));
       BfReal l2ErrorRel = l2Dist->data[0]/fmax(l2Norm_i->data[0], l2Norm_j->data[0]);
       printf("- rel l2 error in sigma (%s vs %s): %g\n", methodName[i], methodName[j], l2ErrorRel);
+      bfVecRealDeinitAndDealloc(&l2Dist);
+      bfVecRealDeinitAndDealloc(&l2Norm_i);
+      bfVecRealDeinitAndDealloc(&l2Norm_j);
     }
   }
 }
@@ -994,6 +1024,8 @@ void doPostprocessing(MultipleScatteringContext *context) {
   BfVec *WVecPerm = bfVecCopy(WVec);
   bfVecPermute(WVecPerm, context->revPerm);
   bfMatScaleCols(context->KEvalButterfly, WVecPerm);
+  bfVecDelete(&WVecPerm);
+  bfVecDelete(&WVec);
 
   printf("- set up butterfly factorized evaluation matrix [%0.2fs]\n", bfToc());
 
@@ -1054,5 +1086,113 @@ void doPostprocessing(MultipleScatteringContext *context) {
 }
 
 void deinit(MultipleScatteringContext *context, Opts *opts) {
-  BF_DIE();
+  if (context->ellipseCenters != NULL) {
+    bfFreePoints2(context->ellipseCenters);
+    bfMemFree(context->ellipseCenters);
+  }
+
+  if (context->ellipse != NULL)
+    bfMemFree(context->ellipse);
+
+  if (context->ellipseOffsets != NULL)
+    bfSizeArrayDeinitAndDealloc(&context->ellipseOffsets);
+
+  if (context->X) {
+    bfFreePoints2(context->X);
+    bfMemFree(context->X);
+  }
+
+  if (context->N) {
+    bfFreeVectors2(context->N);
+    bfMemFree(context->N);
+  }
+
+  if (context->W)
+    bfRealArrayDeinitAndDealloc(&context->W);
+
+  if (context->quadtree) {
+    bfQuadtreeDeinit(context->quadtree);
+    bfMemFree(context->quadtree);
+  }
+
+  if (context->revPerm)
+    bfPermDelete(&context->revPerm);
+
+  if (context->K != NULL)
+    bfMatDelete(&context->K);
+
+  if (context->KButterfly != NULL)
+    bfMatDelete(&context->KButterfly);
+
+  if (context->KButterflyDense != NULL)
+    bfMatDelete(&context->KButterflyDense);
+
+  if (context->KFmm != NULL)
+    bfMatDelete(&context->KFmm);
+
+  if (context->KLu != NULL)
+    bfLuDelete(&context->KLu);
+
+  if (context->KBlockLus != NULL) {
+    for (BfSize i = 0; i < bfPtrArraySize(context->KBlockLus); ++i) {
+      BfLu *KBlockLu = bfPtrArrayGet(context->KBlockLus, i);
+      bfLuDelete(&KBlockLu);
+    }
+    bfPtrArrayDelete(&context->KBlockLus);
+  }
+
+  if (context->M != NULL)
+    bfMatDelete(&context->M);
+
+  if (context->MPerm != NULL)
+    bfMatDelete(&context->MPerm);
+
+  if (context->rhs != NULL)
+    bfMatDelete(&context->rhs);
+
+  if (context->rhsPerm != NULL)
+    bfMatDelete(&context->rhsPerm);
+
+  if (context->yTestDense != NULL)
+    bfMatDelete(&context->yTestDense);
+
+  if (context->yTestButterfly != NULL)
+    bfMatDelete(&context->yTestButterfly);
+
+  if (context->sigmaLu != NULL)
+    bfMatDelete(&context->sigmaLu);
+
+  if (context->sigmaDense != NULL)
+    bfMatDelete(&context->sigmaDense);
+
+  if (context->sigmaDensePrecondLeft != NULL)
+    bfMatDelete(&context->sigmaDensePrecondLeft);
+
+  if (context->sigmaFmm != NULL)
+    bfMatDelete(&context->sigmaFmm);
+
+  if (context->sigmaFmmPrecondLeft != NULL)
+    bfMatDelete(&context->sigmaFmmPrecondLeft);
+
+  if (context->sigmaButterfly != NULL)
+    bfMatDelete(&context->sigmaButterfly);
+
+  if (context->sigmaButterflyPrecondLeft != NULL)
+    bfMatDelete(&context->sigmaButterflyPrecondLeft);
+
+  if (context->XEval != NULL) {
+    bfFreePoints2(context->XEval);
+    bfMemFree(context->XEval);
+  }
+
+  if (context->quadtreeEval != NULL) {
+    bfQuadtreeDeinit(context->quadtreeEval);
+    bfMemFree(context->quadtreeEval);
+  }
+
+  if (context->KEvalButterfly != NULL)
+    bfMatDelete(&context->KEvalButterfly);
+
+  if (context->uIn != NULL)
+    bfMatDelete(&context->uIn);
 }

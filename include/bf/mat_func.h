@@ -6,6 +6,7 @@ typedef BfMat *(*MatMulFunc)(BfMat const *, void *);
 
 /** Interface: Mat */
 
+void bfMatFuncDelete(BfMatFunc **matFunc);
 BfSize bfMatFuncGetNumRows(BfMatFunc const *matFunc);
 BfSize bfMatFuncGetNumCols(BfMatFunc const *matFunc);
 BfMat *bfMatFuncMul(BfMatFunc const *matFunc, BfMat const *otherMat);

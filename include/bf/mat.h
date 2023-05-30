@@ -150,6 +150,10 @@ typedef struct BfMatVtable {
 
 /** Implementation: Mat */
 
+#if BF_DEBUG
+typedef void (*BfAuxDeleteFunc)(void *);
+#endif
+
 struct BfMat {
   BfMatVtable *vtbl;
   BfMatProps props;
@@ -157,6 +161,7 @@ struct BfMat {
   BfSize numCols;
 #if BF_DEBUG
   void *aux; /* pointer to extra user-defined data for purposes of debugging */
+  void (*auxDelete)(void *); /* function used to free anything stored by aux */
 #endif
 };
 

@@ -4,6 +4,7 @@
 
 /** Interface: */
 
+void bfLuDelete(BfLu **lu);
 BfMat *bfLuSolve(BfLu const *lu, BfMat const *B);
 BfMat *bfLuSolveLower(BfLu const *lu, BfMat const *B, bool permute);
 BfMat *bfLuSolveUpper(BfLu const *lu, BfMat const *B, bool permute);
@@ -15,6 +16,7 @@ BfVec *bfLuScaleVec(BfLu const *lu, BfVec const *b);
 BfMat *bfLuGetMatView(BfLu *lu);
 
 typedef struct BfLuVtable {
+  __typeof__(&bfLuDelete) Delete;
   __typeof__(&bfLuSolve) Solve;
   __typeof__(&bfLuSolveLower) SolveLower;
   __typeof__(&bfLuSolveUpper) SolveUpper;

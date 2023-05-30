@@ -10,7 +10,7 @@ BfVec *bfMatDenseComplexGetRowCopy(BfMat const *mat, BfSize i);
 BfVec *bfMatDenseComplexGetRowView(BfMat *mat, BfSize i);
 BfVec *bfMatDenseComplexGetColView(BfMat *mat, BfSize j);
 BfVec *bfMatDenseComplexGetColRangeView(BfMat *mat, BfSize i0, BfSize i1, BfSize j);
-void bfMatDenseComplexDelete(BfMat **mat);
+void bfMatDenseComplexDelete(BfMatDenseComplex **matDenseComplex);
 BfMat *bfMatDenseComplexEmptyLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 BfMat *bfMatDenseComplexZerosLike(BfMat const *mat, BfSize numRows, BfSize numCols);
 BfType bfMatDenseComplexGetType(BfMat const *mat);
