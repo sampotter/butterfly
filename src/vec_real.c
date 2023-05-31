@@ -15,7 +15,7 @@
 
 static BfVecVtable VEC_VTABLE = {
   .Copy = (__typeof__(&bfVecCopy))bfVecRealCopy,
-  .Delete = (__typeof__(&bfVecRealDelete))bfVecRealDelete,
+  .Delete = (__typeof__(&bfVecDelete))bfVecRealDelete,
   .GetType = (__typeof__(&bfVecRealGetType))bfVecRealGetType,
   .GetEltPtr = (__typeof__(&bfVecRealGetEltPtr))bfVecRealGetEltPtr,
   .GetSubvecCopy = (__typeof__(&bfVecRealGetSubvecCopy))bfVecRealGetSubvecCopy,
@@ -60,8 +60,8 @@ BfVec *bfVecRealCopy(BfVecReal const *vecReal) {
   return bfVecRealToVec(copy);
 }
 
-void bfVecRealDelete(BfVec **mat) {
-  bfVecRealDeinitAndDealloc((BfVecReal **)mat);
+void bfVecRealDelete(BfVecReal **mat) {
+  bfVecRealDeinitAndDealloc(mat);
 }
 
 BfType bfVecRealGetType(BfVec const *vec) {

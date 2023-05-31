@@ -4,6 +4,7 @@
 
 /** Interface: MatCsrReal */
 
+BfMat *bfMatCsrRealGetView(BfMatCsrReal *matCsrReal);
 BfMat *bfMatCsrRealCopy(BfMat const *mat);
 void bfMatCsrRealDelete(BfMat **mat);
 BfType bfMatCsrRealGetType(BfMat const *mat);

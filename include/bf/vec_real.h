@@ -5,7 +5,7 @@
 /** Interface: Vec */
 
 BfVec *bfVecRealCopy(BfVecReal const *vec);
-void bfVecRealDelete(BfVec **mat);
+void bfVecRealDelete(BfVecReal **mat);
 BfType bfVecRealGetType(BfVec const *vec);
 BfPtr bfVecRealGetEltPtr(BfVec *vec, BfSize i);
 BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1);

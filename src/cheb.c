@@ -152,6 +152,13 @@ void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b) {
 }
 
 void bfChebDeinit(BfCheb *cheb) {
+  cheb->order = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(cheb->c);
+  cheb->c = NULL;
+
+  cheb->a = BF_NAN;
+  cheb->b = BF_NAN;
 }
 
 void bfChebInterp(BfCheb *cheb, BfReal (*f)(BfReal), BfReal const *x) {

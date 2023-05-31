@@ -51,6 +51,9 @@ static BfVec *chebmul(BfCheb const *cheb, BfMat const *S, BfVec *w) {
     y1 = y;
   }
 
+  if (y1 != NULL) bfVecDelete(&y1);
+  if (y2 != NULL) bfVecDelete(&y2);
+
   return x;
 }
 
@@ -59,6 +62,8 @@ static BfVec *sample_z(BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqr
   BfVec *w = bfVecRealToVec(bfVecRealNewRandn(n));
   BfVec *x = chebmul(cheb, S, w);
   BfVec *z = bfMatMulVec(MLumpSqrtInv, x);
+  bfVecDelete(&w);
+  bfVecDelete(&x);
   return z;
 }
 
@@ -74,6 +79,9 @@ static BfVec *get_c(BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqrtIn
   tmp = chebmul(cheb, S, tmp1);
   bfVecDelete(&tmp1);
   tmp1 = bfMatMulVec(MLumpSqrtInv, tmp);
+  bfVecDelete(&tmp);
+
+  bfVecRealDelete(&e);
 
   return tmp1;
 }
@@ -96,9 +104,10 @@ static void getS(BfMat *L, BfMat *M, BfMat **SHandle, BfMat **MLumpSqrtInvHandle
   BfMatProduct *S = bfMatProductNew();
   bfMatProductInit(S);
 
-  bfMatProductPostMultiply(S, bfMatDiagRealToMat(MLumpSqrtInv));
-  bfMatProductPostMultiply(S, L);
-  bfMatProductPostMultiply(S, bfMatDiagRealToMat(MLumpSqrtInv));
+  // TODO: should add a policy argument to PostMultiply...
+  bfMatProductPostMultiply(S, bfMatGetView(bfMatDiagRealToMat(MLumpSqrtInv)));
+  bfMatProductPostMultiply(S, bfMatGetView(L));
+  bfMatProductPostMultiply(S, bfMatGetView(bfMatDiagRealToMat(MLumpSqrtInv)));
 
   *SHandle = bfMatProductToMat(S);
   *MLumpSqrtInvHandle = bfMatDiagRealToMat(MLumpSqrtInv);
