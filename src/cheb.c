@@ -138,10 +138,10 @@ BfReal bfChebStdEval(BfChebStd const *cheb, BfReal x) {
 void bfChebInitWithDegree(BfCheb *cheb, BfSize d, BfSize a, BfSize b) {
   BF_ERROR_BEGIN();
 
+  cheb->order = d + 1;
+
   cheb->c = bfMemAlloc(cheb->order, sizeof(BfReal));
   HANDLE_ERROR();
-
-  cheb->order = d + 1;
 
   cheb->a = a;
   cheb->b = b;
