@@ -26,4 +26,7 @@ typedef struct BfEvalTreeSpec {
 
 BfEvalTree *bfEvalTreeNew();
 void bfEvalTreeInit(BfEvalTree *evalTree, BfEvalTreeSpec const *spec);
+void bfEvalTreeDeinit(BfEvalTree *evalTree);
+void bfEvalTreeDealloc(BfEvalTree **evalTree);
+void bfEvalTreeDeinitAndDealloc(BfEvalTree **evalTree);
 BfReal bfEvalTreeGetValue(BfEvalTree const *evalTree, BfReal x);

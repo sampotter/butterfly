@@ -4,6 +4,7 @@
 
 #include <bf/assert.h>
 #include <bf/cheb.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -71,6 +72,18 @@ void evalTreeNodeInitRec(BfEvalTreeNode *node, BfEvalTree const *tree) {
   }
 }
 
+void evalTreeNodeDeinitRec(BfEvalTreeNode *node, BfEvalTree const *tree) {
+  if (node->children) {
+    BF_ASSERT(node->cheb == NULL);
+    for (BfSize i = 0; i < tree->k; ++i)
+      evalTreeNodeDeinitRec(&node->children[i], tree);
+    bfMemFree(node->children);
+  } else {
+    BF_ASSERT(node->cheb != NULL);
+    bfChebStdDelete(&node->cheb);
+  }
+}
+
 BfReal evalTreeNodeGetValueRec(BfEvalTreeNode const *node, BfEvalTree const *tree, BfReal x) {
   if (node->isLeaf) {
     BF_ASSERT(node->a <= x && x <= node->b);
@@ -118,4 +131,30 @@ void bfEvalTreeInit(BfEvalTree *tree, BfEvalTreeSpec const *spec) {
   tree->root->a = tree->a;
   tree->root->b = tree->b;
   evalTreeNodeInitRec(tree->root, tree);
+}
+
+void bfEvalTreeDeinit(BfEvalTree *tree) {
+  evalTreeNodeDeinitRec(tree->root, tree);
+  bfMemFree(tree->root);
+  tree->root = NULL;
+
+  tree->f = NULL;
+  tree->a = BF_NAN;
+  tree->b = BF_NAN;
+  tree->d = BF_SIZE_BAD_VALUE;
+  tree->k = BF_SIZE_BAD_VALUE;
+  tree->tol = BF_NAN;
+
+  bfMemFree(tree->x);
+  tree->x = NULL;
+}
+
+void bfEvalTreeDealloc(BfEvalTree **evalTree) {
+  bfMemFree(*evalTree);
+  *evalTree = NULL;
+}
+
+void bfEvalTreeDeinitAndDealloc(BfEvalTree **evalTree) {
+  bfEvalTreeDeinit(*evalTree);
+  bfEvalTreeDealloc(evalTree);
 }

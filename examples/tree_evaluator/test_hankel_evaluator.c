@@ -211,7 +211,11 @@ int main(int argc, char *argv[]) {
   /* clean up */
 
   bfMemFree(X);
+  bfMemFree(sqrtX);
+  bfMemFree(J0_std);
   bfMemFree(J0_gsl);
   bfMemFree(tmp);
+  bfMemFree(randCheb.c);
+  bfEvalTreeDeinitAndDealloc(&evalTree);
   bfMemFree(J0_evalTree);
 }
