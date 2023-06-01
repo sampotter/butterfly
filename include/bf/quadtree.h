@@ -40,4 +40,6 @@ BfQuadtree *bfTreeToQuadtree(BfTree *tree);
 BfQuadtree *bfQuadtreeNew();
 void bfQuadtreeInit(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals);
 void bfQuadtreeDeinit(BfQuadtree *tree);
+void bfQuadtreeDealloc(BfQuadtree **quadtree);
+void bfQuadtreeDeinitAndDealloc(BfQuadtree **quadtree);
 void bfQuadtreeSaveBoxesToTextFile(BfQuadtree const *tree, char const *path);

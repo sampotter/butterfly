@@ -229,16 +229,6 @@ void bfVectors2DeinitAndDealloc(BfVectors2 **vectors) {
   bfVectors2Dealloc(vectors);
 }
 
-void bfVectors2Dealloc(BfVectors2 **vectors) {
-  bfMemFree(*vectors);
-  *vectors = NULL;
-}
-
-void bfVectors2DeinitAndDealloc(BfVectors2 **vectors) {
-  bfFreeVectors2(*vectors);
-  bfVectors2Dealloc(vectors);
-}
-
 void bfGetVectorsByIndex(BfVectors2 const *vectors,
                         BfSize numInds, BfSize const *inds,
                         BfVectors2 *indexedVectors)

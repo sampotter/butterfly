@@ -69,16 +69,15 @@ int main(int argc, char const *argv[]) {
   printf("read %lu points from %s\n", points.size, pointsPath);
 
   char const *normalsPath = argv[8];
-  BfVectors2 tgtNormals, *tgtNormalsPtr = NULL;
+  BfVectors2 *tgtNormals = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
-    bfReadVectors2FromFile(normalsPath, &tgtNormals);
+    tgtNormals = bfVectors2NewFromFile(normalsPath);
     HANDLE_ERROR();
-    printf("read %lu unit normals from %s\n", tgtNormals.size, normalsPath);
-    tgtNormalsPtr = &tgtNormals;
+    printf("read %lu unit normals from %s\n", tgtNormals->size, normalsPath);
   }
 
   BfQuadtree *quadtree = bfQuadtreeNew();
-  bfQuadtreeInit(quadtree, &points, tgtNormalsPtr);
+  bfQuadtreeInit(quadtree, &points, tgtNormals);
   HANDLE_ERROR();
   puts("built quadtree");
 
@@ -255,7 +254,7 @@ int main(int argc, char const *argv[]) {
 
       if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
         sprintf(filename, "tgtNormals%lu.bin", j);
-        bfSaveVectors2(&tgtNormals, filename);
+        bfSaveVectors2(tgtNormals, filename);
       }
 #endif
     }
@@ -306,4 +305,14 @@ int main(int argc, char const *argv[]) {
   bfFreePoints2(&tgtNodePts);
   // bfQuadtreeDeinitAndDealloc(&tree);
   bfFreePoints2(&points);
+  if (tgtNormals != NULL)
+    bfVectors2DeinitAndDealloc(&tgtNormals);
+  bfTreeLevelIterDeinit(&srcLevelIter);
+  bfTreeLevelIterDeinit(&tgtLevelIter);
+  bfMatProductDeinitAndDealloc(&factorization);
+  bfMatDelete(&V_gt);
+  bfMatDelete(&V);
+  if (tgtNodeNormals != NULL)
+    bfVectors2DeinitAndDealloc(&tgtNodeNormals);
+  bfQuadtreeDeinitAndDealloc(&quadtree);
 }

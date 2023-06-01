@@ -87,6 +87,16 @@ void bfQuadtreeDeinit(BfQuadtree *tree) {
   bfTreeDeinit(&tree->super);
 }
 
+void bfQuadtreeDealloc(BfQuadtree **quadtree) {
+  bfMemFree(*quadtree);
+  *quadtree = NULL;
+}
+
+void bfQuadtreeDeinitAndDealloc(BfQuadtree **quadtree) {
+  bfQuadtreeDeinit(*quadtree);
+  bfQuadtreeDealloc(quadtree);
+}
+
 static void saveBoxesToTextFileRec(BfQuadtreeNode const *node, FILE *fp) {
   BfReal xmin = node->bbox.min[0];
   BfReal xmax = node->bbox.max[0];
