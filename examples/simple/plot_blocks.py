@@ -49,7 +49,7 @@ plt.show()
 type2hatch = {
     8: 'o', # BF_MAT_PRODUCT
     9: '*', # BF_MAT_SUM
-    16: '..', # BF_TYPE_MAT_DENSE_COMPLEX
+    17: '..', # BF_TYPE_MAT_DENSE_COMPLEX
 }
 
 cmap = cc.cm.gouldian
