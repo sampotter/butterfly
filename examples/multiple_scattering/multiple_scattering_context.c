@@ -343,7 +343,7 @@ void setUpDiscretization(MultipleScatteringContext *context) {
   bfSizeArrayAppend(context->ellipseOffsets, 0);
 
   context->X = bfPoints2NewEmpty();
-  context->N = bfVectors2NewEmpty();
+  context->N = bfVectors2New();
   context->W = bfRealArrayNewWithDefaultCapacity();
   for (BfSize i = 0; i < context->numEllipses; ++i) {
     BfEllipse const *ellipse = &context->ellipse[i];
@@ -406,7 +406,7 @@ void setUpRhs(MultipleScatteringContext *context) {
     for (BfSize i = 0; i < context->n; ++i) {
       BfPoint2 x;
       bfPoints2Get(context->X, i, x);
-      *(_->data + i*_->rowStride) = -cexp(1i*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
+      *(_->data + i*_->rowStride) = -cexp(I*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
     }
     context->rhs = bfMatDenseComplexToMat(_); }
 
@@ -1000,7 +1000,7 @@ void doPostprocessing(MultipleScatteringContext *context) {
     for (BfSize i = 0; i < nEval; ++i) {
       BfPoint2 x;
       bfPoints2Get(context->XEval, i, x);
-      *(_->data + i*_->rowStride) = cexp(1i*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
+      *(_->data + i*_->rowStride) = cexp(I*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
     }
     context->uIn = bfMatDenseComplexToMat(_); }
 
@@ -1085,7 +1085,7 @@ void doPostprocessing(MultipleScatteringContext *context) {
   }
 }
 
-void deinit(MultipleScatteringContext *context, Opts *opts) {
+void deinit(MultipleScatteringContext *context) {
   if (context->ellipseCenters != NULL) {
     bfFreePoints2(context->ellipseCenters);
     bfMemFree(context->ellipseCenters);

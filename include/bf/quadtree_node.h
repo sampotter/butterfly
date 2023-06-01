@@ -47,5 +47,5 @@ void bfQuadtreeNodeDealloc(BfQuadtreeNode **node);
 void bfQuadtreeNodeDeinitAndDealloc(BfQuadtreeNode **node);
 BfCircle bfQuadtreeNodeGetBoundingCircle(BfQuadtreeNode const *node);
 BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *node, BfQuadtree const *tree);
-BfVectors2 bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *node, BfQuadtree const *tree);
+BfVectors2 *bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *node, BfQuadtree const *tree);
 bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1, BfQuadtreeNode const *node2);

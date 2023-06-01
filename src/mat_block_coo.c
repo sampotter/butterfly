@@ -550,8 +550,11 @@ static void setColumnNonzerosForBlock(BfMat const *mat, bool *nonzero) {
     }
     break;
   }
-  case BF_TYPE_MAT_IDENTITY:
+  case BF_TYPE_MAT_IDENTITY: {
     BF_ASSERT(m == n);
+    for (BfSize j = 0; j < n; ++j) nonzero[j] = true;
+    break;
+  }
   case BF_TYPE_MAT_DENSE_REAL: {
     for (BfSize j = 0; j < n; ++j) nonzero[j] = true;
     break;

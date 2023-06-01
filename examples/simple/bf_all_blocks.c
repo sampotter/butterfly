@@ -154,6 +154,8 @@ int main(int argc, char const *argv[]) {
   BfReal rel_err_l2 =
     *bfVecToVecReal(err2)->data / *bfVecToVecReal(y_dense_norm)->data;
   printf("relative l2 error: %g [%0.2fs]\n", rel_err_l2, bfToc());
+  bfVecDelete(&err2);
+  bfVecDelete(&y_dense_norm);
 
   FILE *fp = fopen(blocks_path_str, "w");
   bfPrintBlocks(A_BF, 2, fp);
@@ -181,6 +183,7 @@ int main(int argc, char const *argv[]) {
     bfMatSetCol(A_BF_dense, j, ajVecView);
     bfVecDelete(&ajVecView);
     bfMatDelete(&aj);
+    bfMatDelete(&ej);
   }
   printf("sampled dense version of BF'd kernel matrix [%0.2fs]\n", bfToc());
 
@@ -196,7 +199,11 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&A_BF);
   bfMatDelete(&A_dense);
   bfQuadtreeDeinit(&quadtree);
+#if COMPARE_KERNEL_MATRICES
+  bfMatDelete(&A_BF_dense);
+#endif
 #if PERM_DENSE
+  bfPoints2DeinitAndDealloc((BfPoints2 **)&pointsPerm);
   bfMatDelete(&pointsPermMat);
 #endif
   bfMatDelete(&pointsMat);

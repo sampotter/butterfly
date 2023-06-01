@@ -324,11 +324,14 @@ BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
   return points;
 }
 
-BfVectors2 bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *quadtreeNode,
-                                        BfQuadtree const *quadtree) {
+BfVectors2 *bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *quadtreeNode,
+                                         BfQuadtree const *quadtree) {
   BF_ERROR_BEGIN();
 
-  BfVectors2 unitNormals = bfGetUninitializedVectors2();
+  if (quadtree->unitNormals == NULL)
+    return NULL;
+
+  BfVectors2 *unitNormals = bfVectors2New();
 
   BfTreeNode const *treeNode = bfQuadtreeNodeConstToTreeNodeConst(quadtreeNode);
 
@@ -336,15 +339,12 @@ BfVectors2 bfQuadtreeNodeGetUnitNormals(BfQuadtreeNode const *quadtreeNode,
     bfTreeNodeGetTreeConst(treeNode) :
     bfQuadtreeConstToTreeConst(quadtree);
 
-  if (quadtree->unitNormals == NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
   /* determine the number of points containined by `node` and find the
    * offset into `tree->perm` */
   BfSize numInds = bfTreeNodeGetNumPoints(treeNode);
   BfSize const *inds = bfTreeNodeGetIndexPtrConst(treeNode, tree);
 
-  bfGetVectorsByIndex(quadtree->unitNormals, numInds, inds, &unitNormals);
+  bfGetVectorsByIndex(quadtree->unitNormals, numInds, inds, unitNormals);
   HANDLE_ERROR();
 
   BF_ERROR_END() {}

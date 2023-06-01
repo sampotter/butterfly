@@ -58,12 +58,13 @@ static BfSize getCellIndex(BfPoint2 const p, Workspace const *w) {
 
 static bool pointValid(BfPoint2 const p, Workspace const *w) {
   BfSize i0, j0;
+  int64_t nx = w->nx, ny = w->ny;
   getCellCoords(p, w, &i0, &j0);
   for (BfSize k = 0; k < OFFSET2_SIZE; ++k) {
     int64_t i = i0 + offset2[k][0];
     int64_t j = j0 + offset2[k][1];
-    if (0 <= i && i < w->nx && 0 <= j && j < w->ny) {
-      BfSize l = w->cellIndex[w->ny*i + j];
+    if (0 <= i && i < nx && 0 <= j && j < ny) {
+      BfSize l = w->cellIndex[ny*i + j];
       if (l != BF_SIZE_BAD_VALUE) {
         BfPoint2 q;
         bfPoints2Get(w->samples, l, q);

@@ -58,18 +58,32 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
   w[2] = u[0]*v[1] - u[1]*v[0];
 }
 
-BfVectors2 *bfVectors2NewEmpty() {
+BfVectors2 *bfVectors2New() {
   BF_ERROR_BEGIN();
 
   BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
   if (vectors == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  vectors->size = 0;
-  vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
-  vectors->isView = false;
+  bfVectors2Init(vectors);
+  HANDLE_ERROR();
 
-  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfPoint2));
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vectors;
+}
+
+BfVectors2 *bfVectors2NewEmpty(BfSize n) {
+  BF_ERROR_BEGIN();
+
+  BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
+  if (vectors == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  bfInitEmptyVectors2(vectors, n);
+  HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
@@ -114,6 +128,21 @@ BfVectors2 bfGetUninitializedVectors2() {
   return (BfVectors2) {.data = NULL, .size = 0};
 }
 
+void bfVectors2Init(BfVectors2 *vectors) {
+  BF_ERROR_BEGIN();
+
+  vectors->size = 0;
+  vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  vectors->isView = false;
+
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector2));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
   if (numVectors == 0) {
     bfSetError(BF_ERROR_INVALID_ARGUMENTS);
@@ -122,7 +151,7 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
 
   vectors->size = numVectors;
   vectors->capacity = 2*numVectors;
-  vectors->isView = true;
+  vectors->isView = false;
 
   vectors->data = bfMemAlloc(numVectors, sizeof(BfVector2));
   if (vectors->data == NULL)
@@ -167,6 +196,16 @@ void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
 
 void bfFreeVectors2(BfVectors2 *vectors) {
   bfMemFree(vectors->data);
+}
+
+void bfVectors2Dealloc(BfVectors2 **vectors) {
+  bfMemFree(*vectors);
+  *vectors = NULL;
+}
+
+void bfVectors2DeinitAndDealloc(BfVectors2 **vectors) {
+  bfFreeVectors2(*vectors);
+  bfVectors2Dealloc(vectors);
 }
 
 void bfGetVectorsByIndex(BfVectors2 const *vectors,

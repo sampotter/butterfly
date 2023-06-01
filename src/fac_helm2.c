@@ -38,7 +38,7 @@ getChildren(BfQuadtreeNode const *node, BfQuadtreeNode const *child[4]) {
   return numChildren;
 }
 
-static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,
+static BfMat *makeFirstFactor(BfQuadtree const *srcTree,
                               BfReal K, BfLayerPotential layerPot,
                               BfComplex const *alpha, BfComplex const *beta,
                               BfPtrArray const *srcLevelNodes,
@@ -79,7 +79,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
    * `colOffset[i + 1]` to the number of rows in each block row and
    * column */
   BfPoints2 srcPts, srcCircPts, tgtCircPts;
-  BfVectors2 srcNormals, srcCircNormals;
+  BfVectors2 *srcNormals = NULL, *srcCircNormals = NULL;
   for (BfSize i = 0; i < numBlocks; ++i) {
     /* get the current source node and its bounding circle */
     srcNode = bfPtrArrayGet(srcLevelNodes, i);
@@ -114,7 +114,7 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
 
     /* compute the shift matrix and store it in the current block */
     mat->super.block[i] = bfHelm2GetReexpansionMatrix(
-      &srcPts, &srcCircPts, &srcNormals, &srcCircNormals, &tgtCircPts,
+      &srcPts, &srcCircPts, srcNormals, srcCircNormals, &tgtCircPts,
       K, proxyLayerPot, alpha, beta);
     HANDLE_ERROR();
 
@@ -137,8 +137,11 @@ static BfMat *makeFirstFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTr
     bfFreePoints2(&srcCircPts);
 #endif
 
-    bfFreeVectors2(&srcNormals);
-    bfFreeVectors2(&srcCircNormals);
+    if (srcNormals != NULL)
+      bfVectors2DeinitAndDealloc(&srcNormals);
+
+    if (srcCircNormals != NULL)
+      bfVectors2DeinitAndDealloc(&srcCircNormals);
   }
 
   BF_ERROR_END() {
@@ -322,7 +325,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
    * butterfly factor */
 
   BfPoints2 srcChildPts, srcPts, tgtChildPts;
-  BfVectors2 srcChildNormals, srcNormals;
+  BfVectors2 *srcChildNormals, *srcNormals;
 
   blockIndex = 0;
 
@@ -358,7 +361,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
 
       /* compute the shift matrix for this configuration of circles */
       mat->super.block[blockIndex] = bfHelm2GetReexpansionMatrix(
-        &srcChildPts, &srcPts, &srcChildNormals, &srcNormals, &tgtChildPts,
+        &srcChildPts, &srcPts, srcChildNormals, srcNormals, &tgtChildPts,
         K, proxyLayerPot, alpha, beta);
       HANDLE_ERROR();
 
@@ -377,8 +380,11 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
       bfFreePoints2(&tgtChildPts);
 #endif
 
-      bfFreeVectors2(&srcChildNormals);
-      bfFreeVectors2(&srcNormals);
+      if (srcChildNormals != NULL)
+        bfVectors2DeinitAndDealloc(&srcChildNormals);
+
+      if (srcNormals != NULL)
+        bfVectors2DeinitAndDealloc(&srcNormals);
 
       ++blockIndex;
     } while (makeFactorIterNext(&srcIter));
@@ -394,7 +400,7 @@ static BfMat *makeFactor(BfMat const *prevMat, BfReal K, BfLayerPotential layerP
   return bfMatBlockCooToMat(mat);
 }
 
-static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTree, BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes, BfComplex const *alpha, BfComplex const *beta) {
+static BfMat *makeLastFactor(BfQuadtree const *tgtTree, BfMat const *prevMat, BfReal K, BfLayerPotential layerPot, BfPtrArray const *srcLevelNodes, BfPtrArray const *tgtLevelNodes, BfComplex const *alpha, BfComplex const *beta) {
   BF_ERROR_BEGIN();
 
   /* the current level of the target node tree shouldn't be empty */
@@ -427,7 +433,7 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
   HANDLE_ERROR();
 
   BfPoints2 srcCircPts, tgtPts;
-  BfVectors2 srcNormals, tgtNormals;
+  BfVectors2 *srcNormals, *tgtNormals;
 
   /* iterate over each node of the final level of the target node tree
    * and compute the matrix which will evaluate the potential at each
@@ -445,20 +451,16 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
 
     /* sample normals on the source circle */
     BfVectors2 *srcNormalsPtr = NULL;
-    if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
+    if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot])
       srcNormals = bfCircle2SampleUnitNormals(&srcCirc, prevNumRows);
-      srcNormalsPtr = &srcNormals;
-    }
 
     /* get the current set of target points */
     tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tgtTree);
 
     /* get the current target points' unit normals */
     BfVectors2 *tgtNormalsPtr = NULL;
-    if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
+    if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
       tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
-      tgtNormalsPtr = &tgtNormals;
-    }
 
     mat->super.block[i] = bfGetHelm2KernelMatrix(
       &srcCircPts, &tgtPts, srcNormalsPtr, tgtNormalsPtr, K, layerPot, alpha, beta);
@@ -484,13 +486,11 @@ static BfMat *makeLastFactor(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
     bfFreePoints2(&tgtPts);
 #endif
 
-    if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
-      bfFreeVectors2(&srcNormals);
-    }
+    if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot])
+      bfVectors2DeinitAndDealloc(&srcNormals);
 
-    if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
-      bfFreeVectors2(&tgtNormals);
-    }
+    if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
+      bfVectors2DeinitAndDealloc(&tgtNormals);
   }
 
   /* compute running sum of rows to get row offsets */
@@ -667,7 +667,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
   factor[0] = makeFirstFactor(
-    srcTree, tgtTree, K, layerPot, alpha, beta, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
+    srcTree, K, layerPot, alpha, beta, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
@@ -688,7 +688,7 @@ BfMatProduct *bfFacHelm2Make(BfQuadtree const *srcTree, BfQuadtree const *tgtTre
    * evaluation factor, which computes the potential at each target
    * point due to the charges on the final source circle */
   factor[numFactors - 1] = makeLastFactor(
-    srcTree, tgtTree, factor[numFactors - 2], K, layerPot, &srcLevelIter->levelNodes,
+    tgtTree, factor[numFactors - 2], K, layerPot, &srcLevelIter->levelNodes,
     &tgtLevelIter->levelNodes, alpha, beta);
   HANDLE_ERROR();
 
@@ -720,25 +720,20 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree
   BF_ERROR_BEGIN();
 
   BfPoints2 srcPts, tgtPts;
-  BfVectors2 srcNormals, *srcNormalsPtr = NULL;
-  BfVectors2 tgtNormals, *tgtNormalsPtr = NULL;
+  BfVectors2 *srcNormals = NULL, *tgtNormals = NULL;
 
   BfMat *Z = NULL;
 
   srcPts = bfQuadtreeNodeGetPoints(srcNode, srcTree);
   tgtPts = bfQuadtreeNodeGetPoints(tgtNode, tgtTree);
 
-  if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
+  if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot])
     srcNormals = bfQuadtreeNodeGetUnitNormals(srcNode, srcTree);
-    srcNormalsPtr = &srcNormals;
-  }
 
-  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
+  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
     tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
-    tgtNormalsPtr = &tgtNormals;
-  }
 
-  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, srcNormalsPtr, tgtNormalsPtr, K, layerPot, alpha, beta);
+  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, srcNormals, tgtNormals, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -748,13 +743,11 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree
   bfFreePoints2(&srcPts);
   bfFreePoints2(&tgtPts);
 
-  if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot]) {
-    bfFreeVectors2(&srcNormals);
-  }
+  if (BF_LAYER_POT_USES_SRC_NORMALS[layerPot])
+    bfVectors2DeinitAndDealloc(&srcNormals);
 
-  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot]) {
-    bfFreeVectors2(&tgtNormals);
-  }
+  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
+    bfVectors2DeinitAndDealloc(&tgtNormals);
 
   return Z;
 }

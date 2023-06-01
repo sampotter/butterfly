@@ -275,7 +275,7 @@ static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *current
 }
 
 /* Check the current relative error. */
-static void checkRelError(BfFacStreamer const *facStreamer, BfMat const *Phi, BfFac const *fac) {
+static void checkRelError(BfMat const *Phi, BfFac const *fac) {
   BfSize n = bfMatGetNumCols(Phi);
   if (n == 0) {
     bfLogInfo("- merged fac has no columns---skipping\n");
@@ -333,7 +333,7 @@ static void continueFactorizing(BfFacStreamer *facStreamer) {
     if (facStreamer->facSpec->compareRelativeErrors) {
       BfMat const *Phi = getPrevPhiViewByColNode(facStreamer, currentColNode);
       BF_ASSERT(Phi != NULL);
-      checkRelError(facStreamer, Phi, mergedFac);
+      checkRelError(Phi, mergedFac);
       bfMatDelete((BfMat **)&Phi);
     }
 
@@ -480,7 +480,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat *Phi) {
 #endif
 
   if (facStreamer->facSpec->compareRelativeErrors)
-    checkRelError(facStreamer, Phi, partialFac);
+    checkRelError(Phi, partialFac);
 
   /* We're done with this node---move to the next one before
    * continuing to factorize. */
