@@ -49,6 +49,8 @@ BfPoints2 bfGetUninitializedPoints2();
 void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points);
 void bfFreePoints2(BfPoints2 *points);
+void bfPoints2Dealloc(BfPoints2 **points);
+void bfPoints2DeinitAndDealloc(BfPoints2 **points);
 bool bfPoints2Initialized(BfPoints2 const *points);
 BfBbox2 bfPoints2GetBoundingBox(BfPoints2 const *points);
 void bfGetPointsByIndex(BfPoints2 const *points, BfSize numInds, BfSize const *inds, BfPoints2 *indexedPoints);

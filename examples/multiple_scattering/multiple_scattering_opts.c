@@ -163,8 +163,8 @@ bool parseArgs(Opts *opts, int argc, char *argv[]) {
     goto cleanup;
   }
   opts->alpha = isnan(*alphaRe->dval) && isnan(*alphaIm->dval) ?
-    -1j*opts->wavenumber :
-    *alphaRe->dval + *alphaIm->dval*1j;
+    -I*opts->wavenumber :
+    *alphaRe->dval + *alphaIm->dval*I;
 
   if (!(isnan(*betaRe->dval) && isnan(*betaIm->dval))
       && (!isfinite(*betaRe->dval) || !isfinite(*betaIm->dval))) {
@@ -174,7 +174,7 @@ bool parseArgs(Opts *opts, int argc, char *argv[]) {
   }
   opts->beta = isnan(*betaRe->dval) && isnan(*betaIm->dval) ?
     -1.0 :
-    *betaRe->dval + *betaIm->dval*1j;
+    *betaRe->dval + *betaIm->dval*I;
 
   if (!(isnan(*dx->dval) && isnan(*dy->dval))
       && (!isfinite(*dx->dval) || !isfinite(*dy->dval))) {

@@ -43,7 +43,7 @@ BfMat *bfLuDenseComplexSolve(BfLuDenseComplex const *luDenseComplex, BfMat const
   HANDLE_ERROR();
 
   BfSize m = bfMatGetNumRows(mat);
-  if (luDenseComplex->impl->m != m)
+  if ((BfSize)luDenseComplex->impl->m != m)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize n = bfMatGetNumCols(mat);
@@ -139,7 +139,7 @@ BfMat *bfLuDenseComplexGetMatView(BfLuDenseComplex *luDenseComplex) {
   HANDLE_ERROR();
 
   BfSize n = luDenseComplex->impl->m;
-  if (n != luDenseComplex->impl->n)
+  if (n != (BfSize)luDenseComplex->impl->n)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   BfComplex *ptr = luDenseComplex->impl->data;

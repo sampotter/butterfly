@@ -1000,7 +1000,8 @@ solve_matDenseComplex_tri(BfMatDenseComplex const *matDenseComplex, BfMat const 
   if (m != n)
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  if (bfMatGetNumRows(otherMat) != m);
+  if (bfMatGetNumRows(otherMat) != m)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BF_ASSERT(mat->props & BF_MAT_PROPS_TRI);
 

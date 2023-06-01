@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
@@ -24,28 +25,27 @@ BfPoints2 bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints) {
   return points;
 }
 
-BfVectors2 bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
+BfVectors2 *bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
   BF_ERROR_BEGIN();
 
   (void)circ; /* Don't actually use this... just for consistency in
                * the interface */
 
-  BfVectors2 unitNormals;
-
-  bfInitEmptyVectors2(&unitNormals, n);
+  BfVectors2 *unitNormals = bfVectors2NewEmpty(n);
   HANDLE_ERROR();
 
   BfReal const scale = BF_TWO_PI/n;
 
-  BfVector2 *vector = unitNormals.data;
+  BfVector2 *vector = unitNormals->data;
   for (BfSize i = 0; i < n; ++i) {
     BfReal theta = scale*i;
     vector[i][0] = cos(theta);
     vector[i][1] = sin(theta);
   }
 
-  BF_ERROR_END()
-    bfFreeVectors2(&unitNormals);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return unitNormals;
 }

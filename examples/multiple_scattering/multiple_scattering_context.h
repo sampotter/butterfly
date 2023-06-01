@@ -106,7 +106,7 @@ struct MultipleScatteringContext {
 };
 
 void init(MultipleScatteringContext *context, Opts const *opts);
-void deinit(MultipleScatteringContext *context, Opts *opts);
+void deinit(MultipleScatteringContext *context);
 
 void printInfo(MultipleScatteringContext const *context);
 void setUpGeometry(MultipleScatteringContext *context);

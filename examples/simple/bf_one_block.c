@@ -132,21 +132,19 @@ int main(int argc, char const *argv[]) {
   HANDLE_ERROR();
   puts("wrote source node points to srcNodePts.bin");
 
-  BfVectors2 tgtNodeNormals, *tgtNodeNormalsPtr = NULL;
+  BfVectors2 *tgtNodeNormals = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     tgtNodeNormals = bfQuadtreeNodeGetUnitNormals(quadtreeNodeTgt, quadtree);
     HANDLE_ERROR();
 
-    bfSaveVectors2(&tgtNodeNormals, "tgtNormals.bin");
+    bfSaveVectors2(tgtNodeNormals, "tgtNormals.bin");
     HANDLE_ERROR();
-
-    tgtNodeNormalsPtr = &tgtNodeNormals;
 
     puts("wrote target unit normals to tgtNormals.bin");
   }
 
   BfMat *Z_gt = bfGetHelm2KernelMatrix(
-    &srcNodePts, &tgtNodePts, NULL, tgtNodeNormalsPtr, K, layerPot, NULL, NULL);
+    &srcNodePts, &tgtNodePts, NULL, tgtNodeNormals, K, layerPot, NULL, NULL);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");

@@ -211,8 +211,18 @@ BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
   return ptr;
 }
 
+typedef struct {
+  BfPtrCmp ptrCmp;
+} PtrCmpWrapper;
+
+int ptrCmpWrapped(BfPtr ptr1, BfPtr ptr2, PtrCmpWrapper *wrapper) {
+  return wrapper->ptrCmp(ptr1, ptr2);
+}
+
 void bfPtrArraySort(BfPtrArray *arr, BfPtrCmp ptrCmp, BfPtr aux) {
-  bfSort(arr->data, arr->num_elts, sizeof(BfPtr), (BfCompar)ptrCmp, aux);
+  (void)aux;
+  PtrCmpWrapper wrapper = {.ptrCmp = ptrCmp};
+  bfSort(arr->data, arr->num_elts, sizeof(BfPtr), (BfCompar)ptrCmpWrapped, &wrapper);
 }
 
 void bfPtrArrayReverse(BfPtrArray *arr) {

@@ -48,4 +48,6 @@ void bfLuInit(BfLu *lu, BfLuVtable *vtbl) {
   lu->vtbl = vtbl;
 }
 
-void bfLuDeinit(BfLu *lu) {}
+void bfLuDeinit(BfLu *lu) {
+  (void)lu;
+}

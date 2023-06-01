@@ -380,7 +380,18 @@ void bfReadPoints2FromFile(char const *path, BfPoints2 *points) {
 }
 
 void bfFreePoints2(BfPoints2 *points) {
-  bfMemFree(points->data);
+  if (!points->isView)
+    bfMemFree(points->data);
+}
+
+void bfPoints2Dealloc(BfPoints2 **points) {
+  bfMemFree(*points);
+  *points = NULL;
+}
+
+void bfPoints2DeinitAndDealloc(BfPoints2 **points) {
+  bfFreePoints2(*points);
+  bfPoints2Dealloc(points);
 }
 
 bool bfPoints2Initialized(BfPoints2 const *points) {

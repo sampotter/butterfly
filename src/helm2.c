@@ -125,7 +125,7 @@ get_S_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt, BfReal K) {
 
 static BfMat *
 get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
-                       BfVectors2 const *Ntgt, BfReal K) {
+                     BfVectors2 const *Ntgt, BfReal K) {
   BF_ERROR_BEGIN();
 
   BfSize m = Xtgt->size; /* number of rows */
@@ -135,6 +135,9 @@ get_Sp_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   BfMatDenseComplex *kernelMat = NULL;
 
   if (K <= 0)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (Ntgt == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   /* length m*n array of pairwise dists in row major order */

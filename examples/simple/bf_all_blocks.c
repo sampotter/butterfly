@@ -80,17 +80,16 @@ int main(int argc, char const *argv[]) {
 
   BfSize numPoints = points->size;
 
-  BfVectors2 normals, *normalsPtr = NULL;
+  BfVectors2 *normals = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
-    bfReadVectors2FromFile(normals_path_str, &normals);
+    normals = bfVectors2NewFromFile(normals_path_str);
     HANDLE_ERROR();
     printf("read unit normals from %s\n", normals_path_str);
-    normalsPtr = &normals;
   }
 
   bfToc();
   BfQuadtree quadtree;
-  bfQuadtreeInit(&quadtree, points, normalsPtr);
+  bfQuadtreeInit(&quadtree, points, normals);
   HANDLE_ERROR();
   printf("built quadtree [%0.2fs]\n", bfToc());
 
@@ -106,17 +105,17 @@ int main(int argc, char const *argv[]) {
   BfPoints2 const *pointsPerm = bfPoints2ConstViewFromMat(pointsPermMat);
 
   BfMat *normalsPermMat = NULL;
-  BfVectors2 const *normalsPermPtr = NULL;
+  BfVectors2 const *normalsPerm = NULL;
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     normalsPermMat = bfMatFromFile(normals_path_str, -1, 2, BF_DTYPE_REAL);
     HANDLE_ERROR();
     bfMatPermuteRows(normalsPermMat, &revPerm);
-    normalsPermPtr = bfVectors2ConstViewFromMat(normalsPermMat);
+    normalsPerm = bfVectors2ConstViewFromMat(normalsPermMat);
   }
 
   bfToc();
   BfMat *A_dense = bfGetHelm2KernelMatrix(
-    pointsPerm, pointsPerm, NULL, normalsPermPtr, K, layerPot, NULL, NULL);
+    pointsPerm, pointsPerm, NULL, normalsPerm, K, layerPot, NULL, NULL);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #else
   bfToc();
@@ -154,6 +153,8 @@ int main(int argc, char const *argv[]) {
   BfReal rel_err_l2 =
     *bfVecToVecReal(err2)->data / *bfVecToVecReal(y_dense_norm)->data;
   printf("relative l2 error: %g [%0.2fs]\n", rel_err_l2, bfToc());
+  bfVecDelete(&err2);
+  bfVecDelete(&y_dense_norm);
 
   FILE *fp = fopen(blocks_path_str, "w");
   bfPrintBlocks(A_BF, 2, fp);
@@ -181,6 +182,7 @@ int main(int argc, char const *argv[]) {
     bfMatSetCol(A_BF_dense, j, ajVecView);
     bfVecDelete(&ajVecView);
     bfMatDelete(&aj);
+    bfMatDelete(&ej);
   }
   printf("sampled dense version of BF'd kernel matrix [%0.2fs]\n", bfToc());
 
@@ -196,8 +198,19 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&A_BF);
   bfMatDelete(&A_dense);
   bfQuadtreeDeinit(&quadtree);
+#if COMPARE_KERNEL_MATRICES
+  bfMatDelete(&A_BF_dense);
+#endif
 #if PERM_DENSE
+  bfPoints2DeinitAndDealloc((BfPoints2 **)&pointsPerm);
   bfMatDelete(&pointsPermMat);
+  if (normalsPerm)
+    bfVectors2DeinitAndDealloc((BfVectors2 **)&normalsPerm);
+  if (normalsPermMat)
+    bfMatDelete(&normalsPermMat);
 #endif
   bfMatDelete(&pointsMat);
+  bfPermDeinit(&revPerm);
+  if (normals != NULL)
+    bfVectors2DeinitAndDealloc(&normals);
 }
