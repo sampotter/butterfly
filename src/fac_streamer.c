@@ -99,8 +99,6 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
 }
 
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
-  facStreamer->facSpec = NULL;
-
   bfTreeIterDelete(&facStreamer->colTreeIter);
 
   bfPermDeinit(&facStreamer->rowTreeReversePerm);
@@ -111,13 +109,17 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
   }
   bfPtrArrayDeinit(&facStreamer->partialFacs);
 
-  for (BfSize i = 0; i < bfPtrArraySize(facStreamer->prevPhis); ++i) {
-    MatWithTreeNodeKey *entry = bfPtrArrayGet(facStreamer->prevPhis, i);
-    BF_ASSERT(!bfMatIsView(entry->mat));
-    bfMatDelete(&entry->mat);
-    bfMemFree(entry);
+  if (facStreamer->facSpec->compareRelativeErrors) {
+    for (BfSize i = 0; i < bfPtrArraySize(facStreamer->prevPhis); ++i) {
+      MatWithTreeNodeKey *entry = bfPtrArrayGet(facStreamer->prevPhis, i);
+      BF_ASSERT(!bfMatIsView(entry->mat));
+      bfMatDelete(&entry->mat);
+      bfMemFree(entry);
+    }
+    bfPtrArrayDelete(&facStreamer->prevPhis);
   }
-  bfPtrArrayDelete(&facStreamer->prevPhis);
+
+  facStreamer->facSpec = NULL;
 }
 
 void bfFacStreamerDealloc(BfFacStreamer **facStreamer) {
