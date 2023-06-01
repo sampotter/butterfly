@@ -1716,8 +1716,11 @@ bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A,
   if (error != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR)
 
-  BF_ERROR_END()
-    free(ipiv);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  free(ipiv);
 
   return X;
 }

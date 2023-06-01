@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error_macros.h>
 #include <bf/fac_helm2.h>
-#include "bf/geom.h"
+#include <bf/geom.h>
 #include <bf/helm2.h>
 #include <bf/layer_pot.h>
 #include <bf/linalg.h>
@@ -251,5 +252,47 @@ int main(int argc, char const *argv[]) {
   printf("- dense GMRES: %g\n", error_l2_dense_GMRES/phi_l2_norm);
   printf("- BF GMRES: %g\n", error_l2_BF_GMRES/phi_l2_norm);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMatDelete(&X);
+  bfMatDelete(&N);
+  bfVecDelete(&w);
+  bfMatDelete(&Xsrc);
+  bfMatDelete(&Xtgt);
+
+  bfPoints2DeinitAndDealloc((BfPoints2 **)&X_points);
+  bfPoints2DeinitAndDealloc((BfPoints2 **)&X_source_points);
+  bfPoints2DeinitAndDealloc((BfPoints2 **)&X_target_points);
+  bfVectors2DeinitAndDealloc((BfVectors2 **)&N_vectors);
+
+  bfQuadtreeDeinit(&quadtree);
+  bfPermDeinit(&revPerm);
+
+  bfMatDelete(&phi_in);
+  bfMatDelete(&phi_in_perm);
+  bfMatDelete(&oneHalfEye);
+
+  bfMatDelete(&A_dense);
+  bfMatDelete(&A_BF);
+  bfVecDelete(&w_perm);
+
+  bfMatDelete(&y_test_dense);
+  bfMatDelete(&y_test_BF);
+
+  bfMatDelete(&sigma_dense_LU);
+  bfMatDelete(&sigma_dense_GMRES);
+  bfMatDelete(&sigma_BF_GMRES);
+
+  bfMatDelete(&G_eval);
+  bfMatDelete(&phi_exact);
+  bfMatDelete(&phi_dense_LU);
+  bfMatDelete(&phi_dense_GMRES);
+  bfMatDelete(&phi_BF_GMRES);
+
+  bfVecDelete(&error_l2_dense_LU_vec);
+  bfVecDelete(&error_l2_dense_GMRES_vec);
+  bfVecDelete(&error_l2_BF_GMRES_vec);
+  bfVecDelete(&phi_l2_norm_vec);
 }
