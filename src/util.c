@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_diag.h>
+#include <bf/mem.h>
 
 #include "macros.h"
 
@@ -40,6 +42,35 @@ void bfSizeSetConstant(BfSize numSizes, BfSize *size, BfSize value) {
 void bfSizeRunningSum(BfSize numSizes, BfSize *size) {
   for (BfSize i = 1; i < numSizes; ++i)
     size[i] += size[i - 1];
+}
+
+bool bfSizeIsPerm(BfSize n, BfSize const *size) {
+  BF_ERROR_BEGIN();
+
+  bool isPerm = true;
+
+  bool *found = bfMemAllocAndZero(n, sizeof(bool));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < n; ++i) {
+    if (size[i] >= n || found[size[i]]) {
+      isPerm = false;
+      break;
+    }
+    found[size[i]] = true;
+  }
+
+#if BF_DEBUG
+  if (isPerm) for (BfSize i = 0; i < n; ++i) BF_ASSERT(found[i]);
+#endif
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(found);
+
+  return isPerm;
 }
 
 static void printBlocksRec(BfMat const *mat,
