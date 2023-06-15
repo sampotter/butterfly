@@ -348,8 +348,8 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
   /* Set `zeroInds` to the indices of the boundary edges which contain
    * zeros of the normal derivative in their interior: */
 
-  BfSize numIntZeros = 0;
-  BfSize intZeroInds[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
+  BfSizeArray *interiorZeroInds = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
 
   for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i) {
     /* Get the normal derivative at the edge endpoints */
@@ -361,24 +361,17 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
     /* Record this index if there's a zero in the interior of the
      * `i`th boundary edge: */
-    if ((dudn[0] < 0 && dudn[1] > 0) || (dudn[1] < 0 && dudn[0] > 0)) {
-      BF_ASSERT(numIntZeros < 2);
-      intZeroInds[numIntZeros++] = i;
-    }
+    if ((dudn[0] < 0 && dudn[1] > 0) || (dudn[1] < 0 && dudn[0] > 0))
+      bfSizeArrayAppend(interiorZeroInds, i);
   }
-
-  /* Topologically, there should never be more than two interior zeros
-   * (there will either be 0 or 2 actual zeros, but if a zero lies
-   * exactly on a boundary vertex, we don't need to insert it): */
-  BF_ASSERT(numIntZeros <= 2);
 
   BfTrimesh *trimeshFixed = bfTrimeshCopy(trimesh);
   HANDLE_ERROR();
 
   /* Insert interior zeros now if we found any: */
-  if (numIntZeros > 0) {
-    for (BfSize k = 0; k < numIntZeros; ++k) {
-      BfSize boundaryEdgeInd = intZeroInds[k];
+  if (!bfSizeArrayIsEmpty(interiorZeroInds)) {
+    for (BfSize k = 0; k < bfSizeArrayGetSize(interiorZeroInds); ++k) {
+      BfSize boundaryEdgeInd = bfSizeArrayGet(interiorZeroInds, k);
       BfSize const *boundaryEdge = trimesh->boundaryEdges[boundaryEdgeInd];
 
       BfReal dudn[2];
