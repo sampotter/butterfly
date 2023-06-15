@@ -69,8 +69,7 @@ BfQuadtreeNode *bfQuadtreeNodeNew() {
   BF_ERROR_BEGIN();
 
   BfQuadtreeNode *node = bfMemAlloc(1, sizeof(BfQuadtreeNode));
-  if (node == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   BF_ERROR_END() {}
 
