@@ -23,6 +23,7 @@ BfVec *bfVecGetSubvecCopy(BfVec const *, BfSize, BfSize);
 BfVec *bfVecGetSubvecView(BfVec *, BfSize, BfSize);
 BfVec const *bfVecGetSubvecViewConst(BfVec const *, BfSize, BfSize);
 void bfVecSetRange(BfVec *, BfSize, BfSize, BfVec const *);
+void bfVecSetMask(BfVec *, bool const *, BfVec const *);
 void bfVecPrint(BfVec const *, FILE *);
 BfReal bfVecDist(BfVec const *, BfVec const *);
 BfReal bfVecDistMax(BfVec const *, BfVec const *);
@@ -49,6 +50,7 @@ typedef struct BfVecVtable {
   __typeof__(&bfVecGetSubvecView) GetSubvecView;
   __typeof__(&bfVecGetSubvecViewConst) GetSubvecViewConst;
   __typeof__(&bfVecSetRange) SetRange;
+  __typeof__(&bfVecSetMask) SetMask;
   __typeof__(&bfVecPrint) Print;
   __typeof__(&bfVecDist) Dist;
   __typeof__(&bfVecDistMax) DistMax;

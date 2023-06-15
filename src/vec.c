@@ -51,6 +51,10 @@ void bfVecSetRange(BfVec *vec, BfSize i0, BfSize i1, BfVec const *otherVec) {
   vec->vtbl->SetRange(vec, i0, i1, otherVec);
 }
 
+void bfVecSetMask(BfVec *vec, bool const *mask, BfVec const *otherVec) {
+  vec->vtbl->SetMask(vec, mask, otherVec);
+}
+
 /* Compute the Euclidean distance between `vec` and `otherVec`. */
 BfReal bfVecDist(BfVec const *vec, BfVec const *otherVec) {
   return vec->vtbl->Dist(vec, otherVec);

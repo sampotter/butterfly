@@ -13,6 +13,7 @@ BfReal bfPoint3Dist(BfPoint3 const p, BfPoint3 const q);
 void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv);
 void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt);
 void bfPoint3Copy(BfPoint3 x, BfPoint3 const y);
+bool bfPoint3Equal(BfPoint3 const x, BfPoint3 const y);
 
 struct BfPoints1 {
   BfPoint1 *data;
@@ -66,10 +67,26 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1);
 struct BfPoints3 {
   BfPoint3 *data;
   BfSize size;
+  BfSize capacity;
+  bool isView;
 };
 
-void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints);
-void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path);
+BfPoints3 *bfPoints3NewFromBinaryFile(char const *path);
+BfPoints3 *bfPoints3NewWithDefaultCapacity();
+BfPoints3 *bfPoints3Copy(BfPoints3 const *points);
+void bfPoints3InitWithDefaultCapacity(BfPoints3 *points);
 void bfPoints3Deinit(BfPoints3 *points);
+void bfPoints3Dealloc(BfPoints3 **points);
+void bfPoints3DeinitAndDealloc(BfPoints3 **points);
 BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points);
 void bfPoints3GetByIndex(BfPoints3 const *points, BfSize numInds, BfSize const *inds, BfPoints3 *indexedPoints);
+BfReal const *bfPoints3GetPtrConst(BfPoints3 const *points, BfSize i);
+void bfPoints3Append(BfPoints3 *points, BfPoint3 const point);
+void bfPoints3Extend(BfPoints3 *points, BfPoints3 const *newPoints);
+bool bfPoints3Contains(BfPoints3 const *points, BfPoint3 const point);
+BfSize bfPoints3GetSize(BfPoints3 const *points);
+BfSize bfPoints3Find(BfPoints3 const *points, BfPoint3 const point);
+void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point);
+void bfPoints3Delete(BfPoints3 *points, BfSize i);
+bool bfPoints3AllUnique(BfPoints3 const *points);
+void bfPoints3Save(BfPoints3 const *points, char const *path);

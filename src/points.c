@@ -61,6 +61,10 @@ void bfPoint3Copy(BfPoint3 x, BfPoint3 const y) {
   x[2] = y[2];
 }
 
+bool bfPoint3Equal(BfPoint3 const x, BfPoint3 const y) {
+  return x[0] == y[0] && x[1] == y[1] && x[2] == y[2];
+}
+
 BfPoints2 *bfPoints2NewEmpty() {
   BF_ERROR_BEGIN();
 
@@ -563,21 +567,27 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
 
 /** Implementation: Points3 */
 
-void bfPoints3InitEmpty(BfPoints3 *points, BfSize numPoints) {
-  if (numPoints == 0) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
+BfPoints3 *bfPoints3NewWithDefaultCapacity() {
+  BF_ERROR_BEGIN();
+
+  BfPoints3 *points = bfMemAlloc(1, sizeof(BfPoints3));
+  HANDLE_ERROR();
+
+  bfPoints3InitWithDefaultCapacity(points);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
-  points->size = numPoints;
-
-  points->data = bfMemAlloc(numPoints, sizeof(BfPoint3));
-  if (points->data == NULL)
-    bfSetError(BF_ERROR_MEMORY_ERROR);
+  return points;
 }
 
-void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
+BfPoints3 *bfPoints3NewFromBinaryFile(char const *path) {
   BF_ERROR_BEGIN();
+
+  BfPoints3 *points = bfMemAlloc(1, sizeof(BfPoints3));
+  HANDLE_ERROR();
 
   /* open the file for reading */
   FILE *fp = fopen(path, "r");
@@ -590,16 +600,15 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
   fseek(fp, 0, SEEK_SET);
 
   /* make sure the binary file is the right size */
-  if (size % sizeof(BfPoint3) != 0)
+  if (size == 0 || size % sizeof(BfPoint3) != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* get the number of points */
-  points->size = size/sizeof(BfPoint3);
+  points->size = points->capacity = size/sizeof(BfPoint3);
 
   /* allocate space for the points */
   points->data = bfMemAlloc(size, sizeof(char));
-  if (points->data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   /* read them in */
   fread(points->data, sizeof(BfPoint3), points->size, fp);
@@ -610,13 +619,66 @@ void bfPoints3InitFromBinaryFile(BfPoints3 *points, char const *path) {
   }
 
   fclose(fp);
+
+  return points;
+}
+
+BfPoints3 *bfPoints3Copy(BfPoints3 const *points) {
+  BF_ERROR_BEGIN();
+
+  BfPoints3 *pointsCopy = bfMemAlloc(1, sizeof(BfPoints3));
+  HANDLE_ERROR();
+
+  pointsCopy->data = bfMemAlloc(points->size, sizeof(BfPoint3));
+  HANDLE_ERROR();
+
+  bfMemCopy(points->data, points->size, sizeof(BfPoint3), pointsCopy->data);
+
+  pointsCopy->size = points->size;
+  pointsCopy->capacity = points->size;
+  pointsCopy->isView = false;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return pointsCopy;
+}
+
+void bfPoints3InitWithDefaultCapacity(BfPoints3 *points) {
+  BF_ERROR_BEGIN();
+
+  points->size = 0;
+  points->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  points->isView = false;
+
+  points->data = bfMemAlloc(points->capacity, sizeof(BfPoint3));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfPoints3Deinit(BfPoints3 *points) {
-  bfMemFree(points->data);
-  points->data = NULL;
+  if (!points->isView) {
+    bfMemFree(points->data);
+    points->data = NULL;
+  }
 
   points->size = BF_SIZE_BAD_VALUE;
+  points->capacity = BF_SIZE_BAD_VALUE;
+  points->isView = false;
+}
+
+void bfPoints3Dealloc(BfPoints3 **points) {
+  bfMemFree(*points);
+  *points = NULL;
+}
+
+void bfPoints3DeinitAndDealloc(BfPoints3 **points) {
+  bfPoints3Deinit(*points);
+  bfPoints3Dealloc(points);
 }
 
 BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
@@ -639,13 +701,141 @@ BfBoundingBox3 bfPoints3GetBoundingBox(BfPoints3 const *points) {
 void bfPoints3GetByIndex(BfPoints3 const *points, BfSize numInds, BfSize const *inds, BfPoints3 *indexedPoints) {
   BF_ERROR_BEGIN();
 
-  bfPoints3InitEmpty(indexedPoints, numInds);
+  bfPoints3InitWithDefaultCapacity(indexedPoints);
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < numInds; ++i)
-    bfPoint3Copy(indexedPoints->data[i], points->data[inds[i]]);
+    bfPoints3Append(indexedPoints, points->data[inds[i]]);
 
   BF_ERROR_END() {
-    bfPoints3Deinit(indexedPoints);
+    BF_DIE();
   }
+}
+
+BfReal const *bfPoints3GetPtrConst(BfPoints3 const *points, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfReal const *point = NULL;
+
+  if (i >= points->size)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  point = points->data[i];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return point;
+}
+
+void bfPoints3Append(BfPoints3 *points, BfPoint3 const point) {
+  BF_ERROR_BEGIN();
+
+  if (points->size == points->capacity) {
+    BfSize newCapacity = 2*points->capacity;
+
+    BfPoint3 *newData = bfMemRealloc(points->data, newCapacity, sizeof(BfPoint3));
+    HANDLE_ERROR();
+
+    points->capacity = newCapacity;
+    points->data = newData;
+  }
+
+  bfPoint3Copy(points->data[points->size++], point);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfPoints3Extend(BfPoints3 *points, BfPoints3 const *newPoints) {
+  BF_ERROR_BEGIN();
+
+  for (BfSize i = 0; i < newPoints->size; ++i) {
+    bfPoints3Append(points, bfPoints3GetPtrConst(newPoints, i));
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+bool bfPoints3Contains(BfPoints3 const *points, BfPoint3 const point) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (bfPoint3Equal(points->data[i], point))
+      return true;
+  return false;
+}
+
+BfSize bfPoints3GetSize(BfPoints3 const *points) {
+  return points->size;
+}
+
+BfSize bfPoints3Find(BfPoints3 const *points, BfPoint3 const point) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (bfPoint3Equal(points->data[i], point))
+      return i;
+  return BF_SIZE_BAD_VALUE;
+}
+
+void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point) {
+  BF_ERROR_BEGIN();
+
+  if (i >= points->size)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  bfPoint3Copy(points->data[i], point);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfPoints3Delete(BfPoints3 *points, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfSize n = points->size;
+
+  if (points->isView)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  if (i >= n)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfPoint3 *ptr = points->data;
+
+  bfMemMove(ptr + i + 1, n - i - 1, sizeof(BfPoint3), ptr + i);
+
+  --points->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+bool bfPoints3AllUnique(BfPoints3 const *points) {
+  BfSize n = points->size;
+  for (BfSize i = 0; i < n; ++i)
+    for (BfSize j = i + 1; j < n; ++j)
+      if (bfPoint3Equal(points->data[i], points->data[j]))
+        return false;
+  return true;
+}
+
+void bfPoints3Save(BfPoints3 const *points, char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(points->data, sizeof(BfPoint3), points->size, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
 }

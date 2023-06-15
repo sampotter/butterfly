@@ -1,3 +1,4 @@
+subdir('fiedler_tree')
 subdir('lbo')
 subdir('multiple_scattering')
 subdir('simple')

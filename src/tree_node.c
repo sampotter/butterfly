@@ -18,6 +18,10 @@ void bfTreeNodeDelete(BfTreeNode **treeNode) {
 
 /** Implementation: TreeNode */
 
+void bfTreeNodeInitRoot(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, BfTree const *tree, BfSize maxNumChildren) {
+  bfTreeNodeInit(treeNode, vtbl, true, (void *)tree, maxNumChildren, BF_SIZE_BAD_VALUE, 0);
+}
+
 void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot,
                     void *parent, BfSize maxNumChildren, BfSize index,
                     BfSize depth) {

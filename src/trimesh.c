@@ -1,15 +1,101 @@
 #include <bf/trimesh.h>
 
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <bf/assert.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
-#include <bf/points.h>
+#include <bf/real_array.h>
 #include <bf/util.h>
+#include <bf/vectors.h>
+
+#include "macros.h"
+
+BfTrimesh *bfTrimeshCopy(BfTrimesh const *trimesh) {
+  BF_ERROR_BEGIN();
+
+  BfTrimesh *trimeshCopy = bfMemAlloc(1, sizeof(BfTrimesh));
+  HANDLE_ERROR();
+
+  trimeshCopy->verts = bfPoints3Copy(trimesh->verts);
+  HANDLE_ERROR();
+
+  trimeshCopy->faces = bfMemAllocCopy(trimesh->faces, trimesh->numFaces, sizeof(BfSize3));
+  HANDLE_ERROR();
+
+  trimeshCopy->numFaces = trimesh->numFaces;
+
+  trimeshCopy->edges = bfMemAllocCopy(trimesh->edges, trimesh->numEdges, sizeof(BfSize2));
+  HANDLE_ERROR();
+
+  trimeshCopy->numEdges = trimesh->numEdges;
+
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
+
+  trimeshCopy->vfOffset = bfMemAllocCopy(trimesh->vfOffset, numVerts + 1, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  trimeshCopy->vf = bfMemAllocCopy(trimesh->vf, trimesh->vfOffset[numVerts], sizeof(BfSize));
+  HANDLE_ERROR();
+
+  trimeshCopy->vvOffset = bfMemAllocCopy(trimesh->vvOffset, numVerts + 1, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  trimeshCopy->vv = bfMemAllocCopy(trimesh->vv, trimesh->vvOffset[numVerts], sizeof(BfSize));
+  HANDLE_ERROR();
+
+  trimeshCopy->isBoundaryEdge = bfMemAllocCopy(trimesh->isBoundaryEdge, trimesh->numEdges, sizeof(bool));
+  HANDLE_ERROR();
+
+  trimeshCopy->isBoundaryVert = bfMemAllocCopy(trimesh->isBoundaryVert, numVerts, sizeof(bool));
+  HANDLE_ERROR();
+
+  trimeshCopy->boundaryEdges = bfMemAllocCopy(trimesh->boundaryEdges, trimesh->numBoundaryEdges, sizeof(BfSize2));
+  HANDLE_ERROR();
+
+  trimeshCopy->numBoundaryEdges = trimesh->numBoundaryEdges;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return trimeshCopy;
+}
+
+BfTrimesh *bfTrimeshNewFromObjFile(char const *objPath) {
+  BF_ERROR_BEGIN();
+
+  BfTrimesh *trimesh = bfMemAlloc(1, sizeof(BfTrimesh));
+  HANDLE_ERROR();
+
+  bfTrimeshInitFromObjFile(trimesh, objPath);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return trimesh;
+}
+
+BfTrimesh *bfTrimeshNewFromVertsAndFaces(BfPoints3 const *verts, BfSize numFaces, BfSize3 const *faces) {
+  BF_ERROR_BEGIN();
+
+  BfTrimesh *trimesh = bfMemAlloc(1, sizeof(BfTrimesh));
+  HANDLE_ERROR();
+
+  bfTrimeshInitFromVertsAndFaces(trimesh, verts, numFaces, faces);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return trimesh;
+}
 
 static void initVf(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
@@ -174,12 +260,166 @@ static void initVv(BfTrimesh *trimesh) {
   BF_ERROR_END() {}
 }
 
+int compar(BfSize2 const elt1, BfSize2 const elt2) {
+  return elt1[0] == elt2[0] ? elt1[1] - elt2[1] : elt1[0] - elt2[0];
+}
+
+static void initEdges(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  BfSize numEdges = 0;
+  BfSize capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  BfSize2 *edges = bfMemAlloc(capacity, sizeof(BfSize2));
+  HANDLE_ERROR();
+
+  /* Iterate over each pair of adjacent vertices: */
+  for (BfSize i0 = 0; i0 < bfTrimeshGetNumVerts(trimesh); ++i0) {
+    for (BfSize j = trimesh->vvOffset[i0]; j < trimesh->vvOffset[i0 + 1]; ++j) {
+      BfSize i1 = trimesh->vv[j];
+
+      /* Set up the edge (represented as a sorted index pair for
+       * uniqueness): */
+      BfSize2 edge = {i0, i1};
+      SORT2(edge[0], edge[1]);
+
+      /* Check if we already added this edge: */
+      bool found = false;
+      for (BfSize k = 0; k < numEdges; ++k) {
+        if (!compar(edge, edges[k])) {
+          found = true;
+          break;
+        }
+      }
+      if (found) continue;
+
+      /* Grow the edge array now if we need to: */
+      if (numEdges == capacity) {
+        capacity *= 2;
+        BfSize2 *newEdges = bfMemRealloc(edges, capacity, sizeof(BfSize2));
+        HANDLE_ERROR();
+
+        edges = newEdges;
+      }
+
+      bfMemCopy(edge, 1, sizeof(BfSize2), edges[numEdges++]);
+    }
+  }
+
+  trimesh->numEdges = numEdges;
+
+  trimesh->edges = bfMemRealloc(edges, numEdges, sizeof(BfSize2));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void initBoundaryInfo(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  trimesh->isBoundaryEdge = bfMemAllocAndZero(trimesh->numEdges, sizeof(bool));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BfSize2 edge = {trimesh->faces[i][j], trimesh->faces[i][(j + 1) % 3]};
+      SORT2(edge[0], edge[1]);
+
+      BfSize k = 0;
+      for (; k < trimesh->numEdges; ++k)
+        if (trimesh->edges[k][0] == edge[0] && trimesh->edges[k][1] == edge[1])
+          break;
+
+      trimesh->isBoundaryEdge[k] = !trimesh->isBoundaryEdge[k];
+    }
+  }
+
+  trimesh->isBoundaryVert = bfMemAllocAndZero(bfTrimeshGetNumVerts(trimesh), sizeof(bool));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numEdges; ++i)
+    if (trimesh->isBoundaryEdge[i])
+      for (BfSize j = 0; j < 2; ++j)
+        trimesh->isBoundaryVert[trimesh->edges[i][j]] = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void initBoundaryEdges(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  trimesh->numBoundaryEdges = 0;
+  for (BfSize i = 0; i < trimesh->numEdges; ++i)
+    if (trimesh->isBoundaryEdge[i])
+      ++trimesh->numBoundaryEdges;
+
+  trimesh->boundaryEdges = bfMemAlloc(trimesh->numBoundaryEdges, sizeof(BfSize2));
+  HANDLE_ERROR();
+
+  BfSize j = 0;
+  for (BfSize i = 0; i < trimesh->numEdges; ++i)
+    if (trimesh->isBoundaryEdge[i])
+      bfMemCopy(trimesh->edges[i], 1, sizeof(BfSize2), trimesh->boundaryEdges[j++]);
+  BF_ASSERT(j == trimesh->numBoundaryEdges);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void initCommon(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  initVf(trimesh);
+  HANDLE_ERROR();
+
+  initVv(trimesh);
+  HANDLE_ERROR();
+
+  initEdges(trimesh);
+  HANDLE_ERROR();
+
+  initBoundaryInfo(trimesh);
+  HANDLE_ERROR();
+
+  initBoundaryEdges(trimesh);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void rebuildMesh(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  bfMemFree(trimesh->edges);
+  bfMemFree(trimesh->vfOffset);
+  bfMemFree(trimesh->vf);
+  bfMemFree(trimesh->vvOffset);
+  bfMemFree(trimesh->vv);
+  bfMemFree(trimesh->isBoundaryEdge);
+  bfMemFree(trimesh->isBoundaryVert);
+  bfMemFree(trimesh->boundaryEdges);
+
+  initCommon(trimesh);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
                                   char const *vertsPath,
                                   char const *facesPath) {
   BF_ERROR_BEGIN();
 
-  bfPoints3InitFromBinaryFile(&trimesh->verts, vertsPath);
+  trimesh->verts = bfPoints3NewFromBinaryFile(vertsPath);
+  HANDLE_ERROR();
 
   /* Get the face count */
 
@@ -199,10 +439,7 @@ void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
   bfReadFileToMemory(facesPath, numBytes, (BfByte *)trimesh->faces);
   HANDLE_ERROR();
 
-  initVf(trimesh);
-  HANDLE_ERROR();
-
-  initVv(trimesh);
+  initCommon(trimesh);
   HANDLE_ERROR();
 
   BF_ERROR_END() {}
@@ -252,7 +489,7 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 
   /* Allocate space for the vertices and faces */
 
-  bfPoints3InitEmpty(&trimesh->verts, num_verts);
+  trimesh->verts = bfPoints3NewWithDefaultCapacity();
   HANDLE_ERROR();
 
   trimesh->numFaces = num_face_vertex_indices;
@@ -280,10 +517,12 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
     tok = strtok_r(lineptr, " ", &saveptr);
 
     if (!strcmp(tok, "v")) {
+      BfPoint3 vert;
       for (size_t i = 0; i < 3; ++i) {
         tok = strtok_r(NULL, " ", &saveptr);
-        trimesh->verts.data[v_index][i] = strtod(tok, NULL);
+        vert[i] = strtod(tok, NULL);
       }
+      bfPoints3Append(trimesh->verts, vert);
       ++v_index;
     }
 
@@ -318,20 +557,41 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
     bfMemFree(lineptr);
   } while (nread >= 0);
 
-  initVf(trimesh);
+  BF_ASSERT(bfTrimeshGetNumVerts(trimesh) == num_verts);
+
+  initCommon(trimesh);
   HANDLE_ERROR();
 
-  initVv(trimesh);
-  HANDLE_ERROR();
-
-  BF_ERROR_END()
-    bfTrimeshDeinit(trimesh);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   fclose(fp);
 }
 
+void bfTrimeshInitFromVertsAndFaces(BfTrimesh *trimesh, BfPoints3 const *verts, BfSize numFaces, BfSize3 const *faces) {
+  BF_ERROR_BEGIN();
+
+  trimesh->verts = bfPoints3Copy(verts);
+  HANDLE_ERROR();
+
+  trimesh->faces = bfMemAlloc(numFaces, sizeof(BfSize3));
+  HANDLE_ERROR();
+
+  bfMemCopy(faces, numFaces, sizeof(BfSize3), trimesh->faces);
+
+  trimesh->numFaces = numFaces;
+
+  initCommon(trimesh);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfTrimeshDeinit(BfTrimesh *trimesh) {
-  bfPoints3Deinit(&trimesh->verts);
+  bfPoints3DeinitAndDealloc(&trimesh->verts);
 
   bfMemFree(trimesh->faces);
   trimesh->faces = NULL;
@@ -351,8 +611,18 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
   trimesh->vv = NULL;
 }
 
+void bfTrimeshDealloc(BfTrimesh **trimesh) {
+  (void)trimesh;
+  BF_DIE();
+}
+
+void bfTrimeshDeinitAndDealloc(BfTrimesh **trimesh) {
+  (void)trimesh;
+  BF_DIE();
+}
+
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {
-  return trimesh->verts.size;
+  return trimesh->verts->size;
 }
 
 BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh) {
@@ -360,7 +630,24 @@ BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh) {
 }
 
 void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x) {
-  bfMemCopy(trimesh->verts.data[i], 1, sizeof(BfPoint3), x);
+  bfMemCopy(trimesh->verts->data[i], 1, sizeof(BfPoint3), x);
+}
+
+BfReal const *bfTrimeshGetVertPtrConst(BfTrimesh const *trimesh, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfReal const *vert = NULL;
+
+  if (i >= bfTrimeshGetNumVerts(trimesh))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  vert = trimesh->verts->data[i];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vert;
 }
 
 void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex,
@@ -374,4 +661,378 @@ void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex,
   while (F[k] == *i0 || F[k] == i) ++k;
   *i1 = F[k];
   BF_ASSERT(*i1 != *i0 && *i1 != i);
+}
+
+BfSize bfTrimeshGetBoundaryFaceIndexByBoundaryEdge(BfTrimesh const *trimesh, BfSize2 const boundaryEdge) {
+  BF_ERROR_BEGIN();
+
+  BfSize faceIndex = BF_SIZE_BAD_VALUE;
+
+  if (boundaryEdge[0] >= boundaryEdge[1])
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (boundaryEdge[0] == BF_SIZE_BAD_VALUE || boundaryEdge[1] == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize edgeIndex = bfTrimeshGetEdgeIndex(trimesh, boundaryEdge);
+  if (edgeIndex == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (!trimesh->isBoundaryEdge[edgeIndex])
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BfSize2 faceEdge = {
+        trimesh->faces[i][j],
+        trimesh->faces[i][(j + 1) % 3]
+      };
+      SORT2(faceEdge[0], faceEdge[1]);
+
+      if (faceEdge[0] == boundaryEdge[0] && faceEdge[1] == boundaryEdge[1]) {
+        faceIndex = i;
+        break;
+      }
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return faceIndex;
+}
+
+void bfTrimeshAddFace(BfTrimesh *trimesh, BfSize3 const face) {
+  BF_ERROR_BEGIN();
+
+  BfSize3 *newFaces = bfMemRealloc(trimesh->faces, trimesh->numFaces + 1, sizeof(BfSize3));
+  HANDLE_ERROR();
+
+  trimesh->faces = newFaces;
+
+  bfMemCopy(face, 1, sizeof(BfSize3), trimesh->faces[trimesh->numFaces++]);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfTrimeshDeleteFace(BfTrimesh *trimesh, BfSize faceInd) {
+  BF_ERROR_BEGIN();
+
+  if (faceInd >= trimesh->numFaces)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  bfMemMove(trimesh->faces + faceInd + 1,
+            trimesh->numFaces - faceInd - 1,
+            sizeof(BfSize3),
+            trimesh->faces + faceInd);
+
+  --trimesh->numFaces;
+
+  BfSize3 *newFaces = bfMemRealloc(trimesh->faces, trimesh->numFaces, sizeof(BfSize3));
+  HANDLE_ERROR();
+
+  trimesh->faces = newFaces;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfTrimeshSplitEdge(BfTrimesh *trimesh, BfSize edgeInd, BfReal lam) {
+  BF_ERROR_BEGIN();
+
+  if (edgeInd >= trimesh->numEdges)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (lam <= 0 || 1 <= lam)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize const *edge = trimesh->edges[edgeInd];
+
+  BfReal const *x0 = bfTrimeshGetVertPtrConst(trimesh, edge[0]);
+  BfReal const *x1 = bfTrimeshGetVertPtrConst(trimesh, edge[1]);
+
+  BfPoint3 dx; bfPoint3Sub(x1, x0, dx);
+
+  BfPoint3 xlam; bfPoint3GetPointOnRay(x0, dx, lam, xlam);
+
+  BfSize newVertInd = bfTrimeshGetNumVerts(trimesh);
+
+  bfPoints3Append(trimesh->verts, xlam);
+
+  BfSize incFaceInds[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
+  BfSize numIncFaces = bfTrimeshGetFacesIncOnEdge(trimesh, edgeInd, incFaceInds);
+
+  for (BfSize i = 0; i < numIncFaces; ++i) {
+    BfSize3 face;
+    for (BfSize j = 0; j < 3; ++j)
+      face[j] = trimesh->faces[incFaceInds[i]][j];
+
+    bfTrimeshDeleteFace(trimesh, incFaceInds[i]);
+
+    for (BfSize j = 0; j < 2; ++j) {
+      for (BfSize k = 0; k < 3; ++k) {
+        if (face[k] == edge[j]) {
+          BfSize old = face[k];
+          face[k] = newVertInd;
+          bfTrimeshAddFace(trimesh, face);
+          face[k] = old;
+        }
+      }
+    }
+  }
+
+  rebuildMesh(trimesh);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+BfSize bfTrimeshGetEdgeIndex(BfTrimesh const *trimesh, BfSize2 const edge) {
+  BF_ERROR_BEGIN();
+
+  BfSize edgeIndex = BF_SIZE_BAD_VALUE;
+
+  if (edge[0] >= edge[1])
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (edge[0] == BF_SIZE_BAD_VALUE || edge[1] == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  for (BfSize i = 0; i < trimesh->numEdges; ++i) {
+    if (trimesh->edges[i][0] == edge[0] && trimesh->edges[i][1] == edge[1]) {
+      edgeIndex = i;
+      break;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return edgeIndex;
+}
+
+static bool faceContainsEdge(BfSize const *face, BfSize const *edge) {
+  BF_ERROR_BEGIN();
+
+  bool containsEdge = false;
+
+  if (edge[0] >= edge[1])
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (edge[0] == BF_SIZE_BAD_VALUE || edge[1] == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  for (BfSize i = 0; i < 3; ++i) {
+    BfSize2 faceEdge = {face[i], face[(i + 1) % 3]};
+    SORT2(faceEdge[0], faceEdge[1]);
+
+    if ((containsEdge = faceEdge[0] == edge[0] && faceEdge[1] == edge[1]))
+      break;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return containsEdge;
+}
+
+BfSize bfTrimeshGetFacesIncOnEdge(BfTrimesh const *trimesh, BfSize edgeInd, BfSize2 incFaceInds) {
+  BF_ERROR_BEGIN();
+
+  BfSize numIncFaces = 0;
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    if (faceContainsEdge(trimesh->faces[i], trimesh->edges[edgeInd])) {
+      /* TODO: assuming our mesh is manifold... */
+      if (numIncFaces == 2) RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+      incFaceInds[numIncFaces++] = i;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return numIncFaces;
+}
+
+void bfTrimeshDumpVerts(BfTrimesh const *trimesh, char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(trimesh->verts->data, sizeof(BfPoint3), trimesh->verts->size, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+}
+
+void bfTrimeshDumpFaces(BfTrimesh const *trimesh, char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(trimesh->faces, sizeof(BfSize3), trimesh->numFaces, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+}
+
+static BfReal getNormalDerivEdge(BfTrimesh const *trimesh, BfRealArray const *values, BfSize const *boundaryEdge) {
+  BF_ERROR_BEGIN();
+
+  BfReal dudn = BF_NAN;
+
+  BfSize faceInd = bfTrimeshGetBoundaryFaceIndexByBoundaryEdge(trimesh, boundaryEdge);
+  HANDLE_ERROR();
+
+  BF_ASSERT(faceInd != BF_SIZE_BAD_VALUE);
+
+  BfSize const *face = trimesh->faces[faceInd];
+
+  /* Fetch the index of the interior vertex from `face`. */
+
+  BfSize iInt = BF_SIZE_BAD_VALUE;
+  for (BfSize j = 0; j < 3; ++j) {
+    bool found = false;
+    for (BfSize k = 0; k < 2; ++k)
+      if (face[j] == boundaryEdge[k])
+        found = true;
+    if (!found) {
+      iInt = face[j];
+      break;
+    }
+  }
+  BF_ASSERT(iInt != BF_SIZE_BAD_VALUE);
+
+  /* Next, we'll orthogonally project the interior vertex onto the
+   * boundary edge. The projected point is `xProj` and the convex
+   * coefficient giving it as a combination of the two boundary
+   * vertices is `lamProj`. */
+
+  BfReal const *xInt = bfTrimeshGetVertPtrConst(trimesh, iInt);
+  BfReal const *x0 = bfTrimeshGetVertPtrConst(trimesh, boundaryEdge[0]);
+  BfReal const *x1 = bfTrimeshGetVertPtrConst(trimesh, boundaryEdge[1]);
+
+  BfVector3 dx; bfPoint3Sub(xInt, x0, dx);
+  BfVector3 dx1; bfPoint3Sub(x1, x0, dx1);
+
+  BfReal dx1Norm = bfVector3Norm(dx1);
+
+  BfVector3 t;
+  for (BfSize i = 0; i < 3; ++i) t[i] = dx1[i]/dx1Norm;
+
+  BfReal t_dot_dx = bfVector3Dot(t, dx);
+
+  BfVector3 xProj; bfPoint3GetPointOnRay(x0, t, t_dot_dx, xProj);
+
+  BfReal lamProj = (xProj[0] - x0[0])/dx1[0];
+
+  /* Finally, compute the normal derivative and return it. */
+
+  BfReal uInt = bfRealArrayGetValue(values, iInt);
+  BfReal u0 = bfRealArrayGetValue(values, boundaryEdge[0]);
+  BfReal u1 = bfRealArrayGetValue(values, boundaryEdge[1]);
+
+  BfReal du = uInt - (1 - lamProj)*u0 - lamProj*u1;
+  BfReal dn = bfPoint3Dist(xInt, xProj);
+
+  BF_ASSERT(dn > 0);
+  dudn = du/dn;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return dudn;
+}
+
+/* This function computes the normal derivative of the piecewise
+ * linear function defined by the nodal `values` at each of the
+ * boundary vertices. This is done by first computing the normal
+ * derivative on each edge and then using weighted interpolation to
+ * approximate the normal derivative at each boundary vertex, which
+ * should approximate the L2 projection.
+ *
+ * If `computeAtAllVerts` is true, then this will return an array of
+ * the same size as `values` which is equal to `NAN` at each interior
+ * vertex. */
+BfRealArray *bfTrimeshGetNormalDeriv(BfTrimesh const *trimesh, BfRealArray const *values,
+                                     bool computeAtAllVerts) {
+  BF_ERROR_BEGIN();
+
+  if (!computeAtAllVerts)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  /* Start by computing the boundary edge normal derivatives: */
+
+  BfReal *normalDerivEdge = bfMemAlloc(trimesh->numBoundaryEdges, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i)
+    normalDerivEdge[i] = getNormalDerivEdge(trimesh, values, trimesh->boundaryEdges[i]);
+
+  /* Do a weighted interpolation to approximate the normal derivative
+   * at each vertex.
+   *
+   * The idea here is that we want to do something simple which will
+   * approximate the L2 projection of the piecewise constant normal
+   * derivative defined on the boundary onto the space of piecewise
+   * linear functions defined on the boundary. */
+
+  BfReal *h = bfMemAlloc(trimesh->numBoundaryEdges, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i) {
+    BfReal const *x0 = trimesh->verts->data[trimesh->boundaryEdges[i][0]];
+    BfReal const *x1 = trimesh->verts->data[trimesh->boundaryEdges[i][1]];
+    h[i] = bfPoint3Dist(x0, x1);
+  }
+
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
+
+  BfReal *denom = bfMemAllocAndZero(numVerts, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i)
+    for (BfSize j = 0; j < 2; ++j)
+      denom[trimesh->boundaryEdges[i][j]] += h[i];
+
+  BfRealArray *normalDeriv = bfRealArrayNewWithValue(numVerts, BF_NAN);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i) {
+    for (BfSize j = 0; j < 2; ++j) {
+      BfSize k = trimesh->boundaryEdges[i][j];
+      if (isnan(normalDeriv->data[k]))
+        normalDeriv->data[k] = 0;
+      normalDeriv->data[k] += normalDerivEdge[i]*h[i]/denom[k];
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(normalDerivEdge);
+  bfMemFree(h);
+  bfMemFree(denom);
+
+  return normalDeriv;
 }

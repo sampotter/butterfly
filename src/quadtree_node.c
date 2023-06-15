@@ -211,10 +211,12 @@ static void quadtreeNodeInitRecursive(BfQuadtreeNode *node,
     if (numChildPoints == 0)
       continue;
 
-    /* Create and initialize a new quadtree node */
     BfQuadtreeNode *newChild = bfQuadtreeNodeNew();
+    HANDLE_ERROR();
+
     bfTreeNodeInit(&newChild->super, &TreeNodeVtable, false, (void *)node,
                    NUM_CHILDREN, q, currentDepth + 1);
+    HANDLE_ERROR();
 
     /* Compute bounding box and split for the `q`th child node */
     newChild->bbox = childBbox[q];

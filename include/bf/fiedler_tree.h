@@ -2,19 +2,32 @@
 
 #include "mat.h"
 #include "tree.h"
+#include "tree_node.h"
 #include "trimesh.h"
 
-struct BfFiedlerTreeNode {
-  BfTreeNode super;
-  BfFiedlerTreeNode *parent;
-};
+/** FiedlerTree: */
 
 struct BfFiedlerTree {
-  BfTree base;
+  BfTree super;
   BfFiedlerTreeNode *root;
+  BfTrimesh const *trimesh;
 };
 
-/* Upcasting: */
-BfTree *bfFiedlerTreeToTree(BfFiedlerTree *fiedlerTree);
+/** Interface(Tree, FiedlerTree) */
 
+BfType bfFiedlerTreeGetType(BfFiedlerTree const *tree);
+
+/** Upcasting: FiedlerTree -> Tree */
+
+BfTree *bfFiedlerTreeToTree(BfFiedlerTree *fiedlerTree);
+BfTree const *bfFiedlerTreeConstToTreeConst(BfFiedlerTree const *fiedlerTree);
+
+/** Downcasting: Tree -> FiedlerTree */
+
+/** Implementation: FiedlerTree */
+
+BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh);
 void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree, BfTrimesh const *trimesh);
+void bfFiedlerTreeDeinit(BfFiedlerTree *fiedlerTree);
+void bfFiedlerTreeDealloc(BfFiedlerTree **fiedlerTree);
+void bfFiedlerTreeDeinitAndDealloc(BfFiedlerTree **fiedlerTree);
