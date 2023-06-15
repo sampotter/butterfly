@@ -38,6 +38,7 @@ typedef size_t BfSize;
  * anyway... should get this info from Meson */
 typedef int BfLapackInt;
 
+typedef BfSize BfSize2[2];
 typedef BfSize BfSize3[3];
 
 static BfSize const BF_SIZE_BAD_VALUE = -1;
