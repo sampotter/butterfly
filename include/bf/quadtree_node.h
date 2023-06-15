@@ -6,8 +6,6 @@
 BfType bfQuadtreeNodeGetType(BfTreeNode const *treeNode);
 void bfQuadtreeNodeDelete(BfQuadtreeNode **quadtreeNode);
 
-/** QuadtreeNode: */
-
 /** Upcasting: QuadtreeNode -> TreeNode */
 
 BfTreeNode *bfQuadtreeNodeToTreeNode(BfQuadtreeNode *node);
