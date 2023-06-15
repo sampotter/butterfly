@@ -256,6 +256,10 @@ void bfMatDivideCols(BfMat *mat, BfVec const *vec) {
   mat->vtbl->DivideCols(mat, vec);
 }
 
+BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *colMask) {
+  return mat->vtbl->GetSubmatByMask(mat, rowMask, colMask);
+}
+
 /** Implementation: Mat */
 
 BfMat *bfMatGet(BfMat *mat, BfPolicy policy) {

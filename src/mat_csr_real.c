@@ -1,8 +1,10 @@
 #include <bf/mat_csr_real.h>
 
+#include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
+#include <bf/util.h>
 #include <bf/vec_real.h>
 
 /** Interface: Mat */
@@ -18,6 +20,7 @@ static BfMatVtable MAT_VTABLE = {
   .Scale = (__typeof__(&bfMatCsrRealScale))bfMatCsrRealScale,
   .MulVec = (__typeof__(&bfMatCsrRealMulVec))bfMatCsrRealMulVec,
   .IsZero = (__typeof__(&bfMatCsrRealIsZero))bfMatCsrRealIsZero,
+  .GetSubmatByMask = (__typeof__(&bfMatGetSubmatByMask))bfMatCsrRealGetSubmatByMask,
 };
 
 BfMat *bfMatCsrRealGetView(BfMatCsrReal *matCsrReal) {
@@ -187,6 +190,93 @@ bool bfMatCsrRealIsZero(BfMat const *mat) {
   return bfMatConstToMatCsrRealConst(mat)->rowptr[mat->numRows] == 0;
 }
 
+BfMat *bfMatCsrRealGetSubmatByMask(BfMatCsrReal const *matCsrReal, bool const *rowMask, bool const *colMask) {
+  BF_ERROR_BEGIN();
+
+  BfMat const *mat = bfMatCsrRealConstToMatConst(matCsrReal);
+
+  BfSize numRows = 0;
+  for (BfSize i = 0; i < bfMatGetNumRows(mat); ++i)
+    if (rowMask[i])
+      ++numRows;
+
+  BfSize numCols = 0;
+  for (BfSize j = 0; j < bfMatGetNumCols(mat); ++j)
+    if (colMask[j])
+      ++numCols;
+
+  /* Count the number of nonzero entries in the submatrix */
+  BfSize nnz = 0;
+  for (BfSize i = 0; i < bfMatGetNumRows(mat); ++i) {
+    if (!rowMask[i]) continue;
+    for (BfSize k = matCsrReal->rowptr[i]; k < matCsrReal->rowptr[i + 1]; ++k) {
+      BfSize j = matCsrReal->colind[k];
+      if (colMask[j])
+        ++nnz;
+    }
+  }
+
+  BfSize *rowptr = bfMemAllocAndZero(numRows + 1, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  BfSize *colind = bfMemAlloc(nnz, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  BfReal *data = bfMemAlloc(nnz, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  /* Set up arrays used to map rows and columns in the parent matrix
+   * to the indexed rows and columns in the submatrix */
+
+  BfSize *rowRemap = bfMemAlloc(bfMatGetNumRows(mat), sizeof(BfSize));
+  HANDLE_ERROR();
+
+  BfSize i_ = 0;
+  for (BfSize i = 0; i < bfMatGetNumRows(mat); ++i)
+    rowRemap[i] = rowMask[i] ? i_++ : BF_SIZE_BAD_VALUE;
+
+  BfSize *colRemap = bfMemAlloc(bfMatGetNumCols(mat), sizeof(BfSize));
+  HANDLE_ERROR();
+
+  BfSize j_ = 0;
+  for (BfSize j = 0; j < bfMatGetNumCols(mat); ++j)
+    colRemap[j] = colMask[j] ? j_++ : BF_SIZE_BAD_VALUE;
+
+  BfSize l = 0;
+  for (BfSize i = 0; i < bfMatGetNumRows(mat); ++i) {
+    if (!rowMask[i]) continue;
+    for (BfSize k = matCsrReal->rowptr[i]; k < matCsrReal->rowptr[i + 1]; ++k) {
+      BfSize j = matCsrReal->colind[k];
+      if (colMask[j]) {
+        ++rowptr[rowRemap[i] + 1];
+        colind[l] = colRemap[matCsrReal->colind[k]];
+        data[l++] = matCsrReal->data[k];
+      }
+    }
+  }
+  BF_ASSERT(l == nnz);
+
+  bfSizeRunningSum(numRows + 1, rowptr);
+
+  BfMatCsrReal *submat = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
+  bfMatCsrRealInit(submat, numRows, numCols, rowptr, colind, data);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(rowptr);
+  bfMemFree(colind);
+  bfMemFree(data);
+  bfMemFree(rowRemap);
+  bfMemFree(colRemap);
+
+  return bfMatCsrRealToMat(submat);
+}
+
 /** Upcasting: */
 
 BfMat *bfMatCsrRealToMat(BfMatCsrReal *matCsrReal) {
@@ -242,16 +332,13 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
   HANDLE_ERROR();
 
   mat->rowptr = bfMemAlloc(numRows + 1, sizeof(BfSize));
-  if (mat->rowptr == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   mat->colind = bfMemAlloc(nnz, sizeof(BfSize));
-  if (mat->colind == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   mat->data = bfMemAlloc(nnz, sizeof(BfReal));
-  if (mat->data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   bfMemCopy(rowptr, numRows + 1, sizeof(BfSize), mat->rowptr);
   bfMemCopy(colind, nnz, sizeof(BfSize), mat->colind);

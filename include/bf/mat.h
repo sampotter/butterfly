@@ -84,6 +84,7 @@ BfMat *bfMatGetBlockView(BfMat *mat, BfSize, BfSize, BfSize, BfSize);
 BfLu *bfMatGetLu(BfMat const *mat);
 BfMat *bfMatGetInverse(BfMat const *mat);
 void bfMatDivideCols(BfMat *, BfVec const *);
+BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *colMask);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatGetView) GetView;
@@ -146,6 +147,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatGetLu) GetLu;
   __typeof__(&bfMatGetInverse) GetInverse;
   __typeof__(&bfMatDivideCols) DivideCols;
+  __typeof__(&bfMatGetSubmatByMask) GetSubmatByMask;
 } BfMatVtable;
 
 /** Implementation: Mat */

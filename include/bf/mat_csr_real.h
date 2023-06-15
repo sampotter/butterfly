@@ -14,6 +14,7 @@ void bfMatCsrRealScale(BfMat *mat, BfComplex scalar);
 void bfMatCsrRealAddInplace(BfMat *mat, BfMat const *otherMat);
 BfVec *bfMatCsrRealMulVec(BfMat const *mat, BfVec const *vec);
 bool bfMatCsrRealIsZero(BfMat const *mat);
+BfMat *bfMatCsrRealGetSubmatByMask(BfMatCsrReal const *matCsrReal, bool const *rowMask, bool const *colMask);
 
 /** Implementation: MatCsrReal */
 
