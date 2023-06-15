@@ -300,6 +300,25 @@ BfSize bfSizeArrayGetSize(BfSizeArray const *sizeArray) {
   return sizeArray->size;
 }
 
+void bfSizeArrayDelete(BfSizeArray *sizeArray, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfSize n = sizeArray->size;
+
+  if (i >= n)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSize *ptr = sizeArray->data;
+
+  bfMemMove(ptr + i + 1, n - i - 1, sizeof(BfSize), ptr + i);
+
+  --sizeArray->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfSizeArrayDeleteFirst(BfSizeArray *sizeArray, BfSize elt) {
   BfSize i = bfSizeArrayFindFirst(sizeArray, elt);
 
@@ -311,4 +330,20 @@ void bfSizeArrayDeleteFirst(BfSizeArray *sizeArray, BfSize elt) {
   bfMemMove(src, sizeArray->size - i, sizeof(BfSize), dst);
 
   --sizeArray->size;
+}
+
+void bfSizeArraySave(BfSizeArray const *sizeArray, char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(sizeArray->data, sizeof(BfSize), sizeArray->size, fp);
+
+  fclose(fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }

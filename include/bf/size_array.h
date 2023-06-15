@@ -32,4 +32,6 @@ BfSize bfSizeArrayGetLast(BfSizeArray const *sizeArray);
 BfSize bfSizeArrayGetRand(BfSizeArray const *sizeArray);
 void bfSizeArrayCopyData(BfSizeArray const *sizeArray, BfSize *dst);
 BfSize bfSizeArrayGetSize(BfSizeArray const *sizeArray);
+void bfSizeArrayDelete(BfSizeArray *sizeArray, BfSize i);
 void bfSizeArrayDeleteFirst(BfSizeArray *sizeArray, BfSize elt);
+void bfSizeArraySave(BfSizeArray const *sizeArray, char const *path);
