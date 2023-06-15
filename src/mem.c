@@ -46,6 +46,21 @@ BfPtr bfMemAllocAndZero(BfSize n, BfSize size) {
   return ptr;
 }
 
+BfPtr bfMemAllocCopy(BfConstPtr src, BfSize n, BfSize size) {
+  BF_ERROR_BEGIN();
+
+  BfPtr copy = bfMemAlloc(n, size);
+  HANDLE_ERROR();
+
+  bfMemCopy(src, n, size, copy);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return copy;
+}
+
 void bfMemFree(BfPtr ptr) {
   free(ptr);
 }
