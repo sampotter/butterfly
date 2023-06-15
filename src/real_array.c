@@ -12,6 +12,7 @@ static void invalidate(BfRealArray *realArray) {
   realArray->data = NULL;
   realArray->size = BF_SIZE_BAD_VALUE;
   realArray->capacity = BF_SIZE_BAD_VALUE;
+  realArray->isView = false;
 }
 
 BfRealArray *bfRealArrayNew() {
@@ -25,6 +26,45 @@ BfRealArray *bfRealArrayNew() {
 
   BF_ERROR_END() {
     realArray = NULL;
+  }
+
+  return realArray;
+}
+
+BfRealArray *bfRealArrayNewFromVecReal(BfVecReal const *vecReal, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArray = bfRealArrayNew();
+  HANDLE_ERROR();
+
+  if (policy == BF_POLICY_VIEW) {
+    realArray->size = vecReal->super.size;
+    realArray->capacity = BF_SIZE_BAD_VALUE;
+    realArray->isView = true;
+    realArray->data = vecReal->data;
+  }
+
+  else if (policy == BF_POLICY_COPY) {
+    realArray->size = vecReal->super.size;
+    realArray->capacity = vecReal->super.size;
+    realArray->isView = false;
+
+    realArray->data = bfMemAlloc(realArray->size, sizeof(BfReal));
+    HANDLE_ERROR();
+
+    BfReal const *readPtr = vecReal->data;
+    BfReal *writePtr = realArray->data;
+    for (BfSize i = 0; i < realArray->size; ++i) {
+      *writePtr = *readPtr;
+      readPtr += vecReal->stride;
+      ++writePtr;
+    }
+  }
+
+  else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
   return realArray;
@@ -46,11 +86,28 @@ BfRealArray *bfRealArrayNewWithDefaultCapacity() {
   return realArray;
 }
 
+BfRealArray *bfRealArrayNewWithValue(BfSize size, BfReal value) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArray = bfRealArrayNew();
+  HANDLE_ERROR();
+
+  bfRealArrayInitWithValue(realArray, size, value);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return realArray;
+}
+
 void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
   BF_ERROR_BEGIN();
 
   realArray->size = 0;
   realArray->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  realArray->isView = false;
 
   realArray->data = bfMemAlloc(realArray->capacity, sizeof(BfReal));
   if (realArray->data == NULL)
@@ -66,8 +123,29 @@ void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
   }
 }
 
+void bfRealArrayInitWithValue(BfRealArray *realArray, BfSize size, BfReal value) {
+  BF_ERROR_BEGIN();
+
+  realArray->size = size;
+  realArray->capacity = size;
+  realArray->isView = false;
+
+  realArray->data = bfMemAlloc(realArray->capacity, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < realArray->size; ++i) {
+    realArray->data[i] = value;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfRealArrayDeinit(BfRealArray *realArray) {
-  bfMemFree(realArray->data);
+  if (!realArray->isView)
+    bfMemFree(realArray->data);
+
   invalidate(realArray);
 }
 
@@ -85,6 +163,9 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
   BF_ERROR_BEGIN();
 
   BfReal *data = NULL, *oldData = NULL;
+
+  if (realArray->isView)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   if (newCapacity < realArray->capacity)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
@@ -115,6 +196,9 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
 
 void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
   BF_ERROR_BEGIN();
+
+  if (realArray->isView)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   if (realArray->size == realArray->capacity) {
     bfRealArrayExpandCapacity(realArray, 2*realArray->capacity);
@@ -166,4 +250,74 @@ BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1) {
   }
 
   return bfVecRealToVec(vecReal);
+}
+
+BfReal bfRealArrayGetValue(BfRealArray const *realArray, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfReal value = BF_NAN;
+
+  if (i == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i >= realArray->size)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  value = realArray->data[i];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return value;
+}
+
+void bfRealArrayGetValues(BfRealArray const *realArray, BfSize n, BfSize const *inds, BfReal *values) {
+  BF_ERROR_BEGIN();
+
+  for (BfSize i = 0; i < n; ++i)
+    if (inds[i] >= realArray->size)
+      RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  bfMemCopy(realArray->data, n, sizeof(BfReal), values);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value) {
+  BF_ERROR_BEGIN();
+
+  if (i > realArray->size)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (realArray->isView)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  if (realArray->size == realArray->capacity) {
+    bfRealArrayExpandCapacity(realArray, 2*realArray->capacity);
+    HANDLE_ERROR();
+  }
+
+  BfSize n = realArray->size;
+
+  BfReal *newData = bfMemRealloc(realArray->data, n + 1, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  bfMemMove(newData + i, n - i, sizeof(BfSize), newData + i + 1);
+
+  newData[i] = value;
+
+  realArray->data = newData;
+
+  ++realArray->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+BfSize bfRealArrayGetSize(BfRealArray const *realArray) {
+  return realArray->size;
 }
