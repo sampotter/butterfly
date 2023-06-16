@@ -593,6 +593,8 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
   /* Eliminate isolated boundary vertices. These can arise during the
    * splitting process. */
 
+  // TODO: ideally, there should be no isolated vertices!
+
   bool *isolated = bfMemAlloc(verts->size, sizeof(bool));
   HANDLE_ERROR();
 
