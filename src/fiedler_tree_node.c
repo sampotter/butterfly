@@ -461,6 +461,14 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   fwrite(trimeshFixed->faces, sizeof(BfSize3), trimeshFixed->numFaces, fp);
   fclose(fp);
 
+  /* An assumption we make is that the vertices corresponding to [i0,
+   * i1] are the first vertices in `trimeshFixed`. This is a little
+   * hacky, but it does make the implementation simpler. We verify
+   * this now. */
+#if BF_DEBUG
+  for (BfSize i = i0; i < i1; ++i)
+    BF_ASSERT(bfPoints3Contains(tree->trimesh->verts, trimesh->verts->data[i - i0]));
+#endif
 
   bool *permMask = bfMemAllocAndZero(trimeshFixed->verts->size, sizeof(bool));
   HANDLE_ERROR();
