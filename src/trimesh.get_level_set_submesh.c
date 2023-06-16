@@ -31,6 +31,8 @@ static void appendFace(BfPoints3 const *verts, BfPoints3 const *cutVerts,
 
   /* Make sure the face isn't degenerate: */
 
+  for (BfSize i = 0; i < 3; ++i) BF_ASSERT(BF_SIZE_OK(face[i]));
+
   BF_ASSERT(face[0] != face[1] && face[1] != face[2] && face[2] != face[0]);
 
   BfReal const *v[3] = {NULL, NULL, NULL};
