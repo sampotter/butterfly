@@ -318,9 +318,14 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
 
       /* Find the "new" indices of the other two verts: */
       BfSize iCutNew[2];
-      for (BfSize j = 0; j < 2; ++j)
-        iCutNew[j] = isnan(t[j]) ?
-          bfPoints3Find(verts, vt[j]) : verts->size + iCut[j];
+      for (BfSize j = 0; j < 2; ++j) {
+        if (isnan(t[j])) {
+          iCutNew[j] = bfPoints3Find(verts, vt[j]);
+        } else {
+          BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
+          iCutNew[j] = verts->size + iCut[j];
+        }
+      }
       BF_ASSERT(iCutNew[0] != BF_SIZE_BAD_VALUE && iCutNew[1] != BF_SIZE_BAD_VALUE);
 
       /* Add a new face: */
@@ -406,10 +411,31 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
 
       /* Find the "new" indices of the cut verts: */
       BfSize iCutNew[2];
-      for (BfSize j = 0; j < 2; ++j)
-        iCutNew[j] = isnan(t[j]) ?
-          bfPoints3Find(verts, vt[j]) : verts->size + iCut[j];
-      BF_ASSERT(iCutNew[0] != BF_SIZE_BAD_VALUE && iCutNew[1] != BF_SIZE_BAD_VALUE);
+      if (coalesced[2]) {
+        BF_ASSERT(!coalesced[0] && !coalesced[1]);
+        BF_ASSERT(bfPoint3Dist(vt[0], v) <= BF_EPS);
+        BF_ASSERT(bfPoint3Dist(vt[1], v) <= BF_EPS);
+        BF_ASSERT(!bfPoints3Contains(verts, v));
+        for (BfSize j = 0; j < 2; ++j)
+          iCutNew[j] = bfPoints3Find(cutVerts, vt[j]);
+        BF_ASSERT(BF_SIZE_OK(iCutNew[0]) ^ BF_SIZE_OK(iCutNew[1]));
+        if (iCutNew[0] == BF_SIZE_BAD_VALUE)
+          iCutNew[0] = iCutNew[1];
+        else
+          iCutNew[1] = iCutNew[0];
+        for (BfSize j = 0; j < 2; ++j) iCutNew[j] += verts->size;
+      } else {
+        for (BfSize j = 0; j < 2; ++j) {
+          if (isnan(t[j])) {
+            iCutNew[j] = bfPoints3Find(verts, vt[j]);
+          } else if (!coalesced[j]) {
+            BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
+            iCutNew[j] = verts->size + iCut[j];
+          } else {
+            iCutNew[j] = BF_SIZE_BAD_VALUE;
+          }
+        }
+      }
 
       /** Add new faces. How we do this depends on whether any of the
        ** vertices have coalesced. */
@@ -600,9 +626,13 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
 
   for (BfSize i = 0; i < verts->size; ++i) isolated[i] = true;
 
-  for (BfSize i = 0; i < numFaces; ++i)
-    for (BfSize j = 0; j < 3; ++j)
-      isolated[faces[i][j]] = false;
+  for (BfSize i = 0; i < numFaces; ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BfSize k = faces[i][j];
+      BF_ASSERT(k < verts->size);
+      isolated[k] = false;
+    }
+  }
 
   for (BfSize i = 0; i < verts->size; ++i)
     if (isolated[i])
