@@ -1,5 +1,7 @@
 #pragma once
 
+#define BF_SIZE_OK(s) (s != BF_SIZE_BAD_VALUE)
+
 #define SWAP(x, y) do {                         \
     __typeof__(x) tmp = x;                      \
     x = y;                                      \
