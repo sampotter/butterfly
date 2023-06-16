@@ -136,7 +136,7 @@ static BfReal dfds(BfReal s, dfdsContext const *c) {
  *
  * TODO: if this is slow, it's because it's O(n^2)! easy to fix...
  */
-BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const *phi, BfSizeArray **permPtr) {
+BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const *phi, bool const *permMask, BfSizeArray **permPtr) {
   BF_ERROR_BEGIN();
 
   BfTrimesh *submesh = NULL;
@@ -195,7 +195,7 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     BfReal const *v = bfTrimeshGetVertPtrConst(trimesh, i);
     bfPoints3Append(verts, v);
 
-    if (perm != NULL)
+    if (perm != NULL && permMask[i])
       bfSizeArrayAppend(perm, i);
   }
 
@@ -582,8 +582,6 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     else BF_DIE();
   }
 
-  BF_ASSERT(verts->size == perm->size);
-
   BF_ASSERT(bfPoints3AllUnique(verts));
   BF_ASSERT(bfPoints3AllUnique(cutVerts));
 
@@ -604,12 +602,13 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     for (BfSize j = 0; j < 3; ++j)
       isolated[faces[i][j]] = false;
 
+  for (BfSize i = 0; i < verts->size; ++i)
+    if (isolated[i])
+      BF_ASSERT(i >= perm->size);
+
   for (BfSize i = verts->size; i > 0; --i) {
     if (!isolated[i - 1]) continue;
 
-    BF_ASSERT(trimesh->isBoundaryVert[bfSizeArrayGet(perm, i - 1)]);
-
-    bfSizeArrayDelete(perm, i - 1);
     bfPoints3Delete(verts, i - 1);
 
     for (BfSize j = 0; j < numFaces; ++j) {

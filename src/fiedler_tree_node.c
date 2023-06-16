@@ -446,6 +446,7 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 }
 
 static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
+                         bool const *permMask,
                          BfTrimesh **submesh1Ptr, BfTrimesh **submesh2Ptr,
                          BfSizeArray **perm1Ptr, BfSizeArray **perm2Ptr) {
   BF_ERROR_BEGIN();
@@ -457,7 +458,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
   /* Extract the two nodal domains determined by `phiFiedler`. */
 
-  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, perm1Ptr);
+  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, permMask, perm1Ptr);
   HANDLE_ERROR();
 
   BfVecReal *phiFiedlerNeg = bfVecToVecReal(bfVecRealCopy(phiFiedler));
@@ -465,7 +466,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
   bfVecRealDscal(phiFiedlerNeg, -1);
 
-  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, perm2Ptr);
+  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, permMask, perm2Ptr);
   HANDLE_ERROR();
 
 #if BF_DEBUG
@@ -509,6 +510,12 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   fclose(fp);
 
 
+  bool *permMask = bfMemAllocAndZero(trimeshFixed->verts->size, sizeof(bool));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < i1 - i0; ++i)
+    permMask[i] = true;
+
   /* Split `trimesh` into two pieces by computing the first nonzero
    * eigenfunction of the Dirichlet Laplace-Beltrami eigenvalue
    * problem. This is done using a piecewise linear FEM approximation,
@@ -521,7 +528,7 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
    * `submesh[i]`. */
   BfTrimesh *submesh[2] = {NULL, NULL};
   BfSizeArray *subperm[2] = {NULL, NULL};
-  splitTrimesh(trimeshFixed, phiFiedlerFixed, &submesh[0], &submesh[1], &subperm[0], &subperm[1]);
+  splitTrimesh(trimeshFixed, phiFiedlerFixed, permMask, &submesh[0], &submesh[1], &subperm[0], &subperm[1]);
   HANDLE_ERROR();
 
   /* Update `perm` and compute the offsets for each child */
@@ -578,6 +585,8 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  bfMemFree(permMask);
 
   bfVecRealDeinitAndDealloc(&phiFiedler);
 }

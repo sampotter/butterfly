@@ -36,7 +36,7 @@ BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh);
 void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x);
 BfReal const *bfTrimeshGetVertPtrConst(BfTrimesh const *trimesh, BfSize i);
 void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex, BfSize i, BfSize *i0, BfSize *i1);
-BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const *phi, BfSizeArray **permPtr);
+BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const *phi, bool const *permMask, BfSizeArray **permPtr);
 BfSizeArray *bfTrimeshGetInteriorInds(BfTrimesh const *trimesh);
 BfSize bfTrimeshGetBoundaryFaceIndexByBoundaryEdge(BfTrimesh const *trimesh, BfSize2 const boundaryEdge);
 void bfTrimeshSplitEdge(BfTrimesh *trimesh, BfSize i, BfReal lam);
