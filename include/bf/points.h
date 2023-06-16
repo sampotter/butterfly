@@ -14,6 +14,7 @@ void bfPoint3Sub(BfPoint3 const v, BfPoint3 const u, BfVector3 uv);
 void bfPoint3GetPointOnRay(BfPoint3 const r0, BfVector3 const dr, BfReal t, BfPoint3 rt);
 void bfPoint3Copy(BfPoint3 x, BfPoint3 const y);
 bool bfPoint3Equal(BfPoint3 const x, BfPoint3 const y);
+bool bfPoint3EqualApprox(BfPoint3 const x, BfPoint3 const y, BfReal tol);
 
 struct BfPoints1 {
   BfPoint1 *data;
@@ -90,3 +91,5 @@ void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point);
 void bfPoints3Delete(BfPoints3 *points, BfSize i);
 bool bfPoints3AllUnique(BfPoints3 const *points);
 void bfPoints3Save(BfPoints3 const *points, char const *path);
+void bfPoints3ContainsApprox(BfPoint3 const *points, BfPoint3 const point, BfReal tol);
+BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);

@@ -65,6 +65,10 @@ bool bfPoint3Equal(BfPoint3 const x, BfPoint3 const y) {
   return x[0] == y[0] && x[1] == y[1] && x[2] == y[2];
 }
 
+bool bfPoint3EqualApprox(BfPoint3 const x, BfPoint3 const y, BfReal tol) {
+  return bfPoint3Dist(x, y) <= tol;
+}
+
 BfPoints2 *bfPoints2NewEmpty() {
   BF_ERROR_BEGIN();
 
@@ -838,4 +842,18 @@ void bfPoints3Save(BfPoints3 const *points, char const *path) {
   }
 
   fclose(fp);
+}
+
+void bfPoints3ContainsApprox(BfPoint3 const *points, BfPoint3 const point, BfReal tol) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (bfPoint3EqualApprox(points->data[i], point, tol))
+      return true;
+  return false;
+}
+
+BfSize bfPoints3Find(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+  for (BfSize i = 0; i < points->size; ++i)
+    if (bfPoint3Equal(points->data[i], point, tol))
+      return i;
+  return BF_SIZE_BAD_VALUE;
 }
