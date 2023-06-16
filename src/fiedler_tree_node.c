@@ -57,41 +57,6 @@ BfFiedlerTreeNode *bfFiedlerTreeNodeNew() {
   return node;
 }
 
-#if BF_DEBUG
-static bool boundaryVertsComeLastInTrimesh(BfTrimesh const *trimesh) {
-  bool pred = true;
-  for (BfSize i = 1; i < bfTrimeshGetNumVerts(trimesh); ++i) {
-    if (trimesh->isBoundaryVert[i - 1] && !trimesh->isBoundaryVert[i]) {
-      pred = false;
-      break;
-    }
-  }
-  return pred;
-}
-
-static bool boundaryVertsComeLastInSubmesh(bool const *isBoundaryVert, BfSizeArray const *perm) {
-  bool pred = true;
-  BfSize jPrev = bfSizeArrayGetFirst(perm);
-  for (BfSize i = 1; i < bfSizeArrayGetSize(perm); ++i) {
-    BfSize j = bfSizeArrayGet(perm, i);
-    if (isBoundaryVert[jPrev] && !isBoundaryVert[j]) {
-      pred = false;
-      break;
-    }
-    jPrev = j;
-  }
-  return pred;
-}
-#endif
-
-static void removeTrailingBoundaryVerts(bool const *isBoundaryVert, BfSizeArray *perm) {
-  for (BfSize i = bfSizeArrayGetSize(perm); i > 0; --i) {
-    if (isBoundaryVert[bfSizeArrayGet(perm, i - 1)])
-      bfSizeArrayDelete(perm, i - 1);
-    else break;
-  }
-}
-
 BfVecReal *getPhiFiedler(BfTrimesh const *trimesh) {
   BF_ERROR_BEGIN();
 
@@ -451,11 +416,6 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
                          BfSizeArray **perm1Ptr, BfSizeArray **perm2Ptr) {
   BF_ERROR_BEGIN();
 
-  /* This function assumes that the boundary vertices in `trimesh` are
-   * its last vertices. */
-  if (!boundaryVertsComeLastInTrimesh(trimesh))
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
-
   /* Extract the two nodal domains determined by `phiFiedler`. */
 
   BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, permMask, perm1Ptr);
@@ -468,14 +428,6 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
   BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, permMask, perm2Ptr);
   HANDLE_ERROR();
-
-#if BF_DEBUG
-  BF_ASSERT(boundaryVertsComeLastInSubmesh(trimesh->isBoundaryVert, *perm1Ptr));
-  BF_ASSERT(boundaryVertsComeLastInSubmesh(trimesh->isBoundaryVert, *perm2Ptr));
-#endif
-
-  removeTrailingBoundaryVerts(trimesh->isBoundaryVert, *perm1Ptr);
-  removeTrailingBoundaryVerts(trimesh->isBoundaryVert, *perm2Ptr);
 
   BF_ERROR_END() {
     BF_DIE();
