@@ -354,9 +354,9 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
       }
 
       bool coalesced[3] = {
-        bfPoint3Equal(v0[0], vt[0]),
-        bfPoint3Equal(v0[1], vt[1]),
-        bfPoint3Equal(vt[0], vt[1])
+        bfPoint3Dist(v0[0], vt[0]) <= BF_EPS,
+        bfPoint3Dist(v0[1], vt[1]) <= BF_EPS,
+        bfPoint3Dist(vt[0], vt[1]) <= BF_EPS
       };
 
       // TODO: quad collapsed to an edge:
