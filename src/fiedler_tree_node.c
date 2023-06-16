@@ -493,8 +493,11 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   BfSize i = i0;
   for (BfSize j = 0; j < MAX_NUM_CHILDREN; ++j) {
     node->super.offset[j] = i;
-    for (BfSize k = 0; k < bfSizeArrayGetSize(subperm[j]); ++k)
-      newPerm[i++ - i0] = perm[i0 + bfSizeArrayGet(subperm[j], k)];
+    for (BfSize k = 0; k < bfSizeArrayGetSize(subperm[j]); ++k) {
+      BfSize l = i++ - i0;
+      BF_ASSERT(l < i1 - i0);
+      newPerm[l] = perm[i0 + bfSizeArrayGet(subperm[j], k)];
+    }
   }
   BF_ASSERT(i == i1);
   node->super.offset[MAX_NUM_CHILDREN] = i;
