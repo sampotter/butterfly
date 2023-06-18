@@ -4,14 +4,11 @@
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
-#include <bf/lbo.h>
-#include <bf/linalg.h>
 #include <bf/mem.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
 #include <bf/trimesh.h>
 #include <bf/util.h>
-#include <bf/vec_real.h>
 #include <bf/vectors.h>
 
 static BfSize const MAX_NUM_CHILDREN = 2;
@@ -55,69 +52,6 @@ BfFiedlerTreeNode *bfFiedlerTreeNodeNew() {
   }
 
   return node;
-}
-
-BfVecReal *getPhiFiedler(BfTrimesh const *trimesh) {
-  BF_ERROR_BEGIN();
-
-  /* Get the mask that indicates which vertices of `trimesh` are
-   * interior vertices. */
-
-  bool *mask = bfMemAlloc(bfTrimeshGetNumVerts(trimesh), sizeof(bool));
-  HANDLE_ERROR();
-
-  for (BfSize i = 0; i < bfTrimeshGetNumVerts(trimesh); ++i)
-    mask[i] = !trimesh->isBoundaryVert[i];
-
-  /* Compute the stiffness and mass matrices for the piecewise linear
-   * FEM approximation of the LBO and then extract the submatrices
-   * corresponding to the interior vertices so we can solve the
-   * Dirichlet eigenvalue problem. */
-
-  BfMat *L = NULL, *M = NULL;
-  bfLboGetFemDiscretization(trimesh, &L, &M);
-  HANDLE_ERROR();
-
-  BfMat *LInt = bfMatGetSubmatByMask(L, mask, mask);
-  HANDLE_ERROR();
-
-  BfMat *MInt = bfMatGetSubmatByMask(M, mask, mask);
-  HANDLE_ERROR();
-
-  /* Solve the shifted eigenvalue problem and get the first nonzero
-   * eigenfunction (the "Fiedler vector"). */
-
-  BfMat *PhiInt = NULL;
-  BfVecReal *Lam = NULL;
-  bfGetShiftedEigs(LInt, MInt, -0.001, 2, &PhiInt, &Lam);
-  HANDLE_ERROR();
-
-  BfVecReal *phiFiedlerInt = bfVecToVecReal(bfMatGetColView(PhiInt, 1));
-  HANDLE_ERROR();
-
-  BfVecReal *phiFiedler = bfVecRealNewWithValue(bfTrimeshGetNumVerts(trimesh), 0);
-  HANDLE_ERROR();
-
-  bfVecRealSetMask(phiFiedler, mask, bfVecRealToVec(phiFiedlerInt));
-
-  BF_ERROR_END() {
-    BF_DIE();
-  }
-
-  bfMemFree(mask);
-
-  bfMatDelete(&L);
-  bfMatDelete(&M);
-
-  bfMatDelete(&LInt);
-  bfMatDelete(&MInt);
-
-  bfMatDelete(&PhiInt);
-  bfVecRealDeinitAndDealloc(&Lam);
-
-  bfVecRealDeinitAndDealloc(&phiFiedlerInt);
-
-  return phiFiedler;
 }
 
 static BfReal getAveragedPhiValue(BfTrimesh const *trimesh, BfRealArray const *phi, BfSize i) {
@@ -291,23 +225,23 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
  * negative (if it's zero, we leave it alone). HOWEVER, doing this
  * using the actual value of the normal derivative can lead to be
  * problems if we've inserted zeros.  */
-static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
-                          BfTrimesh **trimeshFixedPtr, BfVecReal **phiFiedlerFixedPtr) {
+static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedler,
+                          BfTrimesh **trimeshFixedPtr, BfRealArray **phiFiedlerFixedPtr) {
   BF_ERROR_BEGIN();
 
   /* Make a copy of `phiFiedler`---we'll fix it up as we go. */
 
-  BfRealArray *phiFiedlerFixedArr = bfRealArrayNewFromVecReal(phiFiedler, BF_POLICY_COPY);
+  BfRealArray *phiFiedlerFixed = bfRealArrayCopy(phiFiedler);
   HANDLE_ERROR();
 
-  repairTopologyOfNodalDomains(trimesh, phiFiedlerFixedArr);
+  repairTopologyOfNodalDomains(trimesh, phiFiedlerFixed);
 
   /* Estimate the normal derivative of `phiFiedler` at each boundary
    * vertex of `trimesh`. See the comments for
    * `bfTrimeshGetNormalDeriv` for more information about how exactly
    * this works. */
 
-  BfRealArray *normalDeriv = bfTrimeshGetNormalDeriv(trimesh, phiFiedlerFixedArr, true);
+  BfRealArray *normalDeriv = bfTrimeshGetNormalDeriv(trimesh, phiFiedlerFixed, true);
   HANDLE_ERROR();
 
   /* Set `zeroInds` to the indices of the boundary edges which contain
@@ -354,7 +288,7 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
       bfRealArrayInsert(normalDeriv, newVertInd, BF_NAN);
 
-      bfRealArrayInsert(phiFiedlerFixedArr, newVertInd, 0);
+      bfRealArrayInsert(phiFiedlerFixed, newVertInd, 0);
     }
   }
 
@@ -370,14 +304,14 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
    * `phiFiedler`. We do that first. */
 
   BfRealArray *normalDerivFixed
-    = bfTrimeshGetNormalDeriv(trimeshFixed, phiFiedlerFixedArr, true);
+    = bfTrimeshGetNormalDeriv(trimeshFixed, phiFiedlerFixed, true);
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < bfRealArrayGetSize(normalDerivFixed); ++i) {
     if (trimeshFixed->isBoundaryVert[i]) {
-      BF_ASSERT(phiFiedlerFixedArr->data[i] == 0);
+      BF_ASSERT(phiFiedlerFixed->data[i] == 0);
     } else {
-      BF_ASSERT(phiFiedlerFixedArr->data[i] != 0);
+      BF_ASSERT(phiFiedlerFixed->data[i] != 0);
       continue;
     }
 
@@ -385,19 +319,15 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
     if (isnan(dudn)) continue;
 
     if (dudn > 0)
-      phiFiedlerFixedArr->data[i] += BF_EPS;
+      phiFiedlerFixed->data[i] += BF_EPS;
     else if (dudn < 0)
-      phiFiedlerFixedArr->data[i] -= BF_EPS;
+      phiFiedlerFixed->data[i] -= BF_EPS;
   }
-
-  BfVecReal *phiFiedlerFixed = bfVecRealNewFromRealArray(phiFiedlerFixedArr);
-  HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
   }
 
-  bfRealArrayDeinitAndDealloc((BfRealArray **)&phiFiedlerFixedArr);
   bfRealArrayDeinitAndDealloc(&normalDerivFixed);
 
 #if BF_DEBUG
@@ -410,7 +340,7 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
   *phiFiedlerFixedPtr = phiFiedlerFixed;
 }
 
-static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
+static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler,
                          bool const *permMask,
                          BfTrimesh **submesh1Ptr, BfTrimesh **submesh2Ptr,
                          BfSizeArray **perm1Ptr, BfSizeArray **perm2Ptr) {
@@ -418,38 +348,50 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfVecReal const *phiFiedler,
 
   /* Extract the two nodal domains determined by `phiFiedler`. */
 
-  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, permMask, perm1Ptr);
+  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, BF_EPS, permMask, perm1Ptr);
   HANDLE_ERROR();
 
-  BfVecReal *phiFiedlerNeg = bfVecToVecReal(bfVecRealCopy(phiFiedler));
+  BfRealArray *phiFiedlerNeg = bfRealArrayCopy(phiFiedler);
   HANDLE_ERROR();
 
-  bfVecRealDscal(phiFiedlerNeg, -1);
+  bfRealArrayNegate(phiFiedlerNeg);
 
-  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, permMask, perm2Ptr);
+  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, BF_EPS, permMask, perm2Ptr);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
   }
 
-  bfVecRealDeinitAndDealloc(&phiFiedlerNeg);
+  bfRealArrayDeinitAndDealloc(&phiFiedlerNeg);
 
   *submesh1Ptr = submesh1;
   *submesh2Ptr = submesh2;
 }
 
+static BfSize TARGET_DEPTH = 4;
+static BfSize TRIMESH_COUNT = 0;
+
 static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, BfTrimesh const *trimesh,
                           BfSize i0, BfSize i1, BfSize *perm, BfSize depth) {
+  if (depth == TARGET_DEPTH) {
+    char path[1024];
+    sprintf(path, "verts%lu.bin", TRIMESH_COUNT);
+    bfTrimeshDumpVerts(trimesh, path);
+    sprintf(path, "faces%lu.bin", TRIMESH_COUNT);
+    bfTrimeshDumpFaces(trimesh, path);
+    printf("* wrote trimesh #%lu\n", TRIMESH_COUNT++);
+  }
+
   BF_ERROR_BEGIN();
 
   BF_ASSERT(i0 < i1);
 
-  BfVecReal *phiFiedler = getPhiFiedler(trimesh);
+  BfRealArray *phiFiedler = bfTrimeshGetFiedler(trimesh);
   HANDLE_ERROR();
 
   BfTrimesh *trimeshFixed = NULL;
-  BfVecReal *phiFiedlerFixed = NULL;
+  BfRealArray *phiFiedlerFixed = NULL;
   doBoundaryFix(trimesh, phiFiedler, &trimeshFixed, &phiFiedlerFixed);
   HANDLE_ERROR();
 
@@ -543,7 +485,7 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
 
   bfMemFree(permMask);
 
-  bfVecRealDeinitAndDealloc(&phiFiedler);
+  bfRealArrayDeinitAndDealloc(&phiFiedler);
 }
 
 void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree) {
