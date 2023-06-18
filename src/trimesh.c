@@ -572,6 +572,27 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
 void bfTrimeshInitFromVertsAndFaces(BfTrimesh *trimesh, BfPoints3 const *verts, BfSize numFaces, BfSize3 const *faces) {
   BF_ERROR_BEGIN();
 
+  /* Make sure none of the face indices are out of bounds: */
+  bool anyFaceIndexOutOfBounds = false;
+  for (BfSize i = 0; i < numFaces; ++i)
+    for (BfSize j = 0; j < 3; ++j)
+      if (faces[i][j] >= verts->size)
+        anyFaceIndexOutOfBounds = true;
+  if (anyFaceIndexOutOfBounds)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  /* Make sure all vertices are used in the mesh: */
+  bool *vertInMesh = bfMemAllocAndZero(verts->size, sizeof(bool));
+  for (BfSize i = 0; i < numFaces; ++i)
+    for (BfSize j = 0; j < 3; ++j)
+      vertInMesh[faces[i][j]] = true;
+  bool allVertsUsed = true;
+  for (BfSize i = 0; i < verts->size; ++i)
+    if (!vertInMesh[i])
+      allVertsUsed = false;
+  if (!allVertsUsed)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   trimesh->verts = bfPoints3Copy(verts);
   HANDLE_ERROR();
 
@@ -588,6 +609,8 @@ void bfTrimeshInitFromVertsAndFaces(BfTrimesh *trimesh, BfPoints3 const *verts, 
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  bfMemFree(vertInMesh);
 }
 
 void bfTrimeshDeinit(BfTrimesh *trimesh) {
