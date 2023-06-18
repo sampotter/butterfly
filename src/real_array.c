@@ -15,6 +15,31 @@ static void invalidate(BfRealArray *realArray) {
   realArray->isView = false;
 }
 
+BfRealArray *bfRealArrayCopy(BfRealArray const *realArray) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArrayCopy = bfMemAlloc(1, sizeof(BfRealArray));
+  if (realArrayCopy == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  invalidate(realArrayCopy);
+
+  realArrayCopy->size = realArray->size;
+  realArrayCopy->capacity = realArray->size;
+  realArrayCopy->isView = false;
+
+  realArrayCopy->data = bfMemAlloc(realArrayCopy->size, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  bfMemCopy(realArray->data, realArray->size, sizeof(BfSize), realArrayCopy->data);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return realArrayCopy;
+}
+
 BfRealArray *bfRealArrayNew() {
   BF_ERROR_BEGIN();
 
@@ -336,4 +361,9 @@ void bfRealArraySave(BfRealArray const *realArray, char const *path) {
   }
 
   fclose(fp);
+}
+
+void bfRealArrayNegate(BfRealArray *realArray) {
+  for (BfSize i = 0; i < realArray->size; ++i)
+    realArray->data[i] *= -1;
 }

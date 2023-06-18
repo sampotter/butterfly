@@ -15,6 +15,7 @@ BfRealArray *bfRealArrayNew();
 BfRealArray *bfRealArrayNewFromVecReal(BfVecReal const *vecReal, BfPolicy policy);
 BfRealArray *bfRealArrayNewWithDefaultCapacity();
 BfRealArray *bfRealArrayNewWithValue(BfSize size, BfReal value);
+BfRealArray *bfRealArrayCopy(BfRealArray const *realArray);
 void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray);
 void bfRealArrayInitWithValue(BfRealArray *realArray, BfSize size, BfReal value);
 void bfRealArrayDeinit(BfRealArray *realArray);
@@ -29,3 +30,4 @@ void bfRealArrayGetValues(BfRealArray const *realArray, BfSize n, BfSize const *
 void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value);
 BfSize bfRealArrayGetSize(BfRealArray const *realArray);
 void bfRealArraySave(BfRealArray const *realArray, char const *path);
+void bfRealArrayNegate(BfRealArray *realArray);
