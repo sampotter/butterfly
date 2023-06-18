@@ -46,3 +46,4 @@ bool bfTrimeshIsOK(BfTrimesh const *trimesh);
 void bfTrimeshDumpVerts(BfTrimesh const *trimesh, char const *path);
 void bfTrimeshDumpFaces(BfTrimesh const *trimesh, char const *path);
 BfRealArray *bfTrimeshGetNormalDeriv(BfTrimesh const *trimesh, BfRealArray const *values, bool computeAtAllVerts);
+BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh);

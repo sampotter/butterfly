@@ -7,9 +7,12 @@
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/lbo.h>
+#include <bf/linalg.h>
 #include <bf/mem.h>
 #include <bf/real_array.h>
 #include <bf/util.h>
+#include <bf/vec_real.h>
 #include <bf/vectors.h>
 
 #include "macros.h"
@@ -1058,4 +1061,71 @@ BfRealArray *bfTrimeshGetNormalDeriv(BfTrimesh const *trimesh, BfRealArray const
   bfMemFree(denom);
 
   return normalDeriv;
+}
+
+BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh) {
+  BF_ERROR_BEGIN();
+
+  /* Get the mask that indicates which vertices of `trimesh` are
+   * interior vertices. */
+
+  bool *mask = bfMemAlloc(bfTrimeshGetNumVerts(trimesh), sizeof(bool));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < bfTrimeshGetNumVerts(trimesh); ++i)
+    mask[i] = !trimesh->isBoundaryVert[i];
+
+  /* Compute the stiffness and mass matrices for the piecewise linear
+   * FEM approximation of the LBO and then extract the submatrices
+   * corresponding to the interior vertices so we can solve the
+   * Dirichlet eigenvalue problem. */
+
+  BfMat *L = NULL, *M = NULL;
+  bfLboGetFemDiscretization(trimesh, &L, &M);
+  HANDLE_ERROR();
+
+  BfMat *LInt = bfMatGetSubmatByMask(L, mask, mask);
+  HANDLE_ERROR();
+
+  BfMat *MInt = bfMatGetSubmatByMask(M, mask, mask);
+  HANDLE_ERROR();
+
+  /* Solve the shifted eigenvalue problem and get the first nonzero
+   * eigenfunction (the "Fiedler vector"). */
+
+  BfMat *PhiInt = NULL;
+  BfVecReal *Lam = NULL;
+  bfGetShiftedEigs(LInt, MInt, -0.001, 2, &PhiInt, &Lam);
+  HANDLE_ERROR();
+
+  BfVecReal *phiFiedlerInt = bfVecToVecReal(bfMatGetColView(PhiInt, 1));
+  HANDLE_ERROR();
+
+  BfVecReal *phiFiedler = bfVecRealNewWithValue(bfTrimeshGetNumVerts(trimesh), 0);
+  HANDLE_ERROR();
+
+  bfVecRealSetMask(phiFiedler, mask, bfVecRealToVec(phiFiedlerInt));
+
+  BfRealArray *phiFiedlerArr = bfRealArrayNewFromVecReal(phiFiedler, BF_POLICY_COPY);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(mask);
+
+  bfMatDelete(&L);
+  bfMatDelete(&M);
+
+  bfMatDelete(&LInt);
+  bfMatDelete(&MInt);
+
+  bfMatDelete(&PhiInt);
+  bfVecRealDeinitAndDealloc(&Lam);
+
+  bfVecRealDeinitAndDealloc(&phiFiedlerInt);
+  bfVecRealDeinitAndDealloc(&phiFiedler);
+
+  return phiFiedlerArr;
 }
