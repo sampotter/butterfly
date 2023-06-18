@@ -97,6 +97,45 @@ static bool appendCutEdge(BfSize *numCutEdges, BfSize *cutEdgesCapacity, BfSize2
   return true;
 }
 
+static BfSize
+appendCutVertex(BfPoints3 *cutVerts,
+                BfSize *numCutEdges, BfSize *cutEdgesCapacity, BfSize2 **cutEdges,
+                BfSize i0, BfSize i1, BfReal t, BfPoint3 const v) {
+  BfSize2 cutEdge = {i0, i1};
+  SORT2(cutEdge[0], cutEdge[1]);
+
+  BfSize iCut = BF_SIZE_BAD_VALUE;
+
+  if (appendCutEdge(numCutEdges, cutEdgesCapacity, cutEdges, cutEdge)) {
+    if (bfPoints3ContainsApprox(cutVerts, v, BF_EPS)) {
+      /* We might have already added this cut vertex---in this
+       * case, we should make sure that there's already a cut edge
+       * containing the index of the duplicated vertex. */
+      BF_ASSERT(fabs(t) <= 2.1e2*BF_EPS || fabs(1 - t) <= 2.1e2*BF_EPS);
+      BfSize iAdded = t < 0.5 ? cutEdge[0] : cutEdge[1];
+      bool foundExistingCutVert = false;
+      for (BfSize k = 0; k < *numCutEdges; ++k)
+        if ((*cutEdges)[k][0] == iAdded || (*cutEdges)[k][1] == iAdded)
+          foundExistingCutVert = true;
+      BF_ASSERT(foundExistingCutVert);
+
+      /* Get the index of `v` in `cutVerts` since we can
+       * conclude now that it's already been added: */
+      iCut = bfPoints3FindApprox(cutVerts, v, BF_EPS);
+    } else {
+      /* If we haven't added `v` already, then add it now. */
+      iCut = bfPoints3GetSize(cutVerts);
+      bfPoints3Append(cutVerts, v);
+    }
+  } else {
+    BfSize vtIndex = bfPoints3FindApprox(cutVerts, v, BF_EPS);
+    BF_ASSERT(vtIndex != BF_SIZE_BAD_VALUE);
+    iCut = vtIndex;
+  }
+
+  return iCut;
+}
+
 typedef struct {
   BfVector3 dv;
   BfReal const *vInt;
@@ -212,7 +251,7 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     BfSize3 newFace;
     for (BfSize j = 0; j < 3; ++j) {
       BfReal const *point = bfPoints3GetPtrConst(trimesh->verts, trimesh->faces[i][j]);
-      newFace[j] = bfPoints3Find(verts, point);
+      newFace[j] = bfPoints3FindApprox(verts, point, BF_EPS);
       BF_ASSERT(newFace[j] != BF_SIZE_BAD_VALUE);
     }
 
@@ -276,7 +315,7 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
         /* Due to numerical roundoff, `vt[j]` may exactly equal an existing
          * mesh vertex. We want to avoid duplicate mesh vertices, so
          * we set `t[j]` to `NAN` to signal this and continue. */
-        if (bfPoints3Contains(verts, vt[j]))
+        if (bfPoints3ContainsApprox(verts, vt[j], BF_EPS))
           t[j] = BF_NAN;
       }
 
@@ -295,22 +334,15 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
       /* Compute new cut vertices and append them to `cutVerts`: */
       BfSize iCut[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
       for (BfSize j = 0; j < 2; ++j) {
-        if (isnan(t[j])) continue;
-        BfSize2 cutEdge = {iNeg[0], iPos[j]};
-        SORT2(cutEdge[0], cutEdge[1]);
-        if (appendCutEdge(&numCutEdges, &cutEdgesCapacity, &cutEdges, cutEdge)) {
-          BF_ASSERT(!bfPoints3Contains(cutVerts, vt[j]));
-          iCut[j] = bfPoints3GetSize(cutVerts);
-          bfPoints3Append(cutVerts, vt[j]);
-        } else {
-          BfSize vtIndex = bfPoints3Find(cutVerts, vt[j]);
-          BF_ASSERT(vtIndex != BF_SIZE_BAD_VALUE);
-          iCut[j] = vtIndex;
-        }
+        if (isnan(t[j]))
+          continue;
+        iCut[j] = appendCutVertex(
+          cutVerts, &numCutEdges, &cutEdgesCapacity, &cutEdges,
+          iNeg[0], iPos[j], t[j], vt[j]);
       }
 
       /* Find the "new" index of `v0` (its position in `verts`): */
-      BfSize i0New = bfPoints3Find(verts, v0);
+      BfSize i0New = bfPoints3FindApprox(verts, v0, BF_EPS);
       if (i0New == BF_SIZE_BAD_VALUE) {
         i0New = bfPoints3GetSize(verts);
         bfPoints3Append(verts, v0);
@@ -320,7 +352,7 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
       BfSize iCutNew[2];
       for (BfSize j = 0; j < 2; ++j) {
         if (isnan(t[j])) {
-          iCutNew[j] = bfPoints3Find(verts, vt[j]);
+          iCutNew[j] = bfPoints3FindApprox(verts, vt[j], BF_EPS);
         } else {
           BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
           iCutNew[j] = verts->size + iCut[j];
@@ -354,7 +386,7 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
         /* Due to numerical roundoff, `vt[j]` may exactly equal an existing
          * mesh vertex. We want to avoid duplicate mesh vertices, so
          * we set `t[j]` to `NAN` to signal this and continue. */
-        if (bfPoints3Contains(verts, vt[j]))
+        if (bfPoints3ContainsApprox(verts, vt[j], BF_EPS))
           t[j] = BF_NAN;
       }
 
@@ -367,45 +399,34 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
       // TODO: quad collapsed to an edge:
       BF_ASSERT(!(coalesced[0] && coalesced[1]));
 
+      if (coalesced[2]) BF_ASSERT(!coalesced[0] && !coalesced[1]);
+
       /* Compute new cut vertices and append them to `cutVerts`: */
       BfSize iCut[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
-      for (BfSize j = 0; j < 2; ++j) {
-        if (coalesced[2] || coalesced[j]) continue;
-        if (isnan(t[j])) continue;
-        BfSize2 cutEdge = {iNeg[j], iPos[0]};
-        SORT2(cutEdge[0], cutEdge[1]);
-        if (appendCutEdge(&numCutEdges, &cutEdgesCapacity, &cutEdges, cutEdge)) {
-          if (bfPoints3Contains(cutVerts, vt[j])) {
-            /* We might have already added this cut vertex---in this
-             * case, we should make sure that there's already a cut edge
-             * containing the index of the duplicated vertex. */
-            BF_ASSERT(t[j] == 0 || t[j] == 1);
-            BfSize iAdded = t[j] == 0 ? cutEdge[0] : cutEdge[1];
-            bool foundExistingCutVert = false;
-            for (BfSize k = 0; k < numCutEdges; ++k)
-              if (cutEdges[k][0] == iAdded || cutEdges[k][1] == iAdded)
-                foundExistingCutVert = true;
-            BF_ASSERT(foundExistingCutVert);
-
-            /* Get the index of `vt[j]` in `cutVerts` since we can
-             * conclude now that it's already been added: */
-            iCut[j] = bfPoints3Find(cutVerts, vt[j]);
-          } else {
-            /* If we haven't added `vt[j]` already, then add it now. */
-            iCut[j] = bfPoints3GetSize(cutVerts);
-            bfPoints3Append(cutVerts, vt[j]);
-          }
-        } else {
-          BfSize vtIndex = bfPoints3Find(cutVerts, vt[j]);
-          BF_ASSERT(vtIndex != BF_SIZE_BAD_VALUE);
-          iCut[j] = vtIndex;
+      if (coalesced[2]) {
+        bool foundVt[2] = {
+          bfPoints3ContainsApprox(cutVerts, vt[0], BF_EPS),
+          bfPoints3ContainsApprox(cutVerts, vt[1], BF_EPS),
+        };
+        BF_ASSERT(!(foundVt[0] ^ foundVt[1]));
+        if (!foundVt[0] || !foundVt[1]) {
+          iCut[0] = iCut[1] = bfPoints3GetSize(cutVerts);
+          bfPoints3Append(cutVerts, vt[0]);
+        }
+      } else {
+        for (BfSize j = 0; j < 2; ++j) {
+          if (coalesced[j] || isnan(t[j]))
+            continue;
+          iCut[j] = appendCutVertex(
+            cutVerts, &numCutEdges, &cutEdgesCapacity, &cutEdges,
+            iNeg[j], iPos[0], t[j], vt[j]);
         }
       }
 
       /* Find the "new" indices of these two mesh verts: */
       BfSize i0New[2] = {
-        bfPoints3Find(verts, v0[0]),
-        bfPoints3Find(verts, v0[1]),
+        bfPoints3FindApprox(verts, v0[0], BF_EPS),
+        bfPoints3FindApprox(verts, v0[1], BF_EPS),
       };
       BF_ASSERT(i0New[0] != BF_SIZE_BAD_VALUE && i0New[1] != BF_SIZE_BAD_VALUE);
 
@@ -415,19 +436,18 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
         BF_ASSERT(!coalesced[0] && !coalesced[1]);
         BF_ASSERT(bfPoint3Dist(vt[0], v) <= BF_EPS);
         BF_ASSERT(bfPoint3Dist(vt[1], v) <= BF_EPS);
-        BF_ASSERT(!bfPoints3Contains(verts, v));
+        BF_ASSERT(!bfPoints3ContainsApprox(verts, v, BF_EPS));
         for (BfSize j = 0; j < 2; ++j)
-          iCutNew[j] = bfPoints3Find(cutVerts, vt[j]);
-        BF_ASSERT(BF_SIZE_OK(iCutNew[0]) ^ BF_SIZE_OK(iCutNew[1]));
-        if (iCutNew[0] == BF_SIZE_BAD_VALUE)
-          iCutNew[0] = iCutNew[1];
-        else
-          iCutNew[1] = iCutNew[0];
+          iCutNew[j] = bfPoints3FindApprox(cutVerts, vt[j], BF_EPS);
+        BF_ASSERT(BF_SIZE_OK(iCutNew[0]) || BF_SIZE_OK(iCutNew[1]));
+        if (iCutNew[0] == BF_SIZE_BAD_VALUE) iCutNew[0] = iCutNew[1];
+        if (iCutNew[1] == BF_SIZE_BAD_VALUE) iCutNew[1] = iCutNew[0];
+        BF_ASSERT(BF_SIZE_OK(iCutNew[0]) && BF_SIZE_OK(iCutNew[1]));
         for (BfSize j = 0; j < 2; ++j) iCutNew[j] += verts->size;
       } else {
         for (BfSize j = 0; j < 2; ++j) {
           if (isnan(t[j])) {
-            iCutNew[j] = bfPoints3Find(verts, vt[j]);
+            iCutNew[j] = bfPoints3FindApprox(verts, vt[j], BF_EPS);
           } else if (!coalesced[j]) {
             BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
             iCutNew[j] = verts->size + iCut[j];
@@ -570,13 +590,13 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
       BfSize iCut[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
       for (BfSize j = 0; j < 2; ++j) {
         addedCutEdge[j] = appendCutEdge(&numCutEdges,&cutEdgesCapacity,&cutEdges,cutEdge[j]);
-        bool addedCutVertAlready = bfPoints3Contains(cutVerts, vCut[j]);
+        bool addedCutVertAlready = bfPoints3ContainsApprox(cutVerts, vCut[j], BF_EPS);
         if (addedCutEdge[j]) {
           BF_ASSERT(!addedCutVertAlready);
           iCut[j] = bfPoints3GetSize(cutVerts);
           bfPoints3Append(cutVerts, vCut[j]);
         } else if (addedCutVertAlready) {
-          iCut[j] = bfPoints3Find(cutVerts, vCut[j]);
+          iCut[j] = bfPoints3FindApprox(cutVerts, vCut[j], BF_EPS);
           BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
         } else {
           /* We added a cut vertex for this edge previously, but it no
@@ -595,10 +615,10 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
 
       /* Add new cut face: */
 
-      BfSize iZeroNew = bfPoints3Find(verts, vZero);
+      BfSize iZeroNew = bfPoints3FindApprox(verts, vZero, BF_EPS);
       BF_ASSERT(iZeroNew != BF_SIZE_BAD_VALUE);
 
-      BfSize iNew = bfPoints3Find(verts, phiInt < 0 ? vInt : vBd);
+      BfSize iNew = bfPoints3FindApprox(verts, phiInt < 0 ? vInt : vBd, BF_EPS);
       BF_ASSERT(iNew != BF_SIZE_BAD_VALUE);
 
       BfSize3 newFace = {iZeroNew, verts->size + iCut[1], iNew};
@@ -608,13 +628,13 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     else BF_DIE();
   }
 
-  BF_ASSERT(bfPoints3AllUnique(verts));
-  BF_ASSERT(bfPoints3AllUnique(cutVerts));
+  BF_ASSERT(bfPoints3AllUniqueApprox(verts, BF_EPS));
+  BF_ASSERT(bfPoints3AllUniqueApprox(cutVerts, BF_EPS));
 
   bfPoints3Extend(verts, cutVerts);
   HANDLE_ERROR();
 
-  BF_ASSERT(bfPoints3AllUnique(verts));
+  BF_ASSERT(bfPoints3AllUniqueApprox(verts, BF_EPS));
 
   /* Eliminate isolated boundary vertices. These can arise during the
    * splitting process. */
