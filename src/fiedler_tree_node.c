@@ -453,14 +453,6 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   doBoundaryFix(trimesh, phiFiedler, &trimeshFixed, &phiFiedlerFixed);
   HANDLE_ERROR();
 
-  FILE *fp = fopen("verts.bin", "w");
-  fwrite(trimeshFixed->verts->data, sizeof(BfPoint3), trimeshFixed->verts->size, fp);
-  fclose(fp);
-
-  fp = fopen("faces.bin", "w");
-  fwrite(trimeshFixed->faces, sizeof(BfSize3), trimeshFixed->numFaces, fp);
-  fclose(fp);
-
   /* An assumption we make is that the vertices corresponding to [i0,
    * i1] are the first vertices in `trimeshFixed`. This is a little
    * hacky, but it does make the implementation simpler. We verify

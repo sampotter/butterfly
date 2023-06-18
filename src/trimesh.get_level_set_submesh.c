@@ -651,14 +651,6 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfVecReal const
     }
   }
 
-  FILE *fp = fopen("verts.bin", "w");
-  fwrite(verts->data, sizeof(BfPoint3), verts->size, fp);
-  fclose(fp);
-
-  fp = fopen("faces.bin", "w");
-  fwrite(faces, sizeof(BfSize3), numFaces, fp);
-  fclose(fp);
-
   submesh = bfTrimeshNewFromVertsAndFaces(verts, numFaces, (BfSize3 const *)faces);
   HANDLE_ERROR();
 
