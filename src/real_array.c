@@ -321,3 +321,19 @@ void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value) {
 BfSize bfRealArrayGetSize(BfRealArray const *realArray) {
   return realArray->size;
 }
+
+void bfRealArraySave(BfRealArray const *realArray, char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "w");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fwrite(realArray->data, sizeof(BfReal), realArray->size, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+}

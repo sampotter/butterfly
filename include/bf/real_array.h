@@ -28,3 +28,4 @@ BfReal bfRealArrayGetValue(BfRealArray const *realArray, BfSize i);
 void bfRealArrayGetValues(BfRealArray const *realArray, BfSize n, BfSize const *inds, BfReal *values);
 void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value);
 BfSize bfRealArrayGetSize(BfRealArray const *realArray);
+void bfRealArraySave(BfRealArray const *realArray, char const *path);
