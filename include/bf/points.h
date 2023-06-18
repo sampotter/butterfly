@@ -93,3 +93,4 @@ bool bfPoints3AllUnique(BfPoints3 const *points);
 void bfPoints3Save(BfPoints3 const *points, char const *path);
 bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
 BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
+bool bfPoints3AllUniqueApprox(BfPoints3 const *points, BfReal tol);

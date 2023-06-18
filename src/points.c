@@ -857,3 +857,12 @@ BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal
       return i;
   return BF_SIZE_BAD_VALUE;
 }
+
+bool bfPoints3AllUniqueApprox(BfPoints3 const *points, BfReal tol) {
+  BfSize n = points->size;
+  for (BfSize i = 0; i < n; ++i)
+    for (BfSize j = i + 1; j < n; ++j)
+      if (bfPoint3EqualApprox(points->data[i], points->data[j], tol))
+        return false;
+  return true;
+}
