@@ -844,7 +844,7 @@ void bfPoints3Save(BfPoints3 const *points, char const *path) {
   fclose(fp);
 }
 
-void bfPoints3ContainsApprox(BfPoint3 const *points, BfPoint3 const point, BfReal tol) {
+bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
   for (BfSize i = 0; i < points->size; ++i)
     if (bfPoint3EqualApprox(points->data[i], point, tol))
       return true;

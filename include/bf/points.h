@@ -91,5 +91,5 @@ void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point);
 void bfPoints3Delete(BfPoints3 *points, BfSize i);
 bool bfPoints3AllUnique(BfPoints3 const *points);
 void bfPoints3Save(BfPoints3 const *points, char const *path);
-void bfPoints3ContainsApprox(BfPoint3 const *points, BfPoint3 const point, BfReal tol);
+bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
 BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
