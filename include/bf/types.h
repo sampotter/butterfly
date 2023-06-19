@@ -2,13 +2,11 @@
 
 #include <stdbool.h>
 
+typedef struct BfArray BfArray;
 typedef struct BfRealArray BfRealArray;
-
 typedef struct BfSizeArray BfSizeArray;
-
 typedef struct BfPtrArray BfPtrArray;
 typedef struct BfConstPtrArray BfConstPtrArray;
-
 typedef struct BfConstNodeArray BfConstNodeArray;
 
 typedef struct BfMat BfMat;

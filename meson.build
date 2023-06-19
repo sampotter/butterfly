@@ -32,6 +32,7 @@ gsl_dep = dependency('gsl', required : true)
 # umfpack_dep = dependency('umfpack', required : true)
 
 butterfly_lib_src = [
+  'src/array.c',
   'src/bbox.c',
   'src/bessel.c',
   'src/cheb.c',
