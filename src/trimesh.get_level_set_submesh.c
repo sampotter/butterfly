@@ -545,6 +545,14 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
   BfSize iInt = BF_SIZE_BAD_VALUE; /* Index of vertex in interior */
   BfReal phiInt = BF_NAN; /* Value of phi at interior vertex */
 
+  /* TODO: instead of checking whether the value of phi is equal to
+   * +/- tol, we should use a mask to mark these points (these are the
+   * points on the boundary where phi *was* equal to zero, but which
+   * have been perturbed to push them into the correct nodal
+   * domains)
+   *
+   * TODO: even better, we should be able to just leave these as
+   * zeros without perturbing... */
   if (builder->phiPos[0] == BF_EPS && builder->trimesh->isBoundaryVert[builder->iPos[0]]) {
     iBd = builder->iPos[0];
     iInt = builder->iNeg[0];
