@@ -624,6 +624,11 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
 
   trimesh->numFaces = BF_SIZE_BAD_VALUE;
 
+  bfMemFree(trimesh->edges);
+  trimesh->edges = NULL;
+
+  trimesh->numEdges = BF_SIZE_BAD_VALUE;
+
   bfMemFree(trimesh->vfOffset);
   trimesh->vfOffset = NULL;
 
@@ -635,16 +640,27 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
 
   bfMemFree(trimesh->vv);
   trimesh->vv = NULL;
+
+  bfMemFree(trimesh->isBoundaryEdge);
+  trimesh->isBoundaryEdge = NULL;
+
+  bfMemFree(trimesh->isBoundaryVert);
+  trimesh->isBoundaryVert = NULL;
+
+  bfMemFree(trimesh->boundaryEdges);
+  trimesh->boundaryEdges = NULL;
+
+  trimesh->numBoundaryEdges = BF_SIZE_BAD_VALUE;
 }
 
 void bfTrimeshDealloc(BfTrimesh **trimesh) {
-  (void)trimesh;
-  BF_DIE();
+  bfMemFree(*trimesh);
+  *trimesh = NULL;
 }
 
 void bfTrimeshDeinitAndDealloc(BfTrimesh **trimesh) {
-  (void)trimesh;
-  BF_DIE();
+  bfTrimeshDeinit(*trimesh);
+  bfTrimeshDealloc(trimesh);
 }
 
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {

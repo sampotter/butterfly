@@ -220,10 +220,7 @@ static void addContainedFaces(NodalDomainBuilder *builder) {
   }
 }
 
-static bool prepareForAddCutFacesAndVertsIteration(NodalDomainBuilder *builder, BfSize faceIndex) {
-
-  /** Invalidate variables before setting: */
-
+static void invalidateCutFacesAndVertsVars(NodalDomainBuilder *builder) {
   builder->numPos = builder->numNeg = builder->numZero
     = builder->iPos[0] = builder->iPos[1]
     = builder->iNeg[0] = builder->iNeg[1]
@@ -231,8 +228,10 @@ static bool prepareForAddCutFacesAndVertsIteration(NodalDomainBuilder *builder, 
 
   builder->phiPos[0] = builder->phiPos[1]
     = builder->phiNeg[0] = builder->phiNeg[1] = BF_NAN;
+}
 
-  /** Set variables: */
+static bool prepareForAddCutFacesAndVertsIteration(NodalDomainBuilder *builder, BfSize faceIndex) {
+  invalidateCutFacesAndVertsVars(builder);
 
   BfReal phiFace[3];
   for (BfSize j = 0; j < 3; ++j)
@@ -761,8 +760,33 @@ static void eliminateIsolatedVerts(NodalDomainBuilder *builder) {
   bfMemFree(isolated);
 }
 
+static void deinit(NodalDomainBuilder *builder) {
+  builder->trimesh = NULL;
+  builder->phi = NULL;
+  builder->tol = BF_NAN;
 
-////////////////////////////////////////////////////////////////////////////////
+  builder->numFaces = BF_SIZE_BAD_VALUE;
+  builder->facesCapacity = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(builder->faces);
+  builder->faces = NULL;
+
+  bfPoints3DeinitAndDealloc(&builder->verts);
+
+  builder->numCutEdges = BF_SIZE_BAD_VALUE;
+  builder->cutEdgesCapacity = BF_SIZE_BAD_VALUE;
+
+  bfMemFree(builder->cutEdges);
+  builder->cutEdges = NULL;
+
+  bfPoints3DeinitAndDealloc(&builder->cutVerts);
+
+  builder->perm = NULL;
+
+  builder->permMask = NULL;
+
+  invalidateCutFacesAndVertsVars(builder);
+}
 
 /*!
  * Extract a submesh from trimesh using the level set function phi. In
@@ -782,10 +806,6 @@ static void eliminateIsolatedVerts(NodalDomainBuilder *builder) {
  */
 BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfRealArray const *phi, BfReal tol, bool const *permMask, BfSizeArray **permPtr) {
   BF_ERROR_BEGIN();
-
-//   bfTrimeshDumpVerts(trimesh, "verts.bin");
-//   bfTrimeshDumpFaces(trimesh, "faces.bin");
-//   bfRealArraySave(phi, "phi.bin");
 
   BfTrimesh *submesh = NULL;
 
@@ -821,6 +841,8 @@ BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfRealArray con
 
   if (permPtr != NULL)
     *permPtr = builder.perm;
+
+  deinit(&builder);
 
   return submesh;
 }

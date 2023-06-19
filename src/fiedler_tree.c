@@ -73,16 +73,15 @@ void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *tree, BfTrimesh const *trimesh,
 }
 
 void bfFiedlerTreeDeinit(BfFiedlerTree *fiedlerTree) {
-  (void)fiedlerTree;
-  BF_DIE();
+  bfTreeDeinit(&fiedlerTree->super);
 }
 
 void bfFiedlerTreeDealloc(BfFiedlerTree **fiedlerTree) {
-  (void)fiedlerTree;
-  BF_DIE();
+  bfMemFree(*fiedlerTree);
+  *fiedlerTree = NULL;
 }
 
 void bfFiedlerTreeDeinitAndDealloc(BfFiedlerTree **fiedlerTree) {
-  (void)fiedlerTree;
-  BF_DIE();
+  bfFiedlerTreeDeinit(*fiedlerTree);
+  bfFiedlerTreeDealloc(fiedlerTree);
 }

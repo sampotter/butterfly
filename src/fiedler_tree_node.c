@@ -188,6 +188,9 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  bfSizeArrayDeinitAndDealloc(&queue);
+  bfMemFree(nodalDomainType);
 }
 
 /* When we do a split in the Fiedler tree, there are two cases: either
@@ -292,6 +295,9 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
     }
   }
 
+  bfRealArrayDeinitAndDealloc(&normalDeriv);
+  bfSizeArrayDeinitAndDealloc(&interiorZeroInds);
+
   /* Next, we perturb the components of the Fiedler vector by +/-
    * `BF_EPS`, depending on whether the normal derivative is positive
    * or negative. This should result in two chains of +/- `BF_EPS`
@@ -377,8 +383,6 @@ static void initRecursive(BfFiedlerTreeNode *node,
 
   BF_ASSERT(i0 < i1);
 
-  node->trimesh = keepNodeTrimeshes ? trimesh : NULL;
-
   BfRealArray *phiFiedler = bfTrimeshGetFiedler(trimesh);
   HANDLE_ERROR();
 
@@ -417,6 +421,11 @@ static void initRecursive(BfFiedlerTreeNode *node,
   splitTrimesh(trimeshFixed, phiFiedlerFixed, tol, permMask, &submesh[0], &submesh[1], &subperm[0], &subperm[1]);
   HANDLE_ERROR();
 
+  /* Now that we've split the mesh, we can free the fixed triangle
+   * mesh and Fiedler vector to save on memory. */
+  bfTrimeshDeinitAndDealloc(&trimeshFixed);
+  bfRealArrayDeinitAndDealloc(&phiFiedlerFixed);
+
   /* Update `perm` and compute the offsets for each child */
 
   BfSize *newPerm = bfMemAlloc(i1 - i0, sizeof(BfSize));
@@ -437,10 +446,16 @@ static void initRecursive(BfFiedlerTreeNode *node,
   node->super.offset[MAX_NUM_CHILDREN] = i;
   bfMemCopy(newPerm, i1 - i0, sizeof(BfSize), perm + i0);
 
+  /* Free these now that we've permuted the child indices. */
+  for (BfSize j = 0; j < 2; ++j)
+    bfSizeArrayDeinitAndDealloc(&subperm[j]);
+
 #if BF_DEBUG
   for (BfSize i = i0; i < i1; ++i) BF_ASSERT(perm[i] != BF_SIZE_BAD_VALUE);
   BF_ASSERT(bfSizeIsPerm(tree->super.perm.size, tree->super.perm.index));
 #endif
+
+  bfMemFree(newPerm);
 
   /* Recursively create children */
 
@@ -462,8 +477,9 @@ static void initRecursive(BfFiedlerTreeNode *node,
                    MAX_NUM_CHILDREN, j, childDepth);
     HANDLE_ERROR();
 
+    child->trimesh = keepNodeTrimeshes ? submesh[j] : NULL;
+
     if (numChildPoints > LEAF_SIZE_THRESHOLD) {
-      printf("  initRecursive(depth = %lu, j = %lu)\n", childDepth, j);
       initRecursive(child, tree, submesh[j], tol, keepNodeTrimeshes, i0Child, i1Child, perm, childDepth);
       HANDLE_ERROR();
     }
@@ -486,6 +502,13 @@ void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tre
   bfTreeNodeInitRoot(&node->super, &TreeNodeVtable, bfFiedlerTreeConstToTreeConst(tree), MAX_NUM_CHILDREN);
   HANDLE_ERROR();
 
+  if (keepNodeTrimeshes) {
+    node->trimesh = bfTrimeshCopy(tree->trimesh);
+    HANDLE_ERROR();
+  } else {
+    node->trimesh = NULL;
+  }
+
   initRecursive(
     node,
     tree,
@@ -503,8 +526,10 @@ void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tre
 }
 
 void bfFiedlerTreeNodeDeinit(BfFiedlerTreeNode *node) {
-  (void)node;
-  BF_DIE();
+  if (node->trimesh != NULL)
+    bfTrimeshDeinitAndDealloc((BfTrimesh **)&node->trimesh);
+
+  bfTreeNodeDeinit(&node->super);
 }
 
 void bfFiedlerTreeNodeDealloc(BfFiedlerTreeNode **node) {
