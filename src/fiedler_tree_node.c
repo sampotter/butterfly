@@ -341,14 +341,14 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
 }
 
 static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler,
-                         bool const *permMask,
+                         BfReal tol, bool const *permMask,
                          BfTrimesh **submesh1Ptr, BfTrimesh **submesh2Ptr,
                          BfSizeArray **perm1Ptr, BfSizeArray **perm2Ptr) {
   BF_ERROR_BEGIN();
 
   /* Extract the two nodal domains determined by `phiFiedler`. */
 
-  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, 1e1*BF_EPS, permMask, perm1Ptr);
+  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, tol, permMask, perm1Ptr);
   HANDLE_ERROR();
 
   BfRealArray *phiFiedlerNeg = bfRealArrayCopy(phiFiedler);
@@ -356,7 +356,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
 
   bfRealArrayNegate(phiFiedlerNeg);
 
-  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, 1e1*BF_EPS, permMask, perm2Ptr);
+  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, tol, permMask, perm2Ptr);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -370,7 +370,8 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
 }
 
 static void initRecursive(BfFiedlerTreeNode *node,
-                          BfFiedlerTree const *tree, BfTrimesh const *trimesh, bool keepNodeTrimeshes,
+                          BfFiedlerTree const *tree, BfTrimesh const *trimesh,
+                          BfReal tol, bool keepNodeTrimeshes,
                           BfSize i0, BfSize i1, BfSize *perm, BfSize depth) {
   BF_ERROR_BEGIN();
 
@@ -413,7 +414,7 @@ static void initRecursive(BfFiedlerTreeNode *node,
    * `submesh[i]`. */
   BfTrimesh *submesh[2] = {NULL, NULL};
   BfSizeArray *subperm[2] = {NULL, NULL};
-  splitTrimesh(trimeshFixed, phiFiedlerFixed, permMask, &submesh[0], &submesh[1], &subperm[0], &subperm[1]);
+  splitTrimesh(trimeshFixed, phiFiedlerFixed, tol, permMask, &submesh[0], &submesh[1], &subperm[0], &subperm[1]);
   HANDLE_ERROR();
 
   /* Update `perm` and compute the offsets for each child */
@@ -463,7 +464,7 @@ static void initRecursive(BfFiedlerTreeNode *node,
 
     if (numChildPoints > LEAF_SIZE_THRESHOLD) {
       printf("  initRecursive(depth = %lu, j = %lu)\n", childDepth, j);
-      initRecursive(child, tree, submesh[j], keepNodeTrimeshes, i0Child, i1Child, perm, childDepth);
+      initRecursive(child, tree, submesh[j], tol, keepNodeTrimeshes, i0Child, i1Child, perm, childDepth);
       HANDLE_ERROR();
     }
 
@@ -479,7 +480,7 @@ static void initRecursive(BfFiedlerTreeNode *node,
   bfRealArrayDeinitAndDealloc(&phiFiedler);
 }
 
-void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, bool keepNodeTrimeshes) {
+void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, BfReal tol, bool keepNodeTrimeshes) {
   BF_ERROR_BEGIN();
 
   bfTreeNodeInitRoot(&node->super, &TreeNodeVtable, bfFiedlerTreeConstToTreeConst(tree), MAX_NUM_CHILDREN);
@@ -489,6 +490,7 @@ void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tre
     node,
     tree,
     tree->trimesh,
+    tol,
     keepNodeTrimeshes,
     /* i0: */ 0,
     /* i1: */ bfTrimeshGetNumVerts(tree->trimesh),

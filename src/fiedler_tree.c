@@ -24,13 +24,13 @@ BfType bfFiedlerTreeGetType(BfFiedlerTree const *tree) {
   return BF_TYPE_FIEDLER_TREE;
 }
 
-BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh, bool keepNodeTrimeshes) {
+BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh, BfReal tol, bool keepNodeTrimeshes) {
   BF_ERROR_BEGIN();
 
   BfFiedlerTree *fiedlerTree = bfMemAlloc(1, sizeof(BfFiedlerTree));
   HANDLE_ERROR();
 
-  bfFiedlerTreeInitFromTrimesh(fiedlerTree, trimesh, keepNodeTrimeshes);
+  bfFiedlerTreeInitFromTrimesh(fiedlerTree, trimesh, tol, keepNodeTrimeshes);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -50,7 +50,7 @@ BfTree const *bfFiedlerTreeConstToTreeConst(BfFiedlerTree const *tree) {
 
 /** Implementation: FiedlerTree */
 
-void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *tree, BfTrimesh const *trimesh, bool keepNodeTrimeshes) {
+void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *tree, BfTrimesh const *trimesh, BfReal tol, bool keepNodeTrimeshes) {
   BF_ERROR_BEGIN();
 
   BfFiedlerTreeNode *root = bfFiedlerTreeNodeNew();
@@ -65,7 +65,7 @@ void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *tree, BfTrimesh const *trimesh,
 
   tree->trimesh = trimesh;
 
-  bfFiedlerTreeNodeInitRoot(root, tree, keepNodeTrimeshes);
+  bfFiedlerTreeNodeInitRoot(root, tree, tol, keepNodeTrimeshes);
 
   BF_ERROR_END() {
     BF_DIE();

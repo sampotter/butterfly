@@ -12,8 +12,10 @@ int main(int argc, char *argv[]) {
 
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
 
+  BfReal tol = 1e-15;
+
   printf("\nbuilding Fielder tree:\n");
-  BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(trimesh, /* keepNodeTrimeshes: */ true);
+  BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(trimesh, tol, /* keepNodeTrimeshes: */ true);
 
   bfFiedlerTreeDeinitAndDealloc(&fiedlerTree);
   bfTrimeshDeinitAndDealloc(&trimesh);
