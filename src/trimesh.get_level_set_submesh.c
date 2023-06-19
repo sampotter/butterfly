@@ -207,7 +207,7 @@ static void addContainedFaces(NodalDomainBuilder *builder) {
     BfSize3 newFace;
     for (BfSize j = 0; j < 3; ++j) {
       BfReal const *v = bfPoints3GetPtrConst(builder->trimesh->verts, builder->trimesh->faces[i][j]);
-      newFace[j] = bfPoints3FindApprox(builder->verts, v, BF_EPS);
+      newFace[j] = bfPoints3FindApprox(builder->verts, v, builder->tol);
       BF_ASSERT(newFace[j] != BF_SIZE_BAD_VALUE);
     }
 
@@ -304,11 +304,11 @@ static BfSize appendCutVertex(NodalDomainBuilder *builder, BfSize i0, BfSize i1,
   BfSize iCut = BF_SIZE_BAD_VALUE;
 
   if (appendCutEdge(builder, cutEdge)) {
-    if (bfPoints3ContainsApprox(builder->cutVerts, v, BF_EPS)) {
+    if (bfPoints3ContainsApprox(builder->cutVerts, v, builder->tol)) {
       /* We might have already added this cut vertex---in this
        * case, we should make sure that there's already a cut edge
        * containing the index of the duplicated vertex. */
-      BF_ASSERT(fabs(t) <= 2.1e2*BF_EPS || fabs(1 - t) <= 2.1e2*BF_EPS);
+      BF_ASSERT(fabs(t) <= 2.1e2*builder->tol || fabs(1 - t) <= 2.1e2*builder->tol);
       BfSize iAdded = t < 0.5 ? cutEdge[0] : cutEdge[1];
       bool foundExistingCutVert = false;
       for (BfSize k = 0; k < builder->numCutEdges; ++k)
@@ -318,14 +318,14 @@ static BfSize appendCutVertex(NodalDomainBuilder *builder, BfSize i0, BfSize i1,
 
       /* Get the index of `v` in `cutVerts` since we can
        * conclude now that it's already been added: */
-      iCut = bfPoints3FindApprox(builder->cutVerts, v, BF_EPS);
+      iCut = bfPoints3FindApprox(builder->cutVerts, v, builder->tol);
     } else {
       /* If we haven't added `v` already, then add it now. */
       iCut = bfPoints3GetSize(builder->cutVerts);
       bfPoints3Append(builder->cutVerts, v);
     }
   } else {
-    BfSize vtIndex = bfPoints3FindApprox(builder->cutVerts, v, BF_EPS);
+    BfSize vtIndex = bfPoints3FindApprox(builder->cutVerts, v, builder->tol);
     BF_ASSERT(vtIndex != BF_SIZE_BAD_VALUE);
     iCut = vtIndex;
   }
@@ -354,16 +354,16 @@ static void addCutFacesAndVerts_case21(NodalDomainBuilder *builder) {
     /* Due to numerical roundoff, `vt[j]` may exactly equal an existing
      * mesh vertex. We want to avoid duplicate mesh vertices, so
      * we set `t[j]` to `NAN` to signal this and continue. */
-    if (bfPoints3ContainsApprox(builder->verts, vt[j], BF_EPS))
+    if (bfPoints3ContainsApprox(builder->verts, vt[j], builder->tol))
       t[j] = BF_NAN;
   }
 
   /* Check if this is a degenerate face: if it is, we return now
    * before adding anything to any of the arrays we're building up. */
   bool coalesced[3] = {
-    bfPoint3Dist(v0, vt[0]) <= BF_EPS,
-    bfPoint3Dist(v0, vt[1]) <= BF_EPS,
-    bfPoint3Dist(vt[0], vt[1]) <= BF_EPS
+    bfPoint3Dist(v0, vt[0]) <= builder->tol,
+    bfPoint3Dist(v0, vt[1]) <= builder->tol,
+    bfPoint3Dist(vt[0], vt[1]) <= builder->tol
   };
   if (coalesced[0] || coalesced[1] || coalesced[2])
     return;
@@ -377,7 +377,7 @@ static void addCutFacesAndVerts_case21(NodalDomainBuilder *builder) {
   }
 
   /* Find the "new" index of `v0` (its position in `verts`): */
-  BfSize i0New = bfPoints3FindApprox(builder->verts, v0, BF_EPS);
+  BfSize i0New = bfPoints3FindApprox(builder->verts, v0, builder->tol);
   if (i0New == BF_SIZE_BAD_VALUE) {
     i0New = bfPoints3GetSize(builder->verts);
     bfPoints3Append(builder->verts, v0);
@@ -387,7 +387,7 @@ static void addCutFacesAndVerts_case21(NodalDomainBuilder *builder) {
   BfSize iCutNew[2];
   for (BfSize j = 0; j < 2; ++j) {
     if (isnan(t[j])) {
-      iCutNew[j] = bfPoints3FindApprox(builder->verts, vt[j], BF_EPS);
+      iCutNew[j] = bfPoints3FindApprox(builder->verts, vt[j], builder->tol);
     } else {
       BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
       iCutNew[j] = builder->verts->size + iCut[j];
@@ -421,14 +421,14 @@ static void addCutFacesAndVerts_case12(NodalDomainBuilder *builder) {
     /* Due to numerical roundoff, `vt[j]` may exactly equal an existing
      * mesh vertex. We want to avoid duplicate mesh vertices, so
      * we set `t[j]` to `NAN` to signal this and continue. */
-    if (bfPoints3ContainsApprox(builder->verts, vt[j], BF_EPS))
+    if (bfPoints3ContainsApprox(builder->verts, vt[j], builder->tol))
       t[j] = BF_NAN;
   }
 
   bool coalesced[3] = {
-    bfPoint3Dist(v0[0], vt[0]) <= BF_EPS,
-    bfPoint3Dist(v0[1], vt[1]) <= BF_EPS,
-    bfPoint3Dist(vt[0], vt[1]) <= BF_EPS
+    bfPoint3Dist(v0[0], vt[0]) <= builder->tol,
+    bfPoint3Dist(v0[1], vt[1]) <= builder->tol,
+    bfPoint3Dist(vt[0], vt[1]) <= builder->tol
   };
 
   // TODO: quad collapsed to an edge:
@@ -440,8 +440,8 @@ static void addCutFacesAndVerts_case12(NodalDomainBuilder *builder) {
   BfSize iCut[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
   if (coalesced[2]) {
     bool foundVt[2] = {
-      bfPoints3ContainsApprox(builder->cutVerts, vt[0], BF_EPS),
-      bfPoints3ContainsApprox(builder->cutVerts, vt[1], BF_EPS),
+      bfPoints3ContainsApprox(builder->cutVerts, vt[0], builder->tol),
+      bfPoints3ContainsApprox(builder->cutVerts, vt[1], builder->tol),
     };
     BF_ASSERT(!(foundVt[0] ^ foundVt[1]));
     if (!foundVt[0] || !foundVt[1]) {
@@ -458,8 +458,8 @@ static void addCutFacesAndVerts_case12(NodalDomainBuilder *builder) {
 
   /* Find the "new" indices of these two mesh verts: */
   BfSize i0New[2] = {
-    bfPoints3FindApprox(builder->verts, v0[0], BF_EPS),
-    bfPoints3FindApprox(builder->verts, v0[1], BF_EPS),
+    bfPoints3FindApprox(builder->verts, v0[0], builder->tol),
+    bfPoints3FindApprox(builder->verts, v0[1], builder->tol),
   };
   BF_ASSERT(i0New[0] != BF_SIZE_BAD_VALUE && i0New[1] != BF_SIZE_BAD_VALUE);
 
@@ -467,11 +467,9 @@ static void addCutFacesAndVerts_case12(NodalDomainBuilder *builder) {
   BfSize iCutNew[2];
   if (coalesced[2]) {
     BF_ASSERT(!coalesced[0] && !coalesced[1]);
-    BF_ASSERT(bfPoint3Dist(vt[0], v) <= BF_EPS);
-    BF_ASSERT(bfPoint3Dist(vt[1], v) <= BF_EPS);
-    BF_ASSERT(!bfPoints3ContainsApprox(builder->verts, v, BF_EPS));
+    BF_ASSERT(!bfPoints3ContainsApprox(builder->verts, v, builder->tol));
     for (BfSize j = 0; j < 2; ++j)
-      iCutNew[j] = bfPoints3FindApprox(builder->cutVerts, vt[j], BF_EPS);
+      iCutNew[j] = bfPoints3FindApprox(builder->cutVerts, vt[j], builder->tol);
     BF_ASSERT(BF_SIZE_OK(iCutNew[0]) || BF_SIZE_OK(iCutNew[1]));
     if (iCutNew[0] == BF_SIZE_BAD_VALUE) iCutNew[0] = iCutNew[1];
     if (iCutNew[1] == BF_SIZE_BAD_VALUE) iCutNew[1] = iCutNew[0];
@@ -480,7 +478,7 @@ static void addCutFacesAndVerts_case12(NodalDomainBuilder *builder) {
   } else {
     for (BfSize j = 0; j < 2; ++j) {
       if (isnan(t[j])) {
-        iCutNew[j] = bfPoints3FindApprox(builder->verts, vt[j], BF_EPS);
+        iCutNew[j] = bfPoints3FindApprox(builder->verts, vt[j], builder->tol);
       } else if (!coalesced[j]) {
         BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
         iCutNew[j] = builder->verts->size + iCut[j];
@@ -646,13 +644,13 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
   BfSize iCut[2] = {BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE};
   for (BfSize j = 0; j < 2; ++j) {
     addedCutEdge[j] = appendCutEdge(builder, cutEdge[j]);
-    bool addedCutVertAlready = bfPoints3ContainsApprox(builder->cutVerts, vCut[j], BF_EPS);
+    bool addedCutVertAlready = bfPoints3ContainsApprox(builder->cutVerts, vCut[j], builder->tol);
     if (addedCutEdge[j]) {
       BF_ASSERT(!addedCutVertAlready);
       iCut[j] = bfPoints3GetSize(builder->cutVerts);
       bfPoints3Append(builder->cutVerts, vCut[j]);
     } else if (addedCutVertAlready) {
-      iCut[j] = bfPoints3FindApprox(builder->cutVerts, vCut[j], BF_EPS);
+      iCut[j] = bfPoints3FindApprox(builder->cutVerts, vCut[j], builder->tol);
       BF_ASSERT(iCut[j] != BF_SIZE_BAD_VALUE);
     } else {
       /* We added a cut vertex for this edge previously, but it no
@@ -671,10 +669,10 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
 
   /* Add new cut face: */
 
-  BfSize iZeroNew = bfPoints3FindApprox(builder->verts, vZero, BF_EPS);
+  BfSize iZeroNew = bfPoints3FindApprox(builder->verts, vZero, builder->tol);
   BF_ASSERT(iZeroNew != BF_SIZE_BAD_VALUE);
 
-  BfSize iNew = bfPoints3FindApprox(builder->verts, phiInt < 0 ? vInt : vBd, BF_EPS);
+  BfSize iNew = bfPoints3FindApprox(builder->verts, phiInt < 0 ? vInt : vBd, builder->tol);
   BF_ASSERT(iNew != BF_SIZE_BAD_VALUE);
 
   BfSize3 newFace = {iZeroNew, builder->verts->size + iCut[1], iNew};
@@ -698,13 +696,13 @@ static void addCutFacesAndVerts(NodalDomainBuilder *builder) {
     HANDLE_ERROR();
   }
 
-  BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, BF_EPS));
-  BF_ASSERT(bfPoints3AllUniqueApprox(builder->cutVerts, BF_EPS));
+  BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, builder->tol));
+  BF_ASSERT(bfPoints3AllUniqueApprox(builder->cutVerts, builder->tol));
 
   bfPoints3Extend(builder->verts, builder->cutVerts);
   HANDLE_ERROR();
 
-  BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, BF_EPS));
+  BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, builder->tol));
 
   BF_ERROR_END() {
     BF_DIE();
