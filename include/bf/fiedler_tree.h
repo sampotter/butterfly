@@ -24,6 +24,8 @@ BfTree const *bfFiedlerTreeConstToTreeConst(BfFiedlerTree const *fiedlerTree);
 
 /** Downcasting: Tree -> FiedlerTree */
 
+BfFiedlerTree const *bfTreeConstToFiedlerTreeConst(BfTree const *tree);
+
 /** Implementation: FiedlerTree */
 
 BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh, BfReal tol, bool keepNodeTrimeshes);

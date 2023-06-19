@@ -39,6 +39,15 @@ BfTreeNode *bfFiedlerTreeNodeToTreeNode(BfFiedlerTreeNode *node) {
 
 /** Downcasting: TreeNode -> FiedlerTreeNode */
 
+BfFiedlerTreeNode const *bfTreeNodeConstToFiedlerTreeNodeConst(BfTreeNode const *treeNode) {
+  if (!bfTreeNodeInstanceOf(treeNode, BF_TYPE_FIEDLER_TREE_NODE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfFiedlerTreeNode const *)treeNode;
+  }
+}
+
 /** Implementation: FiedlerTreeNode */
 
 BfFiedlerTreeNode *bfFiedlerTreeNodeNew() {

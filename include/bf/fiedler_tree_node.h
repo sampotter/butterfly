@@ -14,6 +14,8 @@ BfTreeNode *bfFiedlerTreeNodeToTreeNode(BfFiedlerTreeNode *node);
 
 /** Downcasting: TreeNode -> FiedlerTreeNode */
 
+BfFiedlerTreeNode const *bfTreeNodeConstToFiedlerTreeNodeConst(BfTreeNode const *treeNode);
+
 /** Implementation: FiedlerTreeNode */
 
 struct BfFiedlerTreeNode {

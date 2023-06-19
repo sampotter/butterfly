@@ -42,11 +42,24 @@ BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh, BfReal tol,
 
 /** Upcasting: FiedlerTree -> Tree */
 
+BfTree *bfFiedlerTreeToTree(BfFiedlerTree *tree) {
+  return &tree->super;
+}
+
 BfTree const *bfFiedlerTreeConstToTreeConst(BfFiedlerTree const *tree) {
   return &tree->super;
 }
 
 /** Downcasting: Tree -> FiedlerTree */
+
+BfFiedlerTree const *bfTreeConstToFiedlerTreeConst(BfTree const *tree) {
+  if (!bfTreeInstanceOf(tree, BF_TYPE_FIEDLER_TREE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfFiedlerTree const *)tree;
+  }
+}
 
 /** Implementation: FiedlerTree */
 
