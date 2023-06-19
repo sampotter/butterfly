@@ -369,23 +369,14 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
   *submesh2Ptr = submesh2;
 }
 
-static BfSize TARGET_DEPTH = 6;
-static BfSize TRIMESH_COUNT = 0;
-
-static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, BfTrimesh const *trimesh,
+static void initRecursive(BfFiedlerTreeNode *node,
+                          BfFiedlerTree const *tree, BfTrimesh const *trimesh, bool keepNodeTrimeshes,
                           BfSize i0, BfSize i1, BfSize *perm, BfSize depth) {
-  if (depth == TARGET_DEPTH) {
-    char path[1024];
-    sprintf(path, "verts%lu.bin", TRIMESH_COUNT);
-    bfTrimeshDumpVerts(trimesh, path);
-    sprintf(path, "faces%lu.bin", TRIMESH_COUNT);
-    bfTrimeshDumpFaces(trimesh, path);
-    printf("* wrote trimesh #%lu\n", TRIMESH_COUNT++);
-  }
-
   BF_ERROR_BEGIN();
 
   BF_ASSERT(i0 < i1);
+
+  node->trimesh = keepNodeTrimeshes ? trimesh : NULL;
 
   BfRealArray *phiFiedler = bfTrimeshGetFiedler(trimesh);
   HANDLE_ERROR();
@@ -472,7 +463,7 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
 
     if (numChildPoints > LEAF_SIZE_THRESHOLD) {
       printf("  initRecursive(depth = %lu, j = %lu)\n", childDepth, j);
-      initRecursive(child, tree, submesh[j], i0Child, i1Child, perm, childDepth);
+      initRecursive(child, tree, submesh[j], keepNodeTrimeshes, i0Child, i1Child, perm, childDepth);
       HANDLE_ERROR();
     }
 
@@ -488,7 +479,7 @@ static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, Bf
   bfRealArrayDeinitAndDealloc(&phiFiedler);
 }
 
-void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree) {
+void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, bool keepNodeTrimeshes) {
   BF_ERROR_BEGIN();
 
   bfTreeNodeInitRoot(&node->super, &TreeNodeVtable, bfFiedlerTreeConstToTreeConst(tree), MAX_NUM_CHILDREN);
@@ -498,6 +489,7 @@ void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tre
     node,
     tree,
     tree->trimesh,
+    keepNodeTrimeshes,
     /* i0: */ 0,
     /* i1: */ bfTrimeshGetNumVerts(tree->trimesh),
     tree->super.perm.index,

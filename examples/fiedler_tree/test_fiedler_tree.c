@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
 
   printf("\nbuilding Fielder tree:\n");
-  BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(trimesh);
+  BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(trimesh, /* keepNodeTrimeshes: */ true);
 
   bfFiedlerTreeDeinitAndDealloc(&fiedlerTree);
   bfTrimeshDeinitAndDealloc(&trimesh);

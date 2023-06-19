@@ -18,10 +18,15 @@ BfTreeNode *bfFiedlerTreeNodeToTreeNode(BfFiedlerTreeNode *node);
 
 struct BfFiedlerTreeNode {
   BfTreeNode super;
+
+  /* The triangle mesh corresponding to this node. This is stored
+   * optionally (see `keepNodeTrimeshes` flag in the creation
+   * functions). */
+  BfTrimesh const *trimesh;
 };
 
 BfFiedlerTreeNode *bfFiedlerTreeNodeNew();
-void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree);
+void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, bool keepNodeTrimeshes);
 void bfFiedlerTreeNodeDeinit(BfFiedlerTreeNode *node);
 void bfFiedlerTreeNodeDealloc(BfFiedlerTreeNode **node);
 void bfFiedlerTreeNodeDeinitAndDealloc(BfFiedlerTreeNode **node);

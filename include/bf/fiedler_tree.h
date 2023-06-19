@@ -26,8 +26,8 @@ BfTree const *bfFiedlerTreeConstToTreeConst(BfFiedlerTree const *fiedlerTree);
 
 /** Implementation: FiedlerTree */
 
-BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh);
-void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree, BfTrimesh const *trimesh);
+BfFiedlerTree *bfFiedlerTreeNewFromTrimesh(BfTrimesh const *trimesh, bool keepNodeTrimeshes);
+void bfFiedlerTreeInitFromTrimesh(BfFiedlerTree *fiedlerTree, BfTrimesh const *trimesh, bool keepNodeTrimeshes);
 void bfFiedlerTreeDeinit(BfFiedlerTree *fiedlerTree);
 void bfFiedlerTreeDealloc(BfFiedlerTree **fiedlerTree);
 void bfFiedlerTreeDeinitAndDealloc(BfFiedlerTree **fiedlerTree);
