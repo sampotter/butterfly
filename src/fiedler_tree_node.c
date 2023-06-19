@@ -348,7 +348,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
 
   /* Extract the two nodal domains determined by `phiFiedler`. */
 
-  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, BF_EPS, permMask, perm1Ptr);
+  BfTrimesh *submesh1 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedler, 1e1*BF_EPS, permMask, perm1Ptr);
   HANDLE_ERROR();
 
   BfRealArray *phiFiedlerNeg = bfRealArrayCopy(phiFiedler);
@@ -356,7 +356,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
 
   bfRealArrayNegate(phiFiedlerNeg);
 
-  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, BF_EPS, permMask, perm2Ptr);
+  BfTrimesh *submesh2 = bfTrimeshGetLevelSetSubmesh(trimesh, phiFiedlerNeg, 1e1*BF_EPS, permMask, perm2Ptr);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -369,7 +369,7 @@ static void splitTrimesh(BfTrimesh const *trimesh, BfRealArray const *phiFiedler
   *submesh2Ptr = submesh2;
 }
 
-static BfSize TARGET_DEPTH = 4;
+static BfSize TARGET_DEPTH = 6;
 static BfSize TRIMESH_COUNT = 0;
 
 static void initRecursive(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, BfTrimesh const *trimesh,
