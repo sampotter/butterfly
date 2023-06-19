@@ -17,6 +17,8 @@ struct NodalDomainBuilder {
   BfRealArray const *phi;
   BfReal tol;
 
+  /** Variables used for building the new nodal domain mesh: */
+
   BfSize numFaces;
   BfSize facesCapacity;
   BfSize3 *faces;
