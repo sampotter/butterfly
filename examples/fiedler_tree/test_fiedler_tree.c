@@ -2,6 +2,7 @@
 #include <bf/error.h>
 #include <bf/fiedler_tree.h>
 #include <bf/fiedler_tree_node.h>
+#include <bf/logging.h>
 #include <bf/util.h>
 
 #include <stdlib.h>
@@ -16,23 +17,24 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  bfSetLogLevel(BF_LOG_LEVEL_DEBUG);
+
   char const *objPath = argv[1];
 
   BfReal tol = argc >= 3 ? atof(argv[2]) : 1e-15;
 
+  printf("running Fiedler tree test:\n");
+
   bfToc();
 
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
-
-  printf("loaded triangle mesh (%lu verts and %lu faces) [%.1fs]\n",
+  printf("- loaded triangle mesh (%lu verts and %lu faces) [%.1fs]\n",
          bfTrimeshGetNumVerts(trimesh), bfTrimeshGetNumFaces(trimesh), bfToc());
 
   BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(trimesh, tol, /* keepNodeTrimeshes: */ true);
-
-  printf("building Fiedler tree (tol = %g) [%.1fs]\n", tol, bfToc());
+  printf("- built Fiedler tree (tol = %g) [%.1fs]\n", tol, bfToc());
 
   BfTree *tree = bfFiedlerTreeToTree(fiedlerTree);
-
   bfTreeMapConst(tree, NULL, BF_TREE_TRAVERSAL_LR_LEVEL_ORDER, (BfTreeMapConstFunc)checkPerm, &tol);
 
   bfFiedlerTreeDeinitAndDealloc(&fiedlerTree);
