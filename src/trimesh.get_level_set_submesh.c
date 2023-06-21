@@ -12,9 +12,6 @@
 
 #include "macros.h"
 
-/* Maximum leaf size for the accelerator used for point queries: */
-// static const BfSize MAX_LEAF_SIZE = 8;
-
 struct NodalDomainBuilder {
   BfTrimesh const *trimesh;
   BfRealArray const *phi;
@@ -134,8 +131,6 @@ static void addVertsAndFillPerm(NodalDomainBuilder *builder) {
       HANDLE_ERROR();
     }
   }
-
-  // bfPoints3InitAccelerator(builder->verts, MAX_LEAF_SIZE);
 
   BF_ERROR_END() {
     BF_DIE();
@@ -710,12 +705,8 @@ static void addCutFacesAndVerts(NodalDomainBuilder *builder) {
   BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, builder->tol));
   BF_ASSERT(bfPoints3AllUniqueApprox(builder->cutVerts, builder->tol));
 
-  // bfPoints3DeinitAccelerator(builder->verts);
-
   bfPoints3Extend(builder->verts, builder->cutVerts);
   HANDLE_ERROR();
-
-  // bfPoints3InitAccelerator(builder->verts, MAX_LEAF_SIZE);
 
   BF_ASSERT(bfPoints3AllUniqueApprox(builder->verts, builder->tol));
 
