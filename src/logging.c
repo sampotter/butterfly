@@ -49,6 +49,18 @@ void bfLogTodo(char const *restrict format, ...) {
   va_end(argp);
 }
 
+void bfLogDebug(char const *restrict format, ...) {
+  BfLogLevel logLevel = BF_LOG_LEVEL_DEBUG;
+  if (logLevel < LOG_LEVEL)
+    return;
+  FILE *logStream = bfGetLogStream();
+  fprintf(logStream, "bf: %s: ", LOG_LEVEL_STRING[logLevel]);
+  va_list argp;
+  va_start(argp, format);
+  vfprintf(logStream, format, argp);
+  va_end(argp);
+}
+
 void bfLogInfo(char const *restrict format, ...) {
   BfLogLevel logLevel = BF_LOG_LEVEL_INFO;
   if (logLevel < LOG_LEVEL)
