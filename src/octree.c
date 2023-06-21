@@ -1,10 +1,8 @@
 #include <bf/octree.h>
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-
+#include <bf/assert.h>
 #include <bf/circle.h>
+#include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
 #include <bf/points.h>
@@ -52,17 +50,32 @@ BfOctree *bfOctreeNew() {
   BF_ERROR_BEGIN();
 
   BfOctree *octree = bfMemAlloc(1, sizeof(BfOctree));
-  if (octree == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
-  BF_ERROR_END()
-    octree = NULL;
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return octree;
 }
 
-void bfOctreeInit(BfOctree *tree, BfPoints3 const *points,
-                  BfVectors3 const *unitNormals) {
+BfOctree *bfOctreeNewFromPoints(BfPoints3 const *points, BfSize maxLeafSize) {
+  BF_ERROR_BEGIN();
+
+  BfOctree *octree = bfOctreeNew();
+  HANDLE_ERROR();
+
+  bfOctreeInit(octree, points, NULL, maxLeafSize);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return octree;
+}
+
+void bfOctreeInit(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals, BfSize maxLeafSize) {
   BF_ERROR_BEGIN()
 
   BfOctreeNode *root = bfOctreeNodeNew();
@@ -74,7 +87,7 @@ void bfOctreeInit(BfOctree *tree, BfPoints3 const *points,
   tree->points = points;
   tree->unitNormals = unitNormals;
 
-  bfOctreeNodeInitRoot(root, tree);
+  bfOctreeNodeInitRoot(root, tree, maxLeafSize);
   HANDLE_ERROR();
 
   BF_ERROR_END()

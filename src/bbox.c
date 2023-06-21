@@ -122,3 +122,23 @@ BfReal bfBoundingBox3GetVolume(BfBoundingBox3 const *boundingBox) {
   getSideLengths(boundingBox, &dx, &dy, &dz);
   return dx*dy*dz;
 }
+
+void bfBoundingBox3GetSemiLengths(BfBoundingBox3 const *boundingBox, BfVector3 semiLengths) {
+  for (BfSize i = 0; i < 3; ++i)
+    semiLengths[i] = (boundingBox->max[i] - boundingBox->min[i])/2;
+}
+
+BfReal bfBoundingBox3GetDistanceToPoint(BfBoundingBox3 const *boundingBox, BfPoint3 const point) {
+  BfPoint3 c;
+  bfBoundingBox3GetCenter(boundingBox, c);
+
+  BfVector3 r;
+  bfBoundingBox3GetSemiLengths(boundingBox, r);
+
+  BfReal d = 0;
+  for (BfSize i = 0; i < 3; ++i)
+    d += pow(fmax(0, fabs(point[i] - c[i]) - r[i]), 2);
+  d = sqrt(d);
+
+  return d;
+}

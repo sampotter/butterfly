@@ -26,3 +26,5 @@ bool bfBoundingBox3ContainsPoints(BfBoundingBox3 const *boundingBox, BfPoints3 c
 void bfBoundingBox3GetCenter(BfBoundingBox3 const *boundingBox, BfPoint3 center);
 BfSphere bfBoundingBox3GetBoundingSphere(BfBoundingBox3 const *boundingBox);
 BfReal bfBoundingBox3GetVolume(BfBoundingBox3 const *boundingBox);
+void bfBoundingBox3GetSemiLengths(BfBoundingBox3 const *boundingBox, BfVector3 semiLengths);
+BfReal bfBoundingBox3GetDistanceToPoint(BfBoundingBox3 const *boundingBox, BfPoint3 const point);

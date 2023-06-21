@@ -82,6 +82,7 @@ butterfly_lib_src = [
   'src/mem.c',
   'src/node_array.c',
   'src/octree.c',
+  'src/octree.get_nearest_neighbors.c',
   'src/octree_node.c',
   'src/perm.c',
   'src/points.c',

@@ -738,18 +738,18 @@ static BfMat *toType_cooComplex(BfMat const *mat) {
         capacity *= 2;
 
         BfSize *newRowInd = bfMemRealloc(rowInd, capacity, sizeof(BfSize));
-        if (newRowInd == NULL)
-          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        HANDLE_ERROR();
+
         rowInd = newRowInd;
 
         BfSize *newColInd = bfMemRealloc(colInd, capacity, sizeof(BfSize));
-        if (newColInd == NULL)
-          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        HANDLE_ERROR();
+
         colInd = newColInd;
 
         BfComplex *newValue = bfMemRealloc(value, capacity, sizeof(BfComplex));
-        if (newValue == NULL)
-          RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+        HANDLE_ERROR();
+
         value = newValue;
       }
 
@@ -1170,8 +1170,7 @@ void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
   /* Allocate more space for column offsets */
   BfSize *newColOffset = bfMemRealloc(
     matBlock->colOffset, NUM_COL_BLOCKS(mat) + 1, sizeof(BfSize));
-  if (newColOffset == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
   matBlock->colOffset = newColOffset;
 
   /* Compute new final column offset */
@@ -1184,8 +1183,7 @@ void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols) {
   /* Allocate more space for the new block column */
   BfMat **newBlockPtr = bfMemRealloc(
     mat->super.block, NUM_BLOCKS(mat), sizeof(BfMat **));
-  if (newBlockPtr == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
   mat->super.block = newBlockPtr;
 
   /* Adjust the position of each of the old rows */
@@ -1228,8 +1226,7 @@ void bfMatBlockDenseAppendRow(BfMatBlockDense *mat, BfSize numBlockRows) {
   /* Allocate more space for row offsets */
   BfSize *newRowOffset = bfMemRealloc(
     matBlock->rowOffset, NUM_ROW_BLOCKS(mat) + 1, sizeof(BfSize));
-  if (newRowOffset == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
   matBlock->rowOffset = newRowOffset;
 
   /* Compute new final row offset */
@@ -1241,8 +1238,7 @@ void bfMatBlockDenseAppendRow(BfMatBlockDense *mat, BfSize numBlockRows) {
   /* Allocate more space for the new block row */
   BfMat **newBlockPtr = bfMemRealloc(
     mat->super.block, NUM_BLOCKS(mat), sizeof(BfMat **));
-  if (newBlockPtr == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
   mat->super.block = newBlockPtr;
 
   /* Set new blocks to zero */

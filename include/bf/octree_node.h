@@ -29,7 +29,7 @@ struct BfOctreeNode {
 
 BfTreeNodeVtable *bfOctreeNodeGetDefaultTreeNodeVtable();
 BfOctreeNode *bfOctreeNodeNew();
-void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree);
+void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree, BfSize maxLeafSize);
 void bfOctreeNodeDeinit(BfOctreeNode *node);
 void bfOctreeNodeDealloc(BfOctreeNode **node);
 void bfOctreeNodeDeinitAndDealloc(BfOctreeNode **node);

@@ -84,7 +84,7 @@ int main(int argc, char const *argv[]) {
   printf("streaming %lu eigenpairs\n", numEigs);
 
   BfOctree octree;
-  bfOctreeInit(&octree, trimesh.verts, NULL);
+  bfOctreeInit(&octree, trimesh.verts, NULL, /* maxLeafSize: */ 1);
 
   BfTree *rowTree = bfOctreeToTree(&octree);
   BfSize rowTreeMaxDepth = bfTreeGetMaxDepth(rowTree);

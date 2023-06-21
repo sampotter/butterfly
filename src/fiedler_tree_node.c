@@ -346,7 +346,7 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
   bfRealArrayDeinitAndDealloc(&normalDerivFixed);
 
 #if BF_DEBUG
-  for (BfSize i = 0; i < trimesh->numFaces; ++i)
+  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i)
     for (BfSize j = 0; j < 3; ++j)
       BF_ASSERT(trimesh->faces[i][j] != BF_SIZE_BAD_VALUE);
 #endif

@@ -50,7 +50,7 @@ static BfSize const BF_DEFAULT_STRIDE = 1;
 
 static BfSize const BF_ARRAY_DEFAULT_CAPACITY = 128;
 
-typedef int (*BfCompar)(const void *, const void *, void *);
+typedef int (*BfCompar)(BfConstPtr, BfConstPtr, BfPtr);
 
 typedef enum BfPolicy {
   BF_POLICY_VIEW,

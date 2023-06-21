@@ -45,13 +45,13 @@ BfSizeArray *bfSizeArrayNewIota(BfSize n) {
   return sizeArray;
 }
 
-BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
+BfSizeArray *bfSizeArrayNewWithCapacity(BfSize capacity) {
   BF_ERROR_BEGIN();
 
   BfSizeArray *sizeArray = bfSizeArrayNew();
   HANDLE_ERROR();
 
-  bfSizeArrayInitWithDefaultCapacity(sizeArray);
+  bfSizeArrayInitWithCapacity(sizeArray, capacity);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -61,11 +61,15 @@ BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
   return sizeArray;
 }
 
-void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
+BfSizeArray *bfSizeArrayNewWithDefaultCapacity() {
+  return bfSizeArrayNewWithCapacity(BF_ARRAY_DEFAULT_CAPACITY);
+}
+
+void bfSizeArrayInitWithCapacity(BfSizeArray *sizeArray, BfSize capacity) {
   BF_ERROR_BEGIN();
 
   sizeArray->size = 0;
-  sizeArray->capacity = 128;
+  sizeArray->capacity = capacity;
 
   sizeArray->data = bfMemAlloc(sizeArray->capacity, sizeof(BfSize));
   if (sizeArray->data == NULL)
@@ -79,6 +83,10 @@ void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
   BF_ERROR_END() {
     invalidate(sizeArray);
   }
+}
+
+void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
+  bfSizeArrayInitWithCapacity(sizeArray, BF_ARRAY_DEFAULT_CAPACITY);
 }
 
 void bfSizeArrayDeinit(BfSizeArray *sizeArray) {

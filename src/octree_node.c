@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include <bf/assert.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
@@ -13,8 +14,6 @@
 
 #define NUM_CHILDREN_ 8
 static BfSize const NUM_CHILDREN = NUM_CHILDREN_;
-
-static BfSize const LEAF_SIZE_THRESHOLD = 1;
 
 /** Interface(TreeNode, OctreeNode) */
 
@@ -155,7 +154,8 @@ static __typeof__(&inOctant1) inOctant[NUM_CHILDREN_] = {
  * `perm`: an array of `points->size` indices indexing `points`.
  * `currentDepth`: `node`'s depth */
 static void octreeNodeInitRecursive(BfOctreeNode *node,
-                                    BfPoints3 const *points, BfBoundingBox3 boundingBox,
+                                    BfPoints3 const *points, BfSize maxLeafSize,
+                                    BfBoundingBox3 boundingBox,
                                     BfSize i0, BfSize i1, BfSize *perm,
                                     BfSize currentDepth) {
   BF_ERROR_BEGIN();
@@ -244,9 +244,10 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
     /* If the node has few enough points, it's a leaf and no more
      * initialization needs to be done. Otherwise, we continue
      * building the octree recursively. */
-    if (numChildPoints > LEAF_SIZE_THRESHOLD) {
+    if (numChildPoints > maxLeafSize) {
       octreeNodeInitRecursive(
-        newChild, points, childBoundingBox[q], offset[q], offset[q + 1],
+        newChild, points, maxLeafSize,
+        childBoundingBox[q], offset[q], offset[q + 1],
         perm, currentDepth + 1);
       HANDLE_ERROR();
     }
@@ -270,7 +271,7 @@ static void octreeNodeInitRecursive(BfOctreeNode *node,
   }
 }
 
-void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
+void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree, BfSize maxLeafSize) {
   BF_ERROR_BEGIN();
 
   bfTreeNodeInit(&node->super, &TreeNodeVtable,
@@ -282,10 +283,16 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree) {
   bfBoundingBox3RescaleToCube(&boundingBox);
   node->boundingBox = boundingBox;
 
+  /* Perturb the sides of the bounding box slightly to make sure all
+   * points are inside: */
+  for (BfSize i = 0; i < 3; ++i) boundingBox.min[i] -= 1e2*BF_EPS;
+  for (BfSize i = 0; i < 3; ++i) boundingBox.max[i] += 1e2*BF_EPS;
+
   /* Compute the split for the node */
   bfBoundingBox3GetCenter(&boundingBox, node->split);
 
-  octreeNodeInitRecursive(node, tree->points, boundingBox, 0, tree->points->size,
+  octreeNodeInitRecursive(node, tree->points, maxLeafSize,
+                          boundingBox, 0, tree->points->size,
                           tree->super.perm.index, 0);
   HANDLE_ERROR();
 

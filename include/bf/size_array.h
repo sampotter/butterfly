@@ -13,7 +13,9 @@ typedef int (*BfSizeArrayComparator)(BfSize, BfSize, void *);
 
 BfSizeArray *bfSizeArrayNew();
 BfSizeArray *bfSizeArrayNewIota(BfSize n);
+BfSizeArray *bfSizeArrayNewWithCapacity(BfSize capacity);
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity();
+void bfSizeArrayInitWithCapacity(BfSizeArray *sizeArray, BfSize capacity);
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray);
 void bfSizeArrayDeinit(BfSizeArray *sizeArray);
 void bfSizeArrayDealloc(BfSizeArray **sizeArray);

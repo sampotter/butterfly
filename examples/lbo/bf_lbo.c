@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
   BfOctree *octree = bfOctreeNew();
   HANDLE_ERROR();
 
-  bfOctreeInit(octree, trimesh.verts, NULL);
+  bfOctreeInit(octree, trimesh.verts, NULL, /* maxLeafSize: */ 1);
   HANDLE_ERROR();
 
   char const *octreeBoxesPath = "octree_boxes.txt";

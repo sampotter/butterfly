@@ -6,14 +6,24 @@
 typedef struct BfTrimesh {
   BfPoints3 *verts;
 
-  BfSize3 *faces;
   BfSize numFaces;
+  BfSize3 *faces;
 
-  BfSize2 *edges;
-  BfSize numEdges;
+  /*! Array containing `BfSize2`s representing the edge indices. This
+   *  array works analogously to `faces`, with the same sorting
+   *  scheme. */
+  BfArray *edges;
 
   BfSize *vfOffset, *vf;
   BfSize *vvOffset, *vv;
+
+  /*! An array containing `BfSize2`s representing a mapping from edges
+   *  to incident faces. The two components of the `i`th entry are the
+   *  indices of faces incident on the `i`th edge. We assume the mesh
+   *  is manifold, so there can be at most two incident faces. If the
+   *  edge is a boundary edge, then one of the components of the `i`th
+   *  entry equals `BF_SIZE_BAD_VALUE`. */
+  BfArray *ef;
 
   bool *isBoundaryEdge;
   bool *isBoundaryVert;
@@ -47,3 +57,6 @@ void bfTrimeshDumpVerts(BfTrimesh const *trimesh, char const *path);
 void bfTrimeshDumpFaces(BfTrimesh const *trimesh, char const *path);
 BfRealArray *bfTrimeshGetNormalDeriv(BfTrimesh const *trimesh, BfRealArray const *values, bool computeAtAllVerts);
 BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh);
+BfSize bfTrimeshGetNumEdges(BfTrimesh const *trimesh);
+BfSizeArray *bfTrimeshGetVertNbs(BfTrimesh const *trimesh, BfSize i);
+bool bfTrimeshHasDuplicateFaces(BfTrimesh const *trimesh);

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <bf/array.h>
 #include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/error.h>
@@ -11,11 +12,22 @@
 #include <bf/linalg.h>
 #include <bf/mem.h>
 #include <bf/real_array.h>
+#include <bf/size_array.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
 #include <bf/vectors.h>
 
 #include "macros.h"
+
+int comparFace(BfSize const *face1, BfSize const *face2, void *arg) {
+  (void)arg;
+  if (face1[0] == face2[0] && face1[1] == face2[1])
+    return face1[2] - face2[2];
+  else if (face1[0] == face2[0])
+    return face1[1] - face2[1];
+  else
+    return face1[0] - face2[0];
+}
 
 BfTrimesh *bfTrimeshCopy(BfTrimesh const *trimesh) {
   BF_ERROR_BEGIN();
@@ -31,10 +43,8 @@ BfTrimesh *bfTrimeshCopy(BfTrimesh const *trimesh) {
 
   trimeshCopy->numFaces = trimesh->numFaces;
 
-  trimeshCopy->edges = bfMemAllocCopy(trimesh->edges, trimesh->numEdges, sizeof(BfSize2));
+  trimeshCopy->edges = bfArrayCopy(trimesh->edges);
   HANDLE_ERROR();
-
-  trimeshCopy->numEdges = trimesh->numEdges;
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
 
@@ -50,7 +60,10 @@ BfTrimesh *bfTrimeshCopy(BfTrimesh const *trimesh) {
   trimeshCopy->vv = bfMemAllocCopy(trimesh->vv, trimesh->vvOffset[numVerts], sizeof(BfSize));
   HANDLE_ERROR();
 
-  trimeshCopy->isBoundaryEdge = bfMemAllocCopy(trimesh->isBoundaryEdge, trimesh->numEdges, sizeof(bool));
+  trimeshCopy->ef = bfArrayCopy(trimesh->ef);
+  HANDLE_ERROR();
+
+  trimeshCopy->isBoundaryEdge = bfMemAllocCopy(trimesh->isBoundaryEdge, bfTrimeshGetNumEdges(trimesh), sizeof(bool));
   HANDLE_ERROR();
 
   trimeshCopy->isBoundaryVert = bfMemAllocCopy(trimesh->isBoundaryVert, numVerts, sizeof(bool));
@@ -263,55 +276,77 @@ static void initVv(BfTrimesh *trimesh) {
   BF_ERROR_END() {}
 }
 
-int compar(BfSize2 const elt1, BfSize2 const elt2) {
-  return elt1[0] == elt2[0] ? elt1[1] - elt2[1] : elt1[0] - elt2[0];
+int comparEdge(BfSize const *edge1, BfSize const *edge2, void *arg) {
+  (void)arg;
+  return edge1[0] == edge2[0] ? edge1[1] - edge2[1] : edge1[0] - edge2[0];
 }
 
 static void initEdges(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
-  BfSize numEdges = 0;
-  BfSize capacity = BF_ARRAY_DEFAULT_CAPACITY;
-  BfSize2 *edges = bfMemAlloc(capacity, sizeof(BfSize2));
+  trimesh->edges = bfArrayNewEmpty(sizeof(BfSize2));
   HANDLE_ERROR();
 
   /* Iterate over each pair of adjacent vertices: */
   for (BfSize i0 = 0; i0 < bfTrimeshGetNumVerts(trimesh); ++i0) {
-    for (BfSize j = trimesh->vvOffset[i0]; j < trimesh->vvOffset[i0 + 1]; ++j) {
-      BfSize i1 = trimesh->vv[j];
+    BfSizeArray *vertNbs = bfTrimeshGetVertNbs(trimesh, i0);
+    HANDLE_ERROR();
 
-      /* Set up the edge (represented as a sorted index pair for
-       * uniqueness): */
-      BfSize2 edge = {i0, i1};
-      SORT2(edge[0], edge[1]);
+    for (BfSize j = 0; j < bfSizeArrayGetSize(vertNbs); ++j) {
+      BfSize i1 = bfSizeArrayGet(vertNbs, j);
 
-      /* Check if we already added this edge: */
-      bool found = false;
-      for (BfSize k = 0; k < numEdges; ++k) {
-        if (!compar(edge, edges[k])) {
-          found = true;
-          break;
-        }
-      }
-      if (found) continue;
+      BF_DEFINE_EDGE(edge, i0, i1);
 
-      /* Grow the edge array now if we need to: */
-      if (numEdges == capacity) {
-        capacity *= 2;
-        BfSize2 *newEdges = bfMemRealloc(edges, capacity, sizeof(BfSize2));
-        HANDLE_ERROR();
+      BfSize pos = bfArrayFindSorted(trimesh->edges, edge, (BfCompar)comparEdge);
+      if (!BF_SIZE_OK(pos))
+        continue;
 
-        edges = newEdges;
+      /* If `pos` is a valid index, check if the edge at the `pos`th
+       * position is the same as `edge`. If it is, we avoid adding it
+       * again by continuing. */
+      if (pos < bfArrayGetSize(trimesh->edges)) {
+        BfSize2 otherEdge;
+        bfArrayGet(trimesh->edges, pos, otherEdge);
+        if (!comparEdge(edge, otherEdge, NULL))
+          continue;
       }
 
-      bfMemCopy(edge, 1, sizeof(BfSize2), edges[numEdges++]);
+      bfArrayInsert(trimesh->edges, pos, edge);
+      HANDLE_ERROR();
     }
+
+    bfSizeArrayDeinitAndDealloc(&vertNbs);
   }
 
-  trimesh->numEdges = numEdges;
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
 
-  trimesh->edges = bfMemRealloc(edges, numEdges, sizeof(BfSize2));
+static void initEf(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  BF_DEFINE_EDGE(emptyEdge, BF_SIZE_BAD_VALUE, BF_SIZE_BAD_VALUE);
+
+  trimesh->ef = bfArrayNewWithValue(sizeof(BfSize2), bfTrimeshGetNumEdges(trimesh), emptyEdge);
   HANDLE_ERROR();
+
+  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BF_DEFINE_EDGE(edge, trimesh->faces[i][j], trimesh->faces[i][(j + 1) % 3]);
+
+      BfSize k = bfArrayFindSorted(trimesh->edges, edge, (BfCompar)comparEdge);
+      BF_ASSERT(k < bfTrimeshGetNumEdges(trimesh));
+
+      BfSize *ef = bfArrayGetPtr(trimesh->ef, k);
+      if (!BF_SIZE_OK(ef[0])) {
+        ef[0] = i;
+      } else {
+        BF_ASSERT(!BF_SIZE_OK(ef[1]));
+        ef[1] = i;
+      }
+    }
+  }
 
   BF_ERROR_END() {
     BF_DIE();
@@ -321,18 +356,15 @@ static void initEdges(BfTrimesh *trimesh) {
 static void initBoundaryInfo(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
-  trimesh->isBoundaryEdge = bfMemAllocAndZero(trimesh->numEdges, sizeof(bool));
+  trimesh->isBoundaryEdge = bfMemAllocAndZero(bfTrimeshGetNumEdges(trimesh), sizeof(bool));
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < trimesh->numFaces; ++i) {
     for (BfSize j = 0; j < 3; ++j) {
-      BfSize2 edge = {trimesh->faces[i][j], trimesh->faces[i][(j + 1) % 3]};
-      SORT2(edge[0], edge[1]);
+      BF_DEFINE_EDGE(edge, trimesh->faces[i][j], trimesh->faces[i][(j + 1) % 3]);
 
-      BfSize k = 0;
-      for (; k < trimesh->numEdges; ++k)
-        if (trimesh->edges[k][0] == edge[0] && trimesh->edges[k][1] == edge[1])
-          break;
+      BfSize k = bfArrayFindSorted(trimesh->edges, edge, (BfCompar)comparEdge);
+      BF_ASSERT(BF_SIZE_OK(k));
 
       trimesh->isBoundaryEdge[k] = !trimesh->isBoundaryEdge[k];
     }
@@ -341,10 +373,15 @@ static void initBoundaryInfo(BfTrimesh *trimesh) {
   trimesh->isBoundaryVert = bfMemAllocAndZero(bfTrimeshGetNumVerts(trimesh), sizeof(bool));
   HANDLE_ERROR();
 
-  for (BfSize i = 0; i < trimesh->numEdges; ++i)
-    if (trimesh->isBoundaryEdge[i])
+  for (BfSize i = 0; i < bfTrimeshGetNumEdges(trimesh); ++i) {
+    if (trimesh->isBoundaryEdge[i]) {
+      BfSize2 edge;
+      bfArrayGet(trimesh->edges, i, edge);
+
       for (BfSize j = 0; j < 2; ++j)
-        trimesh->isBoundaryVert[trimesh->edges[i][j]] = true;
+        trimesh->isBoundaryVert[edge[j]] = true;
+    }
+  }
 
   BF_ERROR_END() {
     BF_DIE();
@@ -355,7 +392,7 @@ static void initBoundaryEdges(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
   trimesh->numBoundaryEdges = 0;
-  for (BfSize i = 0; i < trimesh->numEdges; ++i)
+  for (BfSize i = 0; i < bfTrimeshGetNumEdges(trimesh); ++i)
     if (trimesh->isBoundaryEdge[i])
       ++trimesh->numBoundaryEdges;
 
@@ -363,9 +400,9 @@ static void initBoundaryEdges(BfTrimesh *trimesh) {
   HANDLE_ERROR();
 
   BfSize j = 0;
-  for (BfSize i = 0; i < trimesh->numEdges; ++i)
+  for (BfSize i = 0; i < bfTrimeshGetNumEdges(trimesh); ++i)
     if (trimesh->isBoundaryEdge[i])
-      bfMemCopy(trimesh->edges[i], 1, sizeof(BfSize2), trimesh->boundaryEdges[j++]);
+      bfArrayGet(trimesh->edges, i, &trimesh->boundaryEdges[j++]);
   BF_ASSERT(j == trimesh->numBoundaryEdges);
 
   BF_ERROR_END() {
@@ -376,6 +413,9 @@ static void initBoundaryEdges(BfTrimesh *trimesh) {
 static void initCommon(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
+  if (bfTrimeshHasDuplicateFaces(trimesh))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   initVf(trimesh);
   HANDLE_ERROR();
 
@@ -383,6 +423,9 @@ static void initCommon(BfTrimesh *trimesh) {
   HANDLE_ERROR();
 
   initEdges(trimesh);
+  HANDLE_ERROR();
+
+  initEf(trimesh);
   HANDLE_ERROR();
 
   initBoundaryInfo(trimesh);
@@ -399,11 +442,12 @@ static void initCommon(BfTrimesh *trimesh) {
 static void rebuildMesh(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
-  bfMemFree(trimesh->edges);
+  bfArrayDeinitAndDealloc(&trimesh->edges);
   bfMemFree(trimesh->vfOffset);
   bfMemFree(trimesh->vf);
   bfMemFree(trimesh->vvOffset);
   bfMemFree(trimesh->vv);
+  bfArrayDeinitAndDealloc(&trimesh->ef);
   bfMemFree(trimesh->isBoundaryEdge);
   bfMemFree(trimesh->isBoundaryVert);
   bfMemFree(trimesh->boundaryEdges);
@@ -624,10 +668,7 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
 
   trimesh->numFaces = BF_SIZE_BAD_VALUE;
 
-  bfMemFree(trimesh->edges);
-  trimesh->edges = NULL;
-
-  trimesh->numEdges = BF_SIZE_BAD_VALUE;
+  bfArrayDeinitAndDealloc(&trimesh->edges);
 
   bfMemFree(trimesh->vfOffset);
   trimesh->vfOffset = NULL;
@@ -640,6 +681,8 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
 
   bfMemFree(trimesh->vv);
   trimesh->vv = NULL;
+
+  bfArrayDeinitAndDealloc(&trimesh->ef);
 
   bfMemFree(trimesh->isBoundaryEdge);
   trimesh->isBoundaryEdge = NULL;
@@ -723,20 +766,10 @@ BfSize bfTrimeshGetBoundaryFaceIndexByBoundaryEdge(BfTrimesh const *trimesh, BfS
   if (!trimesh->isBoundaryEdge[edgeIndex])
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
-    for (BfSize j = 0; j < 3; ++j) {
-      BfSize2 faceEdge = {
-        trimesh->faces[i][j],
-        trimesh->faces[i][(j + 1) % 3]
-      };
-      SORT2(faceEdge[0], faceEdge[1]);
+  BfSize const *ef = bfArrayGetPtr(trimesh->ef, edgeIndex);
+  BF_ASSERT(BF_SIZE_OK(ef[0]) && !BF_SIZE_OK(ef[1]));
 
-      if (faceEdge[0] == boundaryEdge[0] && faceEdge[1] == boundaryEdge[1]) {
-        faceIndex = i;
-        break;
-      }
-    }
-  }
+  faceIndex = ef[0];
 
   BF_ERROR_END() {
     BF_DIE();
@@ -786,13 +819,14 @@ void bfTrimeshDeleteFace(BfTrimesh *trimesh, BfSize faceInd) {
 void bfTrimeshSplitEdge(BfTrimesh *trimesh, BfSize edgeInd, BfReal lam) {
   BF_ERROR_BEGIN();
 
-  if (edgeInd >= trimesh->numEdges)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  if (edgeInd >= bfTrimeshGetNumEdges(trimesh))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
 
   if (lam <= 0 || 1 <= lam)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize const *edge = trimesh->edges[edgeInd];
+  BfSize2 edge;
+  bfArrayGet(trimesh->edges, edgeInd, edge);
 
   BfReal const *x0 = bfTrimeshGetVertPtrConst(trimesh, edge[0]);
   BfReal const *x1 = bfTrimeshGetVertPtrConst(trimesh, edge[1]);
@@ -845,12 +879,7 @@ BfSize bfTrimeshGetEdgeIndex(BfTrimesh const *trimesh, BfSize2 const edge) {
   if (edge[0] == BF_SIZE_BAD_VALUE || edge[1] == BF_SIZE_BAD_VALUE)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  for (BfSize i = 0; i < trimesh->numEdges; ++i) {
-    if (trimesh->edges[i][0] == edge[0] && trimesh->edges[i][1] == edge[1]) {
-      edgeIndex = i;
-      break;
-    }
-  }
+  edgeIndex = bfArrayFindSorted(trimesh->edges, edge, (BfCompar)comparEdge);
 
   BF_ERROR_END() {
     BF_DIE();
@@ -890,7 +919,10 @@ BfSize bfTrimeshGetFacesIncOnEdge(BfTrimesh const *trimesh, BfSize edgeInd, BfSi
 
   BfSize numIncFaces = 0;
   for (BfSize i = 0; i < trimesh->numFaces; ++i) {
-    if (faceContainsEdge(trimesh->faces[i], trimesh->edges[edgeInd])) {
+    BfSize2 edge;
+    bfArrayGet(trimesh->edges, edgeInd, edge);
+
+    if (faceContainsEdge(trimesh->faces[i], edge)) {
       /* TODO: assuming our mesh is manifold... */
       if (numIncFaces == 2) RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
       incFaceInds[numIncFaces++] = i;
@@ -1144,4 +1176,63 @@ BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh) {
   bfVecRealDeinitAndDealloc(&phiFiedler);
 
   return phiFiedlerArr;
+}
+
+BfSize bfTrimeshGetNumEdges(BfTrimesh const *trimesh) {
+  return bfArrayGetSize(trimesh->edges);
+}
+
+BfSizeArray *bfTrimeshGetVertNbs(BfTrimesh const *trimesh, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  if (i >= bfTrimeshGetNumVerts(trimesh))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfSizeArray *vertNbs = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  for (BfSize j = trimesh->vvOffset[i]; j < trimesh->vvOffset[i + 1]; ++j)
+    bfSizeArrayAppend(vertNbs, trimesh->vv[j]);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vertNbs;
+}
+
+bool bfTrimeshHasDuplicateFaces(BfTrimesh const *trimesh) {
+  BF_ERROR_BEGIN();
+
+  bool hasDuplicateFaces = false;
+
+  BfArray *uniqueFaces = bfArrayNewEmpty(sizeof(BfSize3));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    BfSize const *j = trimesh->faces[i];
+
+    BF_DEFINE_FACE(face, j[0], j[1], j[2]);
+
+    BfSize pos = bfArrayFindSorted(uniqueFaces, face, (BfCompar)comparFace);
+    if (pos < bfArrayGetSize(uniqueFaces)) {
+      BfSize3 otherFace;
+      bfArrayGet(uniqueFaces, pos, otherFace);
+      if (comparFace(face, otherFace, NULL) == 0) {
+        hasDuplicateFaces = true;
+        break;
+      }
+    }
+
+    bfArrayInsert(uniqueFaces, pos, face);
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfArrayDeinitAndDealloc(&uniqueFaces);
+
+  return hasDuplicateFaces;
 }

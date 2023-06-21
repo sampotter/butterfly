@@ -70,6 +70,10 @@ struct BfPoints3 {
   BfSize size;
   BfSize capacity;
   bool isView;
+
+  /*! Optional acceleration structure. Call
+   *  `bfPoints3BuildAccelerator` to enable its use in queries. */
+  BfOctree *octree;
 };
 
 BfPoints3 *bfPoints3NewFromBinaryFile(char const *path);
@@ -94,3 +98,5 @@ void bfPoints3Save(BfPoints3 const *points, char const *path);
 bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
 BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol);
 bool bfPoints3AllUniqueApprox(BfPoints3 const *points, BfReal tol);
+void bfPoints3InitAccelerator(BfPoints3 *points, BfSize maxLeafSize);
+void bfPoints3DeinitAccelerator(BfPoints3 *points);

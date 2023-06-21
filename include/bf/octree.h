@@ -35,8 +35,10 @@ BfTree const *bfOctreeConstToTreeConst(BfOctree const *octree);
 BfOctree *bfTreeToOctree(BfTree *tree);
 
 BfOctree *bfOctreeNew();
-void bfOctreeInit(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals);
+BfOctree *bfOctreeNewFromPoints(BfPoints3 const *points, BfSize maxLeafSize);
+void bfOctreeInit(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals, BfSize maxLeafSize);
 void bfOctreeDeinit(BfOctree *tree);
 void bfOctreeDealloc(BfOctree **octree);
 void bfOctreeDelete(BfOctree **octree);
 void bfOctreeSaveBoxesToTextFile(BfOctree const *tree, char const *path);
+BfSizeArray *bfOctreeGetNearestNeighbors(BfOctree const *tree, BfPoint3 const point, BfSize numNbs);

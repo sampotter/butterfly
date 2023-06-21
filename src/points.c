@@ -9,7 +9,9 @@
 #include <bf/error_macros.h>
 #include <bf/mat_dense_real.h>
 #include <bf/mem.h>
+#include <bf/octree.h>
 #include <bf/rand.h>
+#include <bf/size_array.h>
 #include <bf/vec_real.h>
 
 BfReal bfPoint2Dist(BfPoint2 const p, BfPoint2 const q) {
@@ -243,8 +245,7 @@ void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
     points->capacity *= 2;
 
     BfReal *newData = bfMemRealloc(points->data, points->capacity, sizeof(BfReal));
-    if (newData == NULL)
-      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+    HANDLE_ERROR();
 
     points->data = newData;
   }
@@ -252,7 +253,9 @@ void bfPoints1Append(BfPoints1 *points, BfPoint1 point) {
   /* Append new point */
   points->data[points->size++] = point;
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfPoints1InsertPointsSorted(BfPoints1 *points, BfPoints1 const *newPoints) {
@@ -506,8 +509,7 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
     points->capacity *= 2;
 
     BfPoint2 *newData = bfMemRealloc(points->data, points->capacity, sizeof(BfPoint2));
-    if (newData == NULL)
-      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+    HANDLE_ERROR();
 
     points->data = newData;
   }
@@ -515,7 +517,9 @@ void bfPoints2Append(BfPoints2 *points, BfPoint2 const p) {
   /* Append new point */
   bfMemCopy(p, 1, sizeof(BfPoint2), &points->data[points->size++]);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints) {
@@ -618,8 +622,10 @@ BfPoints3 *bfPoints3NewFromBinaryFile(char const *path) {
   fread(points->data, sizeof(BfPoint3), points->size, fp);
   // TODO: error-handling
 
+  points->octree = NULL;
+
   BF_ERROR_END() {
-    bfMemFree(points->data);
+    BF_DIE();
   }
 
   fclose(fp);
@@ -641,6 +647,7 @@ BfPoints3 *bfPoints3Copy(BfPoints3 const *points) {
   pointsCopy->size = points->size;
   pointsCopy->capacity = points->size;
   pointsCopy->isView = false;
+  pointsCopy->octree = NULL;
 
   BF_ERROR_END() {
     BF_DIE();
@@ -659,6 +666,8 @@ void bfPoints3InitWithDefaultCapacity(BfPoints3 *points) {
   points->data = bfMemAlloc(points->capacity, sizeof(BfPoint3));
   HANDLE_ERROR();
 
+  points->octree = NULL;
+
   BF_ERROR_END() {
     BF_DIE();
   }
@@ -673,6 +682,9 @@ void bfPoints3Deinit(BfPoints3 *points) {
   points->size = BF_SIZE_BAD_VALUE;
   points->capacity = BF_SIZE_BAD_VALUE;
   points->isView = false;
+
+  if (points->octree != NULL)
+    bfOctreeDelete(&points->octree);
 }
 
 void bfPoints3Dealloc(BfPoints3 **points) {
@@ -736,6 +748,10 @@ BfReal const *bfPoints3GetPtrConst(BfPoints3 const *points, BfSize i) {
 void bfPoints3Append(BfPoints3 *points, BfPoint3 const point) {
   BF_ERROR_BEGIN();
 
+  // TODO: handle
+  if (points->octree != NULL)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
   if (points->size == points->capacity) {
     BfSize newCapacity = 2*points->capacity;
 
@@ -787,6 +803,10 @@ BfSize bfPoints3Find(BfPoints3 const *points, BfPoint3 const point) {
 void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point) {
   BF_ERROR_BEGIN();
 
+  // TODO: handle
+  if (points->octree != NULL)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
   if (i >= points->size)
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
 
@@ -799,6 +819,10 @@ void bfPoints3Set(BfPoints3 *points, BfSize i, BfPoint3 const point) {
 
 void bfPoints3Delete(BfPoints3 *points, BfSize i) {
   BF_ERROR_BEGIN();
+
+  // TODO: handle
+  if (points->octree != NULL)
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
   BfSize n = points->size;
 
@@ -820,6 +844,8 @@ void bfPoints3Delete(BfPoints3 *points, BfSize i) {
 }
 
 bool bfPoints3AllUnique(BfPoints3 const *points) {
+  BF_ASSERT(points->octree == NULL);
+
   BfSize n = points->size;
   for (BfSize i = 0; i < n; ++i)
     for (BfSize j = i + 1; j < n; ++j)
@@ -844,25 +870,132 @@ void bfPoints3Save(BfPoints3 const *points, char const *path) {
   fclose(fp);
 }
 
-bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+static bool containsApprox_default(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
   for (BfSize i = 0; i < points->size; ++i)
     if (bfPoint3EqualApprox(points->data[i], point, tol))
       return true;
   return false;
 }
 
-BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+static bool containsApprox_accel(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+  BF_ERROR_BEGIN();
+
+  bool close = false;
+
+  BF_ASSERT(points->octree != NULL);
+
+  BfSizeArray *nbs = bfOctreeGetNearestNeighbors(points->octree, point, 1);
+  HANDLE_ERROR();
+
+  BfSize iNb = bfSizeArrayGetFirst(nbs);
+
+  close = bfPoint3EqualApprox(bfPoints3GetPtrConst(points, iNb), point, tol);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return close;
+}
+
+bool bfPoints3ContainsApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+  return points->octree == NULL ?
+    containsApprox_default(points, point, tol) :
+    containsApprox_accel(points, point, tol);
+}
+
+static BfSize findApprox_default(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
   for (BfSize i = 0; i < points->size; ++i)
     if (bfPoint3EqualApprox(points->data[i], point, tol))
       return i;
   return BF_SIZE_BAD_VALUE;
 }
 
-bool bfPoints3AllUniqueApprox(BfPoints3 const *points, BfReal tol) {
+static BfSize findApprox_accel(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+  BF_ERROR_BEGIN();
+
+  BF_ASSERT(points->octree != NULL);
+
+  BfSizeArray *nbs = bfOctreeGetNearestNeighbors(points->octree, point, 1);
+  HANDLE_ERROR();
+
+  BfSize iNb = bfSizeArrayGetFirst(nbs);
+
+  bool close = bfPoint3EqualApprox(bfPoints3GetPtrConst(points, iNb), point, tol);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return close ? iNb : BF_SIZE_BAD_VALUE;
+}
+
+BfSize bfPoints3FindApprox(BfPoints3 const *points, BfPoint3 const point, BfReal tol) {
+  return points->octree == NULL ?
+    findApprox_default(points, point, tol) :
+    findApprox_accel(points, point, tol);
+}
+
+bool allUniqueApprox_default(BfPoints3 const *points, BfReal tol) {
   BfSize n = points->size;
   for (BfSize i = 0; i < n; ++i)
     for (BfSize j = i + 1; j < n; ++j)
       if (bfPoint3EqualApprox(points->data[i], points->data[j], tol))
         return false;
   return true;
+}
+
+bool allUniqueApprox_accel(BfPoints3 const *points, BfReal tol) {
+  BF_ERROR_BEGIN();
+
+  BF_ASSERT(points->octree != NULL);
+
+  bool allUniqueApprox = true;
+
+  BfSize i = 0;
+  while (allUniqueApprox && i < points->size) {
+    BfReal const *point = points->data[i];
+
+    BfSizeArray *nbs = bfOctreeGetNearestNeighbors(points->octree, point, 2);
+    HANDLE_ERROR();
+
+    /* First returned point should just be the query point itself. */
+    BfSize iNb = bfSizeArrayGetFirst(nbs);
+    BF_ASSERT(bfPoint3Equal(point, points->data[iNb]));
+
+    iNb = bfSizeArrayGet(nbs, 1);
+    if (bfPoint3EqualApprox(point, points->data[iNb], tol))
+      allUniqueApprox = false;
+
+    bfSizeArrayDeinitAndDealloc(&nbs);
+
+    ++i;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return allUniqueApprox;
+}
+
+bool bfPoints3AllUniqueApprox(BfPoints3 const *points, BfReal tol) {
+  return points->octree == NULL ?
+    allUniqueApprox_default(points, tol) :
+    allUniqueApprox_accel(points, tol);
+}
+
+void bfPoints3InitAccelerator(BfPoints3 *points, BfSize maxLeafSize) {
+  BF_ERROR_BEGIN();
+
+  points->octree = bfOctreeNewFromPoints(points, maxLeafSize);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfPoints3DeinitAccelerator(BfPoints3 *points) {
+  bfOctreeDelete(&points->octree);
 }
