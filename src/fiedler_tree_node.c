@@ -4,6 +4,7 @@
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/logging.h>
 #include <bf/mem.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
@@ -391,6 +392,8 @@ static void initRecursive(BfFiedlerTreeNode *node,
   BF_ERROR_BEGIN();
 
   BF_ASSERT(i0 < i1);
+
+  bfLogDebug("initRecursive(depth = %lu, i0 = %lu, i1 = %lu)\n", depth, i0, i1);
 
   BfRealArray *phiFiedler = bfTrimeshGetFiedler(trimesh);
   HANDLE_ERROR();
