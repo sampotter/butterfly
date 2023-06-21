@@ -64,7 +64,10 @@ BfFiedlerTreeNode *bfFiedlerTreeNodeNew() {
   return node;
 }
 
-static BfReal getAveragedPhiValue(BfTrimesh const *trimesh, BfRealArray const *phi, BfSize i) {
+enum NodalDomainType {UNKNOWN, POSITIVE, NEGATIVE, BOUNDARY};
+
+static BfReal getAveragedKnownPhiValue(BfTrimesh const *trimesh, BfRealArray const *phi,
+                                       enum NodalDomainType const *nodalDomainType, BfSize i) {
   BF_ERROR_BEGIN();
 
   BfSize numNb = trimesh->vvOffset[i + 1] - trimesh->vvOffset[i];
@@ -72,24 +75,31 @@ static BfReal getAveragedPhiValue(BfTrimesh const *trimesh, BfRealArray const *p
   BfReal *w = bfMemAlloc(numNb, sizeof(BfReal));
   HANDLE_ERROR();
 
+  for (BfSize j = 0; j < numNb; ++j) w[j] = BF_NAN;
+
   BfReal const *x = bfTrimeshGetVertPtrConst(trimesh, i);
   for (BfSize j = 0; j < numNb; ++j) {
     BfSize iNb = trimesh->vv[trimesh->vvOffset[i] + j];
-    BfReal const *xNb = bfTrimeshGetVertPtrConst(trimesh, iNb);
-    BfReal d = bfPoint3Dist(x, xNb);
-    BF_ASSERT(d > 0);
-    w[j] = 1/d;
+    if (nodalDomainType[iNb] != UNKNOWN) {
+      BfReal const *xNb = bfTrimeshGetVertPtrConst(trimesh, iNb);
+      BfReal d = bfPoint3Dist(x, xNb);
+      BF_ASSERT(d > 0);
+      w[j] = 1/d;
+    }
   }
 
   BfReal averagedPhi = 0;
   for (BfSize j = 0; j < numNb; ++j) {
     BfSize iNb = trimesh->vv[trimesh->vvOffset[i] + j];
-    BfReal phiNb = bfRealArrayGetValue(phi, iNb);
-    averagedPhi += w[j]*phiNb;
+    if (nodalDomainType[iNb] != UNKNOWN) {
+      BF_ASSERT(isfinite(w[j]));
+      BfReal phiNb = bfRealArrayGetValue(phi, iNb);
+      averagedPhi += w[j]*phiNb;
+    }
   }
 
   BfReal wSum = 0;
-  for (BfSize j = 0; j < numNb; ++j) wSum += w[j];
+  for (BfSize j = 0; j < numNb; ++j) if(isfinite(w[j])) wSum += w[j];
 
   averagedPhi /= wSum;
 
@@ -102,7 +112,48 @@ static BfReal getAveragedPhiValue(BfTrimesh const *trimesh, BfRealArray const *p
   return averagedPhi;
 }
 
-enum NodalDomainType {UNKNOWN, POSITIVE, NEGATIVE};
+static BfSize getNumUnknown(BfSize numVerts, enum NodalDomainType const *nodalDomainType) {
+  BfSize numUnknown = 0;
+  for (BfSize i = 0; i < numVerts; ++i)
+    if (nodalDomainType[i] == UNKNOWN)
+      ++numUnknown;
+  return numUnknown;
+}
+
+static void fillUnknown(BfTrimesh const *trimesh, BfRealArray const *phiFiedler,
+                        enum NodalDomainType *nodalDomainType) {
+  BF_ERROR_BEGIN();
+
+  for (BfSize i = 0; i < bfTrimeshGetNumVerts(trimesh); ++i) {
+    if (nodalDomainType[i] == UNKNOWN && bfRealArrayGetValue(phiFiedler, i) != 0) {
+      BfReal phiNew = getAveragedKnownPhiValue(trimesh, phiFiedler, nodalDomainType, i);
+      HANDLE_ERROR();
+
+      if (phiNew == 0)
+        continue;
+
+      BfReal phiOld = bfRealArrayGetValue(phiFiedler, i);
+      BF_ASSERT((phiOld < 0 && phiNew > 0) ^ (phiOld > 0 && phiNew < 0));
+
+      phiFiedler->data[i] = phiNew;
+
+      nodalDomainType[i] = phiNew > 0 ? POSITIVE : NEGATIVE;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void dumpType(BfSize numVerts, enum NodalDomainType const *nodalDomainType) {
+  FILE *fp = fopen("type.bin", "w");
+  for (BfSize i = 0; i < numVerts; ++i) {
+    BfSize _ = nodalDomainType[i];
+    fwrite(&_, sizeof(BfSize), 1, fp);
+  }
+  fclose(fp);
+}
 
 static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *phiFiedler) {
   BF_ERROR_BEGIN();
@@ -114,7 +165,7 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < numVerts; ++i)
-    nodalDomainType[i] = UNKNOWN;
+    nodalDomainType[i] = trimesh->isBoundaryVert[i] ? BOUNDARY : UNKNOWN;
 
   /* Find the index of the vertex with the largest Fiedler vector value: */
   BfSize positiveSeedIndex = BF_SIZE_BAD_VALUE;
@@ -183,16 +234,14 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
     }
   }
 
-  for (BfSize i = 0; i < numVerts; ++i) {
-    if (nodalDomainType[i] == UNKNOWN && bfRealArrayGetValue(phiFiedler, i) != 0) {
-      BfReal phiNew = getAveragedPhiValue(trimesh, phiFiedler, i);
-      HANDLE_ERROR();
+  dumpType(numVerts, nodalDomainType);
 
-      BfReal phiOld = bfRealArrayGetValue(phiFiedler, i);
-      BF_ASSERT((phiOld < 0 && phiNew > 0) ^ (phiOld > 0 && phiNew < 0));
-
-      phiFiedler->data[i] = phiNew;
-    }
+  BfSize numUnknown = getNumUnknown(numVerts, nodalDomainType);
+  while (numUnknown > 0) {
+    fillUnknown(trimesh, phiFiedler, nodalDomainType);
+    BfSize prevNumUnknown = numUnknown;
+    numUnknown = getNumUnknown(numVerts, nodalDomainType);
+    BF_ASSERT(numUnknown < prevNumUnknown);
   }
 
   BF_ERROR_END() {
