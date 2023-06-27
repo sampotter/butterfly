@@ -1,28 +1,15 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <bf/assert.h>
-#include <bf/blas.h>
+#include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/fac_helm2.h>
-#include <bf/geom.h>
 #include <bf/helm2.h>
-#include <bf/layer_pot.h>
 #include <bf/linalg.h>
-#include <bf/mat_block_coo.h>
-#include <bf/mat_block_dense.h>
-#include <bf/mat_block_diag.h>
-#include <bf/mat_coo_complex.h>
-#include <bf/mat_dense_complex.h>
 #include <bf/mat_diag_real.h>
-#include <bf/mat_zero.h>
 #include <bf/points.h>
-#include <bf/quadrature.h>
-#include <bf/quadtree.h>
-#include <bf/rand.h>
 #include <bf/util.h>
 #include <bf/vectors.h>
+
+#include <stdlib.h>
 
 static int const KR_order = 6;
 
