@@ -11,6 +11,23 @@ typedef enum {
   PERM_TYPE_LAPACK,
 } PermType;
 
+BfPerm *bfPermGetView(BfPerm *perm) {
+  BF_ERROR_BEGIN();
+
+  BfPerm *permView = bfPermNew();
+  HANDLE_ERROR();
+
+  permView->index = perm->index;
+  permView->size = perm->size;
+  permView->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return permView;
+}
+
 BfPerm *bfPermNew() {
   BF_ERROR_BEGIN();
 

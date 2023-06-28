@@ -9,6 +9,7 @@ typedef struct BfPerm {
   bool isView;
 } BfPerm;
 
+BfPerm *bfPermGetView(BfPerm *perm);
 BfPerm *bfPermNew();
 void bfPermInitEmpty(BfPerm *perm, BfSize size);
 void bfPermDeinit(BfPerm *perm);
