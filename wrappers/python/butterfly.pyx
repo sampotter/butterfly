@@ -2,10 +2,13 @@
 
 from bbox cimport *
 from ellipse cimport *
+from geom cimport *
+from perm cimport *
 from points cimport *
 from quadtree cimport *
 from rand cimport *
 from real_array cimport *
+from tree cimport *
 from vectors cimport *
 
 def seed(BfSize seed):
@@ -38,29 +41,6 @@ cdef class Bbox2:
 
     def __str__(self):
         return f'[{self.xmin}, {self.xmax}] x [{self.ymin}, {self.ymax}]'
-
-cdef class Ellipse:
-    cdef BfEllipse ellipse
-
-    def __init__(self, semi_major_axis, semi_minor_axis, center, theta):
-        self.ellipse.semiMajorAxis = semi_major_axis
-        self.ellipse.semiMinorAxis = semi_minor_axis
-        self.ellipse.center[0] = center[0]
-        self.ellipse.center[1] = center[1]
-        self.ellipse.theta = theta
-
-    @property
-    def perimeter(self):
-        return bfEllipseGetPerimeter(&self.ellipse)
-
-    def sample_linspaced(self, num_points):
-        X = Points2()
-        T = Vectors2()
-        N = Vectors2()
-        W = RealArray()
-        bfEllipseSampleLinspaced(
-            &self.ellipse, num_points, X.points, T.vectors, N.vectors, W.real_array)
-        return X, T, N, W
 
 cdef class Point2:
     cdef BfPoint2 point
@@ -98,6 +78,37 @@ cdef class Point2:
             raise IndexError('index should be 0 or 1')
         self.point[i] = value
 
+cdef class Ellipse:
+    cdef BfEllipse ellipse
+
+    def __init__(self, semi_major_axis, semi_minor_axis, center, theta):
+        self.ellipse.semiMajorAxis = semi_major_axis
+        self.ellipse.semiMinorAxis = semi_minor_axis
+        self.ellipse.center[0] = center[0]
+        self.ellipse.center[1] = center[1]
+        self.ellipse.theta = theta
+
+    @property
+    def perimeter(self):
+        return bfEllipseGetPerimeter(&self.ellipse)
+
+    def sample_linspaced(self, num_points):
+        X = Points2()
+        T = Vectors2()
+        N = Vectors2()
+        W = RealArray()
+        bfEllipseSampleLinspaced(
+            &self.ellipse, num_points, X.points, T.vectors, N.vectors, W.real_array)
+        return X, T, N, W
+
+cdef class Perm:
+    cdef BfPerm *perm
+
+    def get_reverse(self):
+        perm = Perm()
+        perm.perm = bfPermGetReversePerm(self.perm)
+        return perm
+
 cdef class Points2:
     cdef BfPoints2 *points
 
@@ -122,11 +133,12 @@ cdef class Points2:
     def extend(self, Points2 points):
         bfPoints2Extend(self.points, points.points)
 
-cdef class Quadtree:
+cdef class Quadtree(Tree):
     cdef BfQuadtree *quadtree
 
     def __cinit__(self):
         self.quadtree = bfQuadtreeNew()
+        self.tree = bfQuadtreeToTree(self.quadtree)
 
     def __init__(self, Points2 points, Vectors2 normals):
         bfQuadtreeInit(self.quadtree, points.points, normals.vectors)
@@ -145,6 +157,15 @@ cdef class RealArray:
 
     def extend(self, RealArray arr):
         bfRealArrayExtend(self.real_array, arr.real_array)
+
+cdef class Tree:
+    cdef BfTree *tree
+
+    @property
+    def perm(self):
+        perm = Perm()
+        perm.perm = bfPermGetView(bfTreeGetPerm(self.tree))
+        return perm
 
 cdef class Vectors2:
     cdef BfVectors2 *vectors
