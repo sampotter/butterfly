@@ -185,7 +185,7 @@ int main(int argc, char const *argv[]) {
   bfVectors2DeinitAndDealloc((BfVectors2 **)&N_vectors);
 
   bfQuadtreeDeinit(&quadtree);
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
 
   bfMatDelete(&phi_in);
   bfMatDelete(&phi_in_perm);

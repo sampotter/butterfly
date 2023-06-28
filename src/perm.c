@@ -53,7 +53,7 @@ void bfPermDealloc(BfPerm **perm) {
   *perm = NULL;
 }
 
-void bfPermDelete(BfPerm **perm) {
+void bfPermDeinitAndDealloc(BfPerm **perm) {
   bfPermDeinit(*perm);
   bfPermDealloc(perm);
 }
