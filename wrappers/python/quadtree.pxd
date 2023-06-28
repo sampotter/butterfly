@@ -6,6 +6,8 @@ cdef extern from "bf/quadtree.h":
     struct BfQuadtree:
         pass
 
+    BfTree *bfQuadtreeToTree(BfQuadtree *quadtree)
+
     BfQuadtree *bfQuadtreeNew()
     void bfQuadtreeInit(BfQuadtree *tree, const BfPoints2 *points, const BfVectors2 *unitNormals)
     void bfQuadtreeDeinitAndDealloc(BfQuadtree **quadtree)
