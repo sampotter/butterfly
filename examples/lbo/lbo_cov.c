@@ -91,7 +91,7 @@ int main(int argc, char const *argv[]) {
   printf("row tree with depth %lu\n", rowTreeMaxDepth);
 
   BfPerm const *rowPerm = bfTreeGetPermConst(rowTree);
-  BfPerm revRowPerm = bfPermGetReversePerm(rowPerm);
+  BfPerm *revRowPerm = bfPermGetReversePerm(rowPerm);
 
   if (freqTreeDepth == BF_SIZE_BAD_VALUE)
     freqTreeDepth = rowTreeMaxDepth - 3;
@@ -160,7 +160,7 @@ int main(int argc, char const *argv[]) {
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
-  BfVec *c = get_c(Phi, GammaLam, M, rowPerm, &revRowPerm);
+  BfVec *c = get_c(Phi, GammaLam, M, rowPerm, revRowPerm);
   bfVecSave(c, "c_lbo.bin");
 
   /* Extract dense Phi: */

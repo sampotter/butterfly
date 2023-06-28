@@ -154,12 +154,12 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
   if (rowIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
   HANDLE_ERROR();
 
   /* Permute the row indices */
   for (BfSize i = 0; i < numElts; ++i)
-    rowIndPerm[i] = revPerm.index[matCooComplex->rowInd[i]];
+    rowIndPerm[i] = revPerm->index[matCooComplex->rowInd[i]];
 
   /* Free old row indices and replace with permuted ones */
   bfMemFree(matCooComplex->rowInd);
@@ -169,7 +169,7 @@ void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm) {
     bfMemFree(rowIndPerm);
   }
 
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
 }
 
 void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
@@ -189,12 +189,12 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
   if (colIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
   HANDLE_ERROR();
 
   /* Permute the column indices */
   for (BfSize i = 0; i < numElts; ++i)
-    colIndPerm[i] = revPerm.index[matCooComplex->colInd[i]];
+    colIndPerm[i] = revPerm->index[matCooComplex->colInd[i]];
 
   /* Free old column indices and replace with permuted ones */
   bfMemFree(matCooComplex->colInd);
@@ -204,7 +204,7 @@ void bfMatCooComplexPermuteCols(BfMat *mat, BfPerm const *perm) {
     bfMemFree(colIndPerm);
   }
 
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
 }
 
 static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {

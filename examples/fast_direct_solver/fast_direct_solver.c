@@ -85,7 +85,7 @@ int main(int argc, char const *argv[]) {
   BfPerm const *perm = bfTreeGetPermConst(tree);
 
   /* Compute the reverse of the quadtree permutation */
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
 
   /* Set up the LHS of the problem */
   BfMat *phi_in = bfGetHelm2KernelMatrix(
@@ -95,7 +95,7 @@ int main(int argc, char const *argv[]) {
 
   /* Permute the LHS for the butterfly factorized version of A*/
   BfMat *phi_in_perm = bfMatCopy(phi_in);
-  bfMatPermuteRows(phi_in_perm, &revPerm);
+  bfMatPermuteRows(phi_in_perm, revPerm);
 
   /* One-half times the identity matrix---used to set up BIEs below */
   BfMat *oneHalfEye = bfMatDiagRealToMat(bfMatDiagRealNewConstant(n, n, 1./2));
@@ -121,7 +121,7 @@ int main(int argc, char const *argv[]) {
 
   /* Scale the columns by the trapezoid rule weights */
   BfVec *w_perm = bfVecCopy(w);
-  bfVecPermute(w_perm, &revPerm);
+  bfVecPermute(w_perm, revPerm);
   bfMatScaleCols(A_BF, w_perm);
 
   /* Perturb by one-half the identity to get a second-kind IE */

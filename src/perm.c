@@ -122,19 +122,17 @@ BfPerm bfPermIdentity(BfSize size) {
   return perm;
 }
 
-BfPerm bfPermGetReversePerm(BfPerm const *perm) {
+BfPerm *bfPermGetReversePerm(BfPerm const *perm) {
   BF_ERROR_BEGIN();
 
-  BfPerm revPerm = {
-    .index = bfMemAlloc(perm->size, sizeof(BfSize)),
-    .size = perm->size
-  };
+  BfPerm *revPerm = bfPermNew();
+  HANDLE_ERROR();
 
-  if (revPerm.index == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  bfPermInitEmpty(revPerm, perm->size);
+  HANDLE_ERROR();
 
-  for (BfSize i = 0; i < revPerm.size; ++i)
-    revPerm.index[perm->index[i]] = i;
+  for (BfSize i = 0; i < revPerm->size; ++i)
+    revPerm->index[perm->index[i]] = i;
 
   BF_ERROR_END() {
     BF_DIE();

@@ -142,17 +142,17 @@ BfMat *bfMatPermGetInverse(BfMatPerm const *matPerm) {
   if (matPerm->impl->permType != PERM_TYPE_BF)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfPerm permInverse = bfPermGetReversePerm(matPerm->impl->perm);
+  BfPerm *permInverse = bfPermGetReversePerm(matPerm->impl->perm);
   HANDLE_ERROR();
 
-  BfMatPerm *matPermInverse = bfMatPermNewFromPerm(&permInverse);
+  BfMatPerm *matPermInverse = bfMatPermNewFromPerm(permInverse);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
   }
 
-  bfPermDeinit(&permInverse);
+  bfPermDeinitAndDealloc(&permInverse);
 
   return bfMatPermToMat(matPermInverse);
 }

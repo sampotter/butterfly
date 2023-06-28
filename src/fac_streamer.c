@@ -37,7 +37,7 @@ struct BfFacStreamer {
 
   BfTreeIter *colTreeIter;
 
-  BfPerm rowTreeReversePerm;
+  BfPerm *rowTreeReversePerm;
 
   /* This is basically an association list which maps from column tree
    * nodes to lists of Psi and W blocks. We use this to track blocks
@@ -101,7 +101,7 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
   bfTreeIterDelete(&facStreamer->colTreeIter);
 
-  bfPermDeinit(&facStreamer->rowTreeReversePerm);
+  bfPermDeinitAndDealloc(&facStreamer->rowTreeReversePerm);
 
   for (BfSize i = 0; i < bfPtrArraySize(&facStreamer->partialFacs); ++i) {
     BfFac *fac = bfPtrArrayGet(&facStreamer->partialFacs, i);
@@ -540,5 +540,5 @@ BfTreeNode *bfFacStreamerGetCurrentColumnNode(BfFacStreamer const *facStreamer) 
 }
 
 BfPerm const *bfFacStreamerGetRowTreeReversePerm(BfFacStreamer const *facStreamer) {
-  return &facStreamer->rowTreeReversePerm;
+  return facStreamer->rowTreeReversePerm;
 }

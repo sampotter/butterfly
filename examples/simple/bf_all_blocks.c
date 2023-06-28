@@ -96,11 +96,11 @@ int main(int argc, char const *argv[]) {
   BfTree *tree = bfQuadtreeToTree(&quadtree);
 
   BfPerm const *perm = bfTreeGetPermConst(tree);
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
 
 #if PERM_DENSE
   BfMat *pointsPermMat = bfMatCopy(pointsMat);
-  bfMatPermuteRows(pointsPermMat, &revPerm);
+  bfMatPermuteRows(pointsPermMat, revPerm);
 
   BfPoints2 const *pointsPerm = bfPoints2ConstViewFromMat(pointsPermMat);
 
@@ -109,7 +109,7 @@ int main(int argc, char const *argv[]) {
   if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     normalsPermMat = bfMatFromFile(normals_path_str, -1, 2, BF_DTYPE_REAL);
     HANDLE_ERROR();
-    bfMatPermuteRows(normalsPermMat, &revPerm);
+    bfMatPermuteRows(normalsPermMat, revPerm);
     normalsPerm = bfVectors2ConstViewFromMat(normalsPermMat);
   }
 
@@ -210,7 +210,7 @@ int main(int argc, char const *argv[]) {
     bfMatDelete(&normalsPermMat);
 #endif
   bfMatDelete(&pointsMat);
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
   if (normals != NULL)
     bfVectors2DeinitAndDealloc(&normals);
 }

@@ -379,8 +379,7 @@ void buildQuadtrees(MultipleScatteringContext *context) {
   BfTree *tree = bfQuadtreeToTree(context->quadtree);
   context->perm = bfTreeGetPermConst(tree);
 
-  context->revPerm = bfMemAlloc(1, sizeof(BfPerm));
-  *context->revPerm = bfPermGetReversePerm(context->perm);
+  context->revPerm = bfPermGetReversePerm(context->perm);
 
   printf("Built quadtrees [%0.2fs]\n", bfToc());
 

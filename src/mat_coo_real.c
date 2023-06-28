@@ -148,12 +148,12 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
   if (rowIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
   HANDLE_ERROR();
 
   /* Permute the row indices */
   for (BfSize i = 0; i < numElts; ++i)
-    rowIndPerm[i] = revPerm.index[matCooReal->rowInd[i]];
+    rowIndPerm[i] = revPerm->index[matCooReal->rowInd[i]];
 
   /* Free old row indices and replace with permuted ones */
   bfMemFree(matCooReal->rowInd);
@@ -163,7 +163,7 @@ void bfMatCooRealPermuteRows(BfMat *mat, BfPerm const *perm) {
     bfMemFree(rowIndPerm);
   }
 
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
 }
 
 void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
@@ -183,12 +183,12 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
   if (colIndPerm == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
-  BfPerm revPerm = bfPermGetReversePerm(perm);
+  BfPerm *revPerm = bfPermGetReversePerm(perm);
   HANDLE_ERROR();
 
   /* Permute the column indices */
   for (BfSize i = 0; i < numElts; ++i)
-    colIndPerm[i] = revPerm.index[matCooReal->colInd[i]];
+    colIndPerm[i] = revPerm->index[matCooReal->colInd[i]];
 
   /* Free old column indices and replace with permuted ones */
   bfMemFree(matCooReal->colInd);
@@ -198,7 +198,7 @@ void bfMatCooRealPermuteCols(BfMat *mat, BfPerm const *perm) {
     bfMemFree(colIndPerm);
   }
 
-  bfPermDeinit(&revPerm);
+  bfPermDeinitAndDealloc(&revPerm);
 }
 
 bool bfMatCooRealIsZero(BfMat const *mat) {
