@@ -142,7 +142,7 @@ int main(int argc, char const *argv[]) {
     puts("wrote target unit normals to tgtNormals.bin");
   }
 
-  BfMat *Z_gt = bfGetHelm2KernelMatrix(
+  BfMat *Z_gt = bfHelm2GetKernelMatrix(
     &srcNodePts, &tgtNodePts, NULL, tgtNodeNormals, K, layerPot, NULL, NULL);
   HANDLE_ERROR();
 

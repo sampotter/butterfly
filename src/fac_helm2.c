@@ -460,7 +460,7 @@ static BfMat *makeLastFactor(BfQuadtree const *tgtTree, BfMat const *prevMat, Bf
     if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
       tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
 
-    mat->super.block[i] = bfGetHelm2KernelMatrix(
+    mat->super.block[i] = bfHelm2GetKernelMatrix(
       &srcCircPts, &tgtPts, srcNormals, tgtNormals, K, layerPot, alpha, beta);
     HANDLE_ERROR();
 
@@ -731,7 +731,7 @@ static BfMat *facHelm2MakeMultilevel_dense(BfQuadtree const *srcTree, BfQuadtree
   if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
     tgtNormals = bfQuadtreeNodeGetUnitNormals(tgtNode, tgtTree);
 
-  Z = bfGetHelm2KernelMatrix(&srcPts, &tgtPts, srcNormals, tgtNormals, K, layerPot, alpha, beta);
+  Z = bfHelm2GetKernelMatrix(&srcPts, &tgtPts, srcNormals, tgtNormals, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   BF_ERROR_END() {

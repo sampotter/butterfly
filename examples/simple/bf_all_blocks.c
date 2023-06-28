@@ -114,12 +114,12 @@ int main(int argc, char const *argv[]) {
   }
 
   bfToc();
-  BfMat *A_dense = bfGetHelm2KernelMatrix(
+  BfMat *A_dense = bfHelm2GetKernelMatrix(
     pointsPerm, pointsPerm, NULL, normalsPerm, K, layerPot, NULL, NULL);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #else
   bfToc();
-  BfMat *A_dense = bfGetHelm2KernelMatrix(points, points, normalsPtr, K, layerPot);
+  BfMat *A_dense = bfHelm2GetKernelMatrix(points, points, normalsPtr, K, layerPot);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #endif
 

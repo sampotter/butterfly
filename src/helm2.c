@@ -279,7 +279,7 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 }
 
 BfMat *
-bfGetHelm2KernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
+bfHelm2GetKernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
                        BfVectors2 const *Nsrc, BfVectors2 const *Ntgt,
                        BfReal K, BfLayerPotential layerPot,
                        BfComplex const *alpha, BfComplex const *beta)
@@ -344,12 +344,12 @@ bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
 
   /* compute the kernel matrix mapping charges on the original sources
    * points to potentials on the original target points */
-  BfMat *Z_orig = bfGetHelm2KernelMatrix(srcPtsOrig, tgtPts, srcNormalsOrig, NULL, K, layerPot, alpha, beta);
+  BfMat *Z_orig = bfHelm2GetKernelMatrix(srcPtsOrig, tgtPts, srcNormalsOrig, NULL, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   /* compute the kernel matrix mapping charges on the source
    * circle to potentials on the target circle */
-  BfMat *Z_equiv = bfGetHelm2KernelMatrix(srcPtsEquiv, tgtPts, srcNormalsEquiv, NULL, K, layerPot, alpha, beta);
+  BfMat *Z_equiv = bfHelm2GetKernelMatrix(srcPtsEquiv, tgtPts, srcNormalsEquiv, NULL, K, layerPot, alpha, beta);
   HANDLE_ERROR();
 
   /* set the "shift matrix" to Z_equiv\Z_orig */

@@ -88,7 +88,7 @@ int main(int argc, char const *argv[]) {
   BfPerm *revPerm = bfPermGetReversePerm(perm);
 
   /* Set up the LHS of the problem */
-  BfMat *phi_in = bfGetHelm2KernelMatrix(
+  BfMat *phi_in = bfHelm2GetKernelMatrix(
     X_source_points, X_points, NULL, N_vectors, K,
     BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
@@ -113,7 +113,7 @@ int main(int argc, char const *argv[]) {
   bfToc();
 
   /* Compute S_k' (normal derivative of single-layer potential) */
-  BfMat *A_dense = bfGetHelm2KernelMatrix(
+  BfMat *A_dense = bfHelm2GetKernelMatrix(
     X_points, X_points, NULL, N_vectors, K,
     BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
   HANDLE_ERROR();
@@ -204,11 +204,11 @@ int main(int argc, char const *argv[]) {
   /** Evaluate solution and check errors */
 
   /* Set up evaluation matrix */
-  BfMat *G_eval = bfGetHelm2KernelMatrix(
+  BfMat *G_eval = bfHelm2GetKernelMatrix(
     X_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
   bfMatScaleCols(G_eval, w);
 
-  BfMat *phi_exact = bfGetHelm2KernelMatrix(
+  BfMat *phi_exact = bfHelm2GetKernelMatrix(
     X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);

@@ -41,3 +41,14 @@ for ellipse in ellipses:
 
 # build quadtree on points w/ normals
 quadtree = bf.Quadtree(X, N)
+
+rev_perm = quadtree.perm.get_reverse()
+
+# compute the incident field
+phi_in = bf.Helm2.get_kernel_matrix(xsrc, X, N, k, bf.LayerPotential.Sp)
+
+# set up multilevel butterfly factorization
+A_BF = bf.FacHelm2.make_multilevel(quadtree, k, bf.LayerPotential.Sp)
+A_BF.apply_KR_correction(KR_order)
+A_BF.scale_cols(w[rev_perm])
+A_BF += bf.MatIdentity()/2

@@ -45,7 +45,7 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   MultipleScatteringContext const *context = (MultipleScatteringContext const *)aux;
 
 //   /* Assemble discretized CFIE kernel matrix: */
-//   BfMat *KDenseTest = bfGetHelm2KernelMatrix(
+//   BfMat *KDenseTest = bfHelm2GetKernelMatrix(
 //     context->X,
 //     context->X,
 //     context->N,
@@ -426,7 +426,7 @@ void assembleDenseK(MultipleScatteringContext *context) {
   bfToc();
 
   /* Assemble discretized CFIE kernel matrix: */
-  context->K = bfGetHelm2KernelMatrix(
+  context->K = bfHelm2GetKernelMatrix(
     context->X,
     context->X,
     context->N,
@@ -580,7 +580,7 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
       BfVectors2 *NBlock = bfVectors2GetRangeView(context->N, i0, i1);
 
       /* Get dense kernel matrix block for CFIE: */
-      KBlock = bfGetHelm2KernelMatrix(
+      KBlock = bfHelm2GetKernelMatrix(
         XBlock, XBlock, NBlock, NULL, context->k,
         BF_LAYER_POTENTIAL_COMBINED_FIELD, &context->alpha, &context->beta);
 
