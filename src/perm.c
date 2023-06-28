@@ -116,9 +116,7 @@ BfPerm bfPermIdentity(BfSize size) {
   perm.isView = false;
 
   BF_ERROR_END() {
-    bfMemFree(perm.index);
-    perm.index = NULL;
-    perm.size = BF_SIZE_BAD_VALUE;
+    BF_DIE();
   }
 
   return perm;
@@ -139,9 +137,7 @@ BfPerm bfPermGetReversePerm(BfPerm const *perm) {
     revPerm.index[perm->index[i]] = i;
 
   BF_ERROR_END() {
-    bfMemFree(revPerm.index);
-    revPerm.index = NULL;
-    revPerm.size = BF_SIZE_BAD_VALUE;
+    BF_DIE();
   }
 
   return revPerm;
