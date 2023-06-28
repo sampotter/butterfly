@@ -49,6 +49,10 @@ BfTreeNode const *bfTreeGetRootNodeConst(BfTree const *tree) {
   return tree->root;
 }
 
+BfPerm *bfTreeGetPerm(BfTree *tree) {
+  return &tree->perm;
+}
+
 BfPerm const *bfTreeGetPermConst(BfTree const *tree) {
   return &tree->perm;
 }

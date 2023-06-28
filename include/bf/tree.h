@@ -40,6 +40,7 @@ void bfTreeDeinit(BfTree *tree);
 bool bfTreeInstanceOf(BfTree const *tree, BfType type);
 BfTreeNode *bfTreeGetRootNode(BfTree *);
 BfTreeNode const *bfTreeGetRootNodeConst(BfTree const *);
+BfPerm *bfTreeGetPerm(BfTree *tree);
 BfPerm const *bfTreeGetPermConst(BfTree const *tree);
 BfSize bfTreeGetMaxDepth(BfTree const *);
 void bfTreeMap(BfTree *, BfTreeNode *, BfTreeTraversal, BfTreeMapFunc, void *);
