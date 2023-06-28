@@ -37,13 +37,17 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
 
   perm->size = size;
 
+  perm->isView = false;
+
   BF_ERROR_END() {
     bfPermDeinit(perm);
   }
 }
 
 void bfPermDeinit(BfPerm *perm) {
-  bfMemFree(perm->index);
+  if (!perm->isView)
+    bfMemFree(perm->index);
+
   perm->index = NULL;
   perm->size = BF_SIZE_BAD_VALUE;
 }
@@ -72,6 +76,8 @@ BfPerm *bfPermCopy(BfPerm const *perm) {
 
   bfMemCopy(perm->index, perm->size, sizeof(BfSize), permCopy->index);
 
+  permCopy->isView = false;
+
   BF_ERROR_END() {
     BF_DIE();
   }
@@ -89,6 +95,8 @@ BfPerm bfPermIdentity(BfSize size) {
 
   for (BfSize i = 0; i < size; ++i)
     perm.index[i] = i;
+
+  perm.isView = false;
 
   BF_ERROR_END() {
     bfMemFree(perm.index);

@@ -6,6 +6,7 @@
 typedef struct BfPerm {
   BfSize *index;
   BfSize size;
+  bool isView;
 } BfPerm;
 
 BfPerm *bfPermNew();
