@@ -16,6 +16,7 @@ endforeach
 
 scripts = [
   'bf_lbo_plot_blocks.py',
+  'collect_lbo_data.py',
   'run_bf_lbo_test.sh',
 ]
 

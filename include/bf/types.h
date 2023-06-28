@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+typedef struct BfTimer BfTimer;
+
 typedef struct BfArray BfArray;
 typedef struct BfRealArray BfRealArray;
 typedef struct BfSizeArray BfSizeArray;

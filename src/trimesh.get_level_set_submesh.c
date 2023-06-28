@@ -806,6 +806,10 @@ static void deinit(NodalDomainBuilder *builder) {
 BfTrimesh *bfTrimeshGetLevelSetSubmesh(BfTrimesh const *trimesh, BfRealArray const *phi, BfReal tol, bool const *permMask, BfSizeArray **permPtr) {
   BF_ERROR_BEGIN();
 
+  bfTrimeshDumpVerts(trimesh, "verts.bin");
+  bfTrimeshDumpFaces(trimesh, "faces.bin");
+  bfRealArraySave(phi, "phi.bin");
+
   BfTrimesh *submesh = NULL;
 
   NodalDomainBuilder builder;

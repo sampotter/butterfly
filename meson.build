@@ -95,6 +95,7 @@ butterfly_lib_src = [
   'src/real_array.c',
   'src/size_array.c',
   'src/splitmix64.c',
+  'src/timer.c',
   'src/tree.c',
   'src/tree_iter.c',
   'src/tree_iter_post_order.c',

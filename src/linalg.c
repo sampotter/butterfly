@@ -5,9 +5,11 @@
 #include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/logging.h>
 #include <bf/lu_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/mem.h>
+#include <bf/timer.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
@@ -325,6 +327,9 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
 
   BF_ERROR_BEGIN();
 
+  BfTimer timerFunc;
+  bfTimerReset(&timerFunc);
+
   double *resid = NULL;
   double *V = NULL;
   a_int *select = NULL;
@@ -473,6 +478,9 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
 
   BF_ERROR_BEGIN();
 
+  BfTimer timerFunc;
+  bfTimerReset(&timerFunc);
+
   double *resid = NULL;
   double *V = NULL;
   a_int *select = NULL;
@@ -497,6 +505,10 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   a_int const rvec = 1; /* computing eigenvalues and eigenvectors */
   char const howmny[] = "A";
 
+  BfTimer timer;
+
+  bfTimerReset(&timer);
+
   BfMat *A_minus_sigma_M = bfMatCopy(M);
   HANDLE_ERROR();
 
@@ -511,6 +523,9 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
 
   bfLuCsrRealInit(A_minus_sigma_M_lu, A_minus_sigma_M);
   HANDLE_ERROR();
+
+  bfLogInfo("bfGetShiftedEigs: created and factorized A - sigma*M [%.1fs]\n",
+            bfTimerGetElapsedTimeInSeconds(&timer));
 
   resid = bfMemAlloc(N, sizeof(BfReal));
   if (resid == NULL)
@@ -549,6 +564,12 @@ void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
   a_int ido = 0;
   a_int info = 0;
 
+  BfSize numSolve = 0;
+  BfSize numMvp = 0;
+
+  BfReal totalSolveTime = 0;
+  BfReal totalMvpTime = 0;
+
 dnaupd:
   dnaupd_c(&ido, &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
            workd, workl, lworkl, &info);
@@ -556,10 +577,16 @@ dnaupd:
     BF_ASSERT(ipntr[0] > 0);
     BF_ASSERT(ipntr[1] > 0);
 
+    bfTimerReset(&timer);
+
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
     BfVec *tmp = bfMatMulVec(M, bfVecRealToVec(&x));
     BfVecReal *y = bfVecToVecReal(bfLuCsrRealSolveVec(A_minus_sigma_M_lu, tmp));
+
+    totalSolveTime += bfTimerGetElapsedTimeInSeconds(&timer);
+
+    ++numSolve;
 
     bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
@@ -574,7 +601,13 @@ dnaupd:
     BfVecReal x;
     bfVecRealInitView(&x, N, BF_DEFAULT_STRIDE, &workd[ipntr[0] - 1]);
 
+    bfTimerReset(&timer);
+
     BfVecReal *y = bfVecToVecReal(bfMatMulVec(M, bfVecRealToVec(&x)));
+
+    totalMvpTime += bfTimerGetElapsedTimeInSeconds(&timer);
+
+    ++numMvp;
 
     bfMemCopy(y->data, N, sizeof(BfReal), &workd[ipntr[1] - 1]);
 
@@ -582,6 +615,11 @@ dnaupd:
 
     goto dnaupd;
   }
+
+  bfLogInfo("bfGetShiftedEigs: finished iterating [%.1fs]\n",
+            bfTimerGetElapsedTimeInSeconds(&timer));
+  bfLogInfo("bfGetShiftedEigs: did %lu solves [%.1fs]\n", numSolve, totalSolveTime);
+  bfLogInfo("bfGetShiftedEigs: did %lu MVPs [%.1fs]\n", numMvp, totalMvpTime);
 
   if (info < 0 || iparam[4] < nev)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -603,6 +641,8 @@ dnaupd:
   BfReal sigmar = sigma;
   BfReal sigmai = 0.0;
 
+  bfTimerReset(&timer);
+
   dneupd_c(
     rvec, /* == 0 -> not computing Ritz vectors */
     howmny, /* == "A" -> compute all requested eigenvalues */
@@ -618,6 +658,9 @@ dnaupd:
     /* dnaupd parameters: don't modify before calling dseupd */
     &bmat, N, which, nev, tol, resid, ncv, V, ldv, iparam, ipntr,
     workd, workl, lworkl, &info);
+
+  bfLogInfo("bfGetShiftedEigs: extracted eigs [%.1fs]\n",
+            bfTimerGetElapsedTimeInSeconds(&timer));
 
   if (info != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
@@ -700,6 +743,9 @@ dnaupd:
   bfMemFree(workd);
   bfMemFree(workl);
   bfMemFree(workev);
+
+  bfLogInfo("bfGetShiftedEigs: done [%.1fs]\n",
+            bfTimerGetElapsedTimeInSeconds(&timerFunc));
 }
 
 void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
@@ -727,6 +773,8 @@ void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
   bool useRight = isfinite(lam1);
 
 get_shifted_eigs:
+  bfLogInfo("bfGetEigenband: k = %lu\n", k);
+
   bfGetShiftedEigs(A, M, sigma, k, &Phi, &Lambda);
   HANDLE_ERROR();
 

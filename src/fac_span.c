@@ -22,34 +22,34 @@ BfFacSpan *bfFacSpanNewFromPtrArray(BfPtrArray const *facs) {
   return facSpan;
 }
 
-static bool facsHaveSameRowSpan(BfPtrArray const *facs) {
-  BF_ASSERT(!bfPtrArrayIsEmpty(facs));
+// static bool facsHaveSameRowSpan(BfPtrArray const *facs) {
+//   BF_ASSERT(!bfPtrArrayIsEmpty(facs));
 
-  BF_ERROR_BEGIN();
+//   BF_ERROR_BEGIN();
 
-  /* Get the first factorization and compare all the others' row spans
-   * to this one's row span. */
-  BfFac const *fac = bfPtrArrayGet(facs, 0);
+//   /* Get the first factorization and compare all the others' row spans
+//    * to this one's row span. */
+//   BfFac const *fac = bfPtrArrayGet(facs, 0);
 
-  bool sameRowSpan = true;
-  for (BfSize i = 1; i < bfPtrArraySize(facs); ++i) {
-    BfFac const *otherFac = bfPtrArrayGet(facs, i);
+//   bool sameRowSpan = true;
+//   for (BfSize i = 1; i < bfPtrArraySize(facs); ++i) {
+//     BfFac const *otherFac = bfPtrArrayGet(facs, i);
 
-    bool same = bfConstNodeArrayIsSameSpan(&fac->rowNodes, &otherFac->rowNodes);
-    HANDLE_ERROR();
+//     bool same = bfConstNodeArrayIsSameSpan(&fac->rowNodes, &otherFac->rowNodes);
+//     HANDLE_ERROR();
 
-    if (!same) {
-      sameRowSpan = false;
-      break;
-    }
-  }
+//     if (!same) {
+//       sameRowSpan = false;
+//       break;
+//     }
+//   }
 
-  BF_ERROR_END() {
-    BF_DIE();
-  }
+//   BF_ERROR_END() {
+//     BF_DIE();
+//   }
 
-  return sameRowSpan;
-}
+//   return sameRowSpan;
+// }
 
 static bool facsDetermineContiguousColNodeSpan(BfPtrArray const *facs) {
   BF_ASSERT(!bfPtrArrayIsEmpty(facs));
@@ -86,8 +86,9 @@ void bfFacSpanInitFromPtrArray(BfFacSpan *facSpan, BfPtrArray const *facs) {
   if (bfPtrArrayIsEmpty(facs))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  if (!facsHaveSameRowSpan(facs))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+  // TODO: unnecessary? can't remember why I had this here...
+  // if (!facsHaveSameRowSpan(facs))
+  //   RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   if (!facsDetermineContiguousColNodeSpan(facs))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
