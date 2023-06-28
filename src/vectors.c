@@ -58,30 +58,13 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
   w[2] = u[0]*v[1] - u[1]*v[0];
 }
 
-BfVectors2 *bfVectors2New() {
-  BF_ERROR_BEGIN();
-
-  BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
-  if (vectors == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  bfVectors2Init(vectors);
-  HANDLE_ERROR();
-
-  BF_ERROR_END() {
-    BF_DIE();
-  }
-
-  return vectors;
-}
-
-BfVectors2 *bfVectors2NewEmpty(BfSize n) {
+BfVectors2 *bfVectors2NewEmpty() {
   BF_ERROR_BEGIN();
 
   BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
   HANDLE_ERROR();
 
-  bfInitEmptyVectors2(vectors, n);
+  bfVectors2InitEmpty(vectors);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -97,7 +80,7 @@ BfVectors2 *bfVectors2NewFromFile(char const *path) {
   BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
   HANDLE_ERROR();
 
-  bfReadVectors2FromFile(path, vectors);
+  bfVectors2InitFromFile(path, vectors);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -158,19 +141,14 @@ void bfVectors2Init(BfVectors2 *vectors) {
   }
 }
 
-void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
+void bfVectors2InitEmpty(BfVectors2 *vectors) {
   BF_ERROR_BEGIN();
 
-  if (numVectors == 0) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
-  }
-
-  vectors->size = numVectors;
-  vectors->capacity = 2*numVectors;
+  vectors->size = 0;
+  vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
   vectors->isView = false;
 
-  vectors->data = bfMemAlloc(numVectors, sizeof(BfVector2));
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector2));
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -178,7 +156,7 @@ void bfInitEmptyVectors2(BfVectors2 *vectors, BfSize numVectors) {
   }
 }
 
-void bfReadVectors2FromFile(char const *path, BfVectors2 *vectors) {
+void bfVectors2InitFromFile(char const *path, BfVectors2 *vectors) {
   BF_ERROR_BEGIN();
 
   /* open the file for reading */
@@ -235,16 +213,14 @@ void bfGetVectorsByIndex(BfVectors2 const *vectors,
 {
   BF_ERROR_BEGIN();
 
-  bfInitEmptyVectors2(indexedVectors, numInds);
+  bfVectors2InitEmpty(indexedVectors);
   HANDLE_ERROR();
 
   BfVector2 const *vector = (BfVector2 const *)vectors->data;
-  BfVector2 *indexedVector = indexedVectors->data;
 
-  for (BfSize i = 0, j; i < numInds; ++i) {
-    j = inds[i];
-    indexedVector[i][0] = vector[j][0];
-    indexedVector[i][1] = vector[j][1];
+  for (BfSize i = 0; i < numInds; ++i) {
+    bfVectors2Append(indexedVectors, vector[inds[i]]);
+    HANDLE_ERROR();
   }
 
   BF_ERROR_END() {

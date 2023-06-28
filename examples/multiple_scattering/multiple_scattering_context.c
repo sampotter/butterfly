@@ -343,7 +343,7 @@ void setUpDiscretization(MultipleScatteringContext *context) {
   bfSizeArrayAppend(context->ellipseOffsets, 0);
 
   context->X = bfPoints2NewEmpty();
-  context->N = bfVectors2New();
+  context->N = bfVectors2NewEmpty();
   context->W = bfRealArrayNewWithDefaultCapacity();
   for (BfSize i = 0; i < context->numEllipses; ++i) {
     BfEllipse const *ellipse = &context->ellipse[i];
@@ -1103,7 +1103,7 @@ void deinit(MultipleScatteringContext *context) {
   }
 
   if (context->N) {
-    bfFreeVectors2(context->N);
+    bfVectors2DeinitAndDealloc(&context->N);
     bfMemFree(context->N);
   }
 

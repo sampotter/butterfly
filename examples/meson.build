@@ -1,3 +1,4 @@
+subdir('fast_direct_solver')
 subdir('fiedler_tree')
 subdir('lbo')
 subdir('multiple_scattering')

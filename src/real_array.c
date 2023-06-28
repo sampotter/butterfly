@@ -237,6 +237,19 @@ void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
   }
 }
 
+void bfRealArrayExtend(BfRealArray *realArray, BfRealArray const *otherRealArray) {
+  BF_ERROR_BEGIN();
+
+  for (BfSize i = 0; i < bfRealArrayGetSize(otherRealArray); ++i) {
+    bfRealArrayAppend(realArray, bfRealArrayGetValue(otherRealArray, i));
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 BfVec *bfRealArrayGetVecView(BfRealArray *realArray) {
   BF_ERROR_BEGIN();
 

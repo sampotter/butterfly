@@ -108,27 +108,6 @@ int main(int argc, char const *argv[]) {
     .K = K
   };
 
-  /** Set up the dense system matrix */
-
-  bfToc();
-
-  /* Compute S_k' (normal derivative of single-layer potential) */
-  BfMat *A_dense = bfGetHelm2KernelMatrix(
-    X_points, X_points, NULL, N_vectors, K,
-    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
-  HANDLE_ERROR();
-
-  /* Perturb by the KR correction */
-  bf_apply_KR_correction(A_dense, KR_order, K_helm2, (void *)&K_wkspc);
-
-  /* Scale the columns by the trapezoid rule weights */
-  bfMatScaleCols(A_dense, w);
-
-  /* Perturb by one-half the identity to get a second-kind IE */
-  bfMatAddInplace(A_dense, oneHalfEye);
-
-  printf("assembled dense system matrix [%0.2fs]\n", bfToc());
-
   /** Set up the butterfly-factorized system matrix */
 
   bfToc();
@@ -156,41 +135,7 @@ int main(int argc, char const *argv[]) {
   fclose(fp);
   printf("wrote blocks to %s\n", argv[7]);
 
-  /** Verify and time the matrix multiplications */
-
-  bfToc();
-  BfMat *y_test_dense = bfMatMul(A_dense, phi_in);
-  printf("did test dense MVP [%0.2fs]\n", bfToc());
-
-  bfToc();
-  BfMat *y_test_BF = bfMatMul(A_BF, phi_in_perm);
-  bfMatPermuteRows(y_test_BF, perm);
-  printf("did test butterfly MVP [%0.2fs]\n", bfToc());
-
-  BfVec *err_MVP = bfMatColDists(y_test_dense, y_test_BF);
-  BfVec *y_col_norms = bfMatColNorms(y_test_dense);
-  BfReal max_rel_err_MVP = bfVecNormMax(err_MVP)/bfVecNormMax(y_col_norms);
-  bfVecDelete(&err_MVP);
-  bfVecDelete(&y_col_norms);
-  printf("MVP rel. l2 errors:\n");
-  printf("- BF: %g\n", max_rel_err_MVP);
-
   /** Solve the system using different methods */
-
-  /* Solve dense system using LU decomposition */
-  BfMat *A_dense_LU_copy = bfMatCopy(A_dense);
-  bfToc();
-  BfMat *sigma_dense_LU = bfMatSolveLU(A_dense_LU_copy, phi_in);
-  printf("solved using Gaussian elimination [%0.2fs]\n", bfToc());
-  bfMatDelete(&A_dense_LU_copy);
-
-  /* Solve dense system using GMRES */
-  bfToc();
-  BfSize num_iter_dense_GMRES;
-  BfMat *sigma_dense_GMRES = bfSolveGMRES(
-    A_dense, phi_in, NULL, tol, numIter, &num_iter_dense_GMRES, NULL);
-  printf("solved using GMRES (dense): %lu iter. [%0.2fs]\n",
-         num_iter_dense_GMRES, bfToc());
 
   /* Solve butterfly-factorized system using GMRES */
   bfToc();
@@ -211,17 +156,9 @@ int main(int argc, char const *argv[]) {
   BfMat *phi_exact = bfGetHelm2KernelMatrix(
     X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
 
-  BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
-  BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);
   BfMat *phi_BF_GMRES = bfMatMul(G_eval, sigma_BF_GMRES);
 
   /* Compute errors */
-
-  BfVec *error_l2_dense_LU_vec = bfMatColDists(phi_dense_LU, phi_exact);
-  BfReal error_l2_dense_LU = *(BfReal *)bfVecGetEltPtr(error_l2_dense_LU_vec, 0);
-
-  BfVec *error_l2_dense_GMRES_vec = bfMatColDists(phi_dense_GMRES, phi_exact);
-  BfReal error_l2_dense_GMRES = *(BfReal *)bfVecGetEltPtr(error_l2_dense_GMRES_vec, 0);
 
   BfVec *error_l2_BF_GMRES_vec = bfMatColDists(phi_BF_GMRES, phi_exact);
   BfReal error_l2_BF_GMRES = *(BfReal *)bfVecGetEltPtr(error_l2_BF_GMRES_vec, 0);
@@ -230,8 +167,6 @@ int main(int argc, char const *argv[]) {
   BfReal phi_l2_norm = *(BfReal *)bfVecGetEltPtr(phi_l2_norm_vec, 0);
 
   printf("rel l2 errors:\n");
-  printf("- dense LU: %g\n", error_l2_dense_LU/phi_l2_norm);
-  printf("- dense GMRES: %g\n", error_l2_dense_GMRES/phi_l2_norm);
   printf("- BF GMRES: %g\n", error_l2_BF_GMRES/phi_l2_norm);
 
   BF_ERROR_END() {
@@ -256,25 +191,15 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&phi_in_perm);
   bfMatDelete(&oneHalfEye);
 
-  bfMatDelete(&A_dense);
   bfMatDelete(&A_BF);
   bfVecDelete(&w_perm);
 
-  bfMatDelete(&y_test_dense);
-  bfMatDelete(&y_test_BF);
-
-  bfMatDelete(&sigma_dense_LU);
-  bfMatDelete(&sigma_dense_GMRES);
   bfMatDelete(&sigma_BF_GMRES);
 
   bfMatDelete(&G_eval);
   bfMatDelete(&phi_exact);
-  bfMatDelete(&phi_dense_LU);
-  bfMatDelete(&phi_dense_GMRES);
   bfMatDelete(&phi_BF_GMRES);
 
-  bfVecDelete(&error_l2_dense_LU_vec);
-  bfVecDelete(&error_l2_dense_GMRES_vec);
   bfVecDelete(&error_l2_BF_GMRES_vec);
   bfVecDelete(&phi_l2_norm_vec);
 }

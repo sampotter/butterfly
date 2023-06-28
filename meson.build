@@ -1,4 +1,4 @@
-project('butterfly', 'c', default_options : ['c_std=c11'])
+project('butterfly', 'c', 'cython', default_options : ['c_std=c11'])
 
 pkg = import('pkgconfig')
 
@@ -145,3 +145,4 @@ butterfly_dep = declare_dependency(
 pkg.generate(butterfly_lib)
 
 subdir('examples')
+subdir('wrappers')
