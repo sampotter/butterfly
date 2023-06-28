@@ -3,6 +3,7 @@
 from bbox cimport *
 from ellipse cimport *
 from geom cimport *
+from helm2 cimport *
 from perm cimport *
 from points cimport *
 from quadtree cimport *
