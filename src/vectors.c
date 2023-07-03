@@ -74,6 +74,22 @@ BfVectors2 *bfVectors2NewEmpty() {
   return vectors;
 }
 
+BfVectors2 *bfVectors2NewWithCapacity(BfSize capacity) {
+  BF_ERROR_BEGIN();
+
+  BfVectors2 *vectors = bfMemAlloc(1, sizeof(BfVectors2));
+  HANDLE_ERROR();
+
+  bfVectors2InitWithCapacity(vectors, capacity);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vectors;
+}
+
 BfVectors2 *bfVectors2NewFromFile(char const *path) {
   BF_ERROR_BEGIN();
 
@@ -146,6 +162,21 @@ void bfVectors2InitEmpty(BfVectors2 *vectors) {
 
   vectors->size = 0;
   vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  vectors->isView = false;
+
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector2));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfVectors2InitWithCapacity(BfVectors2 *vectors, BfSize capacity) {
+  BF_ERROR_BEGIN();
+
+  vectors->size = 0;
+  vectors->capacity = capacity;
   vectors->isView = false;
 
   vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector2));
