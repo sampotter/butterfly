@@ -19,17 +19,30 @@ endif
 
 cc = meson.get_compiler('c')
 
-openblas_dep = cc.find_library('openblas', required : true)
+blas_dep = dependency('flexiblas', required : true)
+lapacke_dep = dependency('lapacke', required : true)
+
+fortran_dep = cc.find_library('gfortran', required : true)
 # cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
+arpack_dep = dependency('arpack', required : true)
+gsl_dep = dependency('gsl', required : true)
+
+butterfly_dependencies = [
+  blas_dep,
+  lapacke_dep,
+
+  fortran_dep,
+#  cholmod_dep,
+  m_dep,
+  arpack_dep,
+  gsl_dep,
+  umfpack_dep
+]
 
 fmm2d_dep = dependency('fmm2d', required : true)
 argtable3_dep = dependency('argtable3', required : true)
-arpack_ng_dep = dependency('arpack', required : true)
-gsl_dep = dependency('gsl', required : true)
-# openblas_dep = dependency('openblas', required : true)
-# umfpack_dep = dependency('umfpack', required : true)
 
 butterfly_lib_src = [
   'src/array.c',
@@ -114,15 +127,6 @@ butterfly_lib_src = [
 ]
 
 butterfly_inc = include_directories('include')
-
-butterfly_dependencies = [
-  arpack_ng_dep,
-#  cholmod_dep,
-  gsl_dep,
-  m_dep,
-  openblas_dep,
-  umfpack_dep
-]
 
 butterfly_include_directories = [
   butterfly_inc
