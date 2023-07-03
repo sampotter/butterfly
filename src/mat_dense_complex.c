@@ -115,12 +115,14 @@ static BfVec *bfMatDenseComplexDenseComplexColDots(
     colPtr = matDenseComplex->data + j*matDenseComplex->colStride;
     otherColPtr = otherMatDenseComplex->data + j*otherMatDenseComplex->colStride;
 
-    BfComplex dot = cblas_zdotc(
+    BfComplex dot;
+    cblas_zdotc_sub(
       /* n: */ numRows,
       /* x: */ colPtr,
       /* incx: */ matDenseComplex->rowStride,
       /* y: */ otherColPtr,
-      /* incy: */ otherMatDenseComplex->rowStride);
+      /* incy: */ otherMatDenseComplex->rowStride,
+      /* dotc: */ &dot);
 
     *resultPtr++ = dot;
   }
