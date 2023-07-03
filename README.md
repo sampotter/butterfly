@@ -40,3 +40,17 @@ Emacs's [lsp-mode](https://emacs-lsp.github.io/lsp-mode/tutorials/CPP-guide/) ca
 ## The hierarchical matrix types
 
 This library includes a set of types for modeling recursively composed hierarchical matrices. These types support runtime polymorphism implemented using macros defined in [interface.h](./include/bf/interface.h). The root "class" in the hierarchy is [BfMat](./include/bf/mat.h).
+
+## Troubleshooting
+
+### Problems with OpenBLAS and GCC 12
+
+See the following GitHub issues:
+
+- https://github.com/msys2/MINGW-packages/issues/12857
+- https://github.com/xianyi/OpenBLAS/issues/3740
+- https://github.com/xianyi/OpenBLAS/issues/4013
+
+A bug in GCC 12's optimizer causes `zgemv` to segfault. This problem will arise if you ask butterfly to compute a complex SVD while running GCC 12 and OpenBLAS.
+
+One fix is to use [flexiblas](https://github.com/mpimd-csc/flexiblas) and select a different backend. Alternatively, use a different version of GCC.
