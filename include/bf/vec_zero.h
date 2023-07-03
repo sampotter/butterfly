@@ -14,7 +14,7 @@ BfVec *bfVecZeroToVec(BfVecZero *vecZero);
 
 BfVecZero const *bfVecConstToVecZeroConst(BfVec const *vec);
 
-BfVecZero *bfVecZeroNew();
+BfVecZero *bfVecZeroNew(void);
 BfVecZero *bfVecZeroFromFile(char const *path, BfSize size);
 void bfVecZeroInit(BfVecZero *vecZero, BfSize size);
 void bfVecZeroDeinit(BfVecZero *vecZero);

@@ -24,7 +24,7 @@ struct BfMatFunc {
   void *aux;
 };
 
-BfMatFunc *bfMatFuncNew();
+BfMatFunc *bfMatFuncNew(void);
 void bfMatFuncInit(BfMatFunc *matFunc, BfSize numRows, BfSize numCols, MatMulFunc matMul, void *);
 void bfMatFuncDeinit(BfMatFunc *matFunc);
 void bfMatFuncDealloc(BfMatFunc **matFunc);

@@ -33,7 +33,7 @@ struct BfMatIdentity {
   BfMat super;
 };
 
-BfMatIdentity *bfMatIdentityNew();
+BfMatIdentity *bfMatIdentityNew(void);
 void bfMatIdentityInit(BfMatIdentity *matIdentity, BfSize n);
 void bfMatIdentityDeinit(BfMatIdentity *matIdentity);
 void bfMatIdentityDealloc(BfMatIdentity **matIdentity);

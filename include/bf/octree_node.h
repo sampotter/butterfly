@@ -27,8 +27,8 @@ struct BfOctreeNode {
   BfPoint3 split;
 };
 
-BfTreeNodeVtable *bfOctreeNodeGetDefaultTreeNodeVtable();
-BfOctreeNode *bfOctreeNodeNew();
+BfTreeNodeVtable *bfOctreeNodeGetDefaultTreeNodeVtable(void);
+BfOctreeNode *bfOctreeNodeNew(void);
 void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree, BfSize maxLeafSize);
 void bfOctreeNodeDeinit(BfOctreeNode *node);
 void bfOctreeNodeDealloc(BfOctreeNode **node);

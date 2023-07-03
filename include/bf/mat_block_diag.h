@@ -52,7 +52,7 @@ BfMatBlockDiag const *bfMatConstToMatBlockDiagConst(BfMat const *mat);
 
 /** Implementation: MatBlockDiag */
 
-BfMatBlockDiag *bfMatBlockDiagNew();
+BfMatBlockDiag *bfMatBlockDiagNew(void);
 BfMatBlockDiag *bfMatBlockDiagNewFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 void bfMatBlockDiagInit(BfMatBlockDiag *mat, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDiagDeinit(BfMatBlockDiag *mat);

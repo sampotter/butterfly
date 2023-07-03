@@ -7,7 +7,7 @@ struct BfConstNodeArray {
   BfConstPtrArray ptrArray;
 };
 
-BfConstNodeArray *bfConstNodeArrayNewWithDefaultCapacity();
+BfConstNodeArray *bfConstNodeArrayNewWithDefaultCapacity(void);
 void bfConstNodeArrayInitWithDefaultCapacity(BfConstNodeArray *nodes);
 void bfConstNodeArrayDeinit(BfConstNodeArray *nodes);
 void bfConstNodeArrayDealloc(BfConstNodeArray **nodes);

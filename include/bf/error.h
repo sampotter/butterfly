@@ -11,5 +11,5 @@ enum BfError {
   BF_ERROR_TYPE_ERROR,
 };
 
-enum BfError bfGetError();
+enum BfError bfGetError(void);
 void bfSetError(enum BfError error);

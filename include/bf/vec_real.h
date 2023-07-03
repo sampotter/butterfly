@@ -36,7 +36,7 @@ BfVec const *bfVecRealConstToVecConst(BfVecReal const *vecReal);
 BfVecReal *bfVecToVecReal(BfVec *vec);
 BfVecReal const *bfVecConstToVecRealConst(BfVec const *vec);
 
-BfVecReal *bfVecRealNew();
+BfVecReal *bfVecRealNew(void);
 BfVecReal *bfVecRealNewEmpty(BfSize n);
 BfVecReal *bfVecRealNewWithValue(BfSize n, BfReal value);
 BfVecReal *bfVecRealNewRandn(BfSize n);

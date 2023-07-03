@@ -26,7 +26,7 @@ struct BfMatPerm {
   BfMatPermImpl *impl;
 };
 
-BfMatPerm *bfMatPermNew();
+BfMatPerm *bfMatPermNew(void);
 BfMatPerm *bfMatPermNewFromPerm(BfPerm const *perm);
 BfMatPerm *bfMatPermNewViewFromLapackPivots(BfSize size, BfLapackInt *ipiv);
 void bfMatPermInitFromPerm(BfMatPerm *matPerm, BfPerm const *perm);

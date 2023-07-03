@@ -55,7 +55,7 @@ struct BfMatBlockDense {
   BfMatBlock super;
 };
 
-BfMatBlockDense *bfMatBlockDenseNew();
+BfMatBlockDense *bfMatBlockDenseNew(void);
 BfMatBlockDense *bfMatBlockDenseNewFromBlocks(BfSize numRowBlocks, BfSize numColBlocks, BfPtrArray *blocks, BfPolicy policy);
 BfMatBlockDense *bfMatBlockDenseNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 BfMatBlockDense *bfMatBlockDenseNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy);

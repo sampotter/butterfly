@@ -22,7 +22,7 @@ BfIntervalTree const *bfTreeConstToIntervalTreeConst(BfTree const *tree);
 
 BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree);
 
-BfIntervalTree *bfIntervalTreeNew();
+BfIntervalTree *bfIntervalTreeNew(void);
 void bfIntervalTreeInitEmpty(BfIntervalTree *intervalTree, BfReal a, BfReal b, BfSize k, BfSize depth);
 void bfIntervalTreeDeinit(BfIntervalTree *intervalTree);
 void bfIntervalTreeDealloc(BfIntervalTree **intervalTree);

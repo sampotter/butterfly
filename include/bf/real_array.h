@@ -11,7 +11,7 @@ struct BfRealArray {
   bool isView;
 };
 
-BfRealArray *bfRealArrayNew();
+BfRealArray *bfRealArrayNew(void);
 BfRealArray *bfRealArrayNewFromVecReal(BfVecReal const *vecReal, BfPolicy policy);
 BfRealArray *bfRealArrayNewWithDefaultCapacity();
 BfRealArray *bfRealArrayNewWithValue(BfSize size, BfReal value);

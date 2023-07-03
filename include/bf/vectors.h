@@ -21,11 +21,11 @@ struct BfVectors2 {
   bool isView;
 };
 
-BfVectors2 *bfVectors2NewEmpty();
+BfVectors2 *bfVectors2NewEmpty(void);
 BfVectors2 *bfVectors2NewFromFile(char const *path);
 BfVectors2 const *bfVectors2ConstViewFromMat(BfMat const *mat);
 BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal);
-BfVectors2 bfGetUninitializedVectors2();
+BfVectors2 bfGetUninitializedVectors2(void);
 void bfVectors2InitEmpty(BfVectors2 *vectors);
 void bfVectors2InitFromFile(char const *path, BfVectors2 *vectors);
 void bfVectors2Deinit(BfVectors2 *vectors);

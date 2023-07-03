@@ -26,7 +26,7 @@ BfMat const *bfMatDiagRealConstToMatConst(BfMatDiagReal const *mat);
 BfMatDiagReal *bfMatToMatDiagReal(BfMat *mat);
 BfMatDiagReal const *bfMatConstToMatDiagRealConst(BfMat const *mat);
 
-BfMatDiagReal *bfMatDiagRealNew();
+BfMatDiagReal *bfMatDiagRealNew(void);
 BfMatDiagReal *bfMatDiagRealEye(BfSize numRows, BfSize numCols);
 BfMatDiagReal *bfMatDiagRealNewConstant(BfSize numRows, BfSize numCols, BfReal diagValue);
 BfMatDiagReal *bfMatDiagRealNewFromData(BfSize numRows, BfSize numCols, BfReal const *data);

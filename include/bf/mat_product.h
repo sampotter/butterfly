@@ -32,7 +32,7 @@ BfMat *bfMatProductToMat(BfMatProduct *matProduct);
 BfMatProduct *bfMatToMatProduct(BfMat *mat);
 BfMatProduct const *bfMatConstToMatProductConst(BfMat const *mat);
 
-BfMatProduct *bfMatProductNew();
+BfMatProduct *bfMatProductNew(void);
 void bfMatProductInit(BfMatProduct *prod);
 void bfMatProductDeinit(BfMatProduct *prod);
 void bfMatProductDealloc(BfMatProduct **prod);

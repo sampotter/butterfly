@@ -30,7 +30,7 @@ struct BfLuDenseComplex {
   BfLuDenseComplexImpl *impl;
 };
 
-BfLuDenseComplex *bfLuDenseComplexNew();
+BfLuDenseComplex *bfLuDenseComplexNew(void);
 void bfLuDenseComplexInit(BfLuDenseComplex *luDenseComplex, BfMat const *mat);
 void bfLuDenseComplexDeinit(BfLuDenseComplex *luDenseComplex);
 void bfLuDenseComplexDealloc(BfLuDenseComplex **luDenseComplex);

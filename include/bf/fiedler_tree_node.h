@@ -27,7 +27,7 @@ struct BfFiedlerTreeNode {
   BfTrimesh const *trimesh;
 };
 
-BfFiedlerTreeNode *bfFiedlerTreeNodeNew();
+BfFiedlerTreeNode *bfFiedlerTreeNodeNew(void);
 void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tree, BfReal tol, bool keepNodeTrimeshes);
 void bfFiedlerTreeNodeDeinit(BfFiedlerTreeNode *node);
 void bfFiedlerTreeNodeDealloc(BfFiedlerTreeNode **node);

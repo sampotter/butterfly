@@ -21,7 +21,7 @@ BfMat *bfMatSumToMat(BfMatSum *matSum);
 
 BfMatSum const *bfMatConstToMatSumConst(BfMat const *mat);
 
-BfMatSum *bfMatSumNew();
+BfMatSum *bfMatSumNew(void);
 void bfMatSumInit(BfMatSum *sum);
 void bfMatSumDeinit(BfMatSum *sum);
 void bfMatSumDealloc(BfMatSum **sum);

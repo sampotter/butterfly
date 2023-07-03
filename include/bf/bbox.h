@@ -7,7 +7,7 @@ typedef struct BfBbox2 {
   BfPoint2 min, max;
 } BfBbox2;
 
-BfBbox2 bfGetEmptyBbox2();
+BfBbox2 bfGetEmptyBbox2(void);
 bool bfBbox2IsEmpty(BfBbox2 const *bbox);
 void bfBbox2RescaleToSquare(BfBbox2 *bbox);
 bool bfBbox2ContainsPoint(BfBbox2 const *bbox, BfPoint2 const point);

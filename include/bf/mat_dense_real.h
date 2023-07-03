@@ -42,7 +42,7 @@ BfMatDense const *bfMatDenseRealConstToMatDenseConst(BfMatDenseReal const *matDe
 BfMatDenseReal *bfMatToMatDenseReal(BfMat *mat);
 BfMatDenseReal const *bfMatConstToMatDenseRealConst(BfMat const *mat);
 
-BfMatDenseReal *bfMatDenseRealNew();
+BfMatDenseReal *bfMatDenseRealNew(void);
 BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value);
 BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat);
 BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize numCols);

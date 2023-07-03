@@ -18,8 +18,8 @@ struct BfPtrArray {
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
 typedef int (*BfPtrCmp)(BfPtr, BfPtr);
 
-BfPtrArray *bfPtrArrayNewWithDefaultCapacity();
-BfPtrArray bfGetUninitializedPtrArray();
+BfPtrArray *bfPtrArrayNewWithDefaultCapacity(void);
+BfPtrArray bfGetUninitializedPtrArray(void);
 void bfInitPtrArray(BfPtrArray *arr, BfSize capacity);
 void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr);
 void bfMakeEmptyPtrArrayView(BfPtrArray *arr);
@@ -47,7 +47,7 @@ struct BfConstPtrArray {
   BfSize capacity, num_elts;
 };
 
-BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity();
+BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity(void);
 void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity);
 void bfConstPtrArrayInitWithDefaultCapacity(BfConstPtrArray *arr);
 void bfConstPtrArrayDeinit(BfConstPtrArray *arr);

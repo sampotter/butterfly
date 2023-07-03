@@ -32,7 +32,7 @@ struct BfLuCsrReal {
   void *numeric;
 };
 
-BfLuCsrReal *bfLuCsrRealNew();
+BfLuCsrReal *bfLuCsrRealNew(void);
 void bfLuCsrRealInit(BfLuCsrReal *luCsrReal, BfMat const *mat);
 void bfLuCsrRealDeinit(BfLuCsrReal *luCsrReal);
 void bfLuCsrRealDealloc(BfLuCsrReal **luCsrReal);

@@ -39,7 +39,7 @@ BfQuadtree *bfTreeToQuadtree(BfTree *tree);
 
 /** Implementation: Quadtree */
 
-BfQuadtree *bfQuadtreeNew();
+BfQuadtree *bfQuadtreeNew(void);
 void bfQuadtreeInit(BfQuadtree *tree, BfPoints2 const *points, BfVectors2 const *unitNormals);
 void bfQuadtreeDeinit(BfQuadtree *tree);
 void bfQuadtreeDealloc(BfQuadtree **quadtree);

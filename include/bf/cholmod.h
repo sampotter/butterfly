@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 
-void bfCholmodStart();
-void bfCholmodFinish();
-bool bfCholmodIsStarted();
-cholmod_common *bfCholmodGetCommon();
+void bfCholmodStart(void);
+void bfCholmodFinish(void);
+bool bfCholmodIsStarted(void);
+cholmod_common *bfCholmodGetCommon(void);

@@ -35,7 +35,7 @@ struct BfIntervalTreeNode {
   bool isRightmost;
 };
 
-BfIntervalTreeNode *bfIntervalTreeNodeNew();
+BfIntervalTreeNode *bfIntervalTreeNodeNew(void);
 void bfIntervalTreeNodeInitEmptyRoot(BfIntervalTreeNode *node,
                                      BfIntervalTree const *intervalTree,
                                      BfReal a, BfReal b, BfSize k, BfSize maxDepth);

@@ -34,7 +34,7 @@ BfTree const *bfOctreeConstToTreeConst(BfOctree const *octree);
 
 BfOctree *bfTreeToOctree(BfTree *tree);
 
-BfOctree *bfOctreeNew();
+BfOctree *bfOctreeNew(void);
 BfOctree *bfOctreeNewFromPoints(BfPoints3 const *points, BfSize maxLeafSize);
 void bfOctreeInit(BfOctree *tree, BfPoints3 const *points, BfVectors3 const *unitNormals, BfSize maxLeafSize);
 void bfOctreeDeinit(BfOctree *tree);

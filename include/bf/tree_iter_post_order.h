@@ -22,7 +22,7 @@ struct BfTreeIterPostOrder {
 
 BfTreeIter *bfTreeIterPostOrderToTreeIter(BfTreeIterPostOrder *iter);
 
-BfTreeIterPostOrder *bfTreeIterPostOrderNew();
+BfTreeIterPostOrder *bfTreeIterPostOrderNew(void);
 void bfTreeIterPostOrderInit(BfTreeIterPostOrder *iter, BfTree const *tree);
 void bfTreeIterPostOrderDeinit(BfTreeIterPostOrder *iter);
 void bfTreeIterPostOrderDealloc(BfTreeIterPostOrder **iter);

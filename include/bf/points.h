@@ -23,8 +23,8 @@ struct BfPoints1 {
   bool isView;
 };
 
-BfPoints1 *bfPoints1New();
-BfPoints1 *bfPoints1Copy();
+BfPoints1 *bfPoints1New(void);
+BfPoints1 *bfPoints1Copy(BfPoints1 const *points);
 void bfPoints1InitEmpty(BfPoints1 *points, BfSize capacity);
 void bfPoints1InitViewFromVecReal(BfPoints1 *points, BfVecReal const *vecReal);
 void bfPoints1Deinit(BfPoints1 *points);
@@ -43,11 +43,11 @@ struct BfPoints2 {
   bool isView;
 };
 
-BfPoints2 *bfPoints2NewEmpty();
+BfPoints2 *bfPoints2NewEmpty(void);
 BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny);
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat);
 BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal);
-BfPoints2 bfGetUninitializedPoints2();
+BfPoints2 bfGetUninitializedPoints2(void);
 void bfInitEmptyPoints2(BfPoints2 *points, BfSize numPoints);
 void bfReadPoints2FromFile(char const *path, BfPoints2 *points);
 void bfFreePoints2(BfPoints2 *points);
@@ -77,7 +77,7 @@ struct BfPoints3 {
 };
 
 BfPoints3 *bfPoints3NewFromBinaryFile(char const *path);
-BfPoints3 *bfPoints3NewWithDefaultCapacity();
+BfPoints3 *bfPoints3NewWithDefaultCapacity(void);
 BfPoints3 *bfPoints3Copy(BfPoints3 const *points);
 void bfPoints3InitWithDefaultCapacity(BfPoints3 *points);
 void bfPoints3Deinit(BfPoints3 *points);

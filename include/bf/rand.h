@@ -7,7 +7,7 @@ void bfSeed(BfSize seed);
 
 BfSize bfSizeUniform1(BfSize low, BfSize high);
 
-BfReal bfRealUniform1();
+BfReal bfRealUniform1(void);
 void bfRealUniform(BfSize n, BfReal *x);
 
 void bfRealRandn(BfSize n, BfReal *x);

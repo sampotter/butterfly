@@ -21,7 +21,7 @@ BfMat *bfMatGivensComplexToMat(BfMatGivensComplex *mat);
 
 BfMatGivensComplex const *bfMatConstToMatGivensComplexConst(BfMat const *mat);
 
-BfMatGivensComplex *bfMatGivensComplexNew();
+BfMatGivensComplex *bfMatGivensComplexNew(void);
 void bfMatGivensComplexInit(BfMatGivensComplex *mat, BfSize n, BfSize srcInd, BfSize elimInd, BfComplex c, BfComplex s);
 void bfMatGivensComplexDeinit(BfMatGivensComplex *mat);
 void bfMatGivensComplexDealloc(BfMatGivensComplex **mat);

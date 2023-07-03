@@ -19,7 +19,7 @@ BfMat const *bfMatZeroConstToMatConst(BfMatZero const *mat);
 
 BfMatZero const *bfMatConstToMatZeroConst(BfMat const *mat);
 
-BfMatZero *bfMatZeroNew();
+BfMatZero *bfMatZeroNew(void);
 void bfMatZeroInit(BfMatZero *mat, BfSize numRows, BfSize numCols);
 void bfMatZeroDeinit(BfMatZero *mat);
 void bfMatZeroDealloc(BfMatZero **mat);

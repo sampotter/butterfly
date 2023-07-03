@@ -37,7 +37,7 @@ BfMat const *bfMatCooComplexConstToMatConst(BfMatCooComplex const *matCooComplex
 BfMatCooComplex *bfMatToMatCooComplex(BfMat *mat);
 BfMatCooComplex const *bfMatConstToMatCooComplexConst(BfMat const *mat);
 
-BfMatCooComplex *bfMatCooComplexNew();
+BfMatCooComplex *bfMatCooComplexNew(void);
 void bfMatCooComplexInitEmpty(BfMatCooComplex *mat, BfSize numRows, BfSize numCols, BfSize numElts);
 void bfMatCooComplexDeinit(BfMatCooComplex *mat);
 void bfMatCooComplexDealloc(BfMatCooComplex **mat);

@@ -6,7 +6,7 @@
 
 #include <bf/mat.h>
 
-BfReal bfToc();
+BfReal bfToc(void);
 
 void bfRealArgsort(BfReal const *values, BfSize n, BfSize *perm);
 void bfSizeSetConstant(BfSize numSizes, BfSize *size, BfSize value);

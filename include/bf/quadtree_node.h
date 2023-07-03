@@ -37,8 +37,8 @@ struct BfQuadtreeNode {
   BfPoint2 split;
 };
 
-BfTreeNodeVtable *bfQuadtreeNodeGetDefaultTreeNodeVtable();
-BfQuadtreeNode *bfQuadtreeNodeNew();
+BfTreeNodeVtable *bfQuadtreeNodeGetDefaultTreeNodeVtable(void);
+BfQuadtreeNode *bfQuadtreeNodeNew(void);
 void bfQuadtreeNodeInitRoot(BfQuadtreeNode *node, BfQuadtree const *tree);
 void bfQuadtreeNodeDeinit(BfQuadtreeNode *node);
 void bfQuadtreeNodeDealloc(BfQuadtreeNode **node);

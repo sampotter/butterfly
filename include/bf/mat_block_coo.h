@@ -66,7 +66,7 @@ BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBloc
 
 /** Implementation: MatBlockCoo */
 
-BfMatBlockCoo *bfMatBlockCooNew();
+BfMatBlockCoo *bfMatBlockCooNew(void);
 // BfMatBlockCoo *bfMatBlockCooNewFromArrays(BfSizeArray const *rowOffsets, BfSizeArray const *colOffsets, BfSizeArray const *rowInds, BfSizeArray const *colInds, BfPtrArray const *blocks);
 BfMatBlockCoo *bfMatBlockCooNewColFromBlocks(BfPtrArray *blocks, BfPolicy policy);
 BfMatBlockCoo *bfMatBlockCooNewRowFromBlocks(BfPtrArray *blocks, BfPolicy policy);

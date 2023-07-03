@@ -28,7 +28,7 @@ BfVec *bfVecComplexToVec(BfVecComplex *vecComplex);
 BfVecComplex *bfVecToVecComplex(BfVec *vec);
 BfVecComplex const *bfVecConstToVecComplexConst(BfVec const *vec);
 
-BfVecComplex *bfVecComplexNew();
+BfVecComplex *bfVecComplexNew(void);
 BfVecComplex *bfVecComplexFromFile(char const *path, BfSize size);
 void bfVecComplexInit(BfVecComplex *vecComplex, BfSize size);
 void bfVecComplexInitView(BfVecComplex *vecComplex, BfSize size, BfSize stride, BfComplex *data);

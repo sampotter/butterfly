@@ -6,7 +6,7 @@
 
 typedef struct BfFacStreamer BfFacStreamer;
 
-BfFacStreamer *bfFacStreamerNew();
+BfFacStreamer *bfFacStreamerNew(void);
 void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec);
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer);
 void bfFacStreamerDealloc(BfFacStreamer **facStreamer);
