@@ -1,6 +1,3 @@
-executable('fast_direct_solver', ['fast_direct_solver.c'],
-           dependencies : [butterfly_dep])
-
 scripts = [
   'fast_direct_solver.py'
 ]
