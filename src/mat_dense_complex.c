@@ -1355,8 +1355,8 @@ void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
 
   /* compute the SVD */
   lapack_int info = LAPACKE_zgesvd(
-    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, n, S->data, U->data, m,
-    VH->data, n, superb);
+    LAPACK_ROW_MAJOR, 'S', 'S', m, n, dataCopy, n, S->data,
+    U->data, m < n ? m : n, VH->data, n, superb);
 
   /* check for invalid arguments */
   if (info < 0)
