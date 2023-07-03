@@ -1,0 +1,1 @@
+This is a very quick and dirty Cython wrapper. Longer term, this should be split out into a separate repository and organized more carefully. SciPy and NumPy provide good examples for how to use Meson to organize and build a Python package. Until we get to that point, cramming everything into a single extension module should work OK.
