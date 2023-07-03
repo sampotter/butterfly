@@ -1,19 +1,38 @@
 # cython: language_level=3, embedsignature=True, auto_pickle=False
 
+from enum import Enum
+
 from bbox cimport *
 from ellipse cimport *
+from fac_helm2 cimport *
 from geom cimport *
 from helm2 cimport *
+from layer_pot cimport *
+from mat cimport *
+from mat_block_dense cimport *
+from mat_dense_complex cimport *
 from perm cimport *
 from points cimport *
 from quadtree cimport *
 from rand cimport *
 from real_array cimport *
 from tree cimport *
+from types cimport *
 from vectors cimport *
 
 def seed(BfSize seed):
     bfSeed(seed)
+
+cdef reify_mat(BfMat *mat):
+    cdef BfType type_ = bfMatGetType(mat)
+    if type_ == BF_TYPE_MAT:
+        return Mat.from_ptr(mat)
+    elif type_ == BF_TYPE_MAT_BLOCK_DENSE:
+        return MatBlockDense.from_ptr(bfMatToMatBlockDense(mat))
+    elif type_ == BF_TYPE_MAT_DENSE_COMPLEX:
+        return MatDenseComplex.from_ptr(bfMatToMatDenseComplex(mat))
+    else:
+        raise TypeError(f'failed to reify BfMat: got {bfMatGetType(mat)}')
 
 cdef class Bbox2:
     cdef BfBbox2 bbox
@@ -102,6 +121,110 @@ cdef class Ellipse:
             &self.ellipse, num_points, X.points, T.vectors, N.vectors, W.real_array)
         return X, T, N, W
 
+cdef class FacHelm2:
+    def __init__(self):
+        raise TypeError("FacHelm2 can't be instantiated")
+
+    @staticmethod
+    def make_multilevel(Quadtree srcTree, BfReal k, layerPot, Quadtree
+                        tgtTree=None, alpha=None, beta=None):
+        cdef const BfQuadtree *srcTree_ = srcTree.quadtree
+
+        cdef const BfQuadtree *tgtTree_ = srcTree_ if tgtTree is None else tgtTree.quadtree
+
+        cdef BfComplex alpha_
+        if alpha is not None:
+            alpha_.real = alpha.real
+            alpha_.imag = alpha.imag
+
+        cdef BfComplex beta_
+        if beta is not None:
+            beta_.real = beta.real
+            beta_.imag = beta.imag
+
+        cdef BfMat *mat = bfFacHelm2MakeMultilevel(
+            srcTree_, tgtTree_, k, layerPot.value,
+            NULL if alpha is None else &alpha_,
+            NULL if beta is None else &beta_)
+
+        return reify_mat(mat)
+
+cdef class Helm2:
+    def __init__(self):
+        raise TypeError("Helm2 can't be instantiated")
+
+    @staticmethod
+    def get_kernel_matrix(Points2 Xsrc, BfReal k, layerPot, Points2
+                          Xtgt=None, Vectors2 Nsrc=None, Vectors2
+                          Ntgt=None, alpha=None, beta=None):
+        cdef BfComplex alpha_
+        if alpha is not None:
+            alpha_.real = alpha.real
+            alpha_.imag = alpha.imag
+
+        cdef BfComplex beta_
+        if beta is not None:
+            beta_.real = beta.real
+            beta_.imag = beta.imag
+
+        cdef BfMat *mat = bfHelm2GetKernelMatrix(
+            Xsrc.points,
+            NULL if Xtgt is None else Xtgt.points,
+            NULL if Nsrc is None else Nsrc.vectors,
+            NULL if Ntgt is None else Ntgt.vectors,
+            k,
+            layerPot.value,
+            NULL if alpha is None else &alpha_,
+            NULL if beta is None else &beta_)
+
+        return reify_mat(mat)
+
+class LayerPot(Enum):
+    Unknown = BF_LAYER_POTENTIAL_UNKNOWN
+    Single = BF_LAYER_POTENTIAL_SINGLE
+    PvDouble = BF_LAYER_POTENTIAL_PV_DOUBLE
+    PvNormalDerivSingle = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE
+    PvNormalDerivDouble = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_DOUBLE
+    CombinedField = BF_LAYER_POTENTIAL_COMBINED_FIELD
+
+    # Aliases:
+    S = Single
+    Sp = PvNormalDerivSingle
+    D = PvDouble
+    Dp = PvNormalDerivDouble
+
+cdef class Mat:
+    cdef BfMat *mat
+
+    @staticmethod
+    cdef Mat from_ptr(BfMat *mat):
+        _ = Mat()
+        _.mat = mat
+        return _
+
+    def apply_KR_correction(self):
+        print('hi!')
+
+cdef class MatBlockDense(Mat):
+    cdef BfMatBlockDense *mat_block_dense
+
+    @staticmethod
+    cdef MatBlockDense from_ptr(BfMatBlockDense *mat_block_dense):
+        _ = MatBlockDense()
+        _.mat = bfMatBlockDenseToMat(mat_block_dense)
+        _.mat_block_dense = mat_block_dense
+        return _
+
+cdef class MatDenseComplex(Mat):
+    cdef BfMatDenseComplex *mat_dense_complex
+
+    @staticmethod
+    cdef MatDenseComplex from_ptr(BfMatDenseComplex *mat_dense_complex):
+        _ = MatDenseComplex()
+        _.mat = bfMatDenseComplexToMat(mat_dense_complex)
+        _.mat_dense_complex = mat_dense_complex
+        return _
+
 cdef class Perm:
     cdef BfPerm *perm
 
@@ -115,6 +238,15 @@ cdef class Points2:
 
     def __init__(self):
         self.points = bfPoints2NewEmpty()
+
+    @staticmethod
+    def from_point(point):
+        if len(point) != 2:
+            raise ValueError('len(point) != 2')
+        points = Points2()
+        cdef BfPoint2 point_ = [point[0], point[1]]
+        bfPoints2Append(points.points, point_)
+        return points
 
     @staticmethod
     def sample_poisson_disk(Bbox2 bbox, BfReal min_dist, BfSize k=30):

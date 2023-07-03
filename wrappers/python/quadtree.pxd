@@ -1,11 +1,8 @@
 from points cimport BfPoints2
-from tree cimport BfTree
+from types cimport BfTree, BfQuadtree
 from vectors cimport BfVectors2
 
 cdef extern from "bf/quadtree.h":
-    struct BfQuadtree:
-        pass
-
     BfTree *bfQuadtreeToTree(BfQuadtree *quadtree)
 
     BfQuadtree *bfQuadtreeNew()
