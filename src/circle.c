@@ -31,16 +31,15 @@ BfVectors2 *bfCircle2SampleUnitNormals(BfCircle const *circ, BfSize n) {
   (void)circ; /* Don't actually use this... just for consistency in
                * the interface */
 
-  BfVectors2 *unitNormals = bfVectors2NewEmpty(n);
+  BfVectors2 *unitNormals = bfVectors2NewWithCapacity(n);
   HANDLE_ERROR();
 
   BfReal const scale = BF_TWO_PI/n;
 
-  BfVector2 *vector = unitNormals->data;
   for (BfSize i = 0; i < n; ++i) {
     BfReal theta = scale*i;
-    vector[i][0] = cos(theta);
-    vector[i][1] = sin(theta);
+    BfVector2 unitNormal = {cos(theta), sin(theta)};
+    bfVectors2Append(unitNormals, unitNormal);
   }
 
   BF_ERROR_END() {
