@@ -915,7 +915,9 @@ static void facHelm2MakeMultilevel_rec(BfQuadtree const *srcTree, BfQuadtree con
   }
 #endif
 
-  BF_ERROR_END() { /* TODO: ... */ }
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 BfMat *bfFacHelm2MakeMultilevel(BfQuadtree const *srcTree, BfQuadtree const *tgtTree,

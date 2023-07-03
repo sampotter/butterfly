@@ -374,20 +374,14 @@ BfReal bfGetMaxEigenvalue(BfMat const *L, BfMat const *M) {
 
   a_int ipntr[11];
 
-  workd = bfMemAlloc(3*N, sizeof(BfReal));
-  if (workd == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  for (a_int i = 0; i < 3*N; ++i)
-    workd[i] = 0;
+  workd = bfMemAllocAndZero(3*N, sizeof(BfReal));
+  HANDLE_ERROR();
 
   workl = bfMemAlloc(lworkl, sizeof(BfReal));
-  if (workl == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   workev = bfMemAlloc(3*ncv, sizeof(BfReal));
-  if (workev == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   a_int ido = 0;
   a_int info = 0;
