@@ -11,9 +11,12 @@ import butterfly as bf
 # simulation parameters
 xmin, xmax = -1, 1
 ymin, ymax = -1, 1
-r = 0.2 # spacing between ellipses
+xsrc = bf.Points2.from_point((-0.5, 2))
+k = 50
+r = 0.4 # spacing between ellipses
 a, b = 0.04, 0.08 # range of ellipse semi axes
 h = 0.02 # point spacing
+KR_order = 6 # Kapur-Rokhlin quadrature order
 
 # seed bf's PRNG
 bf.seed(0)
@@ -38,17 +41,17 @@ for ellipse in ellipses:
     X.extend(X_)
     N.extend(N_)
     W.extend(W_)
+print(f'set up discretization with {len(X)} points')
 
 # build quadtree on points w/ normals
 quadtree = bf.Quadtree(X, N)
-
 rev_perm = quadtree.perm.get_reverse()
 
 # compute the incident field
-phi_in = bf.Helm2.get_kernel_matrix(xsrc, X, N, k, bf.LayerPotential.Sp)
+phi_in = bf.Helm2.get_kernel_matrix(xsrc, k, bf.LayerPot.Sp, Xtgt=X, Ntgt=N)
 
 # set up multilevel butterfly factorization
-A_BF = bf.FacHelm2.make_multilevel(quadtree, k, bf.LayerPotential.Sp)
+A_BF = bf.FacHelm2.make_multilevel(quadtree, k, bf.LayerPot.Sp)
 A_BF.apply_KR_correction(KR_order)
 A_BF.scale_cols(w[rev_perm])
 A_BF += bf.MatIdentity()/2
