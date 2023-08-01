@@ -4,6 +4,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_coo_complex.h>
+#include <bf/mat_dense_complex.h>
 #include <bf/mat_sum.h>
 #include <bf/mat_zero.h>
 #include <bf/mem.h>
@@ -47,7 +48,7 @@ static BfMatVtable MAT_VTABLE = {
   .Mul = (__typeof__(&bfMatBlockDenseMul))bfMatBlockDenseMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDenseMulVec,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatBlockDenseRmulVec,
-  .ToType = (__typeof__(&bfMatBlockDenseToType))bfMatBlockDenseToType,
+  .ToType = (__typeof__(&bfMatToType))bfMatBlockDenseToType,
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep
 };
@@ -687,8 +688,10 @@ BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const 
   return result;
 }
 
-static BfMat *toType_cooComplex(BfMat const *mat) {
+static BfMat *toType_cooComplex(BfMatBlockDense const *matBlockDense) {
   BF_ERROR_BEGIN();
+
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
 
   BfMatCooComplex *matCooComplex = NULL;
 
@@ -780,10 +783,40 @@ static BfMat *toType_cooComplex(BfMat const *mat) {
   return bfMatCooComplexToMat(matCooComplex);
 }
 
-BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type) {
+BfMat *toType_denseComplex(BfMatBlockDense const *matBlockDense) {
+  BF_ERROR_BEGIN();
+
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
+
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  BfMatDenseComplex *matDenseComplex = bfMatDenseComplexZeros(numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize k = 0; k < NUM_BLOCKS(matBlockDense); ++k) {
+    BfMat const *block = LINEAR_BLOCK(matBlockDense, k);
+
+    BfSize i = BLOCK_ROW_OFFSET(matBlockDense, k);
+    BfSize j = BLOCK_COL_OFFSET(matBlockDense, k);
+
+    bfMatDenseComplexSetBlock(matDenseComplex, i, j, block);
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return bfMatDenseComplexToMat(matDenseComplex);
+}
+
+BfMat *bfMatBlockDenseToType(BfMatBlockDense const *matBlockDense, BfType type) {
   switch (type) {
   case BF_TYPE_MAT_COO_COMPLEX:
-    return toType_cooComplex(mat);
+    return toType_cooComplex(matBlockDense);
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return toType_denseComplex(matBlockDense);
   default:
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
@@ -845,6 +878,7 @@ static BfMatBlockVtable MAT_BLOCK_VTABLE = {
   .GetNumColBlocks = (__typeof__(&bfMatBlockGetNumColBlocks))bfMatBlockDenseGetNumColBlocks,
   .GetRowOffset = (__typeof__(&bfMatBlockGetRowOffset))bfMatBlockDenseGetRowOffset,
   .GetColOffset = (__typeof__(&bfMatBlockGetColOffset))bfMatBlockDenseGetColOffset,
+  .GetBlock = (__typeof__(&bfMatBlockGetBlock))bfMatBlockDenseGetBlock,
   .GetBlockConst = (__typeof__(&bfMatBlockGetBlockConst))bfMatBlockDenseGetBlockConst,
 };
 
@@ -881,10 +915,30 @@ BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize 
   return COL_OFFSET(matBlockDense, j);
 }
 
-BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
+BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
   BF_ERROR_BEGIN();
 
   BfMat *block = NULL;
+
+  if (i >= NUM_ROW_BLOCKS(mat))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (j >= NUM_COL_BLOCKS(mat))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  block = bfMatGet(mat->super.block[i*NUM_COL_BLOCKS(mat) + j], BF_POLICY_VIEW);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return block;
+}
+
+BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j) {
+  BF_ERROR_BEGIN();
+
+  BfMat const *block = NULL;
 
   if (i >= NUM_ROW_BLOCKS(mat))
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
@@ -1112,24 +1166,6 @@ void bfMatBlockDenseDealloc(BfMatBlockDense **mat) {
 void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat) {
   bfMatBlockDenseDeinit(*mat);
   bfMatBlockDenseDealloc(mat);
-}
-
-BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j) {
-  BF_ERROR_BEGIN();
-
-  BfMat *block = NULL;
-
-  if (i >= NUM_ROW_BLOCKS(mat))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  if (j >= NUM_COL_BLOCKS(mat))
-    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
-
-  block = mat->super.block[i*NUM_COL_BLOCKS(mat) + j];
-
-  BF_ERROR_END() {}
-
-  return block;
 }
 
 void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j,

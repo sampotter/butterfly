@@ -19,19 +19,12 @@ BfRealArray *bfRealArrayCopy(BfRealArray const *realArray) {
   BF_ERROR_BEGIN();
 
   BfRealArray *realArrayCopy = bfMemAlloc(1, sizeof(BfRealArray));
-  if (realArrayCopy == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   invalidate(realArrayCopy);
 
-  realArrayCopy->size = realArray->size;
-  realArrayCopy->capacity = realArray->size;
-  realArrayCopy->isView = false;
-
-  realArrayCopy->data = bfMemAlloc(realArrayCopy->size, sizeof(BfReal));
+  bfRealArrayInitCopy(realArrayCopy, realArray);
   HANDLE_ERROR();
-
-  bfMemCopy(realArray->data, realArray->size, sizeof(BfSize), realArrayCopy->data);
 
   BF_ERROR_END() {
     BF_DIE();
@@ -161,6 +154,23 @@ void bfRealArrayInitWithValue(BfRealArray *realArray, BfSize size, BfReal value)
   for (BfSize i = 0; i < realArray->size; ++i) {
     realArray->data[i] = value;
   }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfRealArrayInitCopy(BfRealArray *realArray, BfRealArray const *otherRealArray) {
+  BF_ERROR_BEGIN();
+
+  realArray->size = otherRealArray->size;
+  realArray->capacity = otherRealArray->size;
+  realArray->isView = false;
+
+  realArray->data = bfMemAlloc(realArray->size, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  bfMemCopy(otherRealArray->data, otherRealArray->size, sizeof(BfSize), realArray->data);
 
   BF_ERROR_END() {
     BF_DIE();
@@ -379,4 +389,24 @@ void bfRealArraySave(BfRealArray const *realArray, char const *path) {
 void bfRealArrayNegate(BfRealArray *realArray) {
   for (BfSize i = 0; i < realArray->size; ++i)
     realArray->data[i] *= -1;
+}
+
+void bfRealArrayPermute(BfRealArray *realArray, BfPerm const *perm) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArrayCopy = bfRealArrayCopy(realArray);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < realArray->size; ++i)
+    realArray->data[perm->index[i]] = realArrayCopy->data[i];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfRealArrayDeinitAndDealloc(&realArrayCopy);
+}
+
+BfReal *bfRealArrayGetDataPtr(BfRealArray *realArray) {
+  return realArray->data;
 }

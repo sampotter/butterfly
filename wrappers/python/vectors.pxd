@@ -6,3 +6,4 @@ cdef extern from "bf/vectors.h":
 
     BfVectors2 *bfVectors2NewEmpty()
     void bfVectors2Extend(BfVectors2 *vectors, const BfVectors2 *newVectors)
+    BfSize bfVectors2GetSize(const BfVectors2 *vectors)

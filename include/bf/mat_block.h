@@ -11,6 +11,7 @@ BfSize bfMatBlockGetNumBlockRows(BfMatBlock const *, BfSize);
 BfSize bfMatBlockGetNumBlockCols(BfMatBlock const *, BfSize);
 BfSize bfMatBlockGetRowOffset(BfMatBlock const *, BfSize);
 BfSize bfMatBlockGetColOffset(BfMatBlock const *, BfSize);
+BfMat *bfMatBlockGetBlock(BfMatBlock *, BfSize, BfSize);
 BfMat const *bfMatBlockGetBlockConst(BfMatBlock const *, BfSize, BfSize);
 BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *, BfSize, BfSize);
 
@@ -22,6 +23,7 @@ typedef struct BfMatBlockVtable {
   __typeof__(&bfMatBlockGetNumBlockCols) GetNumBlockCols;
   __typeof__(&bfMatBlockGetRowOffset) GetRowOffset;
   __typeof__(&bfMatBlockGetColOffset) GetColOffset;
+  __typeof__(&bfMatBlockGetBlock) GetBlock;
   __typeof__(&bfMatBlockGetBlockConst) GetBlockConst;
   __typeof__(&bfMatBlockGetBlockCopy) GetBlockCopy;
 } BfMatBlockVtable;

@@ -66,14 +66,14 @@ BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat);
 
 BfMatDenseComplex *bfMatDenseComplexNew(void);
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data);
+BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
+BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols, BfComplex *data);
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexSet(BfMatDenseComplex *dst, BfMatDenseComplex const *src);
-BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
-BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat);
 BfSize bfMatDenseComplexGetColStride(BfMatDenseComplex const *mat);
 void bfMatDenseComplexSvd(BfMatDenseComplex const *mat, BfMatDenseComplex *U,
@@ -102,3 +102,5 @@ BfMatDenseComplex *bfMatDenseComplexDenseComplexSolve(BfMatDenseComplex const *A
                                                       BfMatDenseComplex const *B);
 void bfMatDenseComplexDenseRealScaleCols(BfMatDenseComplex *mat,
                                          BfMatDenseReal const *otherMat);
+BfComplex *bfMatDenseComplexGetDataPtr(BfMatDenseComplex *matDenseComplex);
+void bfMatDenseComplexSetBlock(BfMatDenseComplex *matDenseComplex, BfSize i0, BfSize j0, BfMat const *mat);

@@ -122,7 +122,7 @@ BfPoints2 *bfPoints2SamplePoissonDisk(BfBbox2 const *bbox, BfReal minDist, BfSiz
   w.minDist = minDist;
   w.k = k;
 
-  w.samples = bfPoints2NewEmpty();
+  w.samples = bfPoints2NewWithDefaultCapacity();
   HANDLE_ERROR();
 
   w.cellIndex = bfMemAlloc(w.n, sizeof(BfSize));

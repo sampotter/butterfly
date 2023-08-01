@@ -11,11 +11,8 @@
 #include <bf/points.h>
 #include <bf/vectors.h>
 
-BfSize bfHelm2RankEstForTwoCircles(BfCircle const *circ1,
-                                   BfCircle const *circ2,
-                                   BfReal k, BfReal C, BfReal eps)
-{
-  BF_ASSERT(k > 0);
+BfSize bfHelm2RankEstForTwoCircles(BfHelm2 const *helm, BfCircle const *circ1, BfCircle const *circ2, BfReal C, BfReal eps) {
+  BF_ASSERT(helm->k > 0);
   BF_ASSERT(C > 0);
   BF_ASSERT(eps > 0);
 
@@ -30,7 +27,7 @@ BfSize bfHelm2RankEstForTwoCircles(BfCircle const *circ1,
   /* Reading Michielssen & Boag, seems like there should be a factor
    * of two pi in front of this, but that leads to a rank estimate
    * which is way higher than necessary. */
-  BfReal p = k*r1*r2/d - C*log10(eps);
+  BfReal p = helm->k*r1*r2/d - C*log10(eps);
   BF_ASSERT(p > 0);
 
   BfSize rank = (BfSize)ceil(p);
@@ -61,24 +58,28 @@ BfComplex get_D_value(BfPoint2 const xsrc, BfPoint2 const xtgt, BfVector2 const 
   return scale*dot;
 }
 
-BfComplex bfHelm2GetKernelValue(BfPoint2 const xsrc, BfPoint2 const xtgt,
-                                BfVector2 const nsrc, BfVector2 const ntgt,
-                                BfReal K, BfLayerPotential layerPot) {
+BfComplex bfHelm2GetKernelValue(BfHelm2 const *helm, BfPoint2 const xsrc, BfPoint2 const xtgt,
+                                BfVector2 const nsrc, BfVector2 const ntgt) {
   BF_ERROR_BEGIN();
 
   BfComplex z;
 
-  switch (layerPot) {
+  switch (helm->layerPot) {
   case BF_LAYER_POTENTIAL_SINGLE:
-    z = get_S_value(xsrc, xtgt, K);
+    z = get_S_value(xsrc, xtgt, helm->k);
     break;
   case BF_LAYER_POTENTIAL_PV_DOUBLE:
-    z = get_D_value(xsrc, xtgt, nsrc, K);
+    z = get_D_value(xsrc, xtgt, nsrc, helm->k);
     break;
   case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
-    z = get_Sp_value(xsrc, xtgt, ntgt, K);
+    z = get_Sp_value(xsrc, xtgt, ntgt, helm->k);
     break;
-  default:
+  case BF_LAYER_POTENTIAL_COMBINED_FIELD: {
+    BfComplex G = get_S_value(xsrc, xtgt, helm->k);
+    BfComplex dGdN = get_D_value(xsrc, xtgt, nsrc, helm->k);
+    z = helm->alpha*G + helm->beta*dGdN;
+    break;
+  } default:
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
   }
 
@@ -279,10 +280,9 @@ get_S_plus_D_kernel_matrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 }
 
 BfMat *
-bfHelm2GetKernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
-                       BfVectors2 const *Nsrc, BfVectors2 const *Ntgt,
-                       BfReal K, BfLayerPotential layerPot,
-                       BfComplex const *alpha, BfComplex const *beta)
+bfHelm2GetKernelMatrix(BfHelm2 const *helm,
+                       BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
+                       BfVectors2 const *Nsrc, BfVectors2 const *Ntgt)
 {
   BF_ERROR_BEGIN();
 
@@ -294,20 +294,20 @@ bfHelm2GetKernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
   if (Ntgt != NULL && bfPoints2GetSize(Xtgt) != bfVectors2GetSize(Ntgt))
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  switch (layerPot) {
+  switch (helm->layerPot) {
   case BF_LAYER_POTENTIAL_SINGLE:
-    kernelMat = get_S_kernel_matrix(Xsrc, Xtgt, K);
+    kernelMat = get_S_kernel_matrix(Xsrc, Xtgt, helm->k);
     HANDLE_ERROR();
     break;
   case BF_LAYER_POTENTIAL_PV_DOUBLE:
-    kernelMat = get_D_kernel_matrix(Xsrc, Xtgt, Nsrc, K);
+    kernelMat = get_D_kernel_matrix(Xsrc, Xtgt, Nsrc, helm->k);
     break;
   case BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE:
-    kernelMat = get_Sp_kernel_matrix(Xsrc, Xtgt, Ntgt, K);
+    kernelMat = get_Sp_kernel_matrix(Xsrc, Xtgt, Ntgt, helm->k);
     HANDLE_ERROR();
     break;
   case BF_LAYER_POTENTIAL_COMBINED_FIELD:
-    kernelMat = get_S_plus_D_kernel_matrix(Xsrc, Xtgt, Nsrc, K, *alpha, *beta);
+    kernelMat = get_S_plus_D_kernel_matrix(Xsrc, Xtgt, Nsrc, helm->k, helm->alpha, helm->beta);
     break;
   default:
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -319,13 +319,12 @@ bfHelm2GetKernelMatrix(BfPoints2 const *Xsrc, BfPoints2 const *Xtgt,
 }
 
 BfMat *
-bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
+bfHelm2GetReexpansionMatrix(BfHelm2 const *helm,
+                            BfPoints2 const *srcPtsOrig,
                             BfPoints2 const *srcPtsEquiv,
                             BfVectors2 const *srcNormalsOrig,
                             BfVectors2 const *srcNormalsEquiv,
-                            BfPoints2 const *tgtPts,
-                            BfReal K, BfLayerPotential layerPot,
-                            BfComplex const *alpha, BfComplex const *beta)
+                            BfPoints2 const *tgtPts)
 {
   BF_ERROR_BEGIN();
 
@@ -339,17 +338,17 @@ bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
 
   /* Computing a reexpansion matrix doesn't make any sense for a layer
    * potential which depends on unit normals at target points */
-  if (BF_LAYER_POT_USES_TGT_NORMALS[layerPot])
+  if (BF_LAYER_POT_USES_TGT_NORMALS[helm->layerPot])
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* compute the kernel matrix mapping charges on the original sources
    * points to potentials on the original target points */
-  BfMat *Z_orig = bfHelm2GetKernelMatrix(srcPtsOrig, tgtPts, srcNormalsOrig, NULL, K, layerPot, alpha, beta);
+  BfMat *Z_orig = bfHelm2GetKernelMatrix(helm, srcPtsOrig, tgtPts, srcNormalsOrig, NULL);
   HANDLE_ERROR();
 
   /* compute the kernel matrix mapping charges on the source
    * circle to potentials on the target circle */
-  BfMat *Z_equiv = bfHelm2GetKernelMatrix(srcPtsEquiv, tgtPts, srcNormalsEquiv, NULL, K, layerPot, alpha, beta);
+  BfMat *Z_equiv = bfHelm2GetKernelMatrix(helm, srcPtsEquiv, tgtPts, srcNormalsEquiv, NULL);
   HANDLE_ERROR();
 
   /* set the "shift matrix" to Z_equiv\Z_orig */
@@ -363,4 +362,86 @@ bfHelm2GetReexpansionMatrix(BfPoints2 const *srcPtsOrig,
   bfMatDelete(&Z_equiv);
 
   return Z_shift;
+}
+
+typedef struct {
+  BfHelm2 const *helm;
+  BfPoints2 const *points;
+  BfVectors2 const *normals;
+} KrWorkspace;
+
+BfComplex krComplexKernel(BfSize i, BfSize j, void *aux) {
+  KrWorkspace *workspace = aux;
+  BfHelm2 const *helm = workspace->helm;
+  BfReal (*X)[2] = workspace->points->data;
+  BfReal (*N)[2] = workspace->normals->data;
+  return bfHelm2GetKernelValue(helm, X[i], X[j], N[i], N[j]);
+}
+
+void bfHelm2ApplyKrCorrection(BfHelm2 const *helm, BfSize krOrder, BfPoints2 const *points, BfVectors2 const *normals, BfMat *mat) {
+  BF_ERROR_BEGIN();
+
+  KrWorkspace krWorkspace = {
+    .helm = helm,
+    .points = points,
+    .normals = normals
+  };
+
+  bfQuadKrApplyCorrection(mat, krOrder, krComplexKernel, (BfPtr)&krWorkspace);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfHelm2ApplyKrCorrectionTree(BfHelm2 const *helm, BfSize krOrder, BfPoints2 const *points, BfVectors2 const *normals, BfTree const *tree, BfMat *mat) {
+  BF_ERROR_BEGIN();
+
+  KrWorkspace krWorkspace = {
+    .helm = helm,
+    .points = points,
+    .normals = normals
+  };
+
+  bfQuadKrApplyCorrectionTree(mat, krOrder, tree, krComplexKernel, (BfPtr)&krWorkspace);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfHelm2ApplyBlockCorrection(BfHelm2 const *helm, BfSizeArray const *offsets, BfSize krOrder, BfPoints2 const *points, BfVectors2 const *normals, BfMat *mat) {
+  BF_ERROR_BEGIN();
+
+  KrWorkspace krWorkspace = {
+    .helm = helm,
+    .points = points,
+    .normals = normals
+  };
+
+  bfQuadKrApplyBlockCorrection(mat, offsets, krOrder, krComplexKernel, (BfPtr)&krWorkspace);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfHelm2ApplyBlockCorrectionTree(BfHelm2 const *helm, BfSizeArray const *offsets, BfSize krOrder, BfPoints2 const *points, BfVectors2 const *normals, BfTree const *tree, BfMat *mat) {
+  BF_ERROR_BEGIN();
+
+  KrWorkspace krWorkspace = {
+    .helm = helm,
+    .points = points,
+    .normals = normals
+  };
+
+  bfQuadKrApplyBlockCorrectionTree(mat, offsets, krOrder, tree, krComplexKernel, (BfPtr)&krWorkspace);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }

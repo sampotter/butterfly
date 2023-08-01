@@ -30,15 +30,15 @@ BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
   BfReal const *xsrc = &wkspc->points->data[i][0];
   BfReal const *xtgt = &wkspc->points->data[j][0];
   BfReal const *nsrc = &wkspc->normals->data[i][0];
-  BfReal k = wkspc->k;
 
-  BfComplex G = bfHelm2GetKernelValue(
-    xsrc, xtgt, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
-  BfComplex dGdN = bfHelm2GetKernelValue(
-    xsrc, xtgt, nsrc, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
-  BfComplex K = wkspc->alpha*G + wkspc->beta*dGdN;
+  // BfComplex G = bfHelm2GetKernelValue(
+  //   xsrc, xtgt, NULL, NULL, k, BF_LAYER_POTENTIAL_SINGLE);
+  // BfComplex dGdN = bfHelm2GetKernelValue(
+  //   xsrc, xtgt, nsrc, NULL, k, BF_LAYER_POTENTIAL_PV_DOUBLE);
+  // BfComplex K = wkspc->alpha*G + wkspc->beta*dGdN;
+  // return K;
 
-  return K;
+  return bfHelm2GetKernelValue(wkspc->helm, xsrc, xtgt, nsrc, NULL);
 }
 
 static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
@@ -90,8 +90,8 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
 
   BfComplex *sigmaPtr = bfMatConstToMatDenseComplexConst(sigma)->data;
 
-  BfComplex chargeScale = context->alpha;
-  BfComplex dipstrScale = context->beta;
+  BfComplex chargeScale = context->helm.alpha;
+  BfComplex dipstrScale = context->helm.beta;
 
   BfComplex *charge = bfMemAlloc(n, sizeof(BfComplex));
   BF_ASSERT(charge != NULL);
@@ -112,7 +112,7 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
   int64_t ier = 0;
   hfmm2d_s_cd_p(
     /* eps: */ context->tolFmm,
-    /* zk: */ context->k,
+    /* zk: */ context->helm.k,
     /* ns: */ n,
     /* sources: */ (BfReal const *)&context->X->data[0],
     /* charge: */ charge,
@@ -146,7 +146,7 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
 
     BfSize n = i1 - i0;
 
-    bf_accum_with_KR_correction(
+    bfQuadKrAccumCorrection(
       /* order: */ context->orderKR,
       /* K: */ K_helm2,
       /* aux: */ (void *)&KWkspcBlock,
@@ -173,12 +173,15 @@ static BfMat *mulFmm(BfMat const *sigma, void const *aux) {
 void init(MultipleScatteringContext *context, Opts const *opts) {
   /** Copy over parameters from `opts`: */
 
-  context->k = opts->wavenumber;
+  context->helm = (BfHelm2) {
+    .k = opts->wavenumber,
+    .layerPot = BF_LAYER_POTENTIAL_COMBINED_FIELD,
+    .alpha = opts->alpha,
+    .beta = opts->beta
+  };
   context->minDist = opts->minDist;
   context->axisLow = opts->axisLow;
   context->axisHigh = opts->axisHigh;
-  context->alpha = opts->alpha;
-  context->beta = opts->beta;
   context->d[0] = opts->d[0];
   context->d[1] = opts->d[1];
 
@@ -212,11 +215,9 @@ void init(MultipleScatteringContext *context, Opts const *opts) {
 
   /* Set by `setUpKrWorkspace`: */
   context->KWkspc = (KHelm2Wkspc) {
+    .helm = &context->helm,
     .points = NULL,
     .normals = NULL,
-    .k = BF_NAN,
-    .alpha = context->alpha,
-    .beta = context->beta,
   };
 
   context->K = NULL;
@@ -261,13 +262,13 @@ void init(MultipleScatteringContext *context, Opts const *opts) {
 void printInfo(MultipleScatteringContext const *context) {
   puts("Solving multiple scattering problem:");
   printf("- uIn = exp(i*k*d*r), where:\n");
-  printf("  * k = %g\n", context->k);
+  printf("  * k = %g\n", context->helm.k);
   printf("  * d = (%g, %g)\n", context->d[0], context->d[1]);
-  printf("- average points per wavelength: %0.2f\n", (2*BF_PI/context->k)/context->h);
+  printf("- average points per wavelength: %0.2f\n", (2*BF_PI/context->helm.k)/context->h);
   printf("- using CFIE: alpha*G + beta*dG/dn, where:\n");
-  printf("  * alpha = %g + %gi\n", creal(context->alpha), cimag(context->alpha));
-  printf("  * beta = %g + %gi\n", creal(context->beta), cimag(context->beta));
-  printf("- number of wavelengths across domain: %g\n", 2.0*sqrt(2.0)*context->k/(2*BF_PI));
+  printf("  * alpha = %g + %gi\n", creal(context->helm.alpha), cimag(context->helm.alpha));
+  printf("  * beta = %g + %gi\n", creal(context->helm.beta), cimag(context->helm.beta));
+  printf("- number of wavelengths across domain: %g\n", 2.0*sqrt(2.0)*context->helm.k/(2*BF_PI));
 }
 
 /* Set up problem geometry: randomly sample lots of little
@@ -342,7 +343,7 @@ void setUpDiscretization(MultipleScatteringContext *context) {
   context->ellipseOffsets = bfSizeArrayNewWithDefaultCapacity();
   bfSizeArrayAppend(context->ellipseOffsets, 0);
 
-  context->X = bfPoints2NewEmpty();
+  context->X = bfPoints2NewWithDefaultCapacity();
   context->N = bfVectors2NewEmpty();
   context->W = bfRealArrayNewWithDefaultCapacity();
   for (BfSize i = 0; i < context->numEllipses; ++i) {
@@ -390,9 +391,9 @@ void buildQuadtrees(MultipleScatteringContext *context) {
 
 /* Set up workspace for applying KR corrections: */
 void setUpKrWorkspace(MultipleScatteringContext *context) {
+  context->KWkspc.helm = &context->helm;
   context->KWkspc.points = context->X;
   context->KWkspc.normals = context->N;
-  context->KWkspc.k = context->k;
 }
 
 /* Set up the RHS for the scattering problem: */
@@ -405,7 +406,7 @@ void setUpRhs(MultipleScatteringContext *context) {
     for (BfSize i = 0; i < context->n; ++i) {
       BfPoint2 x;
       bfPoints2Get(context->X, i, x);
-      *(_->data + i*_->rowStride) = -cexp(I*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
+      *(_->data + i*_->rowStride) = -cexp(I*context->helm.k*(context->d[0]*x[0] + context->d[1]*x[1]));
     }
     context->rhs = bfMatDenseComplexToMat(_); }
 
@@ -426,18 +427,10 @@ void assembleDenseK(MultipleScatteringContext *context) {
   bfToc();
 
   /* Assemble discretized CFIE kernel matrix: */
-  context->K = bfHelm2GetKernelMatrix(
-    context->X,
-    context->X,
-    context->N,
-    NULL,
-    context->k,
-    BF_LAYER_POTENTIAL_COMBINED_FIELD,
-    &context->alpha,
-    &context->beta);
+  context->K = bfHelm2GetKernelMatrix(&context->helm, context->X, context->X, context->N, NULL);
 
   /* Apply KR correction blockwise: */
-  bf_apply_block_KR_correction(
+  bfQuadKrApplyBlockCorrection(
     context->K,
     context->ellipseOffsets,
     context->orderKR,
@@ -468,16 +461,10 @@ void assembleButterfliedK(MultipleScatteringContext *context) {
   bfToc();
 
   /* Assemble and butterfly compress discretized CFIE kernel matrix: */
-  context->KButterfly = bfFacHelm2MakeMultilevel(
-    context->quadtree,
-    context->quadtree,
-    context->k,
-    BF_LAYER_POTENTIAL_COMBINED_FIELD,
-    &context->alpha,
-    &context->beta);
+  context->KButterfly = bfFacHelm2MakeMultilevel(&context->helm, context->quadtree, context->quadtree);
 
   /* Apply KR correction blockwise: */
-  bf_apply_block_KR_correction_quadtree(
+  bfQuadKrApplyBlockCorrectionTree(
     context->KButterfly,
     context->ellipseOffsets,
     context->orderKR,
@@ -580,9 +567,7 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
       BfVectors2 *NBlock = bfVectors2GetRangeView(context->N, i0, i1);
 
       /* Get dense kernel matrix block for CFIE: */
-      KBlock = bfHelm2GetKernelMatrix(
-        XBlock, XBlock, NBlock, NULL, context->k,
-        BF_LAYER_POTENTIAL_COMBINED_FIELD, &context->alpha, &context->beta);
+      KBlock = bfHelm2GetKernelMatrix(&context->helm, XBlock, XBlock, NBlock, NULL);
 
       /* Set up K workspace for this block: */
       KHelm2Wkspc KWkspcBlock = context->KWkspc;
@@ -590,8 +575,7 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
       KWkspcBlock.normals = NBlock;
 
       /* Apply KR correction: */
-      bf_apply_KR_correction(
-        KBlock, context->orderKR, K_helm2, (void *)&KWkspcBlock);
+      bfQuadKrApplyCorrection(KBlock, context->orderKR, K_helm2, (void *)&KWkspcBlock);
 
       /* Scale columns by trapezoid rule weights: */
       BfVec *WSubvec = bfRealArrayGetSubvecView(context->W, i0, i1);
@@ -999,7 +983,7 @@ void doPostprocessing(MultipleScatteringContext *context) {
     for (BfSize i = 0; i < nEval; ++i) {
       BfPoint2 x;
       bfPoints2Get(context->XEval, i, x);
-      *(_->data + i*_->rowStride) = cexp(I*context->k*(context->d[0]*x[0] + context->d[1]*x[1]));
+      *(_->data + i*_->rowStride) = cexp(I*context->helm.k*(context->d[0]*x[0] + context->d[1]*x[1]));
     }
     context->uIn = bfMatDenseComplexToMat(_); }
 
@@ -1011,13 +995,7 @@ void doPostprocessing(MultipleScatteringContext *context) {
 
   bfToc();
 
-  context->KEvalButterfly = bfFacHelm2MakeMultilevel(
-    context->quadtree,
-    context->quadtreeEval,
-    context->k,
-    BF_LAYER_POTENTIAL_COMBINED_FIELD,
-    &context->alpha,
-    &context->beta);
+  context->KEvalButterfly = bfFacHelm2MakeMultilevel(&context->helm, context->quadtree, context->quadtreeEval);
 
   BfVec *WVec = bfRealArrayGetVecView(context->W);
   BfVec *WVecPerm = bfVecCopy(WVec);

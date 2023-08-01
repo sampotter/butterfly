@@ -2,6 +2,7 @@
 
 #include "multiple_scattering_opts.h"
 
+#include <bf/helm2.h>
 #include <bf/quadtree.h>
 // #include <bf/size_array.h>
 
@@ -9,23 +10,19 @@ typedef struct KHelm2Wkspc KHelm2Wkspc;
 typedef struct MultipleScatteringContext MultipleScatteringContext;
 
 struct KHelm2Wkspc {
+  BfHelm2 const *helm;
   BfPoints2 const *points;
   BfVectors2 const *normals;
-  BfReal k;
-  BfComplex alpha;
-  BfComplex beta;
 };
 
 struct MultipleScatteringContext {
   /** These parameters are determined by the user: */
 
   /* Problem parameters: */
-  BfReal k;
+  BfHelm2 helm;
   BfReal minDist;
   BfReal axisLow;
   BfReal axisHigh;
-  BfComplex alpha;
-  BfComplex beta;
   BfVector2 d;
 
   /* Discretization parameters: */

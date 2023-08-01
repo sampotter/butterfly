@@ -337,7 +337,9 @@ void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
     *outPtr = *inPtr;
   }
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   bfVecDelete(&vecCopy);
 }

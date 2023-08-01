@@ -43,7 +43,8 @@ struct BfPoints2 {
   bool isView;
 };
 
-BfPoints2 *bfPoints2NewEmpty(void);
+BfPoints2 *bfPoints2NewWithCapacity(BfSize capacity);
+BfPoints2 *bfPoints2NewWithDefaultCapacity(void);
 BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny);
 BfPoints2 const *bfPoints2ConstViewFromMat(BfMat const *mat);
 BfPoints2 const *bfPoints2ConstViewFromMatDenseReal(BfMatDenseReal const *matDenseReal);
@@ -64,6 +65,7 @@ void bfPoints2Extend(BfPoints2 *points, BfPoints2 const *newPoints);
 void bfPoints2Get(BfPoints2 const *points, BfSize i, BfPoint2 p);
 BfSize bfPoints2GetSize(BfPoints2 const *points);
 BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1);
+BfPoint2 *bfPoints2GetDataPtr(BfPoints2 *points);
 
 struct BfPoints3 {
   BfPoint3 *data;

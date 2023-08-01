@@ -8,6 +8,21 @@ cdef extern from "bf/types.h":
     struct BfMatDenseComplex:
         pass
 
+    struct BfMatDiagReal:
+        pass
+
+    struct BfMatFunc:
+        pass
+
+    struct BfMatIdentity:
+        pass
+
+    struct BfMatProduct:
+        pass
+
+    struct BfVec:
+        pass
+
     struct BfTree:
         pass
 

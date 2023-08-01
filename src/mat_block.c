@@ -38,6 +38,10 @@ BfSize bfMatBlockGetColOffset(BfMatBlock const *matBlock, BfSize j) {
   return matBlock->vtbl->GetColOffset(matBlock, j);
 }
 
+BfMat *bfMatBlockGetBlock(BfMatBlock *matBlock, BfSize i, BfSize j) {
+  return matBlock->vtbl->GetBlock(matBlock, i, j);
+}
+
 BfMat const *bfMatBlockGetBlockConst(BfMatBlock const *matBlock, BfSize i, BfSize j) {
   return matBlock->vtbl->GetBlockConst(matBlock, i, j);
 }

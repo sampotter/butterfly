@@ -36,6 +36,7 @@ BfTree const *bfQuadtreeConstToTreeConst(BfQuadtree const *quadtree);
 /** Downcasting: Tree -> Quadtree */
 
 BfQuadtree *bfTreeToQuadtree(BfTree *tree);
+BfQuadtree const *bfTreeConstToQuadtreeConst(BfTree const *tree);
 
 /** Implementation: Quadtree */
 

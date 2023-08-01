@@ -9,17 +9,25 @@
 #include <bf/points.h>
 #include <bf/vectors.h>
 
-BfPoints2 bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints) {
-  BfPoints2 points;
-  bfInitEmptyPoints2(&points, numPoints);
+BfPoints2 *bfCircle2SamplePoints(BfCircle const *circ, BfSize numPoints) {
+  BF_ERROR_BEGIN();
+
+  BfPoints2 *points = bfPoints2NewWithCapacity(numPoints);
+  HANDLE_ERROR();
 
   BfReal const scale = BF_TWO_PI/(BfReal)numPoints;
 
-  BfPoint2 *point = points.data;
+  BfPoint2 point;
   for (BfSize i = 0; i < numPoints; ++i) {
     BfReal theta = scale*i;
-    point[i][0] = circ->r*cos(theta) + circ->center[0];
-    point[i][1] = circ->r*sin(theta) + circ->center[1];
+    point[0] = circ->r*cos(theta) + circ->center[0];
+    point[1] = circ->r*sin(theta) + circ->center[1];
+    bfPoints2Append(points, point);
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
   return points;

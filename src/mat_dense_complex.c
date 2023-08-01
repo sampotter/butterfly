@@ -1882,3 +1882,54 @@ void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat) {
   bfMatDenseComplexDeinit(*mat);
   bfMatDenseComplexDealloc(mat);
 }
+
+BfComplex *bfMatDenseComplexGetDataPtr(BfMatDenseComplex *matDenseComplex) {
+  return matDenseComplex->data;
+}
+
+static void setBlock_denseComplex(BfMatDenseComplex *matDenseComplex, BfSize i0, BfSize j0, BfMatDenseComplex const *blockMatDenseComplex) {
+  BF_ERROR_BEGIN();
+
+  BfMat *mat = bfMatDenseComplexToMat(matDenseComplex);
+  BfSize numRows = bfMatGetNumRows(mat);
+  BfSize numCols = bfMatGetNumCols(mat);
+
+  BfMat const *blockMat = bfMatDenseComplexConstToMatConst(blockMatDenseComplex);
+  BfSize numBlockRows = bfMatGetNumRows(blockMat);
+  BfSize numBlockCols = bfMatGetNumCols(blockMat);
+
+  BfSize i1 = i0 + numBlockRows;
+  BfSize j1 = j0 + numBlockCols;
+
+  if (i1 > numRows)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (j1 > numCols)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  for (BfSize i = i0; i < i1; ++i) {
+    BfComplex *writePtr = matDenseComplex->data +
+      i*matDenseComplex->rowStride + j0*matDenseComplex->colStride;
+    BfComplex const *readPtr =
+      blockMatDenseComplex->data + (i - i0)*blockMatDenseComplex->rowStride;
+    for (BfSize j = j0; j < j1; ++j) {
+      *writePtr = *readPtr;
+      writePtr += matDenseComplex->colStride;
+      readPtr += blockMatDenseComplex->colStride;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfMatDenseComplexSetBlock(BfMatDenseComplex *matDenseComplex, BfSize i0, BfSize j0, BfMat const *mat) {
+  switch (bfMatGetType(mat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    setBlock_denseComplex(matDenseComplex, i0, j0, bfMatConstToMatDenseComplexConst(mat));
+    break;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+  }
+}

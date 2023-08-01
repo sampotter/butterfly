@@ -48,8 +48,8 @@ static BfReal const *get_w_KR(BfSize order) {
   }
 }
 
-void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
-                                 BfSize n, BfComplex const *x, BfReal const *h, BfComplex *y) {
+void bfQuadKrAccumCorrection(BfSize order, BfKernelComplex K, BfPtr *aux,
+                             BfSize n, BfComplex const *x, BfReal const *h, BfComplex *y) {
   BF_ERROR_BEGIN();
 
   if (order != 2 && order != 6 && order != 10)
@@ -73,8 +73,8 @@ void bf_accum_with_KR_correction(BfSize order, BfKernelComplex K, BfPtr *aux,
 }
 
 static void
-apply_KR_correction_to_block_complex(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize order,
-                                     BfKernelComplex K, BfPtr *aux) {
+applyBlockCorrection_complex(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize order,
+                             BfKernelComplex K, BfPtr *aux) {
   BfReal const *w_KR = get_w_KR(order);
   BfComplex *rowptr;
   BfSize m = i1 - i0;
@@ -89,19 +89,18 @@ apply_KR_correction_to_block_complex(BfMatDenseComplex *mat, BfSize i0, BfSize i
   }
 }
 
-static void apply_KR_correction_to_block(BfMat *mat, BfSize i0, BfSize i1, BfSize order,
-                                         BfKernelComplex K, BfPtr *aux) {
+static void applyBlockCorrection(BfMat *mat, BfSize i0, BfSize i1, BfSize order,
+                                 BfKernelComplex K, BfPtr *aux) {
   switch (bfMatGetType(mat)) {
   case BF_TYPE_MAT_DENSE_COMPLEX:
-    apply_KR_correction_to_block_complex(bfMatToMatDenseComplex(mat), i0, i1, order, K, aux);
+    applyBlockCorrection_complex(bfMatToMatDenseComplex(mat), i0, i1, order, K, aux);
     break;
   default:
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
   }
 }
 
-void bf_apply_KR_correction(BfMat *mat, BfSize order,
-                            BfKernelComplex K, BfPtr *aux) {
+void bfQuadKrApplyCorrection(BfMat *mat, BfSize order, BfKernelComplex K, BfPtr *aux) {
   BF_ERROR_BEGIN();
 
   if (order != 2 && order != 6 && order != 10)
@@ -116,7 +115,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
   if (m < 2*order + 1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  apply_KR_correction_to_block(mat, 0, m, order, K, aux);
+  applyBlockCorrection(mat, 0, m, order, K, aux);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -124,7 +123,7 @@ void bf_apply_KR_correction(BfMat *mat, BfSize order,
   }
 }
 
-BfMat *bf_get_KR_corr_block_spmat(BfSize order, BfSize n, BfSize i0, BfSize i1, BfKernelComplex K, BfPtr *aux) {
+static BfMat *bf_get_KR_corr_block_spmat(BfSize order, BfSize n, BfSize i0, BfSize i1, BfKernelComplex K, BfPtr *aux) {
   BF_ERROR_BEGIN();
 
   if (i0 > i1)
@@ -167,14 +166,11 @@ BfMat *bf_get_KR_corr_block_spmat(BfSize order, BfSize n, BfSize i0, BfSize i1, 
   return bfMatCooComplexToMat(corr);
 }
 
-BfMat *bf_get_KR_corr_spmat(BfSize order, BfSize n, BfKernelComplex K, BfPtr *aux) {
+static BfMat *bf_get_KR_corr_spmat(BfSize order, BfSize n, BfKernelComplex K, BfPtr *aux) {
   return bf_get_KR_corr_block_spmat(order, n, 0, n, K, aux);
 }
 
-void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
-                                     BfTree const *tree,
-                                     BfKernelComplex K, BfPtr *aux)
-{
+void bfQuadKrApplyCorrectionTree(BfMat *mat, BfSize order, BfTree const *tree, BfKernelComplex K, BfPtr *aux) {
   BF_ERROR_BEGIN();
 
   BfMat *corr = NULL;
@@ -202,7 +198,7 @@ void bf_apply_KR_correction_quadtree(BfMat *mat, BfSize order,
   bfMatDelete(&corr);
 }
 
-void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfKernelComplex K, BfPtr *aux) {
+void bfQuadKrApplyBlockCorrection(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfKernelComplex K, BfPtr *aux) {
   BF_ERROR_BEGIN();
 
   if (bfSizeArrayGetSize(offsets) < 2)
@@ -214,7 +210,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
   BfSize i0 = bfSizeArrayGetFirst(offsets);
   for (BfSize i = 1; i < bfSizeArrayGetSize(offsets); ++i) {
     BfSize i1 = bfSizeArrayGet(offsets, i);
-    apply_KR_correction_to_block(mat, i0, i1, order, K, aux);
+    applyBlockCorrection(mat, i0, i1, order, K, aux);
     i0 = i1;
   }
 
@@ -223,7 +219,7 @@ void bf_apply_block_KR_correction(BfMat *mat, BfSizeArray const *offsets, BfSize
   }
 }
 
-void bf_apply_block_KR_correction_quadtree(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfTree const *tree, BfKernelComplex K, BfPtr *aux) {
+void bfQuadKrApplyBlockCorrectionTree(BfMat *mat, BfSizeArray const *offsets, BfSize order, BfTree const *tree, BfKernelComplex K, BfPtr *aux) {
   BF_ERROR_BEGIN();
 
   if (bfSizeArrayGetSize(offsets) < 2)

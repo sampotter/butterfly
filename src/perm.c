@@ -144,3 +144,12 @@ BfPerm *bfPermGetReversePerm(BfPerm const *perm) {
 BfSize bfPermGetSize(BfPerm const *perm) {
   return perm->size;
 }
+
+BfSize bfPermGetIndex(BfPerm const *perm, BfSize i) {
+  if (i >= perm->size) {
+    bfSetError(BF_ERROR_OUT_OF_RANGE);
+    return BF_SIZE_BAD_VALUE;
+  } else {
+    return perm->index[i];
+  }
+}

@@ -167,6 +167,7 @@ struct BfMat {
 #endif
 };
 
+BfMat *bfMatNew(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);
 BfMat *bfMatGet(BfMat *mat, BfPolicy policy);
 void bfMatInvalidate(BfMat *mat);
 void bfMatInit(BfMat *mat, BfMatVtable *vtbl, BfSize numRows, BfSize numCols);

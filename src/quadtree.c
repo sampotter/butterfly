@@ -48,6 +48,15 @@ BfQuadtree *bfTreeToQuadtree(BfTree *tree) {
   }
 }
 
+BfQuadtree const *bfTreeConstToQuadtreeConst(BfTree const *tree) {
+  if (!bfTreeInstanceOf(tree, BF_TYPE_QUADTREE)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfQuadtree const *)tree;
+  }
+}
+
 /** Implementation: Quadtree */
 
 BfQuadtree *bfQuadtreeNew() {

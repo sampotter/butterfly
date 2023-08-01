@@ -33,25 +33,20 @@ void bfSeed(BfSize seed) {
 
 /* Compute a random BfSize in the half-open interval [low, high). */
 BfSize bfSizeUniform1(BfSize low, BfSize high) {
-  uint64_t r = xoshiro256plus_next();
-  double x = (r >> 11) * 0x1.0p-53;
+  double x = bfRealUniform1();
   x *= high - low;
   x += low;
   return (BfSize)floor(x);
 }
 
 BfReal bfRealUniform1() {
+  /* For an explanation, see https://prng.di.unimi.it/, section
+   * "Generating uniform doubles in the unit interval". */
   return (xoshiro256plus_next() >> 11) * 0x1.0p-53;
 }
 
 void bfRealUniform(BfSize n, BfReal *x) {
-  for (BfSize i = 0; i < n; ++i) {
-    uint64_t r = xoshiro256plus_next();
-
-    /* for explanation of the following, see https://prng.di.unimi.it/,
-     * section "Generating uniform doubles in the unit interval" */
-    x[i] = (r >> 11) * 0x1.0p-53;
-  }
+  for (BfSize i = 0; i < n; ++i) x[i] = bfRealUniform1();
 }
 
 void bfRealRandn(BfSize n, BfReal *x) {

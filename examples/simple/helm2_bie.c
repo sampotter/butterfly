@@ -13,21 +13,6 @@
 
 static int const KR_order = 6;
 
-struct K_helm2_wkspc {
-  BfPoints2 const *points;
-  BfVectors2 const *normals;
-  BfReal K;
-};
-
-BfComplex K_helm2(BfSize i, BfSize j, void *aux) {
-  struct K_helm2_wkspc *wkspc = aux;
-  BfReal const *xsrc = &wkspc->points->data[i][0];
-  BfReal const *xtgt = &wkspc->points->data[j][0];
-  BfReal const *ntgt = &wkspc->normals->data[j][0];
-  return bfHelm2GetKernelValue(
-    xsrc, xtgt, NULL, ntgt, wkspc->K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE);
-}
-
 int main(int argc, char const *argv[]) {
   if (argc != 8) {
     printf("usage: %s <K> <points.bin> <normals.bin> <weights.bin> "
@@ -37,7 +22,7 @@ int main(int argc, char const *argv[]) {
 
   BF_ERROR_BEGIN();
 
-  BfReal K = atoi(argv[1]);
+  BfHelm2 helm = {.k = atoi(argv[1]), .layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE};
 
   BfMat *X = bfMatFromFile(argv[2], -1, 2, BF_DTYPE_REAL);
   HANDLE_ERROR();
@@ -88,9 +73,7 @@ int main(int argc, char const *argv[]) {
   BfPerm *revPerm = bfPermGetReversePerm(perm);
 
   /* Set up the LHS of the problem */
-  BfMat *phi_in = bfHelm2GetKernelMatrix(
-    X_source_points, X_points, NULL, N_vectors, K,
-    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
+  BfMat *phi_in = bfHelm2GetKernelMatrix(&helm, X_source_points, X_points, NULL, N_vectors);
   HANDLE_ERROR();
 
   /* Permute the LHS for the butterfly factorized version of A*/
@@ -100,26 +83,16 @@ int main(int argc, char const *argv[]) {
   /* One-half times the identity matrix---used to set up BIEs below */
   BfMat *oneHalfEye = bfMatDiagRealToMat(bfMatDiagRealNewConstant(n, n, 1./2));
 
-  /* Workspace for evaluating Helmholtz kernel when applying KR
-   * quadrature corrections */
-  struct K_helm2_wkspc K_wkspc = {
-    .points = X_points,
-    .normals = N_vectors,
-    .K = K
-  };
-
   /** Set up the dense system matrix */
 
   bfToc();
 
   /* Compute S_k' (normal derivative of single-layer potential) */
-  BfMat *A_dense = bfHelm2GetKernelMatrix(
-    X_points, X_points, NULL, N_vectors, K,
-    BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
+  BfMat *A_dense = bfHelm2GetKernelMatrix(&helm, X_points, X_points, NULL, N_vectors);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
-  bf_apply_KR_correction(A_dense, KR_order, K_helm2, (void *)&K_wkspc);
+  bfHelm2ApplyKrCorrection(&helm, KR_order, X_points, N_vectors, A_dense);
 
   /* Scale the columns by the trapezoid rule weights */
   bfMatScaleCols(A_dense, w);
@@ -133,12 +106,11 @@ int main(int argc, char const *argv[]) {
 
   bfToc();
 
-  BfMat *A_BF = bfFacHelm2MakeMultilevel(
-    &quadtree, &quadtree, K, BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE, NULL, NULL);
+  BfMat *A_BF = bfFacHelm2MakeMultilevel(&helm, &quadtree, &quadtree);
   HANDLE_ERROR();
 
   /* Perturb by the KR correction */
-  bf_apply_KR_correction_quadtree(A_BF, KR_order, tree, K_helm2, (void *)&K_wkspc);
+  bfHelm2ApplyKrCorrectionTree(&helm, KR_order, X_points, N_vectors, tree, A_BF);
 
   /* Scale the columns by the trapezoid rule weights */
   BfVec *w_perm = bfVecCopy(w);
@@ -203,13 +175,13 @@ int main(int argc, char const *argv[]) {
 
   /** Evaluate solution and check errors */
 
+  BfHelm2 helmEval = {.k = helm.k, .layerPot = BF_LAYER_POTENTIAL_SINGLE};
+
   /* Set up evaluation matrix */
-  BfMat *G_eval = bfHelm2GetKernelMatrix(
-    X_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
+  BfMat *G_eval = bfHelm2GetKernelMatrix(&helmEval, X_points, X_target_points, NULL, NULL);
   bfMatScaleCols(G_eval, w);
 
-  BfMat *phi_exact = bfHelm2GetKernelMatrix(
-    X_source_points, X_target_points, NULL, NULL, K, BF_LAYER_POTENTIAL_SINGLE, NULL, NULL);
+  BfMat *phi_exact = bfHelm2GetKernelMatrix(&helmEval, X_source_points, X_target_points, NULL, NULL);
 
   BfMat *phi_dense_LU = bfMatMul(G_eval, sigma_dense_LU);
   BfMat *phi_dense_GMRES = bfMatMul(G_eval, sigma_dense_GMRES);

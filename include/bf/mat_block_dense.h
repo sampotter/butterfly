@@ -22,7 +22,7 @@ void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *othe
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
 BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
-BfMat *bfMatBlockDenseToType(BfMat const *mat, BfType type);
+BfMat *bfMatBlockDenseToType(BfMatBlockDense const *matBlockDense, BfType type);
 BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense);
 void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 
@@ -33,6 +33,7 @@ BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlockDense const *matBlockDense);
 BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense);
 BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize i);
 BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize j);
+BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *matBlockDense, BfSize i, BfSize j);
 BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *matBlockDense, BfSize i, BfSize j);
 
 /** Upcasting: MatBlockDense -> Mat */
@@ -63,8 +64,6 @@ void bfMatBlockDenseInit(BfMatBlockDense *mat, BfSize numBlockRows, BfSize numBl
 void bfMatBlockDenseDeinit(BfMatBlockDense *mat);
 void bfMatBlockDenseDealloc(BfMatBlockDense **mat);
 void bfMatBlockDenseDeinitAndDealloc(BfMatBlockDense **mat);
-BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *mat, BfSize i, BfSize j);
-BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, BfSize j);
 void bfMatBlockDenseSetBlock(BfMatBlockDense *mat, BfSize i, BfSize j, BfMat *block);
 void bfMatBlockDenseAppendColumn(BfMatBlockDense *mat, BfSize numBlockCols);
 void bfMatBlockDenseAppendRow(BfMatBlockDense *mat, BfSize numBlockRows);

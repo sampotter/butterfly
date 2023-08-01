@@ -355,3 +355,7 @@ void bfSizeArraySave(BfSizeArray const *sizeArray, char const *path) {
     BF_DIE();
   }
 }
+
+BfSize *bfSizeArrayGetDataPtr(BfSizeArray const *sizeArray) {
+  return sizeArray->data;
+}

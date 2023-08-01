@@ -71,7 +71,7 @@ bool bfPoint3EqualApprox(BfPoint3 const x, BfPoint3 const y, BfReal tol) {
   return bfPoint3Dist(x, y) <= tol;
 }
 
-BfPoints2 *bfPoints2NewEmpty() {
+BfPoints2 *bfPoints2NewWithCapacity(BfSize capacity) {
   BF_ERROR_BEGIN();
 
   BfPoints2 *points = bfMemAlloc(1, sizeof(BfPoints2));
@@ -79,8 +79,8 @@ BfPoints2 *bfPoints2NewEmpty() {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   points->size = 0;
-  points->capacity = 16;
-  points->isView = BF_ARRAY_DEFAULT_CAPACITY;
+  points->capacity = capacity;
+  points->isView = false;
 
   points->data = bfMemAlloc(points->capacity, sizeof(BfPoint2));
 
@@ -91,10 +91,14 @@ BfPoints2 *bfPoints2NewEmpty() {
   return points;
 }
 
+BfPoints2 *bfPoints2NewWithDefaultCapacity(void) {
+  return bfPoints2NewWithCapacity(BF_ARRAY_DEFAULT_CAPACITY);
+}
+
 BfPoints2 *bfPoints2NewGrid(BfBbox2 const *bbox, BfSize nx, BfSize ny) {
   BF_ERROR_BEGIN();
 
-  BfPoints2 *points = bfPoints2NewEmpty();
+  BfPoints2 *points = bfPoints2NewWithCapacity(nx*ny);
   HANDLE_ERROR();
 
   BfReal hx = (bbox->max[0] - bbox->min[0])/(nx - 1);
@@ -571,6 +575,10 @@ BfPoints2 *bfPoints2GetRangeView(BfPoints2 *points, BfSize i0, BfSize i1) {
   }
 
   return pointsView;
+}
+
+BfPoint2 *bfPoints2GetDataPtr(BfPoints2 *points) {
+  return points->data;
 }
 
 /** Implementation: Points3 */

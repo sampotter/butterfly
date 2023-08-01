@@ -52,12 +52,14 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  BfLayerPotential layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
+  BfHelm2 helm;
+
+  helm.layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
   if (!strcmp(layerPotStr, "S")) {
-    layerPot = BF_LAYER_POTENTIAL_SINGLE;
+    helm.layerPot = BF_LAYER_POTENTIAL_SINGLE;
     printf("using single-layer potential\n");
   } else if (!strcmp(layerPotStr, "Sp")) {
-    layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
+    helm.layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
     printf("using PV of normal derivative of single-layer potential\n");
   } else if (!strcmp(layerPotStr, "D")) {
     printf("ERROR: double layer not yet implemented\n");
@@ -70,7 +72,7 @@ int main(int argc, char const *argv[]) {
 
   BF_ERROR_BEGIN();
 
-  BfReal K = atoi(K_str);
+  helm.k = atoi(K_str);
 
   BfMat *pointsMat = bfMatFromFile(points_path_str, -1, 2, BF_DTYPE_REAL);
   HANDLE_ERROR();
@@ -81,7 +83,7 @@ int main(int argc, char const *argv[]) {
   BfSize numPoints = points->size;
 
   BfVectors2 *normals = NULL;
-  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+  if (helm.layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     normals = bfVectors2NewFromFile(normals_path_str);
     HANDLE_ERROR();
     printf("read unit normals from %s\n", normals_path_str);
@@ -106,7 +108,7 @@ int main(int argc, char const *argv[]) {
 
   BfMat *normalsPermMat = NULL;
   BfVectors2 const *normalsPerm = NULL;
-  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+  if (helm.layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     normalsPermMat = bfMatFromFile(normals_path_str, -1, 2, BF_DTYPE_REAL);
     HANDLE_ERROR();
     bfMatPermuteRows(normalsPermMat, revPerm);
@@ -114,8 +116,7 @@ int main(int argc, char const *argv[]) {
   }
 
   bfToc();
-  BfMat *A_dense = bfHelm2GetKernelMatrix(
-    pointsPerm, pointsPerm, NULL, normalsPerm, K, layerPot, NULL, NULL);
+  BfMat *A_dense = bfHelm2GetKernelMatrix(&helm,pointsPerm, pointsPerm, NULL, normalsPerm);
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #else
   bfToc();
@@ -123,7 +124,7 @@ int main(int argc, char const *argv[]) {
   printf("computed dense kernel matrix [%0.2fs]\n", bfToc());
 #endif
 
-  BfMat *A_BF = bfFacHelm2MakeMultilevel(&quadtree, &quadtree, K, layerPot, NULL, NULL);
+  BfMat *A_BF = bfFacHelm2MakeMultilevel(&helm, &quadtree, &quadtree);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
   BfMat *x; {

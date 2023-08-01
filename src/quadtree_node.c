@@ -302,13 +302,16 @@ BfCircle bfQuadtreeNodeGetBoundingCircle(BfQuadtreeNode const *node) {
  *
  * If `tree == NULL`, then this function will retrieve the containing
  * `BfQuadtree` from `node`, which takes `O(log N)` time. */
-BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
+BfPoints2 *bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
                                   BfQuadtree const *quadtree) {
   BF_ERROR_BEGIN();
 
-  BfPoints2 points;
-
   BfTreeNode const *treeNode = bfQuadtreeNodeConstToTreeNodeConst(quadtreeNode);
+
+  BfSize numPoints = bfTreeNodeGetNumPoints(treeNode);
+
+  BfPoints2 *points = bfPoints2NewWithCapacity(numPoints);
+  HANDLE_ERROR();
 
   BfTree const *tree = quadtree == NULL ?
     bfTreeNodeGetTreeConst(treeNode) :
@@ -316,10 +319,9 @@ BfPoints2 bfQuadtreeNodeGetPoints(BfQuadtreeNode const *quadtreeNode,
 
   /* determine the number of points contained by `node` and find the
    * offset into `tree->perm` */
-  BfSize numInds = bfTreeNodeGetNumPoints(treeNode);
   BfSize const *inds = bfTreeNodeGetIndexPtrConst(treeNode, tree);
 
-  bfGetPointsByIndex(quadtree->points, numInds, inds, &points);
+  bfGetPointsByIndex(quadtree->points, numPoints, inds, points);
   HANDLE_ERROR();
 
   BF_ERROR_END() {}
@@ -364,4 +366,23 @@ bool bfQuadtreeNodesAreSeparated(BfQuadtreeNode const *node1,
   BfReal R = bfPoint2Dist(circ1.center, circ2.center);
 
   return R > circ1.r + circ2.r + 1e1*BF_EPS_MACH;
+}
+
+BfQuadtree *bfQuadtreeNodeGetQuadtree(BfQuadtreeNode *node) {
+  return bfTreeToQuadtree(bfTreeNodeGetTree(bfQuadtreeNodeToTreeNode(node)));
+}
+
+BfQuadtree const *bfQuadtreeNodeGetQuadtreeConst(BfQuadtreeNode const *node) {
+  return bfTreeConstToQuadtreeConst(
+    bfTreeNodeGetTreeConst(
+      bfQuadtreeNodeConstToTreeNodeConst(node)));
+}
+
+BfBbox2 bfQuadtreeNodeGetBbox(BfQuadtreeNode const *node) {
+  return node->bbox;
+}
+
+void bfQuadtreeNodeGetSplit(BfQuadtreeNode const *node, BfPoint2 split) {
+  split[0] = node->split[0];
+  split[1] = node->split[1];
 }

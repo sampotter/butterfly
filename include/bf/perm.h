@@ -20,3 +20,4 @@ BfPerm bfPermIdentity(BfSize size);
 BfPerm *bfPermGetReversePerm(BfPerm const *perm);
 BfSize bfPermGetSize(BfPerm const *perm);
 BfSize bfPermGetNumBytes(BfPerm const *perm);
+BfSize bfPermGetIndex(BfPerm const *perm, BfSize i);

@@ -42,12 +42,14 @@ int main(int argc, char const *argv[]) {
 
   BF_ERROR_BEGIN();
 
-  BfLayerPotential layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
+  BfHelm2 helm;
+
+  helm.layerPot = BF_LAYER_POTENTIAL_UNKNOWN;
   if (!strcmp(layerPotStr, "S")) {
-    layerPot = BF_LAYER_POTENTIAL_SINGLE;
+    helm.layerPot = BF_LAYER_POTENTIAL_SINGLE;
     printf("using single-layer potential\n");
   } else if (!strcmp(layerPotStr, "Sp")) {
-    layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
+    helm.layerPot = BF_LAYER_POTENTIAL_PV_NORMAL_DERIV_SINGLE;
     printf("using PV of normal derivative of single-layer potential\n");
   } else if (!strcmp(layerPotStr, "D")) {
     printf("ERROR: double layer not yet implemented\n");
@@ -60,7 +62,7 @@ int main(int argc, char const *argv[]) {
   BfMatProduct *factorization = NULL;
   BfMat *factor = NULL;
 
-  BfReal K = atoi(argv[1]);
+  helm.k = atof(argv[1]);
 
   char const *pointsPath = argv[6];
   BfPoints2 points;
@@ -70,7 +72,7 @@ int main(int argc, char const *argv[]) {
 
   char const *normalsPath = argv[8];
   BfVectors2 *tgtNormals = NULL;
-  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+  if (helm.layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     tgtNormals = bfVectors2NewFromFile(normalsPath);
     HANDLE_ERROR();
     printf("read %lu unit normals from %s\n", tgtNormals->size, normalsPath);
@@ -117,22 +119,22 @@ int main(int argc, char const *argv[]) {
   /* Compute the groundtruth subblock of the kernel matrix induced by
    * the source and target nodes */
 
-  BfPoints2 tgtNodePts = bfQuadtreeNodeGetPoints(bfTreeNodeToQuadtreeNode(treeNodeTgt), quadtree);
+  BfPoints2 *tgtNodePts = bfQuadtreeNodeGetPoints(bfTreeNodeToQuadtreeNode(treeNodeTgt), quadtree);
   HANDLE_ERROR();
 
-  bfSavePoints2(&tgtNodePts, "tgtNodePts.bin");
+  bfSavePoints2(tgtNodePts, "tgtNodePts.bin");
   HANDLE_ERROR();
   puts("wrote target node points to tgtNodePts.bin");
 
-  BfPoints2 srcNodePts = bfQuadtreeNodeGetPoints(quadtreeNodeSrc, quadtree);
+  BfPoints2 *srcNodePts = bfQuadtreeNodeGetPoints(quadtreeNodeSrc, quadtree);
   HANDLE_ERROR();
 
-  bfSavePoints2(&srcNodePts, "srcNodePts.bin");
+  bfSavePoints2(srcNodePts, "srcNodePts.bin");
   HANDLE_ERROR();
   puts("wrote source node points to srcNodePts.bin");
 
   BfVectors2 *tgtNodeNormals = NULL;
-  if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+  if (helm.layerPot != BF_LAYER_POTENTIAL_SINGLE) {
     tgtNodeNormals = bfQuadtreeNodeGetUnitNormals(quadtreeNodeTgt, quadtree);
     HANDLE_ERROR();
 
@@ -142,8 +144,7 @@ int main(int argc, char const *argv[]) {
     puts("wrote target unit normals to tgtNormals.bin");
   }
 
-  BfMat *Z_gt = bfHelm2GetKernelMatrix(
-    &srcNodePts, &tgtNodePts, NULL, tgtNodeNormals, K, layerPot, NULL, NULL);
+  BfMat *Z_gt = bfHelm2GetKernelMatrix(&helm, srcNodePts, tgtNodePts, NULL, tgtNodeNormals);
   HANDLE_ERROR();
 
   printf("computed groundtruth subblock of kernel matrix\n");
@@ -157,14 +158,8 @@ int main(int argc, char const *argv[]) {
 
   /* TODO: wrap this up into a single function in fac */
 
-  BfTreeLevelIter srcLevelIter, tgtLevelIter;
-  numFactors = bfFacHelm2Prepare(
-    quadtreeNodeSrc, quadtreeNodeTgt, K, &srcLevelIter, &tgtLevelIter);
-  if (numFactors == 0)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
-
-  factorization = bfFacHelm2Make(
-    quadtree, quadtree, K, layerPot, NULL, NULL, &srcLevelIter, &tgtLevelIter, numFactors);
+  factorization = bfMatToMatProduct(
+    bfFacHelm2MakeSingleLevel(&helm, quadtreeNodeSrc, quadtreeNodeTgt));
   HANDLE_ERROR();
   printf("computed kernel matrix's butterfly factorization\n");
 
@@ -237,9 +232,9 @@ int main(int argc, char const *argv[]) {
 #ifdef BF_DEBUG
       BfFacAux *facAux = matBlock->block[j]->aux;
 
-      BfPoints2 *srcChildPts = &facAux->srcPts[0];
-      BfPoints2 *srcPts = &facAux->srcPts[1];
-      BfPoints2 *tgtChildPts = &facAux->tgtPts;
+      BfPoints2 *srcChildPts = facAux->srcPts[0];
+      BfPoints2 *srcPts = facAux->srcPts[1];
+      BfPoints2 *tgtChildPts = facAux->tgtPts;
 
       sprintf(filename, "srcPtsOrig%lu.bin", j);
       bfSavePoints2(srcChildPts, filename);
@@ -252,7 +247,7 @@ int main(int argc, char const *argv[]) {
       sprintf(filename, "tgtPts%lu.bin", j);
       bfSavePoints2(tgtChildPts, filename);
 
-      if (layerPot != BF_LAYER_POTENTIAL_SINGLE) {
+      if (helm.layerPot != BF_LAYER_POTENTIAL_SINGLE) {
         sprintf(filename, "tgtNormals%lu.bin", j);
         bfSaveVectors2(tgtNormals, filename);
       }
@@ -268,10 +263,10 @@ int main(int argc, char const *argv[]) {
   bfComplexRandn(3, q);
 
   BfMatDenseComplex *Q = bfMatDenseComplexNew();
-  bfMatDenseComplexInit(Q, srcNodePts.size, 1);
+  bfMatDenseComplexInit(Q, srcNodePts->size, 1);
 
-  for (BfSize i = 0; i < srcNodePts.size; ++i)
-    Q->data[i] = srcNodePts.data[i][0]*q[0] + srcNodePts.data[i][1]*q[1] + q[2];
+  for (BfSize i = 0; i < srcNodePts->size; ++i)
+    Q->data[i] = srcNodePts->data[i][0]*q[0] + srcNodePts->data[i][1]*q[1] + q[2];
 
   puts("set up test problem");
 
@@ -288,10 +283,10 @@ int main(int argc, char const *argv[]) {
 
   FILE *fp = fopen("info.txt", "w");
   fprintf(fp, "layerPot %s\n", layerPotStr);
-  fprintf(fp, "numSrcNodePts %lu\n", srcNodePts.size);
-  fprintf(fp, "numTgtNodePts %lu\n", tgtNodePts.size);
+  fprintf(fp, "numSrcNodePts %lu\n", srcNodePts->size);
+  fprintf(fp, "numTgtNodePts %lu\n", tgtNodePts->size);
   fprintf(fp, "numFactors %lu\n", numFactors);
-  fprintf(fp, "K %g\n", K);
+  fprintf(fp, "k %g\n", helm.k);
   fclose(fp);
   puts("wrote simulation information to info.txt");
 
@@ -301,14 +296,12 @@ int main(int argc, char const *argv[]) {
 
   bfMatDenseComplexDeinitAndDealloc(&Q);
   bfMatDelete(&Z_gt);
-  bfFreePoints2(&srcNodePts);
-  bfFreePoints2(&tgtNodePts);
+  bfPoints2DeinitAndDealloc(&srcNodePts);
+  bfPoints2DeinitAndDealloc(&tgtNodePts);
   // bfQuadtreeDeinitAndDealloc(&tree);
   bfFreePoints2(&points);
   if (tgtNormals != NULL)
     bfVectors2DeinitAndDealloc(&tgtNormals);
-  bfTreeLevelIterDeinit(&srcLevelIter);
-  bfTreeLevelIterDeinit(&tgtLevelIter);
   bfMatProductDeinitAndDealloc(&factorization);
   bfMatDelete(&V_gt);
   bfMatDelete(&V);
