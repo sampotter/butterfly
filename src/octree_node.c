@@ -293,7 +293,7 @@ void bfOctreeNodeInitRoot(BfOctreeNode *node, BfOctree const *tree, BfSize maxLe
 
   octreeNodeInitRecursive(node, tree->points, maxLeafSize,
                           boundingBox, 0, tree->points->size,
-                          tree->super.perm.index, 0);
+                          tree->super.perm->index, 0);
   HANDLE_ERROR();
 
   BF_ERROR_END() {}

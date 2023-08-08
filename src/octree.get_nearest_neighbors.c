@@ -114,7 +114,7 @@ static void addLeafNode(Context *c, BfTreeNode const *node) {
   BfSize i1 = bfTreeNodeGetLastIndex(node);
 
   for (BfSize i = i0; i < i1; ++i) {
-    addPoint(c, c->octree->super.perm.index[i]);
+    addPoint(c, c->octree->super.perm->index[i]);
     HANDLE_ERROR();
   }
 

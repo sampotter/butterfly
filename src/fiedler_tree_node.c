@@ -513,7 +513,7 @@ static void initRecursive(BfFiedlerTreeNode *node,
 
 #if BF_DEBUG
   for (BfSize i = i0; i < i1; ++i) BF_ASSERT(perm[i] != BF_SIZE_BAD_VALUE);
-  BF_ASSERT(bfSizeIsPerm(tree->super.perm.size, tree->super.perm.index));
+  BF_ASSERT(bfSizeIsPerm(tree->super.perm->size, tree->super.perm->index));
 #endif
 
   bfMemFree(newPerm);
@@ -578,7 +578,7 @@ void bfFiedlerTreeNodeInitRoot(BfFiedlerTreeNode *node, BfFiedlerTree const *tre
     keepNodeTrimeshes,
     /* i0: */ 0,
     /* i1: */ bfTrimeshGetNumVerts(tree->trimesh),
-    tree->super.perm.index,
+    tree->super.perm->index,
     /* currentDepth: */ 0);
 
   BF_ERROR_END() {

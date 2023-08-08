@@ -10,8 +10,11 @@ typedef struct BfPerm {
 } BfPerm;
 
 BfPerm *bfPermGetView(BfPerm *perm);
+BfPerm *bfPermGetRangeView(BfPerm *perm, BfSize i0, BfSize i1);
 BfPerm *bfPermNew(void);
+BfPerm *bfPermNewIdentity(BfSize size);
 void bfPermInitEmpty(BfPerm *perm, BfSize size);
+void bfPermInitIdentity(BfPerm *perm, BfSize size);
 void bfPermDeinit(BfPerm *perm);
 void bfPermDealloc(BfPerm **perm);
 void bfPermDeinitAndDealloc(BfPerm **perm);

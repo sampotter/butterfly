@@ -32,7 +32,7 @@ struct BfTree {
 
   /* Permutation from domain ordering to the tree ordering. To undo,
    * use `bfPermGetReversePerm` to get the inverse permutation. */
-  BfPerm perm;
+  BfPerm *perm;
 };
 
 void bfTreeInit(BfTree *tree, BfTreeVtable *vtbl, BfTreeNode *root, BfSize size);

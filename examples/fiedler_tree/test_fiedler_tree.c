@@ -57,7 +57,7 @@ void checkPerm(BfTree const *tree, BfTreeNode const *treeNode, void *arg) {
 
   for (BfSize i = i0; i < i1; ++i) {
     BfReal const *v = bfPoints3GetPtrConst(
-      fiedlerTree->trimesh->verts, tree->perm.index[i]);
+      fiedlerTree->trimesh->verts, tree->perm->index[i]);
 
     BF_ASSERT(bfPoints3ContainsApprox(fiedlerTreeNode->trimesh->verts, v, tol));
   }

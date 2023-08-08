@@ -6,6 +6,8 @@
 #include <bf/mat_perm.h>
 #include <bf/mem.h>
 
+#include "macros.h"
+
 typedef enum {
   PERM_TYPE_BF,
   PERM_TYPE_LAPACK,
@@ -28,15 +30,49 @@ BfPerm *bfPermGetView(BfPerm *perm) {
   return permView;
 }
 
-BfPerm *bfPermNew() {
+BfPerm *bfPermGetRangeView(BfPerm *perm, BfSize i0, BfSize i1) {
+  BF_ERROR_BEGIN();
+
+  if (i0 > i1 || i1 > perm->size)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfPerm *permRangeView = bfMemAlloc(1, sizeof(BfPerm));
+  HANDLE_ERROR();
+
+  permRangeView->index = &perm->index[i0];
+  permRangeView->size = i1 - i0;
+  permRangeView->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return permRangeView;
+}
+
+BfPerm *bfPermNew(void) {
   BF_ERROR_BEGIN();
 
   BfPerm *perm = bfMemAlloc(1, sizeof(BfPerm));
-  if (perm == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   BF_ERROR_END() {
-    perm = NULL;
+    BF_DIE();
+  }
+
+  return perm;
+}
+
+BfPerm *bfPermNewIdentity(BfSize size) {
+  BF_ERROR_BEGIN();
+
+  BfPerm *perm = bfPermNew();
+  HANDLE_ERROR();
+
+  bfPermInitIdentity(perm, size);
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
   return perm;
@@ -46,8 +82,7 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
   BF_ERROR_BEGIN();
 
   perm->index = bfMemAlloc(size, sizeof(BfSize));
-  if (perm->index == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   for (BfSize i = 0; i < size; ++i)
     perm->index[i] = BF_SIZE_BAD_VALUE;
@@ -58,6 +93,24 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
 
   BF_ERROR_END() {
     bfPermDeinit(perm);
+  }
+}
+
+void bfPermInitIdentity(BfPerm *perm, BfSize size) {
+  BF_ERROR_BEGIN();
+
+  perm->index = bfMemAlloc(size, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < size; ++i)
+    perm->index[i] = i;
+
+  perm->size = size;
+
+  perm->isView = false;
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 }
 

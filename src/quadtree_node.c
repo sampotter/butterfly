@@ -265,7 +265,7 @@ void bfQuadtreeNodeInitRoot(BfQuadtreeNode *node, BfQuadtree const *tree) {
   bfBbox2GetCenter(&bbox, node->split);
 
   quadtreeNodeInitRecursive(node, tree->points, bbox, 0, tree->points->size,
-                            tree->super.perm.index, 0);
+                            tree->super.perm->index, 0);
   HANDLE_ERROR();
 
   BF_ERROR_END() {

@@ -24,7 +24,7 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
   tree->vtable = vtable;
   tree->root = root;
 
-  tree->perm = bfPermIdentity(size);
+  tree->perm = bfPermNewIdentity(size);
   HANDLE_ERROR();
 
   BF_ERROR_END()
@@ -33,7 +33,7 @@ void bfTreeInit(BfTree *tree, BfTreeVtable *vtable, BfTreeNode *root, BfSize siz
 
 void bfTreeDeinit(BfTree *tree) {
   tree->vtable = NULL;
-  bfPermDeinit(&tree->perm);
+  bfPermDeinitAndDealloc(&tree->perm);
   bfTreeNodeDelete(&tree->root);
 }
 
@@ -50,11 +50,11 @@ BfTreeNode const *bfTreeGetRootNodeConst(BfTree const *tree) {
 }
 
 BfPerm *bfTreeGetPerm(BfTree *tree) {
-  return &tree->perm;
+  return tree->perm;
 }
 
 BfPerm const *bfTreeGetPermConst(BfTree const *tree) {
-  return &tree->perm;
+  return tree->perm;
 }
 
 BfSize bfTreeGetMaxDepth(BfTree const *tree) {

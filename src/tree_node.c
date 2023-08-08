@@ -156,7 +156,7 @@ BfSize const *bfTreeNodeGetIndexPtrConst(BfTreeNode const *treeNode, BfTree cons
   if (tree == NULL)
     tree = bfTreeNodeGetTreeConst(treeNode);
   BfSize index = bfTreeNodeGetFirstIndex(treeNode);
-  return &tree->perm.index[index];
+  return &tree->perm->index[index];
 }
 
 BfTree *bfTreeNodeGetTree(BfTreeNode *node) {
