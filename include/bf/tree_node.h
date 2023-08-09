@@ -8,10 +8,12 @@ typedef void (*BfTreeMapConstFunc)(BfTree const *, BfTreeNode const *, void *);
 
 /** Interface: TreeNode */
 
-BfType bfTreeNodeGetType(BfTreeNode const *);
+BfTreeNode *bfTreeNodeCopy(BfTreeNode const *treeNode);
+BfType bfTreeNodeGetType(BfTreeNode const *treeNode);
 void bfTreeNodeDelete(BfTreeNode **treeNode);
 
 typedef struct BfTreeNodeVtable {
+  __typeof__(&bfTreeNodeCopy) Copy;
   __typeof__(&bfTreeNodeGetType) GetType;
   __typeof__(&bfTreeNodeDelete) Delete;
 } BfTreeNodeVtable;

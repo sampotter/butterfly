@@ -8,6 +8,10 @@
 
 /** Interface: TreeNode */
 
+BfTreeNode *bfTreeNodeCopy(BfTreeNode const *node) {
+  return node->vtbl->Copy(node);
+}
+
 BfType bfTreeNodeGetType(BfTreeNode const *node) {
   return node->vtbl->GetType(node);
 }
