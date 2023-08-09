@@ -889,22 +889,12 @@ BfSize bfMatBlockDenseNumBlocks(BfMatBlockDense const *matBlock) {
 
 BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlockDense const *matBlockDense) {
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  if (bfMatGetType(mat) != BF_TYPE_MAT_BLOCK_DENSE) {
-    bfSetError(BF_ERROR_TYPE_ERROR);
-    return BF_SIZE_BAD_VALUE;
-  } else {
-    return mat->numRows;
-  }
+  return bfMatIsTransposed(mat) ? mat->numCols : mat->numRows;
 }
 
 BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense) {
   BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  if (bfMatGetType(mat) != BF_TYPE_MAT_BLOCK_DENSE) {
-    bfSetError(BF_ERROR_TYPE_ERROR);
-    return BF_SIZE_BAD_VALUE;
-  } else {
-    return mat->numCols;
-  }
+  return bfMatIsTransposed(mat) ? mat->numRows : mat->numCols;
 }
 
 BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize i) {
