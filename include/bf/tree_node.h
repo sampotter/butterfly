@@ -22,6 +22,8 @@ struct BfTreeNode {
   BfTreeNodeVtable *vtbl;
 
   /* Whether or not this node is the root node. */
+  // TODO: we can combine `isRoot` and `index` by signaling `isRoot`
+  // with `index == BF_SIZE_BAD_VALUE`
   bool isRoot;
 
   /* The index of this node (`super.child[index]` gives this node). */
