@@ -149,7 +149,7 @@ BfMat *bfFacSpanGetMat(BfFacSpan const *facSpan, BfPolicy policy) {
     BfMat *rowBlock = bfPtrArrayGet(rowBlocks, i);
     bfMatDelete(&rowBlock);
   }
-  bfPtrArrayDelete(&rowBlocks);
+  bfPtrArrayDeinitAndDealloc(&rowBlocks);
 
   return bfMatBlockDenseToMat(matBlockDense);
 }

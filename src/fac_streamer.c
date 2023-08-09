@@ -116,7 +116,7 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
       bfMatDelete(&entry->mat);
       bfMemFree(entry);
     }
-    bfPtrArrayDelete(&facStreamer->prevPhis);
+    bfPtrArrayDeinitAndDealloc(&facStreamer->prevPhis);
   }
 
   facStreamer->facSpec = NULL;

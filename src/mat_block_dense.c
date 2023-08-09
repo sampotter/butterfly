@@ -428,7 +428,7 @@ BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
     BfMat *block = bfPtrArrayGet(blocks, i);
     bfMatDelete(&block);
   }
-  bfPtrArrayDelete(&blocks);
+  bfPtrArrayDeinitAndDealloc(&blocks);
 
   return bfMatBlockDenseToMat(result);
 }

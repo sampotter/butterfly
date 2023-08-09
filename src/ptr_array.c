@@ -10,12 +10,71 @@
 
 /** Implementation: PtrArray */
 
+BfPtrArray *bfPtrArrayGetView(BfPtrArray *ptrArray) {
+  BF_ERROR_BEGIN();
+
+  BfPtrArray *ptrArrayView = bfMemAlloc(1, sizeof(BfPtrArray));
+  HANDLE_ERROR();
+
+  *ptrArrayView = *ptrArray;
+
+  ptrArrayView->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return ptrArrayView;
+}
+
+BfPtrArray *bfPtrArrayCopy(BfPtrArray *ptrArray) {
+  BF_ERROR_BEGIN();
+
+  BfPtrArray *ptrArrayCopy = bfMemAlloc(1, sizeof(BfPtrArray));
+  HANDLE_ERROR();
+
+  ptrArrayCopy->data = bfMemAlloc(ptrArray->num_elts, sizeof(BfPtr));
+  HANDLE_ERROR();
+
+  bfMemCopy(ptrArray->data, ptrArray->num_elts, sizeof(BfPtr), ptrArrayCopy->data);
+
+  ptrArrayCopy->capacity = ptrArray->num_elts;
+  ptrArrayCopy->num_elts = ptrArray->num_elts;
+  ptrArrayCopy->isView = false;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return ptrArrayCopy;
+}
+
+BfPtrArray *bfPtrArraySteal(BfPtrArray *ptrArray) {
+  BF_ERROR_BEGIN();
+
+  if (ptrArray->isView)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfPtrArray *ptrArrayStolen = bfMemAlloc(1, sizeof(BfPtrArray));
+  HANDLE_ERROR();
+
+  *ptrArrayStolen = *ptrArray;
+
+  BF_ASSERT(!ptrArrayStolen->isView);
+  ptrArray->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return ptrArrayStolen;
+}
+
 BfPtrArray *bfPtrArrayNewWithDefaultCapacity() {
   BF_ERROR_BEGIN();
 
   BfPtrArray *ptrArray = bfMemAlloc(1, sizeof(BfPtrArray));
-  if (ptrArray == NULL)
-    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+  HANDLE_ERROR();
 
   bfInitPtrArrayWithDefaultCapacity(ptrArray);
   HANDLE_ERROR();
@@ -56,13 +115,6 @@ void bfInitPtrArrayWithDefaultCapacity(BfPtrArray *arr) {
   bfInitPtrArray(arr, BF_ARRAY_DEFAULT_CAPACITY);
 }
 
-void bfMakeEmptyPtrArrayView(BfPtrArray *arr) {
-  arr->flags = BF_PTR_ARRAY_FLAG_NONE;
-  arr->data = NULL;
-  arr->capacity = 0;
-  arr->num_elts = 0;
-}
-
 void bfPtrArrayDeinit(BfPtrArray *arr) {
   bfMemFree(arr->data);
   bfMemZero(arr, 1, sizeof(BfPtrArray));
@@ -73,30 +125,9 @@ void bfPtrArrayDealloc(BfPtrArray **arr) {
   *arr = NULL;
 }
 
-void bfPtrArrayDelete(BfPtrArray **arr) {
+void bfPtrArrayDeinitAndDealloc(BfPtrArray **arr) {
   bfPtrArrayDeinit(*arr);
   bfPtrArrayDealloc(arr);
-}
-
-BfPtrArray bfPtrArrayCopy(BfPtrArray *arr) {
-  BF_ERROR_BEGIN();
-
-  BfPtrArray arrCopy = {
-    .flags = BF_PTR_ARRAY_FLAG_NONE,
-    .data = bfMemAllocAndZero(arr->capacity, sizeof(BfPtr)),
-    .capacity = arr->capacity,
-    .num_elts = arr->num_elts
-  };
-
-  if (arrCopy.data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  bfMemCopy(arr->data, arr->num_elts, sizeof(BfPtr), arrCopy.data);
-
-  BF_ERROR_END()
-    bfMemFree(arrCopy.data);
-
-  return arrCopy;
 }
 
 BfSize bfPtrArraySize(BfPtrArray const *arr) {
@@ -171,29 +202,34 @@ bfPtrArrayGetLast(BfPtrArray const *arr, BfPtr *ptr)
   *ptr = arr->data[arr->num_elts - 1];
 }
 
-void
-bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize start, BfSize end,
-                       BfPtrArray *view)
-{
-  if (start > end) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
+BfPtrArray *bfPtrArrayGetRangeView(BfPtrArray const *arr, BfSize i0, BfSize i1) {
+  BF_ERROR_BEGIN();
+
+  if (i0 > i1)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  if (i1 > arr->num_elts)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfPtrArray *rangeView = bfPtrArrayGetView((BfPtrArray *)arr);
+  HANDLE_ERROR();
+
+  rangeView->data = &rangeView->data[i0];
+  rangeView->num_elts = i1 - i0;
+
+  /* The `capacity` variable should tell us how much space there is
+   * until the end of the dynamically allocated array. We need to
+   * shift it here to make sure it points to the right place. */
+  rangeView->capacity -= i0;
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
-  if (end > arr->num_elts) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
-  }
-
-  view->flags = BF_PTR_ARRAY_FLAG_VIEW;
-  view->data = arr->data + start;
-  view->capacity = end - start;
-  view->num_elts = end - start;
+  return rangeView;
 }
 
-void
-bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, void *arg)
-{
+void bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, void *arg) {
   for (BfSize i = 0; i < arr->num_elts; ++i) {
     func(arr->data[i], arg);
     enum BfError error = bfGetError();
@@ -204,9 +240,46 @@ bfMapPtrArray(BfPtrArray *arr, BfPtrFunc func, void *arg)
   }
 }
 
+BfPtr bfPtrArrayPopFirst(BfPtrArray *arr) {
+  BF_ERROR_BEGIN();
+
+  BfPtr ptr = NULL;
+
+  if (arr->num_elts == 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  ptr = arr->data[0];
+  bfMemMove(arr->data + 1, arr->num_elts - 1, sizeof(BfPtr), arr->data);
+#if BF_DEBUG
+  arr->data[arr->num_elts - 1] = NULL;
+#endif
+  --arr->num_elts;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return ptr;
+}
+
 BfPtr bfPtrArrayPopLast(BfPtrArray *arr) {
-  BfPtr ptr = arr->data[--arr->num_elts];
-  arr->data[arr->num_elts] = NULL;
+  BF_ERROR_BEGIN();
+
+  BfPtr ptr = NULL;
+
+  if (arr->num_elts == 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  ptr = arr->data[arr->num_elts - 1];
+#if BF_DEBUG
+  arr->data[arr->num_elts - 1] = NULL;
+#endif
+  --arr->num_elts;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
   return ptr;
 }
 

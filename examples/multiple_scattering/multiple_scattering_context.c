@@ -630,7 +630,7 @@ void assemblePreconditioner(MultipleScatteringContext *context) {
     BfMat *MBlock = bfPtrArrayGet(MBlocks, i);
     bfMatDelete(&MBlock);
   }
-  bfPtrArrayDelete(&MBlocks);
+  bfPtrArrayDeinitAndDealloc(&MBlocks);
 }
 
 static BfReal getMaxRelErrForFmmTol(MultipleScatteringContext *context, BfReal tolFmm) {
@@ -1115,7 +1115,7 @@ void deinit(MultipleScatteringContext *context) {
       BfLu *KBlockLu = bfPtrArrayGet(context->KBlockLus, i);
       bfLuDelete(&KBlockLu);
     }
-    bfPtrArrayDelete(&context->KBlockLus);
+    bfPtrArrayDeinitAndDealloc(&context->KBlockLus);
   }
 
   if (context->M != NULL)
