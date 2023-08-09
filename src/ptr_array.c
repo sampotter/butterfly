@@ -29,17 +29,15 @@ BfPtrArray *bfPtrArrayNewWithDefaultCapacity() {
 
 BfPtrArray bfGetUninitializedPtrArray() {
   return (BfPtrArray) {
-    .flags = BF_PTR_ARRAY_FLAG_NONE,
     .data = NULL,
     .capacity = 0,
-    .num_elts = 0
+    .num_elts = 0,
+    .isView = false
   };
 }
 
 void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
   BF_ERROR_BEGIN();
-
-  arr->flags = BF_PTR_ARRAY_FLAG_NONE;
 
   arr->data = bfMemAllocAndZero(capacity, sizeof(BfPtr));
   if (arr->data == NULL)
@@ -47,6 +45,7 @@ void bfInitPtrArray(BfPtrArray *arr, BfSize capacity) {
 
   arr->capacity = capacity;
   arr->num_elts = 0;
+  arr->isView = false;
 
   BF_ERROR_END() {
     bfPtrArrayDeinit(arr);
@@ -279,14 +278,13 @@ BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity() {
 void bfConstPtrArrayInit(BfConstPtrArray *arr, BfSize capacity) {
   BF_ERROR_BEGIN();
 
-  arr->flags = BF_PTR_ARRAY_FLAG_NONE;
-
   arr->data = bfMemAllocAndZero(capacity, sizeof(BfPtr));
   if (arr->data == NULL)
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   arr->capacity = capacity;
   arr->num_elts = 0;
+  arr->isView = true;
 
   BF_ERROR_END() {
     bfConstPtrArrayDeinit(arr);

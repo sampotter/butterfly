@@ -4,15 +4,11 @@
 #include "error.h"
 #include "types.h"
 
-enum BfPtrArrayFlags {
-  BF_PTR_ARRAY_FLAG_NONE = 0,
-  BF_PTR_ARRAY_FLAG_VIEW = 1 << 0
-};
-
 struct BfPtrArray {
-  enum BfPtrArrayFlags flags;
   BfPtr *data;
-  BfSize capacity, num_elts;
+  BfSize capacity;
+  BfSize num_elts;
+  bool isView;
 };
 
 typedef void (*BfPtrFunc)(BfPtr elt_ptr, BfPtr arg_ptr);
@@ -42,9 +38,9 @@ void bfPtrArrayCopyData(BfPtrArray const *ptrArray, BfPtr *dst);
 void bfPtrArrayRemove(BfPtrArray *ptrArray, BfSize i);
 
 struct BfConstPtrArray {
-  enum BfPtrArrayFlags flags;
   BfConstPtr *data;
   BfSize capacity, num_elts;
+  bool isView;
 };
 
 BfConstPtrArray *bfConstPtrArrayNewWithDefaultCapacity(void);
