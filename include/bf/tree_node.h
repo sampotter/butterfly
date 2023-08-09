@@ -51,6 +51,7 @@ struct BfTreeNode {
   BfSize depth;
 };
 
+BfTreeNode *bfTreeNodeAlloc(void);
 void bfTreeNodeInitRoot(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, BfTree const *tree, BfSize maxNumChildren);
 void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot, void *parent, BfSize maxNumChildren, BfSize index, BfSize depth);
 void bfTreeNodeDeinit(BfTreeNode *treeNode);

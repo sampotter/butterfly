@@ -18,6 +18,19 @@ void bfTreeNodeDelete(BfTreeNode **treeNode) {
 
 /** Implementation: TreeNode */
 
+BfTreeNode *bfTreeNodeAlloc(void) {
+  BF_ERROR_BEGIN();
+
+  BfTreeNode *node = bfMemAlloc(1, sizeof(BfTreeNode));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return node;
+}
+
 void bfTreeNodeInitRoot(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, BfTree const *tree, BfSize maxNumChildren) {
   bfTreeNodeInit(treeNode, vtbl, true, (void *)tree, maxNumChildren, BF_SIZE_BAD_VALUE, 0);
 }
