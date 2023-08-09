@@ -632,14 +632,14 @@ bfFacHelm2Prepare(BfHelm2 const *helm,
    *   node is smaller than corresponding the number of points */
 
   while (currentSrcDepth > currentTgtDepth &&
-         !allRankEstimatesAreOK(helm, tgtNode, &srcLevelIter->levelNodes)) {
+         !allRankEstimatesAreOK(helm, tgtNode, srcLevelIter->levelNodes)) {
     bfTreeLevelIterNext(srcLevelIter);
     --currentSrcDepth;
   }
 
   /* get number of factors in the butterfly factorization... if we
    * can't butterfly this matrix, return 0 to signal this */
-  numFactors = allRankEstimatesAreOK(helm, tgtNode, &srcLevelIter->levelNodes) ?
+  numFactors = allRankEstimatesAreOK(helm, tgtNode, srcLevelIter->levelNodes) ?
       currentSrcDepth - currentTgtDepth + 2 : 0;
 
   BF_ERROR_END() {
@@ -665,7 +665,7 @@ BfMatProduct *bfFacHelm2Make(BfHelm2 const *helm, BfQuadtree const *srcTree, BfQ
   /* make the first factor in the butterfly factorization: this is the
    * factor which initially shifts the charges on the source points to
    * the first level of source circles */
-  factor[0] = makeFirstFactor(helm, srcTree, &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
+  factor[0] = makeFirstFactor(helm, srcTree, srcLevelIter->levelNodes, tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   for (BfSize i = 1; i < numFactors - 1; ++i) {
@@ -674,7 +674,7 @@ BfMatProduct *bfFacHelm2Make(BfHelm2 const *helm, BfQuadtree const *srcTree, BfQ
 
     /* make the next factor */
     factor[i] = makeFactor(
-      helm, factor[i - 1], &srcLevelIter->levelNodes, &tgtLevelIter->levelNodes);
+      helm, factor[i - 1], srcLevelIter->levelNodes, tgtLevelIter->levelNodes);
     HANDLE_ERROR();
 
     /* go down a level on the target tree */
@@ -685,8 +685,8 @@ BfMatProduct *bfFacHelm2Make(BfHelm2 const *helm, BfQuadtree const *srcTree, BfQ
    * evaluation factor, which computes the potential at each target
    * point due to the charges on the final source circle */
   factor[numFactors - 1] = makeLastFactor(
-    helm, tgtTree, factor[numFactors - 2], &srcLevelIter->levelNodes,
-    &tgtLevelIter->levelNodes);
+    helm, tgtTree, factor[numFactors - 2], srcLevelIter->levelNodes,
+    tgtLevelIter->levelNodes);
   HANDLE_ERROR();
 
   BfMatProduct *prod = bfMatProductNew();
@@ -963,7 +963,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfHelm2 const *helm, BfQuadtree const *srcTree, 
   bfTreeLevelIterNext(&srcLevelIter);
   HANDLE_ERROR();
 
-  BfPtrArray const *srcLevelNodes = &srcLevelIter.levelNodes;
+  BfPtrArray const *srcLevelNodes = srcLevelIter.levelNodes;
   BfSize numSrcNodes = bfPtrArraySize(srcLevelNodes);
 
   /** Get nodes on second level of target (row) tree: */
@@ -978,7 +978,7 @@ BfMat *bfFacHelm2MakeMultilevel(BfHelm2 const *helm, BfQuadtree const *srcTree, 
   bfTreeLevelIterNext(&tgtLevelIter);
   HANDLE_ERROR();
 
-  BfPtrArray const *tgtLevelNodes = &tgtLevelIter.levelNodes;
+  BfPtrArray const *tgtLevelNodes = tgtLevelIter.levelNodes;
   BfSize numTgtNodes = bfPtrArraySize(tgtLevelNodes);
 
   /** Build the multilevel butterfly factorization: */

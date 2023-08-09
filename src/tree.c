@@ -72,8 +72,8 @@ map_levelOrder(BfTree *tree, BfTreeNode *node,
   HANDLE_ERROR();
 
   while (!bfTreeLevelIterIsDone(&iter)) {
-    for (BfSize i = 0; i < bfPtrArraySize(&iter.levelNodes); ++i) {
-      BfTreeNode *currentNode = bfPtrArrayGet(&iter.levelNodes, i);
+    for (BfSize i = 0; i < bfPtrArraySize(iter.levelNodes); ++i) {
+      BfTreeNode *currentNode = bfPtrArrayGet(iter.levelNodes, i);
       func(tree, currentNode, arg);
       HANDLE_ERROR();
     }
@@ -117,8 +117,8 @@ mapConst_levelOrder(BfTree const *tree, BfTreeNode const *node,
   HANDLE_ERROR();
 
   while (!bfTreeLevelIterIsDone(&iter)) {
-    for (BfSize i = 0; i < bfPtrArraySize(&iter.levelNodes); ++i) {
-      BfTreeNode const *currentNode = bfPtrArrayGet(&iter.levelNodes, i);
+    for (BfSize i = 0; i < bfPtrArraySize(iter.levelNodes); ++i) {
+      BfTreeNode const *currentNode = bfPtrArrayGet(iter.levelNodes, i);
       func(tree, currentNode, arg);
       HANDLE_ERROR();
     }
@@ -157,28 +157,25 @@ BfSize bfTreeGetNumPoints(BfTree const *tree) {
 BfTreeNode *bfTreeGetNode(BfTree *tree, BfSize depth, BfSize nodeIndex) {
   BF_ERROR_BEGIN();
 
-  BfPtrArray levelNodes;
   BfTreeNode *node = NULL;
 
-  levelNodes = bfTreeGetLevelPtrArray(tree, depth);
+  BfPtrArray *levelNodes = bfTreeGetLevelPtrArray(tree, depth);
   HANDLE_ERROR();
 
-  node = bfPtrArrayGet(&levelNodes, nodeIndex);
+  node = bfPtrArrayGet(levelNodes, nodeIndex);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
     node = NULL;
   }
 
-  bfPtrArrayDeinit(&levelNodes);
+  bfPtrArrayDeinitAndDealloc(&levelNodes);
 
   return node;
 }
 
-BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
+BfPtrArray *bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
   BF_ERROR_BEGIN();
-
-  BfPtrArray levelNodes = bfGetUninitializedPtrArray();
 
   BfSize maxDepth = bfTreeGetMaxDepth(tree);
 
@@ -192,17 +189,18 @@ BfPtrArray bfTreeGetLevelPtrArray(BfTree *tree, BfSize depth) {
   for (BfSize _ = 0; _ < depth; ++_)
     bfTreeLevelIterNext(&iter);
 
-  levelNodes = bfPtrArrayCopy(&iter.levelNodes);
+  BfPtrArray *levelNodes = bfPtrArrayCopy(iter.levelNodes);
   HANDLE_ERROR();
 
-  BF_ERROR_END()
-    bfPtrArrayDeinit(&levelNodes);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   bfTreeLevelIterDeinit(&iter);
 
 #if BF_DEBUG
-  for (BfSize k = 0; k < bfPtrArraySize(&levelNodes); ++k)
-    BF_ASSERT(bfPtrArrayGet(&levelNodes, k) != NULL);
+  for (BfSize k = 0; k < bfPtrArraySize(levelNodes); ++k)
+    BF_ASSERT(bfPtrArrayGet(levelNodes, k) != NULL);
 #endif
 
   return levelNodes;

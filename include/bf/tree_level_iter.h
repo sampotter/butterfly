@@ -7,7 +7,7 @@
 struct BfTreeLevelIter {
   BfTreeTraversal traversal;
   BfPtrArray nodes;
-  BfPtrArray levelNodes;
+  BfPtrArray *levelNodes;
   void *aux;
 };
 
