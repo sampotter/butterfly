@@ -66,6 +66,7 @@ BfMatDenseComplex const *bfMatConstToMatDenseComplexConst(BfMat const *mat);
 
 BfMatDenseComplex *bfMatDenseComplexNew(void);
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data);
+BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);

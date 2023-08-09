@@ -127,13 +127,7 @@ int main(int argc, char const *argv[]) {
   BfMat *A_BF = bfFacHelm2MakeMultilevel(&helm, &quadtree, &quadtree);
   printf("assembled HODBF matrix [%0.2fs]\n", bfToc());
 
-  BfMat *x; {
-    BfMatDenseComplex *_ = bfMatDenseComplexNew();
-    bfMatDenseComplexInit(_, numPoints, 1);
-    bfSeed(0);
-    bfComplexRandn(numPoints, _->data);
-    x = bfMatDenseComplexToMat(_);
-  }
+  BfMat *x = BF_TO_MAT(bfMatDenseComplexNewRandn(numPoints, 1));
   printf("set up random righthand side [%0.2fs]\n", bfToc());
 
   BfMat *y_dense = bfMatMul(A_dense, x);

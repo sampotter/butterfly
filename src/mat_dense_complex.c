@@ -1786,6 +1786,22 @@ BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCol
   return matDenseComplex;
 }
 
+BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols) {
+  BF_ERROR_BEGIN();
+
+  BfMatDenseComplex *matDenseComplex = bfMemAlloc(1, sizeof(BfMatDenseComplex));
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInitRandn(matDenseComplex, numRows, numCols);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matDenseComplex;
+}
+
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
   BF_ERROR_BEGIN();
 
