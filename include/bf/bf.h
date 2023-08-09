@@ -5,3 +5,5 @@
 #endif
 
 #include "fac_streamer.h"
+
+void bfInit(void);

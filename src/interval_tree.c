@@ -161,14 +161,13 @@ void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *poin
 
   intervalTree->points = points;
 
-  bfPermDeinit(&intervalTree->super.perm);
-
-  intervalTree->super.perm = bfPermIdentity(points->size);
+  bfPermDeinit(intervalTree->super.perm);
+  bfPermInitIdentity(intervalTree->super.perm, points->size);
   HANDLE_ERROR();
 
   BfIntervalTreeNode *root = bfTreeNodeToIntervalTreeNode(intervalTree->super.root);
 
-  recursivelySiftNodes(root, points, &intervalTree->super.perm);
+  recursivelySiftNodes(root, points, intervalTree->super.perm);
   HANDLE_ERROR();
 
   BF_ERROR_END() {}

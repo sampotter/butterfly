@@ -178,14 +178,22 @@ BfPerm bfPermIdentity(BfSize size) {
 BfPerm *bfPermGetReversePerm(BfPerm const *perm) {
   BF_ERROR_BEGIN();
 
+  for (BfSize i = 0; i < perm->size; ++i)
+    if (perm->index[i] >= perm->size)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfPerm *revPerm = bfPermNew();
   HANDLE_ERROR();
 
   bfPermInitEmpty(revPerm, perm->size);
   HANDLE_ERROR();
 
-  for (BfSize i = 0; i < revPerm->size; ++i)
+  for (BfSize i = 0; i < revPerm->size; ++i) {
+    /* Make sure we don't set an entry twice... */
+    if (BF_SIZE_OK(revPerm->index[perm->index[i]]))
+      RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
     revPerm->index[perm->index[i]] = i;
+  }
 
   BF_ERROR_END() {
     BF_DIE();

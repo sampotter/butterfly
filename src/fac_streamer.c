@@ -67,10 +67,15 @@ BfFacStreamer *bfFacStreamerNew() {
 void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
   BF_ERROR_BEGIN();
 
-  facStreamer->facSpec = facSpec;
-
-  facStreamer->rowTreeReversePerm = bfPermGetReversePerm(&facSpec->rowTree->perm);
+  facStreamer->facSpec = bfMemAlloc(1, sizeof(BfFacSpec));
   HANDLE_ERROR();
+
+  bfMemCopy(facSpec, 1, sizeof(BfFacSpec), (BfFacSpec *)facStreamer->facSpec);
+
+  facStreamer->rowTreeReversePerm = bfPermGetReversePerm(facSpec->rowTree->perm);
+  HANDLE_ERROR();
+
+  printf("HI!!!\n");
 
   BfTreeIterPostOrder *iter = bfTreeIterPostOrderNew();
   HANDLE_ERROR();
@@ -94,11 +99,13 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
   }
 
   BF_ERROR_END() {
-    bfFacStreamerDeinit(facStreamer);
+    BF_DIE();
   }
 }
 
 void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
+
+
   bfTreeIterDelete(&facStreamer->colTreeIter);
 
   bfPermDeinitAndDealloc(&facStreamer->rowTreeReversePerm);
@@ -119,6 +126,7 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
     bfPtrArrayDeinitAndDealloc(&facStreamer->prevPhis);
   }
 
+  bfMemFree((BfFacSpec *)facStreamer->facSpec);
   facStreamer->facSpec = NULL;
 }
 
@@ -406,16 +414,16 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat *Phi) {
 
   /* Create the stack used to adaptively find the cut through the row
    * tree to start the adaptive butterfly factorization */
-  BfPtrArray stack = bfTreeGetLevelPtrArray(
+  BfPtrArray *stack = bfTreeGetLevelPtrArray(
     facStreamer->facSpec->rowTree, facStreamer->facSpec->rowTreeInitDepth);
   HANDLE_ERROR();
 
   /* Reverse the contents of the stack to make sure we traverse it
    * from the top of the column block down. */
-  bfPtrArrayReverse(&stack);
+  bfPtrArrayReverse(stack);
 
-  while (!bfPtrArrayIsEmpty(&stack)) {
-    BfTreeNode const *rowNode = bfPtrArrayPopLast(&stack);
+  while (!bfPtrArrayIsEmpty(stack)) {
+    BfTreeNode const *rowNode = bfPtrArrayPopLast(stack);
 
     BfMat *Psi = NULL, *W = NULL;
     bool metTol = getPsiAndW(facStreamer->facSpec, Phi, rowNode, &Psi, &W);
@@ -445,7 +453,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat *Phi) {
     for (BfSize i = rowNode->maxNumChildren; i > 0; --i) {
       BfTreeNode const *childRowNode = rowNode->child[i - 1];
       if (childRowNode != NULL)
-        bfPtrArrayAppend(&stack, (BfPtr)childRowNode);
+        bfPtrArrayAppend(stack, (BfPtr)childRowNode);
     }
   }
 
@@ -508,7 +516,7 @@ void bfFacStreamerFeed(BfFacStreamer *facStreamer, BfMat *Phi) {
   bfPtrArrayDeinit(&WBlocks);
 
   bfConstPtrArrayDeinit(&rowNodes);
-  bfPtrArrayDeinit(&stack);
+  bfPtrArrayDeinit(stack);
 }
 
 bool bfFacStreamerIsDone(BfFacStreamer const *facStreamer) {

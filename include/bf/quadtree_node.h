@@ -3,6 +3,7 @@
 
 /** Interface: TreeNode */
 
+BfQuadtreeNode *bfQuadtreeNodeCopy(BfQuadtreeNode const *quadtreeNode);
 BfType bfQuadtreeNodeGetType(BfTreeNode const *treeNode);
 void bfQuadtreeNodeDelete(BfQuadtreeNode **quadtreeNode);
 

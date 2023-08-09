@@ -7,6 +7,7 @@
 #include <bf/fac_helm2.h>
 #include <bf/helm2.h>
 #include <bf/layer_pot.h>
+#include <bf/macros.h>
 #include <bf/mat_block_coo.h>
 #include <bf/mat_block_dense.h>
 #include <bf/mat_block_diag.h>
@@ -71,6 +72,8 @@ int main(int argc, char const *argv[]) {
   char const *normals_path_str = !strcmp(layerPotStr, "Sp") ? argv[5] : NULL;
 
   BF_ERROR_BEGIN();
+
+  bfSeed(0);
 
   helm.k = atoi(K_str);
 

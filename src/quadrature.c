@@ -79,7 +79,7 @@ applyBlockCorrection_complex(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSiz
   BfComplex *rowptr;
   BfSize m = i1 - i0;
   for (BfSize i = i0; i < i1; ++i) {
-    rowptr = mat->data + i*mat->rowStride;
+    rowptr = bfMatDenseComplexGetRowPtr(mat, i);
     for (BfSize p = 0, j; p < order; ++p) {
       j = ((i + p + 1 - i0) % m) + i0;
       *(rowptr + j*mat->colStride) += w_KR[p]*K(i, j, aux);

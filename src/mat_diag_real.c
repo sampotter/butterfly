@@ -362,8 +362,8 @@ bfMatDiagRealDenseComplexSolve(BfMatDiagReal const *lhs,
   HANDLE_ERROR();
 
   BfReal const *lhsPtr = lhs->data;
-  BfComplex const *rhsPtr = rhs->data;
-  BfComplex *resultPtr = result->data;
+  BfComplex const *rhsPtr = bfMatDenseComplexGetDataConstPtr(rhs);
+  BfComplex *resultPtr = bfMatDenseComplexGetDataPtr(result);
 
   for (BfSize i = 0; i < k; ++i) {
     for (BfSize j = 0; j < n; ++j)

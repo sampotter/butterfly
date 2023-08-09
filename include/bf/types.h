@@ -28,6 +28,7 @@ typedef struct BfMatGivensComplex BfMatGivensComplex;
 typedef struct BfMatIdentity BfMatIdentity;
 typedef struct BfMatPerm BfMatPerm;
 typedef struct BfMatProduct BfMatProduct;
+typedef struct BfMatPython BfMatPython;
 typedef struct BfMatSum BfMatSum;
 typedef struct BfMatZero BfMatZero;
 
@@ -58,7 +59,7 @@ typedef struct BfTreeIter BfTreeIter;
 typedef struct BfTreeIterPostOrder BfTreeIterPostOrder;
 typedef struct BfTreeLevelIter BfTreeLevelIter;
 
-typedef struct BfTreeNodeSpan BfTreeNodeSpan;
+typedef struct BfNodeSpan BfNodeSpan;
 
 typedef struct BfFac BfFac;
 typedef struct BfFacSpan BfFacSpan;
@@ -75,6 +76,7 @@ typedef enum BfTypes {
   BF_TYPE_MAT_IDENTITY,
   BF_TYPE_MAT_PERM,
   BF_TYPE_MAT_PRODUCT,
+  BF_TYPE_MAT_PYTHON,
   BF_TYPE_MAT_SUM,
   BF_TYPE_MAT_ZERO,
 
@@ -122,7 +124,7 @@ typedef enum BfTypes {
   BF_TYPE_COUNT,
 
   /* Placeholder for missing type information */
-  BF_TYPE_UNKNOWN
+  BF_TYPE_NONE
 } BfType;
 
 bool bfTypeDerivedFrom(BfType derived, BfType parent);

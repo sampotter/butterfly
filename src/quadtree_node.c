@@ -19,9 +19,39 @@ static BfSize const LEAF_SIZE_THRESHOLD = 1;
 /** Interface(TreeNode, QuadtreeNode) */
 
 static BfTreeNodeVtable TreeNodeVtable = {
+  .Copy = (__typeof__(&bfTreeNodeCopy))bfQuadtreeNodeCopy,
   .GetType = (__typeof__(&bfTreeNodeGetType))bfQuadtreeNodeGetType,
   .Delete = (__typeof__(&bfTreeNodeDelete))bfQuadtreeNodeDelete,
 };
+
+BfQuadtreeNode *bfQuadtreeNodeCopy(BfQuadtreeNode const *quadtreeNode) {
+  BF_ERROR_BEGIN();
+
+  BfQuadtreeNode *quadtreeNodeCopy = bfQuadtreeNodeNew();
+  HANDLE_ERROR();
+
+  BfTreeNode *treeNodeCopy = &quadtreeNodeCopy->super;
+  BfTreeNode const *treeNode = &quadtreeNode->super;
+
+  *treeNodeCopy = *treeNode;
+
+  BfSize maxNumChildren = treeNodeCopy->maxNumChildren;
+
+  treeNodeCopy->offset = bfMemAlloc(maxNumChildren + 1, sizeof(BfSize));
+  bfMemCopy(treeNode->offset, maxNumChildren + 1, sizeof(BfSize), treeNodeCopy->offset);
+
+  treeNodeCopy->child = bfMemAlloc(maxNumChildren, sizeof(BfTreeNode *));
+  bfMemCopy(treeNode->child, maxNumChildren, sizeof(BfTreeNode *), treeNodeCopy->child);
+
+  bfMemCopy(&quadtreeNode->bbox, 1, sizeof(BfBbox2), &quadtreeNodeCopy->bbox);
+  bfMemCopy(quadtreeNode->split, 1, sizeof(BfPoint2), quadtreeNodeCopy->split);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return quadtreeNodeCopy;
+}
 
 BfType bfQuadtreeNodeGetType(BfTreeNode const *treeNode) {
   (void)treeNode;
@@ -71,7 +101,9 @@ BfQuadtreeNode *bfQuadtreeNodeNew() {
   BfQuadtreeNode *node = bfMemAlloc(1, sizeof(BfQuadtreeNode));
   HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return node;
 }

@@ -66,7 +66,7 @@ BfMat *bfMatSub(BfMat const *, BfMat const *);
 void bfMatSubInplace(BfMat *, BfMat const *);
 BfMat *bfMatMul(BfMat const *, BfMat const *);
 BfVec *bfMatMulVec(BfMat const *, BfVec const *);
-void bfMatMulInplace(BfMat *, BfMat const *);
+void bfMatMulInplace(BfMat const *, BfMat const *, BfMat *);
 BfVec *bfMatRmulVec(BfMat const *, BfVec const *);
 BfMat *bfMatSolve(BfMat const *, BfMat const *);
 BfMat *bfMatSolveLU(BfMat const *, BfMat const *);
@@ -85,6 +85,7 @@ BfLu *bfMatGetLu(BfMat const *mat);
 BfMat *bfMatGetInverse(BfMat const *mat);
 void bfMatDivideCols(BfMat *, BfVec const *);
 BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *colMask);
+BfMat *bfMatGetTransposed(BfMat *mat, BfPolicy policy);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatGetView) GetView;
@@ -148,6 +149,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatGetInverse) GetInverse;
   __typeof__(&bfMatDivideCols) DivideCols;
   __typeof__(&bfMatGetSubmatByMask) GetSubmatByMask;
+  __typeof__(&bfMatGetTransposed) GetTransposed;
 } BfMatVtable;
 
 /** Implementation: Mat */

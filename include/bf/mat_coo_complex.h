@@ -6,8 +6,8 @@
 
 void bfMatCooComplexDelete(BfMat **mat);
 BfType bfMatCooComplexGetType(BfMat const *mat);
-BfSize bfMatCooComplexGetNumRows(BfMat const *mat);
-BfSize bfMatCooComplexGetNumCols(BfMat const *mat);
+BfSize bfMatCooComplexGetNumRows(BfMatCooComplex const *matCooComplex);
+BfSize bfMatCooComplexGetNumCols(BfMatCooComplex const *matCooComplex);
 BfMat *bfMatCooComplexGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1);
 BfMat *bfMatCooComplexGetColRangeCopy(BfMat const *mat, BfSize j0, BfSize j1);
 void bfMatCooComplexPermuteRows(BfMat *mat, BfPerm const *perm);

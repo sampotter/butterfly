@@ -1,4 +1,7 @@
 cdef extern from "bf/types.h":
+    cdef struct BfPtrArray:
+        pass
+
     struct BfMat:
         pass
 
@@ -6,6 +9,9 @@ cdef extern from "bf/types.h":
         pass
 
     struct BfMatDenseComplex:
+        pass
+
+    struct BfMatDenseReal:
         pass
 
     struct BfMatDiagReal:
@@ -20,6 +26,9 @@ cdef extern from "bf/types.h":
     struct BfMatProduct:
         pass
 
+    struct BfMatPython:
+        pass
+
     struct BfVec:
         pass
 
@@ -27,6 +36,18 @@ cdef extern from "bf/types.h":
         pass
 
     struct BfQuadtree:
+        pass
+
+    struct BfTreeNode:
+        pass
+
+    struct BfTreeLevelIter:
+        pass
+
+    struct BfNodeSpan:
+        pass
+
+    struct BfFacStreamer:
         pass
 
     cdef enum BfTypes:

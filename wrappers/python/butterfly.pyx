@@ -1,13 +1,27 @@
 # cython: language_level=3, embedsignature=True, auto_pickle=False
 
+import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+
+cimport numpy as cnp
+
+cnp.import_array()
+
 from enum import Enum
+
+from bf cimport bfInit
+
+bfInit()
 
 from bbox cimport *
 from defs cimport *
 from ellipse cimport *
+from fac cimport *
 from fac_helm2 cimport *
+from fac_streamer cimport *
 from geom cimport *
 from helm2 cimport *
 from layer_pot cimport *
@@ -15,10 +29,13 @@ from linalg cimport *
 from mat cimport *
 from mat_block_dense cimport *
 from mat_dense_complex cimport *
+from mat_dense_real cimport *
 from mat_diag_real cimport *
 from mat_func cimport *
 from mat_identity cimport *
 from mat_product cimport *
+from mat_python cimport *
+from node_span cimport *
 from perm cimport *
 from points cimport *
 from ptr_array cimport *
@@ -28,7 +45,9 @@ from rand cimport *
 from real_array cimport *
 from size_array cimport *
 from tree cimport *
+from tree_level_iter cimport *
 from tree_node cimport *
+from tree_traversals cimport *
 from types cimport *
 from vec cimport *
 from vectors cimport *
@@ -43,7 +62,21 @@ cdef reify_mat(BfMat *mat):
     elif type_ == BF_TYPE_MAT_DENSE_COMPLEX:
         return MatDenseComplex.from_ptr(bfMatToMatDenseComplex(mat))
     else:
-        raise TypeError(f'failed to reify BfMat: got {bfMatGetType(mat)}')
+        raise TypeError(f'failed to reify BfMat: got {type_}')
+
+cdef reify_tree(BfTree *tree):
+    cdef BfType type_ = bfTreeGetType(tree)
+    if type_ == BF_TYPE_QUADTREE:
+        return Quadtree.from_ptr(bfTreeToQuadtree(tree))
+    else:
+        raise TypeError(f'failed to reify BfTree: got {type_}')
+
+cdef reify_tree_node(BfTreeNode *treeNode):
+    cdef BfType type_ = bfTreeNodeGetType(treeNode)
+    if type_ == BF_TYPE_QUADTREE_NODE:
+        return QuadtreeNode.from_ptr(bfTreeNodeToQuadtreeNode(treeNode))
+    else:
+        raise TypeError(f'failed to reify BfTreeNode: got {type_}')
 
 cdef class Bbox2:
     cdef BfBbox2 bbox
@@ -155,6 +188,52 @@ cdef class FacHelm2:
             srcTree.quadtree,
             srcTree.quadtree if tgtTree is None else tgtTree.quadtree))
 
+cdef class FacStreamer:
+    cdef BfFacStreamer *facStreamer
+
+    @staticmethod
+    def from_trees(Tree rowTree, Tree colTree,
+                   rowTreeInitDepth=None,
+                   colTreeInitDepth=None, BfReal tol=1e-15,
+                   BfSize minNumRows=20, BfSize minNumCols=20,
+                   bint compareRelativeErrors=False):
+        if rowTreeInitDepth is None:
+            rowTreeInitDepth = 1
+        if colTreeInitDepth is None:
+            colTreeInitDepth = colTree.get_max_depth()
+
+        cdef BfFacSpec facSpec
+        facSpec.rowTree = rowTree.tree
+        facSpec.colTree = colTree.tree
+        facSpec.rowTreeInitDepth = rowTreeInitDepth
+        facSpec.colTreeInitDepth = colTreeInitDepth
+        facSpec.tol = tol
+        facSpec.minNumRows = minNumRows
+        facSpec.minNumCols = minNumCols
+        facSpec.compareRelativeErrors = compareRelativeErrors
+
+        cdef FacStreamer _ = FacStreamer.__new__(FacStreamer)
+        _.facStreamer = bfFacStreamerNew()
+        bfFacStreamerInit(_.facStreamer, &facSpec)
+        return _
+
+    def _feed_ndarray(self, cnp.ndarray arr):
+        self._feed_Mat(Mat.from_ndarray(arr))
+
+    def _feed_Mat(self, Mat mat):
+        bfFacStreamerFeed(self.facStreamer, mat.mat)
+
+    def feed(self, mat):
+        if isinstance(mat, np.ndarray):
+            self._feed_ndarray(mat)
+        elif isinstance(mat, Mat):
+            self._feed_mat(mat)
+        else:
+            raise NotImplementedError()
+
+    def is_done(self):
+        return bfFacStreamerIsDone(self.facStreamer)
+
 cdef class Helm2:
     cdef BfHelm2 helm
 
@@ -241,13 +320,36 @@ def solve_gmres(Mat A, Mat B, Mat X0=None, float tol=1e-15, max_num_iter=None, M
 cdef class Mat:
     cdef BfMat *mat
 
+    @staticmethod
+    cdef from_ndarray(cnp.ndarray arr):
+        if arr.dtype == np.float64:
+            return MatDenseReal.from_ndarray(arr)
+        elif arr.dtype == np.complex128:
+            return MatDenseComplex.from_ndarray(arr)
+        else:
+            raise NotImplementedError()
+
     @property
     def shape(self):
         return (bfMatGetNumRows(self.mat), bfMatGetNumCols(self.mat))
 
-    def __iadd__(self, Mat mat):
+    def __iadd__(Mat self, Mat mat):
         bfMatAddInplace(self.mat, mat.mat)
         return self
+
+    def _matmul_ndarray(self, cnp.ndarray arr):
+        return self@Mat.from_ndarray(arr)
+
+    def _matmul_mat(self, Mat mat):
+        return reify_mat(bfMatMul(self.mat, mat.mat))
+
+    def __matmul__(self, mat):
+        if isinstance(mat, np.ndarray):
+            return self._matmul_ndarray(mat)
+        elif isinstance(mat, Mat):
+            return self._matmul_mat(mat)
+        else:
+            raise NotImplementedError()
 
     def to_mat_dense_complex(self):
         return MatDenseComplex.from_ptr(
@@ -268,9 +370,6 @@ cdef class MatBlockDense(Mat):
         cdef BfVec *vec = bfRealArrayGetVecView(real_array.real_array)
         bfMatBlockDenseScaleCols(self.mat_block_dense, vec)
         bfVecDelete(&vec)
-
-    def scale_cols(self, Vec vec):
-        raise NotImplementedError()
 
     def get_blocks(self, I, J):
         cdef BfSize mBlk = len(I)
@@ -312,6 +411,26 @@ cdef class MatDenseComplex(Mat):
         _._buf_init()
         return _
 
+    @staticmethod
+    cdef MatDenseComplex from_ndarray(cnp.ndarray arr):
+        # Make sure arr is a packed, 2D, row-major array of complex doubles:
+        assert arr.ndim == 2
+        assert arr.flags.c_contiguous
+        assert arr.itemsize == 16
+
+        cdef BfSize m = arr.shape[0]
+        cdef BfSize n = arr.shape[1]
+        cdef BfComplex[:, :] data = arr
+
+        cdef MatDenseComplex _ = MatDenseComplex.__new__(MatDenseComplex)
+        _.mat_dense_complex = bfMatDenseComplexNewViewFromPtr(m, n, &data[0, 0])
+        _.mat = bfMatDenseComplexToMat(_.mat_dense_complex)
+        return _
+
+    def __array__(self):
+        cdef BfComplex *data = bfMatDenseComplexGetDataPtr(self.mat_dense_complex)
+        return np.asarray(<BfComplex[:self.shape[0], :self.shape[1]]>data)
+
     def __getbuffer__(self, Py_buffer *buf, int flags):
         buf.buf = <char *>bfMatDenseComplexGetDataPtr(self.mat_dense_complex)
         buf.format = 'Zd'
@@ -327,6 +446,25 @@ cdef class MatDenseComplex(Mat):
 
     def __releasebuffer__(self, Py_buffer *buf):
         pass
+
+cdef class MatDenseReal(Mat):
+    cdef BfMatDenseReal *matDenseReal
+
+    @staticmethod
+    cdef MatDenseReal from_ndarray(cnp.ndarray arr):
+        # Make sure arr is a packed, 2D, row-major array of doubles:
+        assert arr.ndim == 2
+        assert arr.flags.c_contiguous
+        assert arr.itemsize == 8
+
+        cdef BfSize m = arr.shape[0]
+        cdef BfSize n = arr.shape[1]
+        cdef BfReal[:, :] data = arr
+
+        cdef MatDenseReal _ = MatDenseReal.__new__(MatDenseReal)
+        _.matDenseReal = bfMatDenseRealNewViewFromPtr(m, n, &data[0, 0], n, 1)
+        _.mat = bfMatDenseRealToMat(_.matDenseReal)
+        return _
 
 cdef class MatDiagReal(Mat):
     cdef BfMatDiagReal *matDiagReal
@@ -369,7 +507,18 @@ cdef class MatProduct(Mat):
         return matProduct
 
     cdef post_multiply(self, Mat mat):
+        assert mat.mat != NULL
         bfMatProductPostMultiply(self.matProduct, mat.mat)
+
+    @property
+    def T(self):
+        cdef MatProduct _ = MatProduct.__new__(MatProduct)
+        _.mat = bfMatProductGetTransposed(self.matProduct, BF_POLICY_VIEW)
+        _.matProduct = bfMatToMatProduct(_.mat)
+        return _
+
+cdef class NodeSpan:
+    cdef BfNodeSpan *nodeSpan
 
 cdef class Perm:
     cdef BfPerm *perm
@@ -452,6 +601,13 @@ cdef class Quadtree(Tree):
         raise RuntimeError("use factory functions to instantiate Quadtree")
 
     @staticmethod
+    def from_tree(Tree tree):
+        cdef Quadtree _ = Quadtree.__new__(Quadtree)
+        _.tree = tree.tree
+        _.quadtree = bfTreeToQuadtree(_.tree)
+        return _
+
+    @staticmethod
     cdef from_ptr(BfQuadtree *quadtree):
         cdef Quadtree _ = Quadtree.__new__(Quadtree)
         _.quadtree = quadtree
@@ -466,47 +622,37 @@ cdef class Quadtree(Tree):
         quadtree.tree = bfQuadtreeToTree(quadtree.quadtree)
         return quadtree
 
-    def get_level_nodes(self, BfSize level):
-        cdef BfPtrArray levelPtrArray = bfTreeGetLevelPtrArray(self.tree, level)
-        nodes = []
-        cdef BfQuadtreeNode *node = NULL
-        for i in range(bfPtrArraySize(&levelPtrArray)):
-            node = <BfQuadtreeNode *>bfPtrArrayGet(&levelPtrArray, i)
-            node_ = QuadtreeNode.from_ptr(node)
-            nodes.append(node_)
-        bfPtrArrayDeinit(&levelPtrArray)
-        return nodes
+    def plot_node_boxes(self, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        rects = []
+        for node in self.nodes:
+            bbox = node.bbox
+            dx, dy = node.bbox.dx, node.bbox.dy
+            rect = Rectangle(bbox.xy, dy, dx)
+            rects.append(rect)
+        pc = PatchCollection(rects, facecolor='none', edgecolor='k')
+        ax.add_collection(pc)
 
 cdef class QuadtreeNode(TreeNode):
-    cdef BfQuadtreeNode *quadtree_node
+    cdef BfQuadtreeNode *quadtreeNode
 
     @staticmethod
-    cdef from_ptr(BfQuadtreeNode *quadtree_node):
+    cdef from_ptr(BfQuadtreeNode *quadtreeNode):
         _ = QuadtreeNode()
-        _.quadtree_node = quadtree_node
-        _.tree_node = bfQuadtreeNodeToTreeNode(quadtree_node)
+        _.quadtreeNode = quadtreeNode
+        _.treeNode = bfQuadtreeNodeToTreeNode(quadtreeNode)
         return _
-
-    @property
-    def quadtree(self):
-        cdef BfQuadtree *quadtree = bfQuadtreeNodeGetQuadtree(self.quadtree_node)
-        return Quadtree.from_ptr(quadtree)
-
-    @property
-    def parent(self):
-        cdef BfQuadtreeNode *parent = \
-            bfTreeNodeToQuadtreeNode(bfTreeNodeGetParent(self.tree_node))
-        return QuadtreeNode.from_ptr(parent)
 
     @property
     def split(self):
         cdef BfPoint2 split
-        bfQuadtreeNodeGetSplit(self.quadtree_node, split)
+        bfQuadtreeNodeGetSplit(self.quadtreeNode, split)
         return (split[0], split[1])
 
     @property
     def bbox(self):
-        cdef BfBbox2 bbox = bfQuadtreeNodeGetBbox(self.quadtree_node)
+        cdef BfBbox2 bbox = bfQuadtreeNodeGetBbox(self.quadtreeNode)
         return Bbox2(bbox.min[0], bbox.max[0], bbox.min[1], bbox.max[1])
 
     def get_inds(self):
@@ -514,16 +660,16 @@ cdef class QuadtreeNode(TreeNode):
         cdef BfSize i1 = self.get_last_index()
         cdef SizeArray inds = SizeArray.__new__(SizeArray)
         inds.sizeArray = bfSizeArrayNewWithCapacity(i1 - i0)
-        cdef Perm perm = self.quadtree.perm
+        cdef Perm perm = self.tree.perm
         cdef BfSize i
         for i in range(i0, i1):
             bfSizeArrayAppend(inds.sizeArray, perm[i])
         return inds
 
     def get_points(self):
-        cdef BfQuadtree *quadtree = bfQuadtreeNodeGetQuadtree(self.quadtree_node)
+        cdef BfQuadtree *quadtree = bfQuadtreeNodeGetQuadtree(self.quadtreeNode)
         points = Points2()
-        points.points = bfQuadtreeNodeGetPoints(self.quadtree_node, quadtree)
+        points.points = bfQuadtreeNodeGetPoints(self.quadtreeNode, quadtree)
         return points
 
 def sample_uniform(lo=0, hi=1, n=1, dtype=np.float64):
@@ -626,23 +772,145 @@ cdef class SizeArray:
 cdef class Tree:
     cdef BfTree *tree
 
+    @staticmethod
+    cdef _from_node_span_NodeSpan(NodeSpan nodeSpan):
+        cdef Tree tree = Tree.__new__(Tree)
+        cdef Perm perm = Perm.__new__(Perm)
+        tree.tree = bfTreeNewFromNodeSpan(nodeSpan.nodeSpan, &perm.perm)
+        return tree, perm
+
+    @staticmethod
+    cdef _from_node_span_list(list nodes):
+        if not all(isinstance(_, TreeNode) for _ in nodes):
+            raise ValueError()
+        cdef BfPtrArray ptrArray
+        bfInitPtrArray(&ptrArray, len(nodes))
+        cdef TreeNode node
+        for node in nodes:
+            bfPtrArrayAppend(&ptrArray, node.treeNode)
+        cdef BfNodeSpan *nodeSpan = bfNodeSpanNewFromPtrArray(&ptrArray, BF_POLICY_COPY)
+        cdef Tree tree = Tree.__new__(Tree)
+        cdef Perm perm = Perm.__new__(Perm)
+        tree.tree = bfTreeNewFromNodeSpan(nodeSpan, &perm.perm)
+        return tree, perm
+
+    @staticmethod
+    def from_node_span(nodeSpan):
+        if isinstance(nodeSpan, NodeSpan):
+            return Tree._from_node_span_NodeSpan(nodeSpan)
+        elif isinstance(nodeSpan, list):
+            return Tree._from_node_span_list(nodeSpan)
+        else:
+            raise NotImplementedError()
+
+    @staticmethod
+    def from_node(TreeNode node):
+        cdef Tree tree = Tree.__new__(Tree)
+        cdef Perm perm = Perm.__new__(Perm)
+        tree.tree = bfTreeNewFromNode(node.treeNode, &perm.perm)
+        return tree, perm
+
+    @staticmethod
+    def for_middle_fac(Tree templateTree, BfSize p):
+        cdef Tree tree = Tree.__new__(Tree)
+        tree.tree = bfTreeNewForMiddleFac(templateTree.tree, p)
+        print(bfTreeGetMaxDepth(tree.tree))
+        return tree
+
     @property
     def perm(self):
         perm = Perm()
         perm.perm = bfPermGetView(bfTreeGetPerm(self.tree))
         return perm
 
+    @property
+    def root(self):
+        return reify_tree_node(<BfTreeNode *>bfTreeGetRootNode(self.tree))
+
+    @property
+    def nodes(self):
+        return TreeLevelIter.from_tree(self)
+
+    def get_level_nodes(self, BfSize level):
+        cdef BfPtrArray *levelPtrArray = bfTreeGetLevelPtrArray(self.tree, level)
+        nodes = [reify_tree_node(<BfTreeNode *>bfPtrArrayGet(levelPtrArray, i))
+                 for i in range(bfPtrArraySize(levelPtrArray))]
+        bfPtrArrayDeinitAndDealloc(&levelPtrArray)
+        return nodes
+
+    def __eq__(self, Tree other):
+        return self.tree == other.tree
+
+    def get_max_depth(self):
+        return bfTreeGetMaxDepth(self.tree)
+
+cdef class TreeLevelIter:
+    cdef BfTreeLevelIter *treeLevelIter
+
+    @staticmethod
+    def from_tree(Tree tree):
+        cdef TreeLevelIter _ = TreeLevelIter.__new__(TreeLevelIter)
+        _.treeLevelIter = bfTreeLevelIterNewFromTree(BF_TREE_TRAVERSAL_UNKNOWN, tree.tree)
+        return _
+
+    def __iter__(self):
+        cdef BfPtrArray *levelNodes = NULL
+        cdef BfType treeNodeType
+        while not bfTreeLevelIterIsDone(self.treeLevelIter):
+            levelNodes = bfTreeLevelIterGetLevelNodes(self.treeLevelIter)
+            for i in range(bfPtrArraySize(levelNodes)):
+                yield reify_tree_node(<BfTreeNode *>bfPtrArrayGet(levelNodes, i))
+            bfTreeLevelIterNext(self.treeLevelIter)
+
 cdef class TreeNode:
-    cdef BfTreeNode *tree_node
+    cdef BfTreeNode *treeNode
+
+    def __hash__(self):
+        return <Py_hash_t>self.treeNode
+
+    def __eq__(self, TreeNode other):
+        return self.treeNode == other.treeNode
 
     def get_num_points(self):
-        return bfTreeNodeGetNumPoints(self.tree_node)
+        return bfTreeNodeGetNumPoints(self.treeNode)
 
     def get_first_index(self):
-        return bfTreeNodeGetFirstIndex(self.tree_node)
+        return bfTreeNodeGetFirstIndex(self.treeNode)
 
     def get_last_index(self):
-        return bfTreeNodeGetLastIndex(self.tree_node)
+        return bfTreeNodeGetLastIndex(self.treeNode)
+
+    @property
+    def tree(self):
+        return reify_tree(bfTreeNodeGetTree(self.treeNode))
+
+    @property
+    def parent(self):
+        return reify_tree_node(bfTreeNodeGetParent(self.treeNode))
+
+    @property
+    def children(self):
+        return [
+            reify_tree_node(bfTreeNodeGetChild(self.treeNode, i))
+            for i in range(self.max_num_children)
+            if bfTreeNodeHasChild(self.treeNode, i)
+        ]
+
+    @property
+    def depth(self):
+        return bfTreeNodeGetDepth(self.treeNode)
+
+    @property
+    def max_num_children(self):
+        return bfTreeNodeGetMaxNumChildren(self.treeNode)
+
+    @property
+    def i0(self):
+        return self.get_first_index()
+
+    @property
+    def i1(self):
+        return self.get_last_index()
 
 cdef class Vec:
     cdef BfVec *vec
@@ -658,3 +926,18 @@ cdef class Vectors2:
 
     def extend(self, Vectors2 vectors):
         bfVectors2Extend(self.vectors, vectors.vectors)
+
+############################################################################
+# Other stuff...
+
+# - need to set mat for DenseLu
+# - need to call bfMatInit and pass BfMatVtable
+# - need to set MatMul entry of BfMatMul with a C or Cython function
+#   that will look up and call DenseLu._Mul
+
+cdef class MatPython(Mat):
+    cdef BfMatPython *matPython
+
+    def __init__(self, m, n):
+        self.matPython = bfMatPythonNewFromPyObject(self, m, n)
+        self.mat = bfMatPythonToMat(self.matPython)

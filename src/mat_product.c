@@ -22,6 +22,7 @@ static BfMatVtable MAT_VTABLE = {
   .MulVec = (__typeof__(&bfMatMulVec))bfMatProductMulVec,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
+  .GetTransposed = (__typeof__(&bfMatGetTransposed))bfMatProductGetTransposed,
 };
 
 BfMat *bfMatProductGetView(BfMatProduct *matProduct) {
@@ -216,12 +217,14 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
   BfSize i = numFactors - 1;
 
   factor = bfMatProductGetFactorConst(matProduct, i);
+  BF_ASSERT(factor != NULL);
 
   prev = bfMatMul(factor, otherMat);
   HANDLE_ERROR();
 
   while (i > 0) {
     factor = bfMatProductGetFactorConst(matProduct, --i);
+    BF_ASSERT(factor != NULL);
 
     result = bfMatMul(factor, prev);
     HANDLE_ERROR();
@@ -232,8 +235,7 @@ BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
   }
 
   BF_ERROR_END() {
-    bfMatDelete(&prev);
-    bfMatDelete(&result);
+    BF_DIE();
   }
 
   return result;
@@ -339,6 +341,30 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
   return result;
 }
 
+BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  BfMatProduct *matProductTransposed = bfMatProductNew();
+  HANDLE_ERROR();
+
+  bfMatProductInit(matProductTransposed);
+  HANDLE_ERROR();
+
+  BfSize n = bfMatProductNumFactors(matProduct);
+  for (BfSize i = 0; i < n; ++i) {
+    BfMat *factor = bfMatProductGetFactor(matProduct, n - i - 1);
+    BfMat *factorTransposed = bfMatGet(factor, policy);
+    bfMatTrans(factorTransposed);
+    bfMatProductPostMultiply(matProductTransposed, factorTransposed);
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return bfMatProductToMat(matProductTransposed);
+}
+
 /** Upcasting: */
 
 BfMat *bfMatProductToMat(BfMatProduct *matProduct) {
@@ -371,10 +397,11 @@ BfMatProduct *bfMatProductNew() {
   BF_ERROR_BEGIN();
 
   BfMatProduct *prod = bfMemAlloc(1, sizeof(BfMatProduct));
-  if (prod == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return prod;
 }

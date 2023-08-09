@@ -60,15 +60,15 @@ sys.path.insert(-1, '../../wrappers/python') # for butterfly
 import argparse
 import numpy as np
 import scipy.linalg
-import scipy.sparse
 
-from sklearn.utils.extmath import randomized_svd
+randn = np.random.randn
 
 import butterfly as bf
 
 from util import complex_to_hsv
 
 if MAKE_PLOTS:
+    import colorcet as cc
     import matplotlib.pyplot as plt
 
     from matplotlib.collections import PatchCollection
@@ -98,6 +98,7 @@ r = 0.2 # spacing between ellipses
 axlim = (0.02, 0.1) # range of ellipse semi axes
 h = 0.01 # point spacing
 KR_order = 6 # Kapur-Rokhlin quadrature order
+eps = 1e-13 # Relative error tolerance for hierarchial LU decomposition
 
 # seed bf's PRNG
 bf.seed(seed)
@@ -134,15 +135,23 @@ print(f'set up discretization with {n} points')
 # build quadtree on points w/ normals
 quadtree = bf.Quadtree.from_points_and_normals(X, N)
 
-print(np.array(W))
+import matplotlib.pyplot as plt
+plt.figure()
+# quadtree.plot_node_boxes()
+for node in quadtree.nodes:
+    bbox = node.bbox
+    x0, x1, y0, y1 = bbox.xmin, bbox.xmax, bbox.ymin, bbox.ymax
+    plt.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], c='r', zorder=2)
+plt.scatter(*np.array(X).T, s=2.5, c='k', zorder=1)
+plt.xlim(xmin, xmax)
+plt.ylim(ymin, ymax)
+plt.gca().set_aspect('equal')
+plt.show()
 
 # get permuted copy of quadrature weights
 rev_perm = quadtree.perm.get_reverse()
 W_perm = W.copy()
-print(np.array(W_perm))
 W_perm.permute(rev_perm)
-
-print(np.array(W_perm))
 
 # compute the incident field
 phi_in = helm.get_kernel_matrix(xsrc, Xtgt=X, Ntgt=N)
@@ -190,95 +199,246 @@ def get_block_inds_for_split(nodes):
 
     return I1, I2
 
-def sample_middle_out_butterfly(linOp, rowNodes, colNodes, k, p=8, q):
+def minimize_rank_est(X1, X2, k, eps):
+    r1min = lambda x1, y1: np.sqrt(np.sum(np.subtract(X1, (x1, y1))**2, axis=1)).max()
+    r2min = lambda x2, y2: np.sqrt(np.sum(np.subtract(X2, (x2, y2))**2, axis=1)).max()
+    R = lambda x1, y1, x2, y2: np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    f = lambda x1, y1, x2, y2, r1, r2: r1*r2/(R(x1, y1, x2, y2) - r1 - r2)
+    g1 = lambda x1, y1, r1: r1 - r1min(x1, y1)
+    g2 = lambda x2, y2, r2: r2 - r2min(x2, y2)
+    p1, p2 = X1.mean(0), X2.mean(0)
+    _ = scipy.optimize.minimize(
+        lambda _: f(*_),
+        (*p1, *p2, r1min(*p1), r2min(*p2)),
+        constraints=[
+            {'type': 'ineq', 'fun': lambda _: g1(_[0], _[1], _[4])},
+            {'type': 'ineq', 'fun': lambda _: g2(_[2], _[3], _[5])}])
+    if _.success:
+        p1opt, p2opt, r1opt, r2opt = _.x[:2], _.x[2:4], _.x[4], _.x[5]
+        rank = k*f(*p1opt, *p2opt, r1min(*p1opt), r2min(*p2opt)) + np.log10(1/eps)
+        return p1opt, p2opt, r1opt, r2opt, rank
+
+def rank_for_node_is_small_enough(node, X2, k, eps, p):
+    if node.get_num_points() <= p:
+        return True
+
+    X1 = np.array(node.get_points())
+
+    _ = minimize_rank_est(X1, X2, k, eps)
+    if _ is None:
+        return False
+    pX, pY, rX, rY, popt = _
+
+    print(f'{popt = :.2f}')
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.scatter(*X1.T, s=5, c='b')
+    plt.scatter(*X2.T, s=5, c='r')
+    plt.scatter(*pX, s=10, c='b', marker='x')
+    plt.scatter(*pY, s=10, c='r', marker='x')
+    plt.gca().add_patch(plt.Circle(pX, rX, edgecolor='k', facecolor='none'))
+    plt.gca().add_patch(plt.Circle(pY, rY, edgecolor='k', facecolor='none'))
+    plt.gca().set_aspect('equal')
+    plt.show()
+
+    return popt <= p
+
+def rank_for_all_nodes_is_small_enough(nodes, X2, k, eps, p):
+    return all(rank_for_node_is_small_enough(_, X2, k, eps, p) for _ in nodes)
+
+def get_refl_nodes(srcNodes, tgtNodes, k, eps, p):
+    Xtgt = np.concatenate([_.get_points() for _ in tgtNodes], axis=0)
+    reflNodes = srcNodes
+    while not rank_for_all_nodes_is_small_enough(reflNodes, Xtgt, k, eps, p):
+        newReflNodes = []
+        for reflNode in reflNodes:
+            newReflNodes.extend(reflNode.children)
+        reflNodes = newReflNodes
+        assert reflNodes
+    print(reflNodes)
+    return reflNodes
+
+def zrandn(m, n):
+    return randn(m, n)/np.sqrt(2) + 1j*randn(m, n)
+
+def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
+    '''Sample a middle-out butterfly factorization of `linOp`.
+
+    The middle blocks are initially compressed using a randomized SVD.
+
+    Args:
+        linOp: the linear operator compress (must support linOp.shape and linOp@x)
+        rowNodes: the tree nodes giving the row indices of the starting blocks in linOp
+        colNodes: like rowNodes, but for column blocks
+        eps: the target tolerance for the low-rank approximation
+        p: the target rank of the low-rank approximation
+        q: the oversampling parameter for the randomized SVD
+
+    Returns:
+        bf.MatProduct: the butterfly factorization
+
+    '''
 
     m, n = linOp.shape
     M, N = len(rowNodes), len(colNodes)
 
+    # Things get a little crazy with the starting low-rank
+    # factorizations below if we allow the row or column nodes to
+    # contain fewer than `p` points... So, just ensure that there are
+    # at least `p` points here. We could look into relaxing this later
+    # but probably not worth the complication.
+    assert all(node.get_num_points() >= p for node in rowNodes)
+    assert all(node.get_num_points() >= p for node in colNodes)
+
     # Starting nodes should all come from the same tree and should all
     # be at the same depth
-    assert all(node.tree == nodes[0].tree for node in nodes)
-    assert all(node.depth == nodes[0].depth for node in nodes)
+    for nodes in [rowNodes, colNodes]:
+        assert all(node.tree == nodes[0].tree for node in nodes)
+        assert all(node.depth == nodes[0].depth for node in nodes)
 
     assert m == sum(node.get_num_points() for node in rowNodes)
     assert n == sum(node.get_num_points() for node in colNodes)
 
-    i0min = rowNodes[0].get_first_index()
-    j0min = colNodes[0].get_first_index()
+    rowSubtree, rowSubtreePerm = bf.Tree.from_node_span(rowNodes)
+    colSubtree, colSubtreePerm = bf.Tree.from_node_span(colNodes)
 
-    assert rowNodes[-1].get_last_index() - i0min == m
-    assert colNodes[-1].get_last_index() - j0min == n
+    # Now I need to set up two trees with the same structure as
+    # `rowSubtree` and `colSubtree`, but which are just plain "index
+    # trees" and whose leaves all contain `p` nodes.
+    #
+    #(Again, see the comment above about trying to make the starting
+    # low-rank factorizations smaller than `p`---would be a lot of
+    # added complication, probably for little benefit. Can consider
+    # this idea later as an optimization...)
 
-    diagBlocks = [[None for _ in range(N)] for _ in range(M)]
+    rowIndexSubtree = bf.Tree.for_middle_fac(rowSubtree, p)
+    colIndexSubtree = bf.Tree.for_middle_fac(colSubtree, p)
 
-    rowFacStreamers = [bf.FacStreamer() for _ in range(M)]
-    colFacStreamers = [bf.FacStreamer() for _ in range(N)]
+    import matplotlib.pyplot as plt
+    plt.figure()
+    ax = plt.gca()
+    bf.Quadtree.from_tree(rowSubtree).plot_node_boxes(ax)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_aspect('equal')
+    plt.tight_layout()
+    plt.show()
 
-    for colInd, colNode in enumerate(colNodes):
-        j0 = colNode.get_first_index() - j0min
-        j1 = colNode.get_last_index() - j0min
+    i0min = rowNodes[0].i0
+    j0min = colNodes[0].i0
 
-        # Algorithm 4.1
-        Omega = np.zeros((n, k + p))
-        Omega[j0:j1]
-        Y = linOp@Omega
-        Q = np.linalg.qr(Y)[0][:, :k]
-        B = Q.T
+    kwargs = dict(tol=eps, minNumRows=p, minNumCols=p)
 
-        assert False
-        # U, S, W = ... compute randomized SVD
+    rowFacStreamers, rowPerms = [], []
+    for a in range(M):
+        subtree, perm = bf.Tree.from_node(rowNodes[a])
+        facStreamer = bf.FacStreamer.from_trees(subtree, colIndexSubtree, **kwargs)
+        rowFacStreamers.append(facStreamer)
+        rowPerms.append(perm)
 
-        colIndPerm = None
+    colFacStreamers, colPerms = [], []
+    for b in range(N):
+        subtree, perm = bf.Tree.from_node(colNodes[a])
+        facStreamer = bf.FacStreamer.from_trees(subtree, rowIndexSubtree, **kwargs)
+        colFacStreamers.append(facStreamer)
+        colPerms.append(perm)
 
-        colFacStreamers[colIndPerm].feed(W)
+    # Set up the nonzero part of the left and right random test
+    # matrices. We need to precompute these so that we can reuse them
+    # later when we solve the least-squares problems for the middle
+    # blocks (the B's).
+    #
+    # TODO: might not actually need to store Omega...
+    OmegaBlocks = [zrandn(_.get_num_points(), p + q) for _ in colNodes]
+    OmegaTildeBlocks = [zrandn(_.get_num_points(), p + q) for _ in rowNodes]
 
-        for rowInd in range(M):
-            assert False # TODO: need the column permutation
-            diagBlock[rowInd, colIndPerm] = S
+    ABlocks = np.empty((M, N), dtype=object)
+    RTildeBlocks = np.empty((M, N), dtype=object)
 
-        for rowInd, rowNode in enumerate(rowNodes):
-            i0 = rowNode.get_first_index() - i0min
-            i1 = rowNode.get_last_index() - i0min
+    # Sample the range of each block column, stream the left butterfly
+    # factors we pick up, and collect the system matrix for each least
+    # square problem we need to solve to get the middle factors.
+    for b, colNode in enumerate(colNodes):
+        j0 = colNode.i0 - j0min
+        j1 = colNode.i1 - j0min
+        Omega = np.zeros((n, p + q), np.complex128)
+        Omega[j0:j1] = OmegaBlocks[b]
+        Y = np.array(linOp@Omega)
+        for a, rowNode in enumerate(rowNodes):
+            i0 = rowNode.i0 - i0min
+            i1 = rowNode.i1 - i0min
+            Q, S = np.linalg.svd(Y[i0:i1], full_matrices=False)[:2]
+            assert S.size <= p or S[p] <= eps*S[0]
+            Q = np.ascontiguousarray(Q[:, :p])
+            ABlocks[a, b] = OmegaTildeBlocks[a].T@Q
+            rowFacStreamers[a].feed(Q)
 
-            rowFacStreamers.feed(U[i0:i1])
+    # Sample the range of each block row, stream the right butterfly
+    # factors, and collect the load matrices (i.e., RTilde.T --- we
+    # just store RTilde) for each of the least squares problems.
+    for a, rowNode in enumerate(rowNodes):
+        print(f'{a = }')
+        i0 = rowNode.i0 - i0min
+        i1 = rowNode.i1 - i0min
+        OmegaTilde = np.zeros((m, p + q), np.complex128)
+        OmegaTilde[i0:i1] = OmegaTildeBlocks[a]
+        print(linOp.shape, linOp.T.shape, OmegaTilde.shape)
+        YTilde = np.array(linOp.T@OmegaTilde)
+        for b, colNode in enumerate(colNodes):
+            print(f'* {b = }')
+            j0 = colNode.i0 - j0min
+            j1 = colNode.i1 - j0min
+            assert False # TODO: switch to SVD...
+            QTilde, RTilde = np.linalg.qr(YTilde[j0:j1], mode='reduced')[:2]
+            RTildeBlocks[a, b] = RTilde
+            colFacStreamers[b].feed(QTilde)
+
+    # Solve each of the least squares problems for the middle factors:
+    BBlocks = np.empty((M, N), dtype=object)
+    for a, b in it.product(range(M), range(N)):
+        BBlocks[a, b] = np.linalg.lstsq(ABlocks[a, b], RTildeBlocks[a, b].T, rcond=None)
+
+    assert False # permute things the right way!
 
     assert False # extract factors!
 
     assert False # return!
     # return bf.MatProduct(...)
 
-class DenseLu:
+class DenseLu(bf.MatPython):
     def __init__(self, A, tol=1e-13):
         m, n = A.shape
         if m != n:
             raise ValueError("A isn't a square matrix")
-        del m
+
+        super().__init__(n, n)
 
         A_dense = np.array(A.to_mat_dense_complex())
-
-        print(A_dense)
-
-        import colorcet as cc
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import LogNorm
-        plt.figure()
-        plt.imshow(complex_to_hsv(A_dense))
-        # plt.imshow(abs(A_dense), norm=LogNorm(), cmap=cc.cm.fire_r)
-        plt.colorbar()
-        plt.show()
 
         P, L, U = scipy.linalg.lu(A_dense)
         self.P = P
         self.L = L
         self.U = U
 
-class HierarchicalLu:
+    def _Mul(self, X):
+        _ = self.P.T@X
+        _ = scipy.linalg.solve_triangular(self.L, _, lower=True, unit_diagonal=True)
+        _ = scipy.linalg.solve_triangular(self.U, _)
+        return _
+
+class HierarchicalLu(bf.MatPython):
     '''Prototype class for butterfly fast direct solver for 2D Helmholtz...'''
 
     DENSE_LU_THRESH = 64
 
-    def __init__(self, A, nodes, depth=0, parent=None):
-        print(f'{depth=}, {len(nodes)=}')
+    def __init__(self, A, nodes, k, eps, p=20, q=4, depth=0, parent=None):
+        m, n = A.shape
+        if m != n:
+            raise ValueError("A isn't a square matrix")
+
+        super().__init__(n, n)
+
+        print(f'- {depth=}, {len(nodes)=}')
 
         # TODO: handle this case
         assert len(nodes) > 1
@@ -287,20 +447,19 @@ class HierarchicalLu:
         self.nodes = nodes
 
         I1, I2 = get_block_inds_for_split(nodes)
-
         nodes1 = [nodes[i] for i in I1]
         nodes2 = [nodes[i] for i in I2]
+        print(f'  + {len(nodes1)=}, {len(nodes2)=}')
 
-        print(f'- {len(nodes1)=}, {len(nodes2)=}')
-
+        # Get diagonal blocks:
         A11 = self.A.get_blocks(I1, I1)
-
-        print(f'- {A11.shape=}')
+        A22 = self.A.get_blocks(I2, I2)
+        print(f'  + {A11.shape=}, {A22.shape=}')
 
         if max(A11.shape) <= HierarchicalLu.DENSE_LU_THRESH:
             self.A11_lu = DenseLu(A11)
         else:
-            self.A11_lu = HierarchicalLu(A11, nodes1, depth=depth+1, parent=self)
+            self.A11_lu = HierarchicalLu(A11, nodes1, k, eps, depth=depth+1, parent=self)
 
         # TODO: this is using the bad old style... but might as well
         # try it and check that it works! Maybe it's fast for a range
@@ -309,20 +468,41 @@ class HierarchicalLu:
         self.A12 = self.A.get_blocks(I1, I2)
         self.A21 = self.A.get_blocks(I2, I1)
 
-        A22 = self.A.get_blocks(I2, I2)
-        A11_refl = bf.MatProduct(self.A21, self.A11_lu, self.A12)
-        A11_refl_BF = sample_middle_out_butterfly(A11_refl, nodes2)
+        # Set up reflector:
+        A11_refl = bf.MatProduct.from_factors(self.A21, self.A11_lu, self.A12)
+
+        A11_refl_dense = np.array(A11_refl@np.eye(A11_refl.shape[0], dtype=np.complex128))
+
+        import colorcet as cc
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.imshow(np.real(A11_refl_dense), cmap=cc.cm.gouldian)
+        plt.colorbar()
+        plt.show()
+
+        A11_refl_nodes = get_refl_nodes(nodes2, nodes1, k, eps, p)
+        A11_refl_BF = sample_middle_out_butterfly(
+            A11_refl, A11_refl_nodes, A11_refl_nodes, eps, p, q)
+
+        # Set up Schur complement:
         A11_schur = bf.MatDiff(A22, A11_refl_BF)
+
+        # Continue factorization recursively:
         if max(A11_schur.shape) <= HierarchicalLu.DENSE_LU_THRESH:
+            # NOTE: actually, we should only do the middle-out
+            # butterfly factorization if we're *above* the LU
+            # threshold... it's a waste to do it otherwise
+            print('bad! see note')
+
             self.A11_schur_lu = DenseLu(A11_schur)
         else:
             self.A11_schur_lu = HierarchicalLu(A11_schur, nodes2, depth=depth+1, parent=self)
 
     @staticmethod
-    def from_quadtree(A, quadtree, init_level=2):
-        return HierarchicalLu(A, quadtree.get_level_nodes(init_level))
+    def from_quadtree(A, quadtree, k, eps, init_level=2):
+        return HierarchicalLu(A, quadtree.get_level_nodes(init_level), k, eps)
 
-    def solve(self, y):
+    def matMul(self, y):
         # y1, y2 = ...
         assert False # XXX
 
@@ -426,4 +606,5 @@ if MAKE_PLOTS:
 # COMPUTE THE HIERARCHICAL LU DECOMPOSITION OF A
 #
 
-A_lu = HierarchicalLu.from_quadtree(A, quadtree)
+print('assembling hierarchical LU decomposition:')
+A_lu = HierarchicalLu.from_quadtree(A, quadtree, k, eps)

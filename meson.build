@@ -1,6 +1,7 @@
 project('butterfly', 'c', 'cython', default_options : ['c_std=c11'])
 
 pkg = import('pkgconfig')
+py = import('python')
 
 if get_option('buildtype') == 'debug'
   add_project_arguments('-DBF_DEBUG', language : 'c')
@@ -19,6 +20,8 @@ endif
 
 cc = meson.get_compiler('c')
 
+python3 = import('python').find_installation()
+
 blas_dep = dependency('flexiblas', required : true)
 lapacke_dep = dependency('lapacke', required : true)
 
@@ -28,6 +31,43 @@ m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
 arpack_dep = dependency('arpack', required : true)
 gsl_dep = dependency('gsl', required : true)
+python3_dep = dependency('python3', required : true)
+
+############################################################################
+# NOTE: the following blob is used to set up numpy_dep
+# below. Following this GitHub issue:
+#
+#   https://github.com/mesonbuild/meson/issues/9598
+#
+# it was copied from the SciPy source and modified:
+#
+#   https://github.com/scipy/scipy/blob/main/scipy/meson.build#L30-L73
+#
+# Reason being that Meson doesn't yet support something like:
+#
+#   numpy_dep = dependency('numpy')
+#
+# TODO: keep an eye on this GitHub issue and replace with something
+# simpler once this feature is finished.
+numpy_incdir = meson.get_external_property('numpy-include-dir', 'not-given')
+if numpy_incdir == 'not-given'
+  numpy_incdir = run_command(python3,
+    [
+      '-c',
+      'import numpy as np; print(np.get_include())'
+    ],
+    check: true
+  ).stdout().strip()
+  # We do need an absolute path to feed to `cc.find_library` below
+  _numpy_incdir_abs = run_command(python3,
+    ['-c', 'import os; os.chdir(".."); import numpy; print(numpy.get_include())'],
+    check: true
+  ).stdout().strip()
+else
+  _numpy_incdir_abs = numpy_incdir
+endif
+numpy_inc = include_directories(numpy_incdir)
+numpy_dep = declare_dependency(include_directories: numpy_inc)
 
 butterfly_dependencies = [
   blas_dep,
@@ -38,7 +78,10 @@ butterfly_dependencies = [
   m_dep,
   arpack_dep,
   gsl_dep,
-  umfpack_dep
+  umfpack_dep,
+
+  python3_dep,
+  numpy_dep
 ]
 
 fmm2d_dep = dependency('fmm2d', required : true)
@@ -47,6 +90,7 @@ argtable3_dep = dependency('argtable3', required : true)
 butterfly_lib_src = [
   'src/array.c',
   'src/bbox.c',
+  'src/bf.c',
   'src/bessel.c',
   'src/cheb.c',
   'src/circle.c',
@@ -90,10 +134,12 @@ butterfly_lib_src = [
   'src/mat_identity.c',
   'src/mat_perm.c',
   'src/mat_product.c',
+  'src/mat_python.c',
   'src/mat_sum.c',
   'src/mat_zero.c',
   'src/mem.c',
   'src/node_array.c',
+  'src/node_span.c',
   'src/octree.c',
   'src/octree.get_nearest_neighbors.c',
   'src/octree_node.c',

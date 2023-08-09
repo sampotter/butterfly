@@ -26,6 +26,7 @@ struct BfQuadtree {
 
 /** Interface(Tree, Quadtree) */
 
+void bfQuadtreeCopyInto(BfQuadtree *quadtree, BfQuadtree *dstQuadtree);
 BfType bfQuadtreeGetType(BfQuadtree const *);
 
 /** Upcasting: Quadtree -> Tree */

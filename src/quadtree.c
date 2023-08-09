@@ -19,8 +19,13 @@ static BfSize const NUM_CHILDREN = 4;
 /** Interface(Tree, Quadtree) */
 
 static BfTreeVtable TreeVtable = {
+  .CopyInto = (__typeof__(&bfTreeCopyInto))bfQuadtreeCopyInto,
   .GetType = (__typeof__(&bfTreeGetType))bfQuadtreeGetType,
 };
+
+void bfQuadtreeCopyInto(BfQuadtree *quadtree, BfQuadtree *dstQuadtree) {
+  *dstQuadtree = *quadtree;
+}
 
 BfType bfQuadtreeGetType(BfQuadtree const *tree) {
   (void)tree;

@@ -358,7 +358,7 @@ void getPsiAndW0BlocksByRowNodeForPartialFac(BfFac const *fac,
     BfIndexedMat *indexedMat = bfPtrArrayGet(indexedPsiSubblocks, k);
     bfMemFree(indexedMat);
   }
-  bfPtrArrayDelete(&indexedPsiSubblocks);
+  bfPtrArrayDeinitAndDealloc(&indexedPsiSubblocks);
 
   BF_ASSERT(PsiBlock != NULL);
   BF_ASSERT(W0Block != NULL);

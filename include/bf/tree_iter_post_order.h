@@ -16,7 +16,7 @@ void bfTreeIterPostOrderNext(BfTreeIterPostOrder *iter);
 struct BfTreeIterPostOrder {
   BfTreeIter super;
 
-  /* Stack used internally by the travresal. */
+  /* Stack used internally by the traversal. */
   BfPtrArray stack;
 };
 

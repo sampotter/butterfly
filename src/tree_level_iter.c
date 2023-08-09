@@ -4,6 +4,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
+#include <bf/tree.h>
 #include <bf/tree_node.h>
 
 static
@@ -111,11 +112,10 @@ static void treeLevelIterInit_lrLevelOrder(BfTreeLevelIter *iter, BfTreeNode *no
 
   info->currentLevel = 0;
 
-  bfPtrArrayGetRangeView(
+  iter->levelNodes = bfPtrArrayGetRangeView(
     &iter->nodes,
     info->offsets[info->currentLevel],
-    info->offsets[info->currentLevel + 1],
-    &iter->levelNodes);
+    info->offsets[info->currentLevel + 1]);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -147,11 +147,10 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
 
   info->currentLevel = info->numLevels - 1;
 
-  bfPtrArrayGetRangeView(
+  iter->levelNodes = bfPtrArrayGetRangeView(
     &iter->nodes,
     info->offsets[info->currentLevel],
-    info->offsets[info->currentLevel + 1],
-    &iter->levelNodes);
+    info->offsets[info->currentLevel + 1]);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -162,12 +161,35 @@ treeLevelIterInit_lrReverseLevelOrder(BfTreeLevelIter *iter, BfTreeNode *node) {
 
 /** Implementation: TreeLevelIter */
 
+BfTreeLevelIter *bfTreeLevelIterNew(BfTreeTraversal traversal, BfTreeNode *node) {
+  BF_ERROR_BEGIN();
+
+  BfTreeLevelIter *treeLevelIter = bfMemAlloc(1, sizeof(BfTreeLevelIter));
+  HANDLE_ERROR();
+
+  bfTreeLevelIterInit(treeLevelIter, traversal, node);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return treeLevelIter;
+}
+
+BfTreeLevelIter *bfTreeLevelIterNewFromTree(BfTreeTraversal traversal, BfTree *tree) {
+  return bfTreeLevelIterNew(traversal, bfTreeGetRootNode(tree));
+}
+
 void bfTreeLevelIterInit(BfTreeLevelIter *iter, BfTreeTraversal traversal, BfTreeNode *node) {
   BF_ERROR_BEGIN();
 
-  iter->traversal = traversal;
+  /* Traversal defauls to LR level order: */
+  iter->traversal = traversal == BF_TREE_TRAVERSAL_UNKNOWN ?
+    BF_TREE_TRAVERSAL_LR_LEVEL_ORDER :
+    traversal;
 
-  switch (traversal) {
+  switch (iter->traversal) {
   case BF_TREE_TRAVERSAL_LR_LEVEL_ORDER:
     treeLevelIterInit_lrLevelOrder(iter, node);
     HANDLE_ERROR();
@@ -229,12 +251,10 @@ static void next_lrLevelOrder(BfTreeLevelIter *iter) {
 
   BF_ASSERT(info->currentLevel < info->numLevels);
 
-  bfMakeEmptyPtrArrayView(&iter->levelNodes);
-  bfPtrArrayGetRangeView(
+  iter->levelNodes = bfPtrArrayGetRangeView(
     &iter->nodes,
     info->offsets[info->currentLevel],
-    info->offsets[info->currentLevel + 1],
-    &iter->levelNodes);
+    info->offsets[info->currentLevel + 1]);
 }
 
 static void next_lrReverseLevelOrder(BfTreeLevelIter *iter) {
@@ -245,12 +265,10 @@ static void next_lrReverseLevelOrder(BfTreeLevelIter *iter) {
 
   --info->currentLevel;
 
-  bfMakeEmptyPtrArrayView(&iter->levelNodes);
-  bfPtrArrayGetRangeView(
+  iter->levelNodes = bfPtrArrayGetRangeView(
     &iter->nodes,
     info->offsets[info->currentLevel],
-    info->offsets[info->currentLevel + 1],
-    &iter->levelNodes);
+    info->offsets[info->currentLevel + 1]);
 }
 
 void bfTreeLevelIterNext(BfTreeLevelIter *iter) {
@@ -288,7 +306,7 @@ void bfTreeLevelIterDeinit(BfTreeLevelIter *iter) {
 }
 
 BfSize bfTreeLevelIterGetNumPoints(BfTreeLevelIter const *iter) {
-  BfPtrArray const *levelNodes = &iter->levelNodes;
+  BfPtrArray const *levelNodes = iter->levelNodes;
   BfSize numPoints = 0;
   for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i) {
     BfTreeNode const *node = bfPtrArrayGet(levelNodes, i);
@@ -298,11 +316,15 @@ BfSize bfTreeLevelIterGetNumPoints(BfTreeLevelIter const *iter) {
 }
 
 bool bfTreeLevelIterCurrentLevelIsInternal(BfTreeLevelIter const *iter) {
-  BfPtrArray const *levelNodes = &iter->levelNodes;
+  BfPtrArray const *levelNodes = iter->levelNodes;
   for (BfSize i = 0; i < bfPtrArraySize(levelNodes); ++i) {
     BfTreeNode const *treeNode = bfPtrArrayGet(levelNodes, i);
     if (bfTreeNodeIsLeaf(treeNode))
       return false;
   }
   return true;
+}
+
+BfPtrArray *bfTreeLevelIterGetLevelNodes(BfTreeLevelIter *iter) {
+  return iter->levelNodes;
 }

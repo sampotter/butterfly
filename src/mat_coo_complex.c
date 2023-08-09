@@ -13,8 +13,8 @@
 static BfMatVtable MAT_VTABLE = {
   .Delete = (__typeof__(&bfMatCooComplexDelete))bfMatCooComplexDelete,
   .GetType = (__typeof__(&bfMatCooComplexGetType))bfMatCooComplexGetType,
-  .GetNumRows = (__typeof__(&bfMatCooComplexGetNumRows))bfMatCooComplexGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatCooComplexGetNumCols))bfMatCooComplexGetNumCols,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatCooComplexGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatCooComplexGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatCooComplexGetRowRangeCopy))bfMatCooComplexGetRowRangeCopy,
   .GetColRangeCopy = (__typeof__(&bfMatCooComplexGetColRangeCopy))bfMatCooComplexGetColRangeCopy,
   .PermuteRows = (__typeof__(&bfMatCooComplexPermuteRows))bfMatCooComplexPermuteRows,
@@ -33,7 +33,8 @@ BfType bfMatCooComplexGetType(BfMat const *mat) {
   return BF_TYPE_MAT_COO_COMPLEX;
 }
 
-BfSize bfMatCooComplexGetNumRows(BfMat const *mat) {
+BfSize bfMatCooComplexGetNumRows(BfMatCooComplex const *matCooComplex) {
+  BfMat const *mat = bfMatCooComplexConstToMatConst(matCooComplex);
   if (bfMatGetType(mat) != BF_TYPE_MAT_COO_COMPLEX) {
     bfSetError(BF_ERROR_TYPE_ERROR);
     return BF_SIZE_BAD_VALUE;
@@ -42,7 +43,8 @@ BfSize bfMatCooComplexGetNumRows(BfMat const *mat) {
   }
 }
 
-BfSize bfMatCooComplexGetNumCols(BfMat const *mat) {
+BfSize bfMatCooComplexGetNumCols(BfMatCooComplex const *matCooComplex) {
+  BfMat const *mat = bfMatCooComplexConstToMatConst(matCooComplex);
   if (bfMatGetType(mat) != BF_TYPE_MAT_COO_COMPLEX) {
     bfSetError(BF_ERROR_TYPE_ERROR);
     return BF_SIZE_BAD_VALUE;
@@ -240,7 +242,7 @@ static BfMat *mul_denseComplex(BfMat const *mat, BfMat const *otherMat) {
     BfVec *rowVec = bfMatGetRowView(result, i);
     BfVecComplex *rowVecComplex = bfVecToVecComplex(rowVec);
 
-    BfComplex const *inPtr = matDenseComplex->data + j*matDenseComplex->rowStride;
+    BfComplex const *inPtr = bfMatDenseComplexGetRowConstPtr(matDenseComplex, j);
     BfComplex *outPtr = rowVecComplex->data;
 
     for (BfSize l = 0; l < p; ++l) {

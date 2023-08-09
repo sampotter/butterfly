@@ -184,8 +184,8 @@ BfVec *bfMatMulVec(BfMat const *mat, BfVec const *vec) {
   return mat->vtbl->MulVec(mat, vec);
 }
 
-void bfMatMulInplace(BfMat *mat, BfMat const *otherMat) {
-  mat->vtbl->MulInplace(mat, otherMat);
+void bfMatMulInplace(BfMat const *op1, BfMat const *op2, BfMat *res) {
+  op1->vtbl->MulInplace(op1, op2, res);
 }
 
 BfVec *bfMatRmulVec(BfMat const *mat, BfVec const *otherMat) {
@@ -258,6 +258,10 @@ void bfMatDivideCols(BfMat *mat, BfVec const *vec) {
 
 BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *colMask) {
   return mat->vtbl->GetSubmatByMask(mat, rowMask, colMask);
+}
+
+BfMat *bfMatGetTransposed(BfMat *mat, BfPolicy policy) {
+  return mat->vtbl->GetTransposed(mat, policy);
 }
 
 /** Implementation: Mat */

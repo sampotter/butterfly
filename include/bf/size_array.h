@@ -15,6 +15,7 @@ BfSizeArray *bfSizeArrayNew(void);
 BfSizeArray *bfSizeArrayNewIota(BfSize n);
 BfSizeArray *bfSizeArrayNewWithCapacity(BfSize capacity);
 BfSizeArray *bfSizeArrayNewWithDefaultCapacity();
+BfSizeArray *bfSizeArrayNewFromPtr(BfSize n, BfSize const *data);
 void bfSizeArrayInitWithCapacity(BfSizeArray *sizeArray, BfSize capacity);
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray);
 void bfSizeArrayDeinit(BfSizeArray *sizeArray);
