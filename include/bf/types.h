@@ -56,6 +56,7 @@ typedef struct BfFiedlerTreeNode BfFiedlerTreeNode;
 
 typedef struct BfTreeIter BfTreeIter;
 typedef struct BfTreeIterPostOrder BfTreeIterPostOrder;
+typedef struct BfTreeLevelIter BfTreeLevelIter;
 
 typedef struct BfTreeNodeSpan BfTreeNodeSpan;
 

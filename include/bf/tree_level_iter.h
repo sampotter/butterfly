@@ -4,12 +4,12 @@
 #include "tree_traversals.h"
 #include "types.h"
 
-typedef struct BfTreeLevelIter {
+struct BfTreeLevelIter {
   BfTreeTraversal traversal;
   BfPtrArray nodes;
   BfPtrArray levelNodes;
   void *aux;
-} BfTreeLevelIter;
+};
 
 void bfTreeLevelIterInit(BfTreeLevelIter *iter, BfTreeTraversal traversal, BfTreeNode *node);
 void bfTreeLevelIterDeinit(BfTreeLevelIter *iter);
