@@ -115,10 +115,9 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
 
   BfVectors2 *vectors = NULL;
 
-  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
 
-  if (bfMatDenseRealGetNumCols(mat) != 2)
+  if (bfMatDenseRealGetNumCols(matDenseReal) != 2)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   if (bfMatDenseGetColStride(matDense) != 1)
@@ -126,7 +125,7 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
 
   vectors = bfMemAlloc(1, sizeof(BfVectors2));
   vectors->data = (BfPoint2 *)matDenseReal->data;
-  vectors->size = bfMatDenseRealGetNumRows(mat);
+  vectors->size = bfMatDenseRealGetNumRows(matDenseReal);
   vectors->capacity = BF_SIZE_BAD_VALUE;
   vectors->isView = true;
 
