@@ -135,18 +135,18 @@ print(f'set up discretization with {n} points')
 # build quadtree on points w/ normals
 quadtree = bf.Quadtree.from_points_and_normals(X, N)
 
-import matplotlib.pyplot as plt
-plt.figure()
-# quadtree.plot_node_boxes()
-for node in quadtree.nodes:
-    bbox = node.bbox
-    x0, x1, y0, y1 = bbox.xmin, bbox.xmax, bbox.ymin, bbox.ymax
-    plt.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], c='r', zorder=2)
-plt.scatter(*np.array(X).T, s=2.5, c='k', zorder=1)
-plt.xlim(xmin, xmax)
-plt.ylim(ymin, ymax)
-plt.gca().set_aspect('equal')
-plt.show()
+if MAKE_PLOTS:
+    plt.figure()
+    # quadtree.plot_node_boxes()
+    for node in quadtree.nodes:
+        bbox = node.bbox
+        x0, x1, y0, y1 = bbox.xmin, bbox.xmax, bbox.ymin, bbox.ymax
+        plt.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], c='r', zorder=2)
+    plt.scatter(*np.array(X).T, s=2.5, c='k', zorder=1)
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.gca().set_aspect('equal')
+    plt.show()
 
 # get permuted copy of quadrature weights
 rev_perm = quadtree.perm.get_reverse()
@@ -230,16 +230,17 @@ def rank_for_node_is_small_enough(node, X2, k, eps, p):
     pX, pY, rX, rY, popt = _
 
     print(f'{popt = :.2f}')
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.scatter(*X1.T, s=5, c='b')
-    plt.scatter(*X2.T, s=5, c='r')
-    plt.scatter(*pX, s=10, c='b', marker='x')
-    plt.scatter(*pY, s=10, c='r', marker='x')
-    plt.gca().add_patch(plt.Circle(pX, rX, edgecolor='k', facecolor='none'))
-    plt.gca().add_patch(plt.Circle(pY, rY, edgecolor='k', facecolor='none'))
-    plt.gca().set_aspect('equal')
-    plt.show()
+
+    if MAKE_PLOTS:
+        plt.figure()
+        plt.scatter(*X1.T, s=5, c='b')
+        plt.scatter(*X2.T, s=5, c='r')
+        plt.scatter(*pX, s=10, c='b', marker='x')
+        plt.scatter(*pY, s=10, c='r', marker='x')
+        plt.gca().add_patch(plt.Circle(pX, rX, edgecolor='k', facecolor='none'))
+        plt.gca().add_patch(plt.Circle(pY, rY, edgecolor='k', facecolor='none'))
+        plt.gca().set_aspect('equal')
+        plt.show()
 
     return popt <= p
 
@@ -314,15 +315,15 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
     rowIndexSubtree = bf.Tree.for_middle_fac(rowSubtree, p)
     colIndexSubtree = bf.Tree.for_middle_fac(colSubtree, p)
 
-    import matplotlib.pyplot as plt
-    plt.figure()
-    ax = plt.gca()
-    bf.Quadtree.from_tree(rowSubtree).plot_node_boxes(ax)
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-    ax.set_aspect('equal')
-    plt.tight_layout()
-    plt.show()
+    if MAKE_PLOTS:
+        plt.figure()
+        ax = plt.gca()
+        bf.Quadtree.from_tree(rowSubtree).plot_node_boxes(ax)
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_aspect('equal')
+        plt.tight_layout()
+        plt.show()
 
     i0min = rowNodes[0].i0
     j0min = colNodes[0].i0
@@ -473,12 +474,11 @@ class HierarchicalLu(bf.MatPython):
 
         A11_refl_dense = np.array(A11_refl@np.eye(A11_refl.shape[0], dtype=np.complex128))
 
-        import colorcet as cc
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.imshow(np.real(A11_refl_dense), cmap=cc.cm.gouldian)
-        plt.colorbar()
-        plt.show()
+        if MAKE_PLOTS:
+            plt.figure()
+            plt.imshow(np.real(A11_refl_dense), cmap=cc.cm.gouldian)
+            plt.colorbar()
+            plt.show()
 
         A11_refl_nodes = get_refl_nodes(nodes2, nodes1, k, eps, p)
         A11_refl_BF = sample_middle_out_butterfly(
