@@ -203,3 +203,28 @@ repeat:
 
   return isDescendant;
 }
+
+BfTreeNode *bfTreeNodeGetChild(BfTreeNode *treeNode, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfTreeNode *child = NULL;
+
+  if (i >= treeNode->maxNumChildren)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  child = treeNode->child[i];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return child;
+}
+
+BfSize bfTreeNodeGetMaxNumChildren(BfTreeNode const *treeNode) {
+  return treeNode->maxNumChildren;
+}
+
+bool bfTreeNodeHasChild(BfTreeNode const *treeNode, BfSize i) {
+  return treeNode->child[i] != NULL;
+}
