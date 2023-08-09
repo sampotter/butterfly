@@ -19,8 +19,8 @@ typedef struct BfFacSpec {
   BfSize minNumRows;
 
   /* The minimum number of columns in a block needed before trying a
-   * truncated SVD. This is used to prevent us from starting to low in
-   * the column tree. */
+   * truncated SVD. This is used to prevent us from starting too low
+   * in the column tree. */
   BfSize minNumCols;
 
   /* Compare the relative errors while streaming the butterfly
