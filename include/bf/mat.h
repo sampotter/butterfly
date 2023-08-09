@@ -9,6 +9,23 @@
 #include "types.h"
 #include "vec.h"
 
+/* TODO list for this interface...
+ *
+ * - [ ] Add parameter names to everything... Better for
+ *   self-documentation.
+ *
+ * - [ ] Merge Get{Row,Col}Range and Get{Row,Col}RangeCopy into a
+ *   single function Get*Range which takes a policy parameter. Also
+ *   add a Get*RangeConst version of this function.
+ *
+ * - [ ] Merge GetRowCopy, GetRowView, GetColView, GetColRangeView,
+ *   etc. to something which makes it clear that they're talking about
+ *   row and column *vectors* rather than submatrices. Reduce the
+ *   number of overloads here, use a policy parameter, add a Const
+ *   overload...
+ *
+ * More to come... */
+
 typedef enum BfMatProps {
   BF_MAT_PROPS_NONE = 0,
   BF_MAT_PROPS_VIEW = 1 << 0,
