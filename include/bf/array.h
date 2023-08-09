@@ -20,3 +20,5 @@ void bfArrayInsert(BfArray *array, BfSize i, BfConstPtr eltPtr);
 void bfArraySave(BfArray const *array, char const *path);
 bool bfArrayIsEmpty(BfArray const *array);
 void bfArrayRemove(BfArray *array, BfSize i);
+void bfArrayPopFirst(BfArray *array, BfPtr eltPtr);
+void bfArrayAppend(BfArray *array, BfPtr eltPtr);

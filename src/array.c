@@ -329,3 +329,38 @@ void bfArrayRemove(BfArray *array, BfSize i) {
     BF_DIE();
   }
 }
+
+void bfArrayPopFirst(BfArray *array, BfPtr eltPtr) {
+  BF_ERROR_BEGIN();
+
+  if (bfArrayIsEmpty(array))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  bfArrayGet(array, 0, eltPtr);
+
+  bfArrayRemove(array, 0);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfArrayAppend(BfArray *array, BfPtr eltPtr) {
+  BF_ERROR_BEGIN();
+
+  BfSize n = array->size;
+
+  if (n == array->capacity) {
+    expand(array);
+    HANDLE_ERROR();
+  }
+
+  bfMemCopy(eltPtr, 1, array->eltSize, ELT_PTR(array, n));
+
+  ++array->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
