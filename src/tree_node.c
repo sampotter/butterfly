@@ -8,6 +8,9 @@
 
 /** Interface: TreeNode */
 
+static BfTreeNodeVtable TreeNodeVtable = {
+};
+
 BfTreeNode *bfTreeNodeCopy(BfTreeNode const *node) {
   return node->vtbl->Copy(node);
 }
@@ -92,6 +95,10 @@ void bfTreeNodeDeinit(BfTreeNode *treeNode) {
 void bfTreeNodeDealloc(BfTreeNode **treeNode) {
   bfMemFree(*treeNode);
   *treeNode = NULL;
+}
+
+BfTreeNodeVtable *bfTreeNodeGetVtable(void) {
+  return &TreeNodeVtable;
 }
 
 bool bfTreeNodeInstanceOf(BfTreeNode const *treeNode, BfType type) {

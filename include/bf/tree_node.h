@@ -59,6 +59,7 @@ BfTreeNode *bfTreeNodeAlloc(void);
 void bfTreeNodeInitRoot(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, BfTree const *tree, BfSize maxNumChildren);
 void bfTreeNodeInit(BfTreeNode *treeNode, BfTreeNodeVtable *vtbl, bool isRoot, void *parent, BfSize maxNumChildren, BfSize index, BfSize depth);
 void bfTreeNodeDeinit(BfTreeNode *treeNode);
+BfTreeNodeVtable *bfTreeNodeGetVtable(void);
 bool bfTreeNodeInstanceOf(BfTreeNode const *treeNode, BfType type);
 BfSize bfTreeNodeGetMaxDepthBelow(BfTreeNode const *treeNode);
 BfTreeNode *bfTreeNodeGetParent(BfTreeNode *treeNode);
