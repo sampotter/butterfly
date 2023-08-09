@@ -15,11 +15,12 @@ static BfMatVtable MAT_VTABLE = {
   .GetType = (__typeof__(&bfMatProductGetType))bfMatProductGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatProductNumBytes,
   .Dump = (__typeof__(&bfMatDump))bfMatProductDump,
-  .GetNumRows = (__typeof__(&bfMatProductGetNumRows))bfMatProductGetNumRows,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatProductGetNumRows,
   .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
   .Mul = (__typeof__(&bfMatProductMul))bfMatProductMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatProductMulVec,
+  .Rmul = (__typeof__(&bfMatRmul))bfMatProductRmul,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
   .GetTransposed = (__typeof__(&bfMatGetTransposed))bfMatProductGetTransposed,
@@ -140,16 +141,18 @@ bool bfMatProductInstanceOf(BfMat const *mat, BfType type) {
   return bfTypeDerivedFrom(bfMatGetType(mat), type);
 }
 
-BfSize bfMatProductGetNumRows(BfMat const *mat) {
+BfSize bfMatProductGetNumRows(BfMatProduct const *matProduct) {
   BF_ERROR_BEGIN();
 
   BfMat const *factor = NULL;
   BfSize numRows = BF_SIZE_BAD_VALUE;
 
+  BfMat const *mat = bfMatProductConstToMatConst(matProduct);
+
   if (bfMatIsTransposed(mat))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
 
-  factor = bfMatProductGetFactor((BfMatProduct *)mat, 0);
+  factor = bfMatProductGetFactorConst(matProduct, 0);
   HANDLE_ERROR();
 
   numRows = bfMatGetNumRows(factor);
@@ -276,6 +279,36 @@ BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec) {
   return result;
 }
 
+BfMat *bfMatProductRmul(BfMatProduct const *matProduct, BfMat const *mat) {
+  BF_ERROR_BEGIN();
+
+  BfMat *result = NULL;
+
+  if (bfMatGetNumCols(mat) != bfMatProductGetNumRows(matProduct))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMat const *factor = bfMatProductGetFactorConst(matProduct, 0);
+
+  BfMat *prev = bfMatRmul(factor, mat);
+  HANDLE_ERROR();
+
+  for (BfSize i = 1; i < bfMatProductNumFactors(matProduct); ++i) {
+    factor = bfMatProductGetFactorConst(matProduct, i);
+
+    result = bfMatRmul(factor, prev);
+    HANDLE_ERROR();
+
+    bfMatDelete(&prev);
+    prev = result;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return result;
+}
+
 BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec) {
   BF_ERROR_BEGIN();
 
@@ -353,8 +386,7 @@ BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy) {
   BfSize n = bfMatProductNumFactors(matProduct);
   for (BfSize i = 0; i < n; ++i) {
     BfMat *factor = bfMatProductGetFactor(matProduct, n - i - 1);
-    BfMat *factorTransposed = bfMatGet(factor, policy);
-    bfMatTrans(factorTransposed);
+    BfMat *factorTransposed = bfMatGetTransposed(factor, policy);
     bfMatProductPostMultiply(matProductTransposed, factorTransposed);
   }
 
@@ -368,6 +400,10 @@ BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy) {
 /** Upcasting: */
 
 BfMat *bfMatProductToMat(BfMatProduct *matProduct) {
+  return &matProduct->super;
+}
+
+BfMat const *bfMatProductConstToMatConst(BfMatProduct const *matProduct) {
   return &matProduct->super;
 }
 

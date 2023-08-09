@@ -39,14 +39,15 @@ static BfMatVtable MAT_VTABLE = {
   .NumBytes = (__typeof__(&bfMatBlockDenseNumBytes))bfMatBlockDenseNumBytes,
   .Save = (__typeof__(&bfMatSave))bfMatBlockDenseSave,
   .Dump = (__typeof__(&bfMatDump))bfMatBlockDenseDump,
-  .GetNumRows = (__typeof__(&bfMatBlockDenseGetNumRows))bfMatBlockDenseGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatBlockDenseGetNumCols))bfMatBlockDenseGetNumCols,
-  .GetRowRange = (__typeof__(&bfMatBlockDenseGetRowRange))bfMatBlockDenseGetRowRange,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatBlockDenseGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatBlockDenseGetNumCols,
+  .GetRowRange = (__typeof__(&bfMatGetRowRange))bfMatBlockDenseGetRowRange,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockDenseGetRowRangeCopy,
   .ScaleCols = (__typeof__(&bfMatScaleCols))bfMatBlockDenseScaleCols,
   .AddInplace = (__typeof__(&bfMatAddInplace))bfMatBlockDenseAddInplace,
   .Mul = (__typeof__(&bfMatBlockDenseMul))bfMatBlockDenseMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatBlockDenseMulVec,
+  .Rmul = (__typeof__(&bfMatRmul))bfMatBlockDenseRmul,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatBlockDenseRmulVec,
   .ToType = (__typeof__(&bfMatToType))bfMatBlockDenseToType,
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
@@ -266,31 +267,33 @@ void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp) {
   }
 }
 
-BfSize bfMatBlockDenseGetNumRows(BfMat const *mat) {
-  BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+BfSize bfMatBlockDenseGetNumRows(BfMatBlockDense const *matBlockDense) {
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
+  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
   return bfMatIsTransposed(mat) ?
     matBlock->colOffset[mat->numCols] :
     matBlock->rowOffset[mat->numRows];
 }
 
-BfSize bfMatBlockDenseGetNumCols(BfMat const *mat) {
-  BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
+BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *matBlockDense) {
+  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
+  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
   return bfMatIsTransposed(mat) ?
     matBlock->rowOffset[mat->numRows] :
     matBlock->colOffset[mat->numCols];
 }
 
-BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
+BfMat *bfMatBlockDenseGetRowRange(BfMatBlockDense *matBlockDense, BfSize i0, BfSize i1) {
   BF_ERROR_BEGIN();
 
-  BfMatBlock *matBlock = bfMatToMatBlock(mat);
+  BfMatBlock *matBlock = bfMatBlockDenseToMatBlock(matBlockDense);
 
   BfMatBlockDense *view = NULL;
 
   if (i0 >= i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfSize numRows = bfMatBlockDenseGetNumRows(mat);
+  BfSize numRows = bfMatBlockDenseGetNumRows(matBlockDense);
 
   if (i0 >= numRows)
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
@@ -333,16 +336,13 @@ BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   return bfMatBlockDenseToMat(view);
 }
 
-BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense,
-                                      BfSize i0, BfSize i1) {
+BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense, BfSize i0, BfSize i1) {
   BF_ERROR_BEGIN();
 
   if (i0 > i1)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-
-  BfSize numRows = bfMatBlockDenseGetNumRows(mat);
+  BfSize numRows = bfMatBlockDenseGetNumRows(matBlockDense);
 
   /* Check whether i0 <= i1 index a valid row range: */
   if (i0 == i1 && i0 > numRows)
@@ -522,6 +522,9 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
   BfMat const *block = NULL, *op2Rows = NULL;
   BfMat *result = NULL, *resultRows = NULL, *tmp = NULL;
 
+  if (bfMatGetNumCols(mat) != bfMatGetNumRows(otherMat))
+    RAISE_ERROR(BF_ERROR_INCOMPATIBLE_SHAPES);
+
   numRowBlocks = bfMatBlockGetNumRowBlocks(matBlock);
   numColBlocks = bfMatBlockGetNumColBlocks(matBlock);
 
@@ -529,26 +532,39 @@ BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat) {
   numCols = bfMatGetNumCols(otherMat);
 
   result = bfMatZerosLike(otherMat, numRows, numCols);
-  if (result == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   for (BfSize i = 0, i0, i1; i < numRowBlocks; ++i) {
     i0 = matBlock->rowOffset[i];
     i1 = matBlock->rowOffset[i + 1];
+
     resultRows = bfMatGetRowRange(result, i0, i1);
+    HANDLE_ERROR();
+
     for (BfSize j = 0, j0, j1; j < numColBlocks; ++j) {
       j0 = matBlock->colOffset[j];
       j1 = matBlock->colOffset[j + 1];
+
       op2Rows = bfMatGetRowRange((BfMat *)otherMat, j0, j1);
+      HANDLE_ERROR();
+
       block = bfMatBlockDenseGetBlockConst(matBlockDense, i, j);
       BF_ASSERT(bfMatGetNumRows(block) == i1 - i0);
       BF_ASSERT(bfMatGetNumCols(block) == j1 - j0);
+
+      /* TODO: can optimize this pretty significantly by changing this
+       * to "saxpy inplace"... e.g. level 3 BLAS supports this... */
       tmp = bfMatMul(block, op2Rows);
+      HANDLE_ERROR();
+
       bfMatAddInplace(resultRows, tmp);
+      HANDLE_ERROR();
+
       bfMatDelete(&tmp);
       bfMatDelete((BfMat **)&op2Rows);
       bfMatDelete((BfMat **)&block);
     }
+
     bfMatDelete(&resultRows);
   }
 
@@ -615,6 +631,62 @@ BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense,
     }
 
     bfVecDelete(&resultSubvecView);
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return result;
+}
+
+BfMat *bfMatBlockDenseRmul(BfMatBlockDense const *matBlockDense, BfMat const *mat) {
+  BF_ERROR_BEGIN();
+
+  BfMat *result = NULL;
+
+  if (bfMatGetNumCols(mat) != bfMatBlockDenseGetNumRows(matBlockDense))
+    RAISE_ERROR(BF_ERROR_INCOMPATIBLE_SHAPES);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatBlockDenseGetNumCols(matBlockDense);
+
+  result = bfMatZerosLike(mat, m, n);
+  HANDLE_ERROR();
+
+  BfSize numRowBlocks = bfMatBlockDenseGetNumRowBlocks(matBlockDense);
+  BfSize numColBlocks = bfMatBlockDenseGetNumColBlocks(matBlockDense);
+
+  for (BfSize j = 0; j < numColBlocks; ++j) {
+    BfSize j0, j1;
+    bfMatBlockDenseGetColSpan(matBlockDense, j, &j0, &j1);
+
+    BfMat *resultCols = bfMatGetColRange(result, j0, j1);
+    HANDLE_ERROR();
+
+    for (BfSize i = 0; i < numRowBlocks; ++i) {
+      BfSize i0, i1;
+      bfMatBlockDenseGetRowSpan(matBlockDense, i, &i0, &i1);
+
+      BfMat const *block = bfMatBlockDenseGetBlockConst(matBlockDense, i, j);
+      BF_ASSERT(bfMatGetNumRows(block) == i1 - i0);
+      BF_ASSERT(bfMatGetNumCols(block) == j1 - j0);
+
+      BfMat const *matCols = bfMatGetColRangeConst(mat, i0, i1);
+      HANDLE_ERROR();
+
+      BfMat *tmp = bfMatRmul(block, matCols);
+      HANDLE_ERROR();
+
+      bfMatAddInplace(resultCols, tmp);
+      HANDLE_ERROR();
+
+      bfMatDelete(&tmp);
+      bfMatDelete((BfMat **)&matCols);
+      bfMatDelete((BfMat **)&block);
+    }
+
+    bfMatDelete(&resultCols);
   }
 
   BF_ERROR_END() {
@@ -945,7 +1017,39 @@ BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *mat, BfSize i, 
   return block;
 }
 
-/** Upcasting: */
+void bfMatBlockDenseGetRowSpan(BfMatBlockDense const *matBlockDense, BfSize i, BfSize *i0, BfSize *i1) {
+  BF_ERROR_BEGIN();
+
+  if (i >= bfMatBlockDenseGetNumRowBlocks(matBlockDense))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
+
+  *i0 = matBlock->rowOffset[i];
+  *i1 = matBlock->rowOffset[i + 1];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfMatBlockDenseGetColSpan(BfMatBlockDense const *matBlockDense, BfSize j, BfSize *j0, BfSize *j1) {
+  BF_ERROR_BEGIN();
+
+  if (j >= bfMatBlockDenseGetNumColBlocks(matBlockDense))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
+
+  *j0 = matBlock->colOffset[j];
+  *j1 = matBlock->colOffset[j + 1];
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+/** Upcasting: MatBlockDense -> Mat */
 
 BfMat *bfMatBlockDenseToMat(BfMatBlockDense *matBlockDense) {
   return &matBlockDense->super.super;
@@ -955,7 +1059,13 @@ BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense
   return &matBlockDense->super.super;
 }
 
+/** Upcasting: MatBlockDense -> MatBlock */
+
 BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlockDense) {
+  return &matBlockDense->super;
+}
+
+BfMatBlock const *bfMatBlockDenseConstToMatBlockConst(BfMatBlockDense const *matBlockDense) {
   return &matBlockDense->super;
 }
 

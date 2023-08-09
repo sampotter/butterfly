@@ -383,8 +383,11 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
         i1 = rowNode.i1 - i0min
         OmegaTilde = np.zeros((m, p + q), np.complex128)
         OmegaTilde[i0:i1] = OmegaTildeBlocks[a]
-        print(linOp.shape, linOp.T.shape, OmegaTilde.shape)
-        YTilde = np.array(linOp.T@OmegaTilde)
+        OmegaTildeT = np.ascontiguousarray(OmegaTilde.T)
+        # print(linOp.shape, linOp.T.shape, OmegaTilde.shape)
+        # YTilde = linOp^T * OmegaTilde -- but this is a very
+        # inefficient way to do this...
+        YTilde = np.array(linOp.__rmatmul__(OmegaTildeT)).T
         for b, colNode in enumerate(colNodes):
             print(f'* {b = }')
             j0 = colNode.i0 - j0min
@@ -426,6 +429,12 @@ class DenseLu(bf.MatPython):
         _ = scipy.linalg.solve_triangular(self.L, _, lower=True, unit_diagonal=True)
         _ = scipy.linalg.solve_triangular(self.U, _)
         return _
+
+    def _Rmul(self, X):
+        _ = scipy.linalg.solve_triangular(self.U.T, X.T, lower=True)
+        _ = scipy.linalg.solve_triangular(self.L.T, _, unit_diagonal=True)
+        _ = self.P@_
+        return _.T
 
 class HierarchicalLu(bf.MatPython):
     '''Prototype class for butterfly fast direct solver for 2D Helmholtz...'''
@@ -502,7 +511,7 @@ class HierarchicalLu(bf.MatPython):
     def from_quadtree(A, quadtree, k, eps, init_level=2):
         return HierarchicalLu(A, quadtree.get_level_nodes(init_level), k, eps)
 
-    def matMul(self, y):
+    def _Mul(self, y):
         # y1, y2 = ...
         assert False # XXX
 
@@ -515,6 +524,10 @@ class HierarchicalLu(bf.MatPython):
         assert False
 
         return x
+
+    def _Rmul(self, X):
+        print('HierarchicalLu._Rmul')
+        assert False
 
 ############################################################################
 # COMMON STUFF FOR REST OF SCRIPT

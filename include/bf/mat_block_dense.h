@@ -13,14 +13,15 @@ BfType bfMatBlockDenseGetType(BfMat const *mat);
 BfSize bfMatBlockDenseNumBytes(BfMat const *mat);
 void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path);
 void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp);
-BfSize bfMatBlockDenseGetNumRows(BfMat const *mat);
-BfSize bfMatBlockDenseGetNumCols(BfMat const *mat);
-BfMat *bfMatBlockDenseGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
+BfSize bfMatBlockDenseGetNumRows(BfMatBlockDense const *matBlockDense);
+BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *mat);
+BfMat *bfMatBlockDenseGetRowRange(BfMatBlockDense *matBlockDense, BfSize i0, BfSize i1);
 BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense, BfSize i0, BfSize i1);
 void bfMatBlockDenseScaleCols(BfMatBlockDense *matBlockDense, BfVec const *vec);
 void bfMatBlockDenseAddInplace(BfMatBlockDense *matBlockDense, BfMat const *otherMat);
 BfMat *bfMatBlockDenseMul(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatBlockDenseMulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
+BfMat *bfMatBlockDenseRmul(BfMatBlockDense const *matBlockDense, BfMat const *mat);
 BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const *vec);
 BfMat *bfMatBlockDenseToType(BfMatBlockDense const *matBlockDense, BfType type);
 BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense);
@@ -35,6 +36,8 @@ BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize 
 BfSize bfMatBlockDenseGetColOffset(BfMatBlockDense const *matBlockDense, BfSize j);
 BfMat *bfMatBlockDenseGetBlock(BfMatBlockDense *matBlockDense, BfSize i, BfSize j);
 BfMat const *bfMatBlockDenseGetBlockConst(BfMatBlockDense const *matBlockDense, BfSize i, BfSize j);
+void bfMatBlockDenseGetRowSpan(BfMatBlockDense const *matBlockDense, BfSize i, BfSize *i0, BfSize *i1);
+void bfMatBlockDenseGetColSpan(BfMatBlockDense const *matBlockDense, BfSize j, BfSize *j0, BfSize *j1);
 
 /** Upcasting: MatBlockDense -> Mat */
 
@@ -44,6 +47,7 @@ BfMat const *bfMatBlockDenseConstToMatConst(BfMatBlockDense const *matBlockDense
 /** Upcasting: MatBlockDense -> MatBlock */
 
 BfMatBlock *bfMatBlockDenseToMatBlock(BfMatBlockDense *matBlockDense);
+BfMatBlock const *bfMatBlockDenseConstToMatBlockConst(BfMatBlockDense const *matBlockDense);
 
 /** Downcasting: Mat -> MatBlockDense */
 

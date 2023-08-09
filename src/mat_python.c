@@ -18,6 +18,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatPythonGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatPythonGetNumCols,
   .Mul = (__typeof__(&bfMatMul))bfMatPythonMul,
+  .Rmul = (__typeof__(&bfMatRmul))bfMatPythonRmul,
 };
 
 BfMat *bfMatPythonGetView(BfMatPython *matPython) {
@@ -60,11 +61,15 @@ static BfMat *mul_matDenseComplex(BfMatPython const *matPython, BfMatDenseComple
 
   BfMat *res = NULL;
 
+  if (bfMatPythonGetNumCols(matPython) != bfMatDenseComplexGetNumRows(matDenseComplex))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   if (!PyObject_HasAttrString(matPython->obj, "_Mul"))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   PyObject *_MulObj = PyObject_GetAttrString(matPython->obj, "_Mul");
 
+  /* Create PyArray w/ a view of the contents of `matDenseComplex`: */
   int nd = 2;
   npy_intp dims[2] = {
     bfMatDenseComplexGetNumRows(matDenseComplex),
@@ -100,25 +105,79 @@ static BfMat *mul_matDenseComplex(BfMatPython const *matPython, BfMatDenseComple
 }
 
 BfMat *bfMatPythonMul(BfMatPython const *matPython, BfMat const *otherMat) {
-  BF_ERROR_BEGIN();
-
-  if (bfMatPythonGetNumCols(matPython) != bfMatGetNumRows(otherMat))
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  BfMat *result = NULL;
   switch (bfMatGetType(otherMat)) {
   case BF_TYPE_MAT_DENSE_COMPLEX:
-    result = mul_matDenseComplex(matPython, bfMatConstToMatDenseComplexConst(otherMat));
+    return mul_matDenseComplex(matPython, bfMatConstToMatDenseComplexConst(otherMat));
     break;
   default:
-    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
   }
+}
+
+static BfMat *rmul_matDenseComplex(BfMatPython const *matPython, BfMatDenseComplex const *matDenseComplex) {
+  BF_ERROR_BEGIN();
+
+  BfMat *result = NULL;
+
+  if (bfMatDenseComplexGetNumCols(matDenseComplex) != bfMatPythonGetNumRows(matPython))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (!PyObject_HasAttrString(matPython->obj, "_Rmul"))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* Get the `_Rmul` method of the `bf.MatPython` instance pointed to
+   * by `matPython->obj`: */
+  PyObject *_RmulObj = PyObject_GetAttrString(matPython->obj, "_Rmul");
+
+  /* Create a `PyArray` w/ a view of the contents of `matDenseComplex`: */
+  int nd = 2;
+  npy_intp dims[2] = {
+    bfMatDenseComplexGetNumRows(matDenseComplex),
+    bfMatDenseComplexGetNumCols(matDenseComplex)
+  };
+  int typenum = BF_COMPLEX_TYPENUM;
+  void *data = matDenseComplex->data;
+  PyObject *matDenseComplexObj = PyArray_SimpleNewFromData(nd, dims, typenum, data);
+
+  /* Prepare the arguments for the call to `_Rmul`: */
+  PyObject *argsObj = PyTuple_New(1);
+  PyTuple_SetItem(argsObj, 0, matDenseComplexObj);
+
+  /* Call `_Rmul`: */
+  PyObject *resObj = PyObject_Call(_RmulObj, argsObj, NULL);
+  if (!PyArray_Check(resObj))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  /* Make sure the result has two dimensions: */
+  PyArrayObject *resArrayObj = (PyArrayObject *)resObj;
+  BF_ASSERT(PyArray_NDIM(resArrayObj) == 2);
+
+  /* Create a `BfMatDenseComplex` with a view of the the result: */
+  result = BF_TO_MAT(bfMatDenseComplexNewViewFromPyArray((BfPtr)resObj));
+  HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
   }
 
+  // Py_DECREF(_RmulObj);
+  // Py_DECREF(matDenseComplexObj);
+  // Py_DECREF(argsObj);
+  // Py_DECREF(resObj);
+
   return result;
+}
+
+BfMat *bfMatPythonRmul(BfMatPython const *matPython, BfMat const *otherMat) {
+  switch (bfMatGetType(otherMat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return rmul_matDenseComplex(matPython, bfMatConstToMatDenseComplexConst(otherMat));
+    break;
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 /** Upcasting: MatPython -> Mat */

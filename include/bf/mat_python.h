@@ -12,6 +12,7 @@ BfType bfMatPythonGetType(BfMatPython const *matPython);
 BfSize bfMatPythonGetNumRows(BfMatPython const *matPython);
 BfSize bfMatPythonGetNumCols(BfMatPython const *matPython);
 BfMat *bfMatPythonMul(BfMatPython const *matPython, BfMat const *otherMat);
+BfMat *bfMatPythonRmul(BfMatPython const *matPython, BfMat const *otherMat);
 
 /** Upcasting: MatPython -> Mat */
 

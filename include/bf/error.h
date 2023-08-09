@@ -9,6 +9,7 @@ enum BfError {
   BF_ERROR_OUT_OF_RANGE,
   BF_ERROR_FILE_ERROR,
   BF_ERROR_TYPE_ERROR,
+  BF_ERROR_INCOMPATIBLE_SHAPES,
 };
 
 enum BfError bfGetError(void);

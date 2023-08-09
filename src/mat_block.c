@@ -50,6 +50,14 @@ BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *matBlock, BfSize i, BfSize j) {
   return matBlock->vtbl->GetBlockCopy(matBlock, i, j);
 }
 
+void bfMatBlockGetRowSpan(BfMatBlock const *matBlock, BfSize i, BfSize *i0, BfSize *i1) {
+  matBlock->vtbl->GetRowSpan(matBlock, i, i0, i1);
+}
+
+void bfMatBlockGetColSpan(BfMatBlock const *matBlock, BfSize i, BfSize *i0, BfSize *i1) {
+  matBlock->vtbl->GetColSpan(matBlock, i, i0, i1);
+}
+
 /** Upcasting: MatBlock -> Mat */
 
 BfMat const *bfMatBlockConstToMatConst(BfMatBlock const *matBlock) {

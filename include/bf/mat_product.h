@@ -12,11 +12,12 @@ void bfMatProductDelete(BfMat **mat);
 BfType bfMatProductGetType(BfMat const *mat);
 BfSize bfMatProductNumBytes(BfMatProduct const *matProduct);
 void bfMatProductDump(BfMatProduct const *matProduct, FILE *fp);
-BfSize bfMatProductGetNumRows(BfMat const *mat);
+BfSize bfMatProductGetNumRows(BfMatProduct const *matProduct);
 BfSize bfMatProductGetNumCols(BfMat const *mat);
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec);
 BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat);
 BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec);
+BfMat *bfMatProductRmul(BfMatProduct const *matProduct, BfMat const *mat);
 BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat);
 BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy);
@@ -29,6 +30,7 @@ typedef struct BfMatProduct {
 } BfMatProduct;
 
 BfMat *bfMatProductToMat(BfMatProduct *matProduct);
+BfMat const *bfMatProductConstToMatConst(BfMatProduct const *matProduct);
 
 BfMatProduct *bfMatToMatProduct(BfMat *mat);
 BfMatProduct const *bfMatConstToMatProductConst(BfMat const *mat);

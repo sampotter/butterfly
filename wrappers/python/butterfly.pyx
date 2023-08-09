@@ -338,7 +338,7 @@ cdef class Mat:
         return self
 
     def _matmul_ndarray(self, cnp.ndarray arr):
-        return self@Mat.from_ndarray(arr)
+        return self._matmul_mat(Mat.from_ndarray(arr))
 
     def _matmul_mat(self, Mat mat):
         return reify_mat(bfMatMul(self.mat, mat.mat))
@@ -348,6 +348,20 @@ cdef class Mat:
             return self._matmul_ndarray(mat)
         elif isinstance(mat, Mat):
             return self._matmul_mat(mat)
+        else:
+            raise NotImplementedError()
+
+    def _rmatmul_ndarray(self, cnp.ndarray arr):
+        return self._rmatmul_mat(Mat.from_ndarray(arr))
+
+    def _rmatmul_mat(self, Mat mat):
+        return reify_mat(bfMatRmul(self.mat, mat.mat))
+
+    def __rmatmul__(self, mat):
+        if isinstance(mat, np.ndarray):
+            return self._rmatmul_ndarray(mat)
+        elif isinstance(mat, Mat):
+            return self._rmatmul_mat(mat)
         else:
             raise NotImplementedError()
 

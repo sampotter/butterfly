@@ -26,7 +26,8 @@ void bfMatDenseComplexSetColRange(BfMat *mat, BfSize j, BfSize i0, BfSize i1, Bf
 BfMat *bfMatDenseComplexGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
 BfMat *bfMatDenseComplexGetRowRangeCopy(BfMatDenseComplex const *matDenseComplex, BfSize i0, BfSize i1);
 BfMat const *bfMatDenseComplexGetRowRangeConst(BfMatDenseComplex const *matDenseComplex, BfSize i0, BfSize i1);
-BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1);
+BfMat *bfMatDenseComplexGetColRange(BfMatDenseComplex *matDenseComplex, BfSize j0, BfSize j1);
+BfMat const *bfMatDenseComplexGetColRangeConst(BfMatDenseComplex const *matDenseComplex, BfSize j0, BfSize j1);
 void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows);
 void bfMatDenseComplexPermuteRows(BfMat *mat, BfPerm const *perm);
 BfVec *bfMatDenseComplexColDists(BfMat const *mat, BfMat const *otherMat);
@@ -39,6 +40,7 @@ BfMat *bfMatDenseComplexSub(BfMat const *mat, BfMat const *otherMat);
 void bfMatDenseComplexSubInplace(BfMat *mat, BfMat const *otherMat);
 BfMat *bfMatDenseComplexMul(BfMat const *op1, BfMat const *op2);
 BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec);
+BfMat *bfMatDenseComplexRmul(BfMatDenseComplex const *matDenseComplex, BfMat const *mat);
 BfMat *bfMatDenseComplexSolve(BfMatDenseComplex const *matDenseComplex, BfMat const *otherMat);
 BfMat *bfMatDenseComplexSolveLU(BfMat const *A, BfMat const *B);
 BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs);

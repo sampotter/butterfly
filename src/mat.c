@@ -100,8 +100,12 @@ BfMat *bfMatGetRowRange(BfMat *mat, BfSize i0, BfSize i1) {
   return mat->vtbl->GetRowRange(mat, i0, i1);
 }
 
-BfMat *bfMatGetColRange(BfMat *mat, BfSize i0, BfSize i1) {
-  return mat->vtbl->GetColRange(mat, i0, i1);
+BfMat *bfMatGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+  return mat->vtbl->GetColRange(mat, j0, j1);
+}
+
+BfMat const *bfMatGetColRangeConst(BfMat const *mat, BfSize j0, BfSize j1) {
+  return mat->vtbl->GetColRangeConst(mat, j0, j1);
 }
 
 BfMat *bfMatGetRowRangeCopy(BfMat const *mat, BfSize i0, BfSize i1) {
@@ -188,8 +192,12 @@ void bfMatMulInplace(BfMat const *op1, BfMat const *op2, BfMat *res) {
   op1->vtbl->MulInplace(op1, op2, res);
 }
 
-BfVec *bfMatRmulVec(BfMat const *mat, BfVec const *otherMat) {
-  return mat->vtbl->RmulVec(mat, otherMat);
+BfMat *bfMatRmul(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->Rmul(mat, otherMat);
+}
+
+BfVec *bfMatRmulVec(BfMat const *mat, BfVec const *otherVec) {
+  return mat->vtbl->RmulVec(mat, otherVec);
 }
 
 BfMat *bfMatSolve(BfMat const *mat, BfMat const *otherMat) {

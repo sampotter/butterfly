@@ -14,6 +14,8 @@ BfSize bfMatBlockGetColOffset(BfMatBlock const *, BfSize);
 BfMat *bfMatBlockGetBlock(BfMatBlock *, BfSize, BfSize);
 BfMat const *bfMatBlockGetBlockConst(BfMatBlock const *, BfSize, BfSize);
 BfMat *bfMatBlockGetBlockCopy(BfMatBlock const *, BfSize, BfSize);
+void bfMatBlockGetRowSpan(BfMatBlock const *matBlock, BfSize i, BfSize *i0, BfSize *i1);
+void bfMatBlockGetColSpan(BfMatBlock const *matBlock, BfSize j, BfSize *j0, BfSize *j1);
 
 typedef struct BfMatBlockVtable {
   __typeof__(&bfMatBlockNumBlocks) NumBlocks;
@@ -26,6 +28,8 @@ typedef struct BfMatBlockVtable {
   __typeof__(&bfMatBlockGetBlock) GetBlock;
   __typeof__(&bfMatBlockGetBlockConst) GetBlockConst;
   __typeof__(&bfMatBlockGetBlockCopy) GetBlockCopy;
+  __typeof__(&bfMatBlockGetRowSpan) GetRowSpan;
+  __typeof__(&bfMatBlockGetColSpan) GetColSpan;
 } BfMatBlockVtable;
 
 /** Implementation: MatBlock */
@@ -69,9 +73,7 @@ BfMatBlock *bfMatToMatBlock(BfMat *mat);
 BfMatBlock const *bfMatConstToMatBlockConst(BfMat const *mat);
 
 void bfMatBlockInvalidate(BfMatBlock *matBlock);
-void bfMatBlockInit(BfMatBlock *mat,
-                    BfMatVtable *matVtbl, BfMatBlockVtable *MAT_BLOCK_VTABLE,
-                    BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
+void bfMatBlockInit(BfMatBlock *mat, BfMatVtable *matVtbl, BfMatBlockVtable *MAT_BLOCK_VTABLE, BfSize numBlocks, BfSize numBlockRows, BfSize numBlockCols);
 void bfMatBlockDeinit(BfMatBlock *mat);
 void bfMatBlockDealloc(BfMatBlock **mat);
 void bfMatBlockDeinitAndDealloc(BfMatBlock **mat);

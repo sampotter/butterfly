@@ -192,7 +192,8 @@ static BfMatVtable MAT_VTABLE = {
   .SetColRange = (__typeof__(&bfMatDenseComplexSetColRange))bfMatDenseComplexSetColRange,
   .GetRowRange = (__typeof__(&bfMatDenseComplexGetRowRange))bfMatDenseComplexGetRowRange,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatDenseComplexGetRowRangeCopy,
-  .GetColRange = (__typeof__(&bfMatDenseComplexGetColRange))bfMatDenseComplexGetColRange,
+  .GetColRange = (__typeof__(&bfMatGetColRange))bfMatDenseComplexGetColRange,
+  .GetColRangeConst = (__typeof__(&bfMatGetColRangeConst))bfMatDenseComplexGetColRangeConst,
   .SetRowRange = (__typeof__(&bfMatDenseComplexSetRowRange))bfMatDenseComplexSetRowRange,
   .PermuteRows = (__typeof__(&bfMatDenseComplexPermuteRows))bfMatDenseComplexPermuteRows,
   .ColDists = (__typeof__(&bfMatDenseComplexColDists))bfMatDenseComplexColDists,
@@ -205,6 +206,7 @@ static BfMatVtable MAT_VTABLE = {
   .SubInplace = (__typeof__(&bfMatDenseComplexSubInplace))bfMatDenseComplexSubInplace,
   .Mul = (__typeof__(&bfMatDenseComplexMul))bfMatDenseComplexMul,
   .MulVec = (__typeof__(&bfMatDenseComplexMulVec))bfMatDenseComplexMulVec,
+  .Rmul = (__typeof__(&bfMatRmul))bfMatDenseComplexRmul,
   .Solve = (__typeof__(&bfMatSolve))bfMatDenseComplexSolve,
   .SolveLU = (__typeof__(&bfMatDenseComplexSolveLU))bfMatDenseComplexSolveLU,
   .LstSq = (__typeof__(&bfMatDenseComplexLstSq))bfMatDenseComplexLstSq,
@@ -683,8 +685,10 @@ BfMat *bfMatDenseComplexGetRowRangeCopy(BfMatDenseComplex const *matDenseComplex
   return bfMatDenseComplexToMat(matDenseComplexCopy);
 }
 
-BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
+BfMat *bfMatDenseComplexGetColRange(BfMatDenseComplex *matDenseComplex, BfSize j0, BfSize j1) {
   BF_ERROR_BEGIN();
+
+  BfMat *mat = bfMatDenseComplexToMat(matDenseComplex);
 
   if (bfMatIsTransposed(mat))
     RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
@@ -707,6 +711,10 @@ BfMat *bfMatDenseComplexGetColRange(BfMat *mat, BfSize j0, BfSize j1) {
     bfMatDenseComplexDeinitAndDealloc(&matDenseComplexView);
 
   return bfMatDenseComplexToMat(matDenseComplexView);
+}
+
+BfMat const *bfMatDenseComplexGetColRangeConst(BfMatDenseComplex const *matDenseComplex, BfSize j0, BfSize j1) {
+  return bfMatDenseComplexGetColRange((BfMatDenseComplex *)matDenseComplex, j0, j1);
 }
 
 void bfMatDenseComplexSetRowRange(BfMat *mat, BfSize i0, BfSize i1, BfMat const *rows) {
@@ -1071,6 +1079,59 @@ mulVec_complex(BfMatDenseComplex const *matDenseComplex,
     bfVecComplexDeinitAndDealloc(&result);
 
   return result;
+}
+
+static BfMat *rmul_matDenseComplex(BfMatDenseComplex const *matDenseComplex, BfMatDenseComplex const *otherMatDenseComplex) {
+  BF_ERROR_BEGIN();
+
+  BfMatDenseComplex *result = NULL;
+
+  BfSize m = bfMatDenseComplexGetNumRows(otherMatDenseComplex);
+  BfSize n = bfMatDenseComplexGetNumCols(matDenseComplex);
+  BfSize k = bfMatDenseComplexGetNumCols(otherMatDenseComplex);
+
+  if (k != bfMatDenseComplexGetNumRows(matDenseComplex))
+    RAISE_ERROR(BF_ERROR_INCOMPATIBLE_SHAPES);
+
+  result = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInit(result, m, n);
+  HANDLE_ERROR();
+
+  enum CBLAS_TRANSPOSE transa = getCblasTranspose(otherMatDenseComplex);
+  enum CBLAS_TRANSPOSE transb = getCblasTranspose(matDenseComplex);
+
+  BfComplex alpha = 1;
+  BfComplex beta = 0;
+
+  BfComplex *a = otherMatDenseComplex->data;
+  BfComplex *b = matDenseComplex->data;
+  BfComplex *c = result->data;
+
+  BfSize lda = getLeadingDimension(otherMatDenseComplex);
+  BfSize ldb = getLeadingDimension(matDenseComplex);
+  BfSize ldc = getLeadingDimension(result);
+
+  cblas_zgemm(CblasRowMajor, transa, transb, m, n, k, &alpha, a, lda, b, ldb, &beta, c, ldc);
+
+  /* TODO: handle clbas errors... */
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return bfMatDenseComplexToMat(result);
+}
+
+BfMat *bfMatDenseComplexRmul(BfMatDenseComplex const *matDenseComplex, BfMat const *mat) {
+  switch (bfMatGetType(mat)) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return rmul_matDenseComplex(matDenseComplex, bfMatConstToMatDenseComplexConst(mat));
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 BfVec *bfMatDenseComplexMulVec(BfMat const *mat, BfVec const *vec) {
@@ -1734,7 +1795,7 @@ bfMatDenseComplexDenseComplexLstSq(BfMatDenseComplex const *lhs,
 
   /* get subblocks of truncated SVD */
 
-  BfMat *UkH = bfMatDenseComplexGetColRange(bfMatDenseComplexToMat(U), 0, k);
+  BfMat *UkH = bfMatDenseComplexGetColRange(U, 0, k);
   bfMatConjTrans(UkH);
 
   BfMatDiagReal *Sk = bfMatDiagRealGetDiagBlock(S, 0, k);
