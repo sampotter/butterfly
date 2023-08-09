@@ -94,10 +94,11 @@ BfMatFunc *bfMatFuncNew() {
   BF_ERROR_BEGIN();
 
   BfMatFunc *matFunc = bfMemAlloc(1, sizeof(BfMatFunc));
-  if (matFunc == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return matFunc;
 }
