@@ -546,11 +546,9 @@ class HierarchicalLu(bf.MatPython):
         # Set up reflector:
         A11_refl = bf.MatProduct.from_factors(self.A21, self.A11_lu, self.A12)
 
-        A11_refl_dense = np.array(A11_refl@np.eye(A11_refl.shape[0], dtype=np.complex128))
-
         if MAKE_PLOTS:
             plt.figure()
-            plt.imshow(np.real(A11_refl_dense), cmap=cc.cm.gouldian)
+            plt.imshow(np.real(np.array(A11_refl.to_mat_dense_complex())), cmap=cc.cm.gouldian)
             plt.colorbar()
             plt.show()
 
