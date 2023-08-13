@@ -65,6 +65,8 @@ cdef reify_mat(BfMat *mat):
         return MatBlockDense.from_ptr(bfMatToMatBlockDense(mat))
     elif type_ == BF_TYPE_MAT_DENSE_COMPLEX:
         return MatDenseComplex.from_ptr(bfMatToMatDenseComplex(mat))
+    elif type_ == BF_TYPE_MAT_PRODUCT:
+        return MatProduct.from_ptr(bfMatToMatProduct(mat))
     else:
         raise TypeError(f'failed to reify BfMat: got {type_}')
 
@@ -609,6 +611,13 @@ cdef class MatProduct(Mat):
         self.matProduct = bfMatProductNew()
         self.mat = bfMatProductToMat(self.matProduct)
         bfMatProductInit(self.matProduct)
+
+    @staticmethod
+    cdef from_ptr(BfMatProduct *matProduct):
+        cdef MatProduct _ = MatProduct.__new__(MatProduct)
+        _.matProduct = matProduct
+        _.mat = bfMatProductToMat(_.matProduct)
+        return _
 
     @staticmethod
     def from_factors(*factors):
