@@ -471,9 +471,12 @@ class DenseLu(bf.MatPython):
         if m != n:
             raise ValueError("A isn't a square matrix")
 
-        super().__init__(n, n)
-
         A_dense = np.array(A.to_mat_dense_complex())
+        if np.linalg.matrix_rank(A_dense) < n:
+            import ipdb; ipdb.set_trace()
+            raise ValueError("A is singular")
+
+        super().__init__(n, n)
 
         P, L, U = scipy.linalg.lu(A_dense)
         self.P = P
