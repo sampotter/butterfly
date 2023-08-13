@@ -968,6 +968,10 @@ void bfMatBlockDenseTranspose(BfMatBlockDense *matBlockDense) {
   bfMemFree(matBlockDense->super.block);
   matBlockDense->super.block = blockTransposed;
 
+  /* Transpose blocks: */
+  for (BfSize k = 0; k < bfMatBlockDenseNumBlocks(matBlockDense); ++k)
+    bfMatTranspose(LINEAR_BLOCK(matBlockDense, k));
+
   BF_ERROR_END() {
     BF_DIE();
   }
