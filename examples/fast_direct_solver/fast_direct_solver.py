@@ -203,6 +203,11 @@ def get_block_inds_for_split(nodes):
 
     return I1, I2
 
+def hlu_recursive_base_case(A, nodes, p):
+    return A.shape[0] <= HierarchicalLu.DENSE_LU_THRESH \
+        or len(nodes) == 1 \
+        or any(_.get_num_points() <= p for _ in nodes)
+
 def minimize_rank_est(X1, X2, k, eps):
     r1min = lambda x1, y1: np.sqrt(np.sum(np.subtract(X1, (x1, y1))**2, axis=1)).max()
     r2min = lambda x2, y2: np.sqrt(np.sum(np.subtract(X2, (x2, y2))**2, axis=1)).max()
@@ -509,14 +514,6 @@ class HierarchicalLu(bf.MatPython):
 
         print(f'- {depth=}, {len(nodes)=}')
 
-        # If only one node was passed, we push down a level, replacing
-        # (the length 1 array) nodes with the array consisting of its
-        # children. We don't need to go further down than this. The
-        # main thing we need to be able to do is split along an axis
-        # to get a 2x2 blocking.
-        if len(nodes) == 1:
-            nodes = nodes[0].children
-
         self.A = A
         self.nodes = nodes
 
@@ -524,6 +521,7 @@ class HierarchicalLu(bf.MatPython):
         nodes1 = [nodes[i] for i in I1]
         nodes2 = [nodes[i] for i in I2]
         print(f'  + {len(nodes1)=}, {len(nodes2)=}')
+        assert nodes1 and nodes2
 
         # Get diagonal blocks:
         print(f'{I1 = }')
@@ -531,7 +529,9 @@ class HierarchicalLu(bf.MatPython):
         A22 = self.A.get_blocks(I2, I2)
         print(f'  + {A11.shape=}, {A22.shape=}')
 
-        if max(A11.shape) <= HierarchicalLu.DENSE_LU_THRESH:
+        if hlu_recursive_base_case(A11, nodes1, p):
+            if len(nodes1) == 1:
+                print(f'''warning: found leaf node with more points (== {nodes1[0].get_num_points()}) than HierarchicalLu.DENSE_LU_THRESH (== {HierarchicalLu.DENSE_LU_THRESH}) while recursively factorizing leading subblock''')
             self.A11_lu = DenseLu(A11)
         else:
             self.A11_lu = HierarchicalLu(A11, nodes1, k, eps, depth=depth+1, parent=self)
@@ -562,7 +562,9 @@ class HierarchicalLu(bf.MatPython):
         A11_schur = bf.MatDiff(A22, A11_refl_BF)
 
         # Continue factorization recursively:
-        if max(A11_schur.shape) <= HierarchicalLu.DENSE_LU_THRESH:
+        if hlu_recursive_base_case(A11_schur, nodes2, p):
+            if len(nodes2) == 1:
+                print(f'''warning: found leaf node with more points (== {nodes2[0].get_num_points()}) than HierarchicalLu.DENSE_LU_THRESH (== {HierarchicalLu.DENSE_LU_THRESH}) while recursively factorizing Schur complement''')
             self.A11_schur_lu = DenseLu(A11_schur)
         else:
             self.A11_schur_lu = \
