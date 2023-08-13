@@ -12,6 +12,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDiffGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatDiffGetNumCols,
   .Mul = (__typeof__(&bfMatMul))bfMatDiffMul,
+  .ToType = (__typeof__(&bfMatToType))bfMatDiffToType,
 };
 
 BfType bfMatDiffGetType(BfMatDiff const *matDiff) {
@@ -52,6 +53,28 @@ BfMat *bfMatDiffMul(BfMatDiff const *matDiff, BfMat const *otherMat) {
   bfMatDelete(&secondProduct);
 
   return mat;
+}
+
+BfMat *bfMatDiffToType(BfMatDiff const *matDiff, BfType type) {
+  BF_ERROR_BEGIN();
+
+  BfMat *firstConverted = bfMatToType(matDiff->first, type);
+  HANDLE_ERROR();
+
+  BfMat *secondConverted = bfMatToType(matDiff->second, type);
+  HANDLE_ERROR();
+
+  BfMat *result = bfMatSub(firstConverted, secondConverted);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMatDelete(&firstConverted);
+  bfMatDelete(&secondConverted);
+
+  return result;
 }
 
 /** Upcasting: MatDiff -> Mat */

@@ -8,6 +8,7 @@ BfType bfMatDiffGetType(BfMatDiff const *matDiff);
 BfSize bfMatDiffGetNumRows(BfMatDiff const *matDiff);
 BfSize bfMatDiffGetNumCols(BfMatDiff const *matDiff);
 BfMat *bfMatDiffMul(BfMatDiff const *matDiff, BfMat const *otherMat);
+BfMat *bfMatDiffToType(BfMatDiff const *matDiff, BfType type);
 
 /** Upcasting: MatDiff -> Mat */
 
