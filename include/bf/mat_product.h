@@ -13,13 +13,14 @@ BfType bfMatProductGetType(BfMat const *mat);
 BfSize bfMatProductNumBytes(BfMatProduct const *matProduct);
 void bfMatProductDump(BfMatProduct const *matProduct, FILE *fp);
 BfSize bfMatProductGetNumRows(BfMatProduct const *matProduct);
-BfSize bfMatProductGetNumCols(BfMat const *mat);
+BfSize bfMatProductGetNumCols(BfMatProduct const *matProduct);
 void bfMatProductScaleCols(BfMat *mat, BfVec const *vec);
-BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat);
+BfMat *bfMatProductMul(BfMatProduct const *matProduct, BfMat const *otherMat);
 BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductRmul(BfMatProduct const *matProduct, BfMat const *mat);
 BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat);
+BfMat *bfMatProductToType(BfMatProduct const *matProduct, BfType type);
 void bfMatProductTranspose(BfMatProduct *matProduct);
 
 /** Implementation: MatProduct */

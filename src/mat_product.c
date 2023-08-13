@@ -3,6 +3,7 @@
 #include <bf/assert.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
+#include <bf/mat_dense_complex.h>
 #include <bf/mem.h>
 
 /** Interface: MatProduct */
@@ -16,13 +17,14 @@ static BfMatVtable MAT_VTABLE = {
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatProductNumBytes,
   .Dump = (__typeof__(&bfMatDump))bfMatProductDump,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatProductGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatProductGetNumCols))bfMatProductGetNumCols,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatProductGetNumCols,
   .ScaleCols = (__typeof__(&bfMatProductScaleCols))bfMatProductScaleCols,
-  .Mul = (__typeof__(&bfMatProductMul))bfMatProductMul,
+  .Mul = (__typeof__(&bfMatMul))bfMatProductMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatProductMulVec,
   .Rmul = (__typeof__(&bfMatRmul))bfMatProductRmul,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
+  .ToType = (__typeof__(&bfMatToType))bfMatProductToType,
   .Transpose = (__typeof__(&bfMatTranspose))bfMatProductTranspose,
 };
 
@@ -157,19 +159,19 @@ BfSize bfMatProductGetNumRows(BfMatProduct const *matProduct) {
 
   numRows = bfMatGetNumRows(factor);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return numRows;
 }
 
-BfSize bfMatProductGetNumCols(BfMat const *mat) {
+BfSize bfMatProductGetNumCols(BfMatProduct const *matProduct) {
   BF_ERROR_BEGIN();
 
-  BfMatProduct const *matProduct = NULL;
-  BfMat const *factor = NULL;
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
-  matProduct = bfMatConstToMatProductConst(mat);
+  BfMat const *mat = bfMatProductConstToMatConst(matProduct);
   HANDLE_ERROR();
 
   if (bfMatIsTransposed(mat))
@@ -177,12 +179,14 @@ BfSize bfMatProductGetNumCols(BfMat const *mat) {
 
   BfSize numFactors = bfMatProductNumFactors(matProduct);
 
-  factor = bfMatProductGetFactorConst(matProduct, numFactors - 1);
+  BfMat const *factor = bfMatProductGetFactorConst(matProduct, numFactors - 1);
   HANDLE_ERROR();
 
   numCols = bfMatGetNumCols(factor);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return numCols;
 }
@@ -204,16 +208,12 @@ void bfMatProductScaleCols(BfMat *mat, BfVec const *vec) {
   BF_ERROR_END() {}
 }
 
-BfMat *bfMatProductMul(BfMat const *mat, BfMat const *otherMat) {
+BfMat *bfMatProductMul(BfMatProduct const *matProduct, BfMat const *otherMat) {
   BF_ERROR_BEGIN();
 
-  BfMatProduct const *matProduct = NULL;
   BfMat const *factor = NULL;
   BfMat *prev = NULL;
   BfMat *result = NULL;
-
-  matProduct = bfMatConstToMatProductConst(mat);
-  HANDLE_ERROR();
 
   BfSize numFactors = bfMatProductNumFactors(matProduct);
 
@@ -372,6 +372,38 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
   }
 
   return result;
+}
+
+static BfMat *toType_matDenseComplex(BfMatProduct const *matProduct) {
+  BF_ERROR_BEGIN();
+
+  BfSize n = bfMatProductGetNumCols(matProduct);
+
+  BfMatDenseComplex *testMatDenseComplex = bfMatDenseComplexNewIdentity(n, n);
+  HANDLE_ERROR();
+
+  BfMat *testMat = bfMatDenseComplexToMat(testMatDenseComplex);
+
+  BfMat *matProductConverted = bfMatProductMul(matProduct, testMat);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMatDelete(&testMat);
+
+  return matProductConverted;
+}
+
+BfMat *bfMatProductToType(BfMatProduct const *matProduct, BfType type) {
+  switch (type) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return toType_matDenseComplex(matProduct);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 void bfMatProductTranspose(BfMatProduct *matProduct) {
