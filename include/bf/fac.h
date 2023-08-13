@@ -28,7 +28,7 @@ typedef struct BfFacSpec {
   bool compareRelativeErrors;
 } BfFacSpec;
 
-// TODO: BfFac could be a subtype of BfMatProduct
+// TODO: BfFac should be a subtype of BfMatProduct
 
 struct BfFac {
   BfTreeNode const *colNode;
@@ -41,7 +41,7 @@ struct BfFac {
   BfMat **W;
 };
 
-void bfFacDelete(BfFac **fac);
+void bfFacDeinitAndDealloc(BfFac **fac);
 BfMat *bfFacGetMat(BfFac const *fac, BfPolicy policy);
 BfMatProduct *bfFacGetMatProduct(BfFac const *fac, BfPolicy policy);
 BfSize bfFacGetNumBytes(BfFac const *fac);

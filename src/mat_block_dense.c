@@ -13,6 +13,8 @@
 #include <bf/vec_complex.h>
 #include <bf/vec_real.h>
 
+#include "macros.h"
+
 /** Helper macros: */
 
 #define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
@@ -51,7 +53,8 @@ static BfMatVtable MAT_VTABLE = {
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatBlockDenseRmulVec,
   .ToType = (__typeof__(&bfMatToType))bfMatBlockDenseToType,
   .GetNonzeroColumnRanges = (__typeof__(&bfMatGetNonzeroColumnRanges))bfMatBlockDenseGetNonzeroColumnRanges,
-  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep
+  .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDensePrintBlocksDeep,
+  .Transpose = (__typeof__(&bfMatTranspose))bfMatBlockDenseTranspose,
 };
 
 BfMat *bfMatBlockDenseGetView(BfMatBlockDense *matBlockDense) {
@@ -268,19 +271,13 @@ void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp) {
 }
 
 BfSize bfMatBlockDenseGetNumRows(BfMatBlockDense const *matBlockDense) {
-  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
-  return bfMatIsTransposed(mat) ?
-    matBlock->colOffset[mat->numCols] :
-    matBlock->rowOffset[mat->numRows];
+  BF_ASSERT(!bfMatIsTransposed(bfMatBlockDenseConstToMatConst(matBlockDense)));
+  return ROW_OFFSET(matBlockDense, NUM_ROW_BLOCKS(matBlockDense));
 }
 
 BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *matBlockDense) {
-  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  BfMatBlock const *matBlock = bfMatBlockDenseConstToMatBlockConst(matBlockDense);
-  return bfMatIsTransposed(mat) ?
-    matBlock->rowOffset[mat->numRows] :
-    matBlock->colOffset[mat->numCols];
+  BF_ASSERT(!bfMatIsTransposed(bfMatBlockDenseConstToMatConst(matBlockDense)));
+  return COL_OFFSET(matBlockDense, NUM_COL_BLOCKS(matBlockDense));
 }
 
 BfMat *bfMatBlockDenseGetRowRange(BfMatBlockDense *matBlockDense, BfSize i0, BfSize i1) {
@@ -942,6 +939,40 @@ void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense,
   }
 }
 
+void bfMatBlockDenseTranspose(BfMatBlockDense *matBlockDense) {
+  BF_ERROR_BEGIN();
+
+  /* TODO: there's probably a way to do this inplace without
+   * allocating any extra memory but too lazy to figure it out right
+   * now... */
+
+  /* Allocate space for transposed block pointers: */
+  BfMat **blockTransposed = bfMemAlloc(NUM_BLOCKS(matBlockDense), sizeof(BfMat *));
+  HANDLE_ERROR();
+
+  /* Traverse column-by-column while filling row-by-row to transpose
+   * matrix of block pointers: */
+  BfSize k = 0;
+  for (BfSize j = 0; j < NUM_COL_BLOCKS(matBlockDense); ++j)
+    for (BfSize i = 0; i < NUM_ROW_BLOCKS(matBlockDense); ++i)
+      blockTransposed[k++] = BLOCK(matBlockDense, i, j);
+  BF_ASSERT(k == NUM_BLOCKS(matBlockDense));
+
+  /* Swap the number of blocks in each row and column: */
+  SWAP(matBlockDense->super.super.numRows, matBlockDense->super.super.numCols);
+
+  /* Swap the row and column offsets: */
+  SWAP(matBlockDense->super.rowOffset, matBlockDense->super.colOffset);
+
+  /* Free old block pointers and set to new version: */
+  bfMemFree(matBlockDense->super.block);
+  matBlockDense->super.block = blockTransposed;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 /** Interface: MatBlock */
 
 static BfMatBlockVtable MAT_BLOCK_VTABLE = {
@@ -960,13 +991,13 @@ BfSize bfMatBlockDenseNumBlocks(BfMatBlockDense const *matBlock) {
 }
 
 BfSize bfMatBlockDenseGetNumRowBlocks(BfMatBlockDense const *matBlockDense) {
-  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  return bfMatIsTransposed(mat) ? mat->numCols : mat->numRows;
+  BF_ASSERT(!bfMatIsTransposed(bfMatBlockDenseConstToMatConst(matBlockDense)));
+  return NUM_ROW_BLOCKS(matBlockDense);
 }
 
 BfSize bfMatBlockDenseGetNumColBlocks(BfMatBlockDense const *matBlockDense) {
-  BfMat const *mat = bfMatBlockDenseConstToMatConst(matBlockDense);
-  return bfMatIsTransposed(mat) ? mat->numRows : mat->numCols;
+  BF_ASSERT(!bfMatIsTransposed(bfMatBlockDenseConstToMatConst(matBlockDense)));
+  return NUM_COL_BLOCKS(matBlockDense);
 }
 
 BfSize bfMatBlockDenseGetRowOffset(BfMatBlockDense const *matBlockDense, BfSize i) {

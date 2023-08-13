@@ -14,6 +14,7 @@ struct BfIndexedMat {
   BfMat *mat;
 };
 
+BfIndexedMat *bfIndexedMatAlloc(void);
 BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy);
 void bfIndexedMatInitFromMat(BfIndexedMat *indexedMat, BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy);
 void bfIndexedMatDeinit(BfIndexedMat *indexedMat);

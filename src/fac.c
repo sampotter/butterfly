@@ -32,7 +32,7 @@ void bfFacDealloc(BfFac **facHandle) {
   *facHandle = NULL;
 }
 
-void bfFacDelete(BfFac **facHandle) {
+void bfFacDeinitAndDealloc(BfFac **facHandle) {
   bfFacDeinit(*facHandle);
   bfFacDealloc(facHandle);
 }

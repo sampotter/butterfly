@@ -112,7 +112,7 @@ void bfFacStreamerDeinit(BfFacStreamer *facStreamer) {
 
   for (BfSize i = 0; i < bfPtrArraySize(&facStreamer->partialFacs); ++i) {
     BfFac *fac = bfPtrArrayGet(&facStreamer->partialFacs, i);
-    bfFacDelete(&fac);
+    bfFacDeinitAndDealloc(&fac);
   }
   bfPtrArrayDeinit(&facStreamer->partialFacs);
 
@@ -279,7 +279,7 @@ static void deletePrevFacs(BfFacStreamer *facStreamer, BfTreeNode const *current
        * has stolen some of the guts of this factorization. We want to
        * make sure we free everything we need to free here, without
        * accidentally freeing parts of the new factorization! */
-      bfFacDelete(&fac);
+      bfFacDeinitAndDealloc(&fac);
     }
   }
 }
@@ -528,13 +528,19 @@ BfFac *bfFacStreamerGetFac(BfFacStreamer const *facStreamer) {
 
   BfFac *fac = NULL;
 
+  if (!bfFacStreamerIsDone(facStreamer))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* Should be the case if we've finished traversing the tree! */
   BfSize numFacs = bfPtrArraySize(&facStreamer->partialFacs);
   if (numFacs != 1)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   fac = bfPtrArrayGet(&facStreamer->partialFacs, 0);
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return fac;
 }

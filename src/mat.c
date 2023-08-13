@@ -268,8 +268,8 @@ BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *c
   return mat->vtbl->GetSubmatByMask(mat, rowMask, colMask);
 }
 
-BfMat *bfMatGetTransposed(BfMat *mat, BfPolicy policy) {
-  return mat->vtbl->GetTransposed(mat, policy);
+void bfMatTranspose(BfMat *mat) {
+  mat->vtbl->Transpose(mat);
 }
 
 /** Implementation: Mat */

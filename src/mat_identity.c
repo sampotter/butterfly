@@ -5,6 +5,8 @@
 #include <bf/error_macros.h>
 #include <bf/mem.h>
 
+#include "macros.h"
+
 /** Interface: Mat */
 
 static BfMatVtable MAT_VTABLE = {
@@ -21,6 +23,7 @@ static BfMatVtable MAT_VTABLE = {
   .MulVec = (__typeof__(&bfMatMulVec))bfMatIdentityMulVec,
   .RmulVec = (__typeof__(&bfMatMulVec))bfMatIdentityRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatIdentityPrintBlocksDeep,
+  .Transpose = (__typeof__(&bfMatTranspose))bfMatIdentityTranspose,
 };
 
 BfMat *bfMatIdentityGetView(BfMatIdentity *matIdentity) {
@@ -185,6 +188,10 @@ void bfMatIdentityPrintBlocksDeep(BfMatIdentity const *matIdentity, FILE *fp, Bf
   BfSize j1 = j0 + bfMatGetNumCols(mat);
 
   fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_IDENTITY, i0, i1, j0, j1, depth);
+}
+
+void bfMatIdentityTranspose(BfMatIdentity *matIdentity) {
+  SWAP(matIdentity->super.numRows, matIdentity->super.numCols);
 }
 
 /** Upcasting: MatIdentity -> Mat */

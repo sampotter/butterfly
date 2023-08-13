@@ -14,6 +14,8 @@
 #include <bf/vec_real.h>
 #include <bf/vec_zero.h>
 
+#include "macros.h"
+
 /** Helper macros: */
 
 #define NUM_ROW_BLOCKS(mat) mat->super.super.numRows
@@ -35,8 +37,8 @@ static BfMatVtable MAT_VTABLE = {
   .GetType = (__typeof__(&bfMatBlockDiagGetType))bfMatBlockDiagGetType,
   .NumBytes = (__typeof__(&bfMatNumBytes))bfMatBlockDiagNumBytes,
   .Dump = (__typeof__(&bfMatDump))bfMatBlockDiagDump,
-  .GetNumRows = (__typeof__(&bfMatBlockDiagGetNumRows))bfMatBlockDiagGetNumRows,
-  .GetNumCols = (__typeof__(&bfMatBlockDiagGetNumCols))bfMatBlockDiagGetNumCols,
+  .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatBlockDiagGetNumRows,
+  .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatBlockDiagGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatBlockDiagGetRowRangeCopy,
   .ScaleCols = (__typeof__(&bfMatBlockDiagScaleCols))bfMatBlockDiagScaleCols,
   .Mul = (__typeof__(&bfMatBlockDiagMul))bfMatBlockDiagMul,
@@ -45,6 +47,7 @@ static BfMatVtable MAT_VTABLE = {
   .Negate = (__typeof__(&bfMatBlockDiagNegate))bfMatBlockDiagNegate,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatBlockDiagPrintBlocksDeep,
   .Solve = (__typeof__(&bfMatSolve))bfMatBlockDiagSolve,
+  .Transpose = (__typeof__(&bfMatTranspose))bfMatBlockDiagTranspose,
 };
 
 BfMat *bfMatBlockDiagGetView(BfMatBlockDiag *matBlockDiag) {
@@ -259,18 +262,12 @@ void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp) {
   }
 }
 
-BfSize bfMatBlockDiagGetNumRows(BfMat const *mat) {
-  BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-  return bfMatIsTransposed(mat) ?
-    matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)] :
-    matBlock->rowOffset[bfMatBlockGetNumRowBlocks(matBlock)];
+BfSize bfMatBlockDiagGetNumRows(BfMatBlockDiag const *matBlockDiag) {
+  return ROW_OFFSET(matBlockDiag, NUM_ROW_BLOCKS(matBlockDiag));
 }
 
-BfSize bfMatBlockDiagGetNumCols(BfMat const *mat) {
-  BfMatBlock const *matBlock = bfMatConstToMatBlockConst(mat);
-  return bfMatIsTransposed(mat) ?
-    matBlock->rowOffset[bfMatBlockGetNumRowBlocks(matBlock)] :
-    matBlock->colOffset[bfMatBlockGetNumColBlocks(matBlock)];
+BfSize bfMatBlockDiagGetNumCols(BfMatBlockDiag const *matBlockDiag) {
+  return COL_OFFSET(matBlockDiag, NUM_COL_BLOCKS(matBlockDiag));
 }
 
 BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1) {
@@ -600,6 +597,29 @@ BfMat *bfMatBlockDiagSolve(BfMatBlockDiag const *matBlockDiag, BfMat const *mat)
   default:
     bfSetError(BF_ERROR_NOT_IMPLEMENTED);
     return NULL;
+  }
+}
+
+void bfMatBlockDiagTranspose(BfMatBlockDiag *matBlockDiag) {
+  BF_ERROR_BEGIN();
+
+  if (bfMatIsView(bfMatBlockDiagToMat(matBlockDiag)))
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  /* Swap the number of blocks in each row and column: */
+  SWAP(matBlockDiag->super.super.numRows, matBlockDiag->super.super.numCols);
+
+  /* Swap the row and column offsets: */
+  SWAP(matBlockDiag->super.rowOffset, matBlockDiag->super.colOffset);
+
+  /* Transpose each diagonal block: */
+  for (BfSize k = 0; k < bfMatBlockDiagNumBlocks(matBlockDiag); ++k) {
+    bfMatTranspose(BLOCK(matBlockDiag, k));
+    HANDLE_ERROR();
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 }
 

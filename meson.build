@@ -129,6 +129,7 @@ butterfly_lib_src = [
   'src/mat_dense_complex.c',
   'src/mat_dense_real.c',
   'src/mat_diag_real.c',
+  'src/mat_diff.c',
   'src/mat_func.c',
   'src/mat_givens.c',
   'src/mat_identity.c',

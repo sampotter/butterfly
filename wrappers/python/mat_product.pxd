@@ -7,4 +7,3 @@ cdef extern from "bf/mat_product.h":
     BfMatProduct *bfMatProductNew()
     void bfMatProductInit(BfMatProduct *prod)
     void bfMatProductPostMultiply(BfMatProduct *prod, BfMat *mat)
-    BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy)

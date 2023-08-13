@@ -6,10 +6,23 @@
 #include <bf/mat.h>
 #include <bf/mem.h>
 
-BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy) {
+BfIndexedMat *bfIndexedMatAlloc(void) {
   BF_ERROR_BEGIN();
 
   BfIndexedMat *indexedMat = bfMemAlloc(1, sizeof(BfIndexedMat));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return indexedMat;
+}
+
+BfIndexedMat *bfIndexedMatNewFromMat(BfSize i0, BfSize j0, BfMat *mat, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  BfIndexedMat *indexedMat = bfIndexedMatAlloc();
   HANDLE_ERROR();
 
   bfIndexedMatInitFromMat(indexedMat, i0, j0, mat, policy);

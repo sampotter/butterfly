@@ -81,7 +81,7 @@ struct BfMatDenseComplex {
 BfMatDenseComplex *bfMatDenseComplexNew(void);
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data);
 BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols);
-BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *pyArray);
+BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *arr);
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);

@@ -17,6 +17,7 @@ BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0,
 BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec);
 BfVec *bfMatIdentityRmulVec(BfMatIdentity const *matIdentity, BfVec const *vec);
 void bfMatIdentityPrintBlocksDeep(BfMatIdentity const *matIdentity, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
+void bfMatIdentityTranspose(BfMatIdentity *matIdentity);
 
 /** Upcasting: MatIdentity -> Mat */
 

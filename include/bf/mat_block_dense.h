@@ -14,7 +14,7 @@ BfSize bfMatBlockDenseNumBytes(BfMat const *mat);
 void bfMatBlockDenseSave(BfMatBlockDense const *matBlockDense, char const *path);
 void bfMatBlockDenseDump(BfMatBlockDense const *matBlockDense, FILE *fp);
 BfSize bfMatBlockDenseGetNumRows(BfMatBlockDense const *matBlockDense);
-BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *mat);
+BfSize bfMatBlockDenseGetNumCols(BfMatBlockDense const *matBlockDense);
 BfMat *bfMatBlockDenseGetRowRange(BfMatBlockDense *matBlockDense, BfSize i0, BfSize i1);
 BfMat *bfMatBlockDenseGetRowRangeCopy(BfMatBlockDense const *matBlockDense, BfSize i0, BfSize i1);
 void bfMatBlockDenseScaleCols(BfMatBlockDense *matBlockDense, BfVec const *vec);
@@ -26,6 +26,7 @@ BfVec *bfMatBlockDenseRmulVec(BfMatBlockDense const *matBlockDense, BfVec const 
 BfMat *bfMatBlockDenseToType(BfMatBlockDense const *matBlockDense, BfType type);
 BfSizeArray *bfMatBlockDenseGetNonzeroColumnRanges(BfMatBlockDense const *matBlockDense);
 void bfMatBlockDensePrintBlocksDeep(BfMatBlockDense const *matBlockDense, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
+void bfMatBlockDenseTranspose(BfMatBlockDense *matBlockDense);
 
 /** Interface: MatBlock */
 

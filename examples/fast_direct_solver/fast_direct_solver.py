@@ -58,10 +58,14 @@ sys.path.insert(-1, '..') # for util
 sys.path.insert(-1, '../../wrappers/python') # for butterfly
 
 import argparse
+import itertools as it
 import numpy as np
 import scipy.linalg
 
 randn = np.random.randn
+
+# Shortcut for Hermitian tranpose:
+H = lambda _: _.conj().T
 
 import butterfly as bf
 
@@ -256,7 +260,6 @@ def get_refl_nodes(srcNodes, tgtNodes, k, eps, p):
             newReflNodes.extend(reflNode.children)
         reflNodes = newReflNodes
         assert reflNodes
-    print(reflNodes)
     return reflNodes
 
 def zrandn(m, n):
@@ -339,7 +342,7 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
 
     colFacStreamers, colPerms = [], []
     for b in range(N):
-        subtree, perm = bf.Tree.from_node(colNodes[a])
+        subtree, perm = bf.Tree.from_node(colNodes[b])
         facStreamer = bf.FacStreamer.from_trees(subtree, rowIndexSubtree, **kwargs)
         colFacStreamers.append(facStreamer)
         colPerms.append(perm)
@@ -354,7 +357,7 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
     OmegaTildeBlocks = [zrandn(_.get_num_points(), p + q) for _ in rowNodes]
 
     ABlocks = np.empty((M, N), dtype=object)
-    RTildeBlocks = np.empty((M, N), dtype=object)
+    BBlocks = np.empty((M, N), dtype=object)
 
     # Sample the range of each block column, stream the left butterfly
     # factors we pick up, and collect the system matrix for each least
@@ -362,52 +365,105 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
     for b, colNode in enumerate(colNodes):
         j0 = colNode.i0 - j0min
         j1 = colNode.i1 - j0min
+
         Omega = np.zeros((n, p + q), np.complex128)
         Omega[j0:j1] = OmegaBlocks[b]
         Y = np.array(linOp@Omega)
+
         for a, rowNode in enumerate(rowNodes):
             i0 = rowNode.i0 - i0min
             i1 = rowNode.i1 - i0min
+
             Q, S = np.linalg.svd(Y[i0:i1], full_matrices=False)[:2]
             assert S.size <= p or S[p] <= eps*S[0]
             Q = np.ascontiguousarray(Q[:, :p])
-            ABlocks[a, b] = OmegaTildeBlocks[a].T@Q
             rowFacStreamers[a].feed(Q)
 
+            ABlocks[a, b] = H(OmegaTildeBlocks[a])@Q
+
+    assert all(_.is_done() for _ in rowFacStreamers)
+
     # Sample the range of each block row, stream the right butterfly
-    # factors, and collect the load matrices (i.e., RTilde.T --- we
-    # just store RTilde) for each of the least squares problems.
+    # factors, and collect the load matrices for each of the least
+    # squares problems.
     for a, rowNode in enumerate(rowNodes):
-        print(f'{a = }')
         i0 = rowNode.i0 - i0min
         i1 = rowNode.i1 - i0min
+
+        # YTilde = linOp^H * OmegaTilde -- but this is a very
+        # inefficient way to do this...
         OmegaTilde = np.zeros((m, p + q), np.complex128)
         OmegaTilde[i0:i1] = OmegaTildeBlocks[a]
-        OmegaTildeT = np.ascontiguousarray(OmegaTilde.T)
-        # print(linOp.shape, linOp.T.shape, OmegaTilde.shape)
-        # YTilde = linOp^T * OmegaTilde -- but this is a very
-        # inefficient way to do this...
-        YTilde = np.array(linOp.__rmatmul__(OmegaTildeT)).T
+        OmegaTildeH = np.ascontiguousarray(H(OmegaTilde))
+        YTilde = H(np.array(linOp.__rmatmul__(OmegaTildeH)))
+
         for b, colNode in enumerate(colNodes):
-            print(f'* {b = }')
             j0 = colNode.i0 - j0min
             j1 = colNode.i1 - j0min
-            assert False # TODO: switch to SVD...
-            QTilde, RTilde = np.linalg.qr(YTilde[j0:j1], mode='reduced')[:2]
-            RTildeBlocks[a, b] = RTilde
+
+            QTilde, STilde = np.linalg.svd(YTilde[j0:j1], full_matrices=False)[:2]
+            assert STilde.size <= p or STilde[p] <= eps*STilde[0]
+            QTilde = np.ascontiguousarray(QTilde[:, :p])
             colFacStreamers[b].feed(QTilde)
 
+            BBlocks[a, b] = H(YTilde[j0:j1])@QTilde
+
+    assert all(_.is_done() for _ in colFacStreamers)
+
     # Solve each of the least squares problems for the middle factors:
-    BBlocks = np.empty((M, N), dtype=object)
+    MiddleBlocks = np.empty((M, N), dtype=object)
     for a, b in it.product(range(M), range(N)):
-        BBlocks[a, b] = np.linalg.lstsq(ABlocks[a, b], RTildeBlocks[a, b].T, rcond=None)
+        _ = np.linalg.lstsq(ABlocks[a, b], BBlocks[a, b], rcond=None)
+        l2_error = np.sqrt(_[1][-1])
+        if l2_error > eps:
+            print(f'warning: error in middle block ({l2_error:.1e}) exceeds tolerance ({eps:.1e})')
+        MiddleBlocks[a, b] = _[0]
 
-    assert False # permute things the right way!
+    # Compute index offsets for the middle blocks:
+    I0 = np.empty((M, N), dtype=int); I0[...] = -1
+    J0 = np.empty((M, N), dtype=int); J0[...] = -1
+    i0 = 0
+    for a in range(M):
+        j0 = sum(_.shape[1] for _ in MiddleBlocks[0, :a])
+        for b in range(N):
+            I0[a, b] = i0
+            J0[a, b] = j0
+            i0 += MiddleBlocks[a, b].shape[0]
+            j0 += sum(_.shape[1] for _ in MiddleBlocks[b, :])
 
-    assert False # extract factors!
+    # Get the shape of the middle factor:
+    middleFactorShape = (
+        sum(_.shape[0] for _ in  MiddleBlocks.ravel()),
+        sum(_.shape[1] for _ in  MiddleBlocks.ravel())
+    )
 
-    assert False # return!
-    # return bf.MatProduct(...)
+    # Build a list of the middle blocks with their indices (each entry
+    # is a tuple of the form (i0, j0, block)):
+    indexedMiddleBlocks = list(zip(I0.ravel(), J0.ravel(), MiddleBlocks.ravel()))
+
+    if MAKE_PLOTS:
+        plt.figure()
+        rects = []
+        for i0, j0, middleBlock in indexedMiddleBlocks:
+            m, n = middleBlock.shape
+            rect = Rectangle((i0, j0), m, n)
+            rects.append(rect)
+        plt.gca().add_collection(PatchCollection(rects, facecolor='cyan', edgecolor='k', linewidth=1))
+        plt.xlim(0, middleFactorShape[0])
+        plt.ylim(0, middleFactorShape[1])
+        plt.xlabel('$i$')
+        plt.ylabel('$j$')
+        plt.gca().set_aspect('equal')
+        plt.show()
+
+    # Set up factors:
+    leftFactor = bf.MatBlockDiag.from_blocks([_.toMat() for _ in rowFacStreamers], bf.Policy.View)
+    middleFactor = bf.MatBlockCoo.from_indexed_blocks(middleFactorShape, indexedMiddleBlocks, bf.Policy.View)
+    rightFactor = bf.MatBlockDiag.from_blocks([_.toMat() for _ in colFacStreamers], bf.Policy.View)
+    rightFactor.transpose()
+
+    # Build and return factorization:
+    return bf.MatProduct.from_factors(leftFactor, middleFactor, rightFactor)
 
 class DenseLu(bf.MatPython):
     def __init__(self, A, tol=1e-13):
@@ -450,8 +506,13 @@ class HierarchicalLu(bf.MatPython):
 
         print(f'- {depth=}, {len(nodes)=}')
 
-        # TODO: handle this case
-        assert len(nodes) > 1
+        # If only one node was passed, we push down a level, replacing
+        # (the length 1 array) nodes with the array consisting of its
+        # children. We don't need to go further down than this. The
+        # main thing we need to be able to do is split along an axis
+        # to get a 2x2 blocking.
+        if len(nodes) == 1:
+            nodes = nodes[0].children
 
         self.A = A
         self.nodes = nodes
@@ -462,6 +523,7 @@ class HierarchicalLu(bf.MatPython):
         print(f'  + {len(nodes1)=}, {len(nodes2)=}')
 
         # Get diagonal blocks:
+        print(f'{I1 = }')
         A11 = self.A.get_blocks(I1, I1)
         A22 = self.A.get_blocks(I2, I2)
         print(f'  + {A11.shape=}, {A22.shape=}')
@@ -498,14 +560,10 @@ class HierarchicalLu(bf.MatPython):
 
         # Continue factorization recursively:
         if max(A11_schur.shape) <= HierarchicalLu.DENSE_LU_THRESH:
-            # NOTE: actually, we should only do the middle-out
-            # butterfly factorization if we're *above* the LU
-            # threshold... it's a waste to do it otherwise
-            print('bad! see note')
-
             self.A11_schur_lu = DenseLu(A11_schur)
         else:
-            self.A11_schur_lu = HierarchicalLu(A11_schur, nodes2, depth=depth+1, parent=self)
+            self.A11_schur_lu = \
+                HierarchicalLu(A11_schur, nodes2, k, eps, depth=depth+1, parent=self)
 
     @staticmethod
     def from_quadtree(A, quadtree, k, eps, init_level=2):

@@ -11,3 +11,4 @@ cdef extern from "bf/mat.h":
     BfMat *bfMatMul(const BfMat *, const BfMat *)
     BfMat *bfMatRmul(const BfMat *, const BfMat *)
     BfMat *bfMatToType(const BfMat *mat, BfType type)
+    void bfMatTranspose(BfMat *mat)

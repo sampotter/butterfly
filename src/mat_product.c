@@ -23,7 +23,7 @@ static BfMatVtable MAT_VTABLE = {
   .Rmul = (__typeof__(&bfMatRmul))bfMatProductRmul,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatProductRmulVec,
   .Solve = (__typeof__(&bfMatSolve))bfMatProductSolve,
-  .GetTransposed = (__typeof__(&bfMatGetTransposed))bfMatProductGetTransposed,
+  .Transpose = (__typeof__(&bfMatTranspose))bfMatProductTranspose,
 };
 
 BfMat *bfMatProductGetView(BfMatProduct *matProduct) {
@@ -374,27 +374,21 @@ BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat) 
   return result;
 }
 
-BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy) {
+void bfMatProductTranspose(BfMatProduct *matProduct) {
   BF_ERROR_BEGIN();
 
-  BfMatProduct *matProductTransposed = bfMatProductNew();
-  HANDLE_ERROR();
+  /* Reverse the order of the factors: */
+  bfPtrArrayReverse(&matProduct->factorArr);
 
-  bfMatProductInit(matProductTransposed);
-  HANDLE_ERROR();
-
-  BfSize n = bfMatProductNumFactors(matProduct);
-  for (BfSize i = 0; i < n; ++i) {
-    BfMat *factor = bfMatProductGetFactor(matProduct, n - i - 1);
-    BfMat *factorTransposed = bfMatGetTransposed(factor, policy);
-    bfMatProductPostMultiply(matProductTransposed, factorTransposed);
+  /* Transpose each of the factors: */
+  for (BfSize i = 0; i < bfMatProductNumFactors(matProduct); ++i) {
+    bfMatTranspose(bfMatProductGetFactor(matProduct, i));
+    HANDLE_ERROR();
   }
 
   BF_ERROR_END() {
     BF_DIE();
   }
-
-  return bfMatProductToMat(matProductTransposed);
 }
 
 /** Upcasting: */

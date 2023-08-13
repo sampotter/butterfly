@@ -20,7 +20,7 @@ BfVec *bfMatProductMulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductRmul(BfMatProduct const *matProduct, BfMat const *mat);
 BfVec *bfMatProductRmulVec(BfMatProduct const *matProduct, BfVec const *vec);
 BfMat *bfMatProductSolve(BfMatProduct const *matProduct, BfMat const *otherMat);
-BfMat *bfMatProductGetTransposed(BfMatProduct *matProduct, BfPolicy policy);
+void bfMatProductTranspose(BfMatProduct *matProduct);
 
 /** Implementation: MatProduct */
 

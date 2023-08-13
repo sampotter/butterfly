@@ -13,8 +13,8 @@ BfType bfMatBlockDiagGetType(BfMat const *mat);
 BfSize bfMatBlockDiagNumBytes(BfMatBlockDiag const *matBlockDiag);
 void bfMatBlockDiagDump(BfMatBlockDiag const *matBlockDiag, FILE *fp);
 bool bfMatBlockDiagInstanceOf(BfMat const *mat, BfType type);
-BfSize bfMatBlockDiagGetNumRows(BfMat const *mat);
-BfSize bfMatBlockDiagGetNumCols(BfMat const *mat);
+BfSize bfMatBlockDiagGetNumRows(BfMatBlockDiag const *matBlockDiag);
+BfSize bfMatBlockDiagGetNumCols(BfMatBlockDiag const *matBlockDiag);
 BfMat *bfMatBlockDiagGetRowRangeCopy(BfMatBlockDiag const *matBlockDiag, BfSize i0, BfSize i1);
 void bfMatBlockDiagScaleCols(BfMat *mat, BfVec const *vec);
 BfMat *bfMatBlockDiagMul(BfMat const *mat, BfMat const *other);
@@ -23,6 +23,7 @@ BfVec *bfMatBlockDiagRmulVec(BfMatBlockDiag const *matBlockDiag, BfVec const *ve
 void bfMatBlockDiagNegate(BfMat *mat);
 void bfMatBlockDiagPrintBlocksDeep(BfMatBlockDiag const *matBlockDiag, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 BfMat *bfMatBlockDiagSolve(BfMatBlockDiag const *matBlockDiag, BfMat const *mat);
+void bfMatBlockDiagTranspose(BfMatBlockDiag *matBlockDiag);
 
 /** Interface: MatBlock */
 

@@ -24,13 +24,17 @@ from fac_helm2 cimport *
 from fac_streamer cimport *
 from geom cimport *
 from helm2 cimport *
+from indexed_mat cimport *
 from layer_pot cimport *
 from linalg cimport *
 from mat cimport *
+from mat_block_coo cimport *
 from mat_block_dense cimport *
+from mat_block_diag cimport *
 from mat_dense_complex cimport *
 from mat_dense_real cimport *
 from mat_diag_real cimport *
+from mat_diff cimport *
 from mat_func cimport *
 from mat_identity cimport *
 from mat_product cimport *
@@ -117,6 +121,11 @@ cdef class Bbox2:
 
     def __str__(self):
         return f'[{self.xmin}, {self.xmax}] x [{self.ymin}, {self.ymax}]'
+
+class Policy(Enum):
+    View = BF_POLICY_VIEW
+    Copy = BF_POLICY_COPY
+    Steal = BF_POLICY_STEAL
 
 cdef class Point2:
     cdef BfPoint2 point
@@ -233,6 +242,14 @@ cdef class FacStreamer:
 
     def is_done(self):
         return bfFacStreamerIsDone(self.facStreamer)
+
+    def toMat(self):
+        cdef BfFac *fac = bfFacStreamerGetFac(self.facStreamer)
+        cdef MatProduct _ = MatProduct.__new__(MatProduct)
+        _.matProduct = bfFacGetMatProduct(fac, BF_POLICY_STEAL)
+        bfFacDeinitAndDealloc(&fac)
+        _.mat = bfMatProductToMat(_.matProduct)
+        return _
 
 cdef class Helm2:
     cdef BfHelm2 helm
@@ -370,6 +387,40 @@ cdef class Mat:
             bfMatToMatDenseComplex(
                 bfMatToType(self.mat, BF_TYPE_MAT_DENSE_COMPLEX)))
 
+    def transpose(self):
+        bfMatTranspose(self.mat)
+
+cdef class MatBlockCoo(Mat):
+    cdef BfMatBlockCoo *matBlockCoo
+
+    @staticmethod
+    def from_indexed_blocks(shape, indexedBlocks, policy):
+        cdef BfSize numRows, numCols
+        numRows, numCols = shape
+
+        cdef BfPtrArray indexedBlocksPtrArray
+        bfInitPtrArray(&indexedBlocksPtrArray, len(indexedBlocks))
+
+        cdef Mat block
+        cdef BfSize i0, j0
+        cdef BfIndexedMat *indexedMat
+        for i0, j0, arg in indexedBlocks:
+            if isinstance(arg, np.ndarray):
+                block = Mat.from_ndarray(arg)
+            else:
+                raise NotImplementedError()
+            indexedMat = bfIndexedMatAlloc()
+            indexedMat.i0 = i0
+            indexedMat.j0 = j0
+            indexedMat.mat = block.mat
+            bfPtrArrayAppend(&indexedBlocksPtrArray, indexedMat)
+
+        cdef MatBlockCoo _ = MatBlockCoo.__new__(MatBlockCoo)
+        _.matBlockCoo = bfMatBlockCooNewFromIndexedBlocks(numRows, numCols, &indexedBlocksPtrArray, policy.value)
+        _.mat = bfMatBlockCooToMat(_.matBlockCoo)
+
+        return _
+
 cdef class MatBlockDense(Mat):
     cdef BfMatBlockDense *mat_block_dense
 
@@ -385,7 +436,7 @@ cdef class MatBlockDense(Mat):
         bfMatBlockDenseScaleCols(self.mat_block_dense, vec)
         bfVecDelete(&vec)
 
-    def get_blocks(self, I, J):
+    def get_blocks(self, I, J, policy=Policy.View):
         cdef BfSize mBlk = len(I)
         cdef BfSize nBlk = len(J)
         cdef BfPtrArray blocks
@@ -399,9 +450,30 @@ cdef class MatBlockDense(Mat):
                 bfPtrArrayAppend(&blocks, block)
         blocks_ = MatBlockDense()
         blocks_.mat_block_dense = \
-            bfMatBlockDenseNewFromBlocks(mBlk, nBlk, &blocks, BF_POLICY_VIEW)
+            bfMatBlockDenseNewFromBlocks(mBlk, nBlk, &blocks, policy.value)
         blocks_.mat = bfMatBlockDenseToMat(blocks_.mat_block_dense)
         return blocks_
+
+cdef class MatBlockDiag(Mat):
+    cdef BfMatBlockDiag *matBlockDiag
+
+    @staticmethod
+    def from_blocks(blocks, policy):
+        cdef MatBlockDiag _ = MatBlockDiag.__new__(MatBlockDiag)
+
+        cdef BfPtrArray blocksPtrArray
+        bfInitPtrArray(&blocksPtrArray, len(blocks))
+
+        cdef Mat block
+        for block in blocks:
+            bfPtrArrayAppend(&blocksPtrArray, block.mat)
+
+        _.matBlockDiag = bfMatBlockDiagNewFromBlocks(&blocksPtrArray, policy.value)
+        _.mat = bfMatBlockDiagToMat(_.matBlockDiag)
+
+        bfPtrArrayDeinit(&blocksPtrArray)
+
+        return _
 
 cdef class MatDenseComplex(Mat):
     cdef BfMatDenseComplex *mat_dense_complex
@@ -432,12 +504,17 @@ cdef class MatDenseComplex(Mat):
         assert arr.flags.c_contiguous
         assert arr.itemsize == 16
 
-        cdef BfSize m = arr.shape[0]
-        cdef BfSize n = arr.shape[1]
-        cdef BfComplex[:, :] data = arr
+        # cdef BfSize m = arr.shape[0]
+        # cdef BfSize n = arr.shape[1]
+        # cdef BfComplex[:, :] data = arr
+
+        # cdef MatDenseComplex _ = MatDenseComplex.__new__(MatDenseComplex)
+        # _.mat_dense_complex = bfMatDenseComplexNewViewFromPtr(m, n, &data[0, 0])
+        # _.mat = bfMatDenseComplexToMat(_.mat_dense_complex)
+        # return _
 
         cdef MatDenseComplex _ = MatDenseComplex.__new__(MatDenseComplex)
-        _.mat_dense_complex = bfMatDenseComplexNewViewFromPtr(m, n, &data[0, 0])
+        _.mat_dense_complex = bfMatDenseComplexNewViewFromPyArray(arr)
         _.mat = bfMatDenseComplexToMat(_.mat_dense_complex)
         return _
 
@@ -490,6 +567,26 @@ cdef class MatDiagReal(Mat):
         mat_diag_real.mat = bfMatDiagRealToMat(mat_diag_real.matDiagReal)
         return mat_diag_real
 
+cdef class MatDiff(Mat):
+    cdef BfMatDiff *matDiff
+
+    def __cinit__(self, Mat first, Mat second, policy=Policy.View):
+        self.matDiff = bfMatDiffNew(first.mat, second.mat, policy.value)
+        self.mat = bfMatDiffToMat(self.matDiff)
+
+    @property
+    def first(self):
+        return reify_mat(bfMatDiffGetFirst(self.matDiff))
+
+    @property
+    def second(self):
+        return reify_mat(bfMatDiffGetSecond(self.matDiff))
+
+    def get_blocks(self, I, J, policy=Policy.View):
+        firstBlocks = self.first.get_blocks(I, J, policy)
+        secondBlocks = self.second.get_blocks(I, J, policy)
+        return MatDiff(firstBlocks, secondBlocks, policy)
+
 cdef class MatFunc(Mat):
     cdef BfMatFunc *MatFunc
 
@@ -523,13 +620,6 @@ cdef class MatProduct(Mat):
     cdef post_multiply(self, Mat mat):
         assert mat.mat != NULL
         bfMatProductPostMultiply(self.matProduct, mat.mat)
-
-    @property
-    def T(self):
-        cdef MatProduct _ = MatProduct.__new__(MatProduct)
-        _.mat = bfMatProductGetTransposed(self.matProduct, BF_POLICY_VIEW)
-        _.matProduct = bfMatToMatProduct(_.mat)
-        return _
 
 cdef class NodeSpan:
     cdef BfNodeSpan *nodeSpan
@@ -828,7 +918,6 @@ cdef class Tree:
     def for_middle_fac(Tree templateTree, BfSize p):
         cdef Tree tree = Tree.__new__(Tree)
         tree.tree = bfTreeNewForMiddleFac(templateTree.tree, p)
-        print(bfTreeGetMaxDepth(tree.tree))
         return tree
 
     @property

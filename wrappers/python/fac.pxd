@@ -1,5 +1,5 @@
-from defs cimport BfSize, BfReal
-from types cimport BfTree
+from defs cimport BfSize, BfReal, BfPolicy
+from types cimport BfMatProduct, BfTree, BfFac
 
 cdef extern from "bf/fac.h":
     ctypedef struct BfFacSpec:
@@ -11,3 +11,6 @@ cdef extern from "bf/fac.h":
         BfSize minNumRows
         BfSize minNumCols
         bint compareRelativeErrors
+
+    void bfFacDeinitAndDealloc(BfFac **fac)
+    BfMatProduct *bfFacGetMatProduct(BfFac *fac, BfPolicy policy)

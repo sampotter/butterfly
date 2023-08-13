@@ -26,6 +26,9 @@
  *
  * More to come... */
 
+/* TODO: expecting all matrices to be able to make sense of these
+ * properties is unrealistic. Really need to remove them and push them
+ * down to the "leaf-level" types. */
 typedef enum BfMatProps {
   BF_MAT_PROPS_NONE = 0,
   BF_MAT_PROPS_VIEW = 1 << 0,
@@ -104,7 +107,7 @@ BfLu *bfMatGetLu(BfMat const *mat);
 BfMat *bfMatGetInverse(BfMat const *mat);
 void bfMatDivideCols(BfMat *, BfVec const *);
 BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *colMask);
-BfMat *bfMatGetTransposed(BfMat *mat, BfPolicy policy);
+void bfMatTranspose(BfMat *mat);
 
 typedef struct BfMatVtable {
   __typeof__(&bfMatGetView) GetView;
@@ -170,7 +173,7 @@ typedef struct BfMatVtable {
   __typeof__(&bfMatGetInverse) GetInverse;
   __typeof__(&bfMatDivideCols) DivideCols;
   __typeof__(&bfMatGetSubmatByMask) GetSubmatByMask;
-  __typeof__(&bfMatGetTransposed) GetTransposed;
+  __typeof__(&bfMatTranspose) Transpose;
 } BfMatVtable;
 
 /** Implementation: Mat */
