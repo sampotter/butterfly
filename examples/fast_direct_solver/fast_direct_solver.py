@@ -572,19 +572,41 @@ class HierarchicalLu(bf.MatPython):
     def from_quadtree(A, quadtree, k, eps, init_level=2):
         return HierarchicalLu(A, quadtree.get_level_nodes(init_level), k, eps)
 
-    def _Mul(self, y):
-        # y1, y2 = ...
-        assert False # XXX
+    @property
+    def i0(self):
+        return 0
 
-        z1 = self.A11_lu.solve(y1)
-        z2 = y2 - self.A21@z1
-        x2 = self.A11_schur_lu.solve(z2)
-        x1 = z1 - self.A11_lu.solve(self.A12@x2)
+    @property
+    def i1(self):
+        return self.A11_lu.shape[0]
 
-        # x = vcat(x1, x2)
-        assert False
+    @property
+    def i2(self):
+        return self.shape[0]
 
-        return x
+    @property
+    def j0(self):
+        return 0
+
+    @property
+    def j1(self):
+        return self.A11_lu.shape[1]
+
+    @property
+    def j2(self):
+        return self.shape[1]
+
+    def _Mul(self, X):
+        assert self.shape[1] == X.shape[0]
+        X1, X2 = X[self.j0:self.j1], X[self.j1:self.j2]
+        Z1 = self.A11_lu@X1
+        Z2 = X2 - self.A21@Z1
+        Y2 = self.A11_schur_lu@Z2
+        Y1 = self.A11@X1 - self.A11_lu@(self.A12@Y2)
+        Y = np.concatenate([Y1, Y2], axis=0)
+        assert Y.shape[0] == self.shape[0]
+        assert Y.shape[1] == X.shape[1]
+        return Y
 
     def _Rmul(self, X):
         print('HierarchicalLu._Rmul')
