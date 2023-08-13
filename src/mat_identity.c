@@ -20,6 +20,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatIdentityGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatIdentityGetNumCols,
   .GetRowRangeCopy = (__typeof__(&bfMatGetRowRangeCopy))bfMatIdentityGetRowRangeCopy,
+  .Mul = (__typeof__(&bfMatMul))bfMatIdentityMul,
   .MulVec = (__typeof__(&bfMatMulVec))bfMatIdentityMulVec,
   .RmulVec = (__typeof__(&bfMatMulVec))bfMatIdentityRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatIdentityPrintBlocksDeep,
@@ -143,6 +144,22 @@ BfMat *bfMatIdentityGetRowRangeCopy(BfMatIdentity const *matIdentity, BfSize i0,
   BF_ERROR_END() {}
 
   return rowRangeCopy;
+}
+
+BfMat *bfMatIdentityMul(BfMatIdentity const *matIdentity, BfMat const *mat) {
+  BF_ERROR_BEGIN();
+
+  if (bfMatIdentityGetNumRows(matIdentity) != bfMatIdentityGetNumCols(matIdentity))
+    RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BfMat *result = bfMatCopy(mat);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return result;
 }
 
 BfVec *bfMatIdentityMulVec(BfMatIdentity const *matIdentity, BfVec const *vec) {
