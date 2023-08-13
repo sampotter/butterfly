@@ -51,6 +51,7 @@ void bfMatDenseComplexPrintBlocksDeep(BfMatDenseComplex const *matDenseComplex, 
 BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1);
 BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *mat);
 void bfMatDenseComplexDivideCols(BfMatDenseComplex *matDenseComplex, BfVec const *vec);
+void bfMatDenseComplexTranspose(BfMatDenseComplex *matDenseComplex);
 
 /** Upcasting: */
 
@@ -84,10 +85,12 @@ BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *arr);
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
+BfMatDenseComplex *bfMatDenseComplexNewIdentity(BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols, BfComplex *data);
 void bfMatDenseComplexInitRandn(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInitViewFromPyArray(BfMatDenseComplex *matDenseComplex, BfPtr *pyArray);
+void bfMatDenseComplexInitIdentity(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);
 void bfMatDenseComplexDeinitAndDealloc(BfMatDenseComplex **mat);

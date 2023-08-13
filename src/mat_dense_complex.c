@@ -217,6 +217,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetBlockView = (__typeof__(&bfMatGetBlockView))bfMatDenseComplexGetBlockView,
   .GetLu = (__typeof__(&bfMatGetLu))bfMatDenseComplexGetLu,
   .DivideCols = (__typeof__(&bfMatDivideCols))bfMatDenseComplexDivideCols,
+  .Transpose = (__typeof__(&bfMatTranspose))bfMatDenseComplexTranspose,
 };
 
 BfMat *bfMatDenseComplexGetView(BfMat *mat) {
@@ -1464,6 +1465,11 @@ void bfMatDenseComplexDivideCols(BfMatDenseComplex *matDenseComplex, BfVec const
   }
 }
 
+void bfMatDenseComplexTranspose(BfMatDenseComplex *matDenseComplex) {
+  BfMat *mat = bfMatDenseComplexToMat(matDenseComplex);
+  bfMatConjTrans(mat);
+}
+
 /* Implementation: MatDenseComplex */
 
 BfSize bfMatDenseComplexGetRowStride(BfMatDenseComplex const *mat) {
@@ -1677,6 +1683,8 @@ bfMatDenseComplexDenseComplexSub(BfMatDenseComplex const *op1,
     for (BfSize j = 0; j < n; ++j) {
       *resultPtr = *rowPtr1 - *rowPtr2;
       resultPtr += result->colStride;
+      rowPtr1 += op1->colStride;
+      rowPtr2 += op2->colStride;
     }
   }
 
@@ -2003,8 +2011,9 @@ BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
   for (BfSize i = 0; i < numRows*numCols; ++i)
     zeros->data[i] = 0;
 
-  BF_ERROR_END()
-    bfMatDenseComplexDeinitAndDealloc(&zeros);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return zeros;
 }
@@ -2028,6 +2037,22 @@ BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, B
 
   BF_ERROR_END()
     bfMatDenseComplexDeinitAndDealloc(&matDenseComplex);
+
+  return matDenseComplex;
+}
+
+BfMatDenseComplex *bfMatDenseComplexNewIdentity(BfSize numRows, BfSize numCols) {
+  BF_ERROR_BEGIN();
+
+  BfMatDenseComplex *matDenseComplex = bfMatDenseComplexNew();
+  HANDLE_ERROR();
+
+  bfMatDenseComplexInitIdentity(matDenseComplex, numRows, numCols);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return matDenseComplex;
 }
@@ -2102,6 +2127,23 @@ void bfMatDenseComplexInitViewFromPyArray(BfMatDenseComplex *matDenseComplex, Bf
   matDenseComplex->pyArray = pyArray;
 
   Py_INCREF(obj);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfMatDenseComplexInitIdentity(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols) {
+  BF_ERROR_BEGIN();
+
+  bfMatDenseComplexInit(matDenseComplex, numRows, numCols);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numRows*numCols; ++i)
+    matDenseComplex->data[i] = 0;
+
+  for (BfSize i = 0; i < numRows; ++i)
+    matDenseComplex->data[numCols*i + i] = 1;
 
   BF_ERROR_END() {
     BF_DIE();
