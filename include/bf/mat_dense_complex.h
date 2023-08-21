@@ -5,7 +5,7 @@
 /** Interface: Mat */
 
 BfMat *bfMatDenseComplexGetView(BfMat *mat);
-BfMat *bfMatDenseComplexCopy(BfMat const *mat);
+BfMat *bfMatDenseComplexCopy(BfMatDenseComplex const *matDenseComplex);
 BfMat *bfMatDenseComplexSteal(BfMatDenseComplex *matDenseComplex);
 BfVec *bfMatDenseComplexGetRowCopy(BfMat const *mat, BfSize i);
 BfVec *bfMatDenseComplexGetRowView(BfMat *mat, BfSize i);
@@ -47,6 +47,7 @@ BfMat *bfMatDenseComplexLstSq(BfMat const *lhs, BfMat const *rhs);
 bool bfMatDenseComplexIsUpperTri(BfMat const *mat);
 BfVec *bfMatDenseComplexBackwardSolveVec(BfMat const *mat, BfVec const *vec);
 void bfMatDenseComplexNegate(BfMat *mat);
+BfMat *bfMatDenseComplexToType(BfMatDenseComplex const *matDenseComplex, BfType type);
 void bfMatDenseComplexPrintBlocksDeep(BfMatDenseComplex const *matDenseComplex, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
 BfMat *bfMatDenseComplexGetBlockView(BfMatDenseComplex *mat, BfSize i0, BfSize i1, BfSize j0, BfSize j1);
 BfLu *bfMatDenseComplexGetLu(BfMatDenseComplex const *mat);

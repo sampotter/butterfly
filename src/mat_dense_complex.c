@@ -172,7 +172,7 @@ void bfMatDenseComplexScaleCols_complex(BfMatDenseComplex *mat, BfVec const *vec
 
 static BfMatVtable MAT_VTABLE = {
   .GetView = (__typeof__(&bfMatDenseComplexGetView))bfMatDenseComplexGetView,
-  .Copy = (__typeof__(&bfMatDenseComplexCopy))bfMatDenseComplexCopy,
+  .Copy = (__typeof__(&bfMatCopy))bfMatDenseComplexCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatDenseComplexSteal,
   .GetRowCopy = (__typeof__(&bfMatDenseComplexGetRowCopy))bfMatDenseComplexGetRowCopy,
   .GetRowView = (__typeof__(&bfMatDenseComplexGetRowView))bfMatDenseComplexGetRowView,
@@ -213,6 +213,7 @@ static BfMatVtable MAT_VTABLE = {
   .IsUpperTri = (__typeof__(&bfMatDenseComplexIsUpperTri))bfMatDenseComplexIsUpperTri,
   .BackwardSolveVec = (__typeof__(&bfMatDenseComplexBackwardSolveVec))bfMatDenseComplexBackwardSolveVec,
   .Negate = (__typeof__(&bfMatDenseComplexNegate))bfMatDenseComplexNegate,
+  .ToType = (__typeof__(&bfMatToType))bfMatDenseComplexToType,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseComplexPrintBlocksDeep,
   .GetBlockView = (__typeof__(&bfMatGetBlockView))bfMatDenseComplexGetBlockView,
   .GetLu = (__typeof__(&bfMatGetLu))bfMatDenseComplexGetLu,
@@ -240,17 +241,13 @@ BfMat *bfMatDenseComplexGetView(BfMat *mat) {
   return matView;
 }
 
-BfMat *bfMatDenseComplexCopy(BfMat const *mat) {
+BfMat *bfMatDenseComplexCopy(BfMatDenseComplex const *matDenseComplex) {
   BF_ERROR_BEGIN();
 
-  BfMatDenseComplex const *matDenseComplex = NULL;
   BfMatDenseComplex *copy = NULL;
 
-  matDenseComplex = bfMatConstToMatDenseComplexConst(mat);
-  HANDLE_ERROR();
-
-  BfSize m = bfMatGetNumRows(mat);
-  BfSize n = bfMatGetNumCols(mat);
+  BfSize m = bfMatDenseComplexGetNumRows(matDenseComplex);
+  BfSize n = bfMatDenseComplexGetNumCols(matDenseComplex);
 
   copy = bfMatDenseComplexNew();
   HANDLE_ERROR();
@@ -1383,6 +1380,16 @@ void bfMatDenseComplexNegate(BfMat *mat) {
   }
 
   BF_ERROR_END() {}
+}
+
+BfMat *bfMatDenseComplexToType(BfMatDenseComplex const *matDenseComplex, BfType type) {
+  switch (type) {
+  case BF_TYPE_MAT_DENSE_COMPLEX:
+    return bfMatDenseComplexCopy(matDenseComplex);
+  default:
+    bfSetError(BF_ERROR_NOT_IMPLEMENTED);
+    return NULL;
+  }
 }
 
 void bfMatDenseComplexPrintBlocksDeep(BfMatDenseComplex const *matDenseComplex, FILE *fp, BfSize i0, BfSize j0, BfSize depth) {
