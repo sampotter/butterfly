@@ -44,6 +44,10 @@ bool bfTypeDerivedFrom(BfType derived, BfType parent) {
       [BF_TYPE_MAT]      = true,
       [BF_TYPE_MAT_PERM] = true
     },
+    [BF_TYPE_MAT_PYTHON] = {
+      [BF_TYPE_MAT]        = true,
+      [BF_TYPE_MAT_PYTHON] = true
+    },
     [BF_TYPE_MAT_PRODUCT] = {
       [BF_TYPE_MAT]         = true,
       [BF_TYPE_MAT_PRODUCT] = true
