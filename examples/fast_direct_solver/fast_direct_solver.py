@@ -100,7 +100,7 @@ xsrc = bf.Points2.from_point((-0.5, 2))
 k = 50
 r = 0.2 # spacing between ellipses
 axlim = (0.02, 0.1) # range of ellipse semi axes
-h = 0.01 # point spacing
+h = 0.005 # point spacing
 KR_order = 6 # Kapur-Rokhlin quadrature order
 eps = 1e-13 # Relative error tolerance for hierarchial LU decomposition
 
@@ -215,56 +215,187 @@ def minimize_rank_est(X1, X2, k, eps):
     f = lambda x1, y1, x2, y2, r1, r2: r1*r2/(R(x1, y1, x2, y2) - r1 - r2)
     g1 = lambda x1, y1, r1: r1 - r1min(x1, y1)
     g2 = lambda x2, y2, r2: r2 - r2min(x2, y2)
+    g3 = lambda x1, y1, x2, y2, r1, r2: R(x1, y1, x2, y2) - r1 - r2
     p1, p2 = X1.mean(0), X2.mean(0)
     _ = scipy.optimize.minimize(
         lambda _: f(*_),
         (*p1, *p2, r1min(*p1), r2min(*p2)),
+        bounds=[
+            (None, None), # x1
+            (None, None), # y1
+            (None, None), # x2
+            (None, None), # y2
+            (0, None),    # r1
+            (0, None)],   # r2
         constraints=[
             {'type': 'ineq', 'fun': lambda _: g1(_[0], _[1], _[4])},
-            {'type': 'ineq', 'fun': lambda _: g2(_[2], _[3], _[5])}])
+            {'type': 'ineq', 'fun': lambda _: g2(_[2], _[3], _[5])},
+            {'type': 'ineq', 'fun': lambda _: g3(*_)}],
+        options={'maxiter': 1000, 'ftol': 1e-3})
     if _.success:
         p1opt, p2opt, r1opt, r2opt = _.x[:2], _.x[2:4], _.x[4], _.x[5]
-        rank = k*f(*p1opt, *p2opt, r1min(*p1opt), r2min(*p2opt)) + np.log10(1/eps)
+
+        # fValue = f(*p1opt, *p2opt, r1min(*p1opt), r2min(*p2opt))
+        assert _.fun > 0
+        rank = min(X1.shape[0], X2.shape[0], k*_.fun + np.log10(1/eps))
+        print(f'{rank = }')
+
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.scatter(*X1.T, s=2, c='r', zorder=1)
+        # plt.scatter(*X2.T, s=2, c='b', zorder=1)
+        # plt.scatter(*p1opt, s=10, c='r', zorder=2)
+        # plt.scatter(*p2opt, s=10, c='b', zorder=2)
+        # plt.scatter([p1opt[0], p2opt[0]], [p1opt[1], p2opt[1]], c='k', zorder=0)
+        # plt.gca().add_patch(plt.Circle(p1opt, r1opt, edgecolor='r', facecolor='none'))
+        # plt.gca().add_patch(plt.Circle(p2opt, r2opt, edgecolor='b', facecolor='none'))
+        # plt.gca().set_aspect('equal')
+        # plt.show()
+
         return p1opt, p2opt, r1opt, r2opt, rank
 
-def rank_for_node_is_small_enough(node, X2, k, eps, p):
-    if node.get_num_points() <= p:
-        return True
+# def rank_for_node_is_small_enough(node, X2, k, eps, p):
+#     if node.get_num_points() <= p:
+#         return True
 
-    X1 = np.array(node.get_points())
+#     X1 = np.array(node.get_points())
 
-    _ = minimize_rank_est(X1, X2, k, eps)
-    if _ is None:
-        return False
-    pX, pY, rX, rY, popt = _
+#     _ = minimize_rank_est(X1, X2, k, eps)
+#     if _ is None:
+#         return False
+#     pX, pY, rX, rY, popt = _
+#     print(f'{popt = :.2f}')
 
-    print(f'{popt = :.2f}')
+#     # if MAKE_PLOTS:
+#     import matplotlib.pyplot as plt
+#     plt.figure()
+#     plt.scatter(*X1.T, s=5, c='b')
+#     plt.scatter(*X2.T, s=5, c='r')
+#     plt.scatter(*pX, s=10, c='b', marker='x')
+#     plt.scatter(*pY, s=10, c='r', marker='x')
+#     plt.gca().add_patch(plt.Circle(pX, rX, edgecolor='k', facecolor='none'))
+#     plt.gca().add_patch(plt.Circle(pY, rY, edgecolor='k', facecolor='none'))
+#     plt.gca().set_aspect('equal')
+#     plt.show()
 
-    if MAKE_PLOTS:
-        plt.figure()
-        plt.scatter(*X1.T, s=5, c='b')
-        plt.scatter(*X2.T, s=5, c='r')
-        plt.scatter(*pX, s=10, c='b', marker='x')
-        plt.scatter(*pY, s=10, c='r', marker='x')
-        plt.gca().add_patch(plt.Circle(pX, rX, edgecolor='k', facecolor='none'))
-        plt.gca().add_patch(plt.Circle(pY, rY, edgecolor='k', facecolor='none'))
-        plt.gca().set_aspect('equal')
-        plt.show()
+#     return popt <= p
 
-    return popt <= p
+def estimate_rank(srcNode, tgtNodes, k, eps, p):
+    numSrcPoints = srcNode.get_num_points()
+    numTgtPoints = sum(_.get_num_points() for _ in tgtNodes)
+    maxNumPoints = max(numSrcPoints, numTgtPoints)
+    if maxNumPoints <= p:
+        return maxNumPoints
+
+    Xsrc = np.array(srcNode.get_points())
+
+    def get_results(tgtNode):
+        return minimize_rank_est(Xsrc, np.array(tgtNode.get_points()), k, eps)
+
+    def get_p(res): return res[-1]
+
+    cutNodes = tgtNodes.copy()
+    results = [get_results(_) for _ in cutNodes]
+
+    i = 0
+    while i < len(cutNodes):
+        cutNode, res = cutNodes[i], results[i]
+        childResults = [get_results(_) for _ in cutNode.children]
+
+        # If the optimization failed for the current node, we push
+        # down to its children and keep going:
+        if res is None:
+            cutNodes = cutNodes[:i] + cutNode.children + cutNodes[(i + 1):]
+            results = results[:i] + childResults + results[(i + 1):]
+            continue
+
+        # If we were able to optimize for the current node, we should
+        # be able to optimize for all of its children:
+        try:
+            assert all(_ is not None for _ in childResults)
+        except:
+            for j, _ in enumerate(cutNode.children):
+                if childResults[j] is None:
+                    import ipdb; ipdb.set_trace()
+                    get_results(_)
+
+        # If the child nodes together have a lower rank than the
+        # current node, splice them in and move on:
+        if sum(get_p(_) for _ in childResults) <= get_p(res):
+            cutNodes = cutNodes[:i] + cutNode.children + cutNodes[(i + 1):]
+            results = results[:i] + childResults + results[(i + 1):]
+            continue
+
+        # The current node minimizes the rank, so we can keep it
+        i += 1
+
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.scatter(*Xsrc.T, s=2, c='k', zorder=1)
+    # c = ['r', 'g', 'orange', 'yellow', 'magenta', 'brown']
+    # j = 0
+    # for cutNode, res in zip(cutNodes, results):
+    #     p1opt, p2opt, r1opt, r2opt = res[:4]
+    #     plt.scatter(*np.array(cutNode.get_points()).T, s=2, c=c[j], zorder=1)
+    #     plt.scatter(*p1opt, s=10, c='k', zorder=2)
+    #     plt.scatter(*p2opt, s=10, c=c[j], zorder=2)
+    #     plt.plot([p1opt[0], p2opt[0]], [p1opt[1], p2opt[1]], c='k', zorder=0)
+    #     plt.gca().add_patch(plt.Circle(p1opt, r1opt, edgecolor='k', facecolor='none'))
+    #     plt.gca().add_patch(plt.Circle(p2opt, r2opt, edgecolor=c[j], facecolor='none'))
+    #     j += 1
+    # plt.gca().set_aspect('equal')
+    # plt.tight_layout()
+    # plt.show()
+
+    return sum(get_p(_) for _ in results)
 
 def rank_for_all_nodes_is_small_enough(nodes, X2, k, eps, p):
     return all(rank_for_node_is_small_enough(_, X2, k, eps, p) for _ in nodes)
 
+def get_next_tree_level(nodes):
+    assert len(nodes) == 1 or all(nodes[0].depth == _.depth for _ in nodes[1:])
+    childNodes = []
+    for node in nodes:
+        childNodes.extend(node.children)
+    return childNodes
+
+def get_common_parent(nodeSpan):
+    assert all(_.depth == nodeSpan[0].depth for _ in nodeSpan[1:])
+    parents = {_.parent for _ in nodeSpan}
+    while len(parents) > 1:
+        parents = {_.parent for _ in parents}
+    return list(parents)[0]
+
+def estimate_compression_rate(reflNodes, tgtNodes, k, eps, p):
+    sizes = [_.get_num_points() for _ in reflNodes]
+    rankEsts = [estimate_rank(_, tgtNodes, k, eps, p) for _ in reflNodes]
+    blockRanks = [[min(r1, r2) for r2 in rankEsts] for r1 in rankEsts]
+    compressedSize = sum(
+        sum((n1 + n2)*min(r1, r2) for n1, r1 in zip(sizes, rankEsts))
+        for n2, r2 in zip(sizes, rankEsts)
+    )
+    uncompressedSize = sum(sizes)**2
+    return uncompressedSize/compressedSize
+
 def get_refl_nodes(srcNodes, tgtNodes, k, eps, p):
-    Xtgt = np.concatenate([_.get_points() for _ in tgtNodes], axis=0)
-    reflNodes = srcNodes
-    while not rank_for_all_nodes_is_small_enough(reflNodes, Xtgt, k, eps, p):
-        newReflNodes = []
-        for reflNode in reflNodes:
-            newReflNodes.extend(reflNode.children)
-        reflNodes = newReflNodes
-        assert reflNodes
+    # # Compute the minimum number of nodes we require in a level
+    # sqrtN = int(np.ceil(np.sqrt(srcParent.get_num_points())))
+    # Xtgt = np.concatenate([_.get_points() for _ in tgtNodes], axis=0)
+
+    def get_R(_):
+        return estimate_compression_rate(_, tgtNodes, k, eps, p)
+
+    reflNodes = srcNodes.copy()
+    nextReflNodes = get_next_tree_level(reflNodes)
+    R, nextR = get_R(reflNodes), get_R(nextReflNodes)
+    print(f'{R = }')
+    print(f'R = {nextR}')
+    while nextR > R:
+        reflNodes = nextReflNodes
+        nextReflNodes = get_next_tree_level(reflNodes)
+        R, nextR = nextR, get_R(nextReflNodes),
+        print(f'R = {nextR}')
+
     return reflNodes
 
 def zrandn(m, n):
@@ -296,8 +427,13 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
     # contain fewer than `p` points... So, just ensure that there are
     # at least `p` points here. We could look into relaxing this later
     # but probably not worth the complication.
-    assert all(node.get_num_points() >= p for node in rowNodes)
-    assert all(node.get_num_points() >= p for node in colNodes)
+    # assert all(node.get_num_points() >= p for node in rowNodes)
+    # assert all(node.get_num_points() >= p for node in colNodes)
+    if not all(node.get_num_points() >= p for node in rowNodes) or \
+       not  all(node.get_num_points() >= p for node in colNodes):
+        print('ack!')
+        B = np.array(linOp.to_mat_dense_complex())
+        import ipdb; ipdb.set_trace()
 
     # Starting nodes should all come from the same tree and should all
     # be at the same depth
@@ -308,8 +444,8 @@ def sample_middle_out_butterfly(linOp, rowNodes, colNodes, eps, p, q):
     assert m == sum(node.get_num_points() for node in rowNodes)
     assert n == sum(node.get_num_points() for node in colNodes)
 
-    rowSubtree, rowSubtreePerm = bf.Tree.from_node_span(rowNodes)
-    colSubtree, colSubtreePerm = bf.Tree.from_node_span(colNodes)
+    rowSubtree = bf.Tree.from_nodes(rowNodes)
+    colSubtree = bf.Tree.from_nodes(colNodes)
 
     # Now I need to set up two trees with the same structure as
     # `rowSubtree` and `colSubtree`, but which are just plain "index
@@ -503,7 +639,7 @@ class DenseLu(bf.MatPython):
 class HierarchicalLu(bf.MatPython):
     '''Prototype class for butterfly fast direct solver for 2D Helmholtz...'''
 
-    DENSE_LU_THRESH = 64
+    DENSE_LU_THRESH = 512
 
     def __init__(self, A, nodes, k, eps, p=20, q=4, depth=0, parent=None):
         m, n = A.shape
@@ -512,33 +648,40 @@ class HierarchicalLu(bf.MatPython):
 
         super().__init__(n, n)
 
-        print(f'- {depth=}, {len(nodes)=}')
-
         self.A = A
         self.nodes = nodes
 
         I1, I2 = get_block_inds_for_split(nodes)
         nodes1 = [nodes[i] for i in I1]
         nodes2 = [nodes[i] for i in I2]
-        print(f'  + {len(nodes1)=}, {len(nodes2)=}')
         assert nodes1 and nodes2
 
         # Get diagonal blocks:
-        print(f'{I1 = }')
         A11 = self.A.get_blocks(I1, I1)
         A22 = self.A.get_blocks(I2, I2)
-        print(f'  + {A11.shape=}, {A22.shape=}')
+
+        # We need to hang on to A11 for the solve:
+        self.A11 = A11
 
         if hlu_recursive_base_case(A11, nodes1, p):
             if len(nodes1) == 1:
                 print(f'''warning: found leaf node with more points (== {nodes1[0].get_num_points()}) than HierarchicalLu.DENSE_LU_THRESH (== {HierarchicalLu.DENSE_LU_THRESH}) while recursively factorizing leading subblock''')
+            print('  ' * (depth + 1), end='')
+            print(f'DenseLu(n={A11.shape[0]}) [leading block]')
             self.A11_lu = DenseLu(A11)
         else:
+            print('  ' * (depth + 1), end='')
+            print(f'HierarchicalLu(n={A11.shape[0]}) [leading block]')
             self.A11_lu = HierarchicalLu(A11, nodes1, k, eps, depth=depth+1, parent=self)
 
         # TODO: this is using the bad old style... but might as well
         # try it and check that it works! Maybe it's fast for a range
         # of problem sizes?
+        #
+        # (specifically, it might be possible to speed this up
+        # asymptotically if we butterfly the LU factors (or, rather,
+        # butterfly A21 A11^-1 and A11^-1 A12... empirically it seems
+        # like these can be butterflied...)
 
         self.A12 = self.A.get_blocks(I1, I2)
         self.A21 = self.A.get_blocks(I2, I1)
@@ -553,23 +696,33 @@ class HierarchicalLu(bf.MatPython):
             plt.show()
 
         A11_refl_nodes = get_refl_nodes(nodes2, nodes1, k, eps, p)
-        A11_refl_BF = sample_middle_out_butterfly(
-            A11_refl, A11_refl_nodes, A11_refl_nodes, eps, p, q)
-
-        # Set up Schur complement:
-        A11_schur = bf.MatDiff(A22, A11_refl_BF)
+        if A11_refl_nodes:
+            A11_refl_BF = sample_middle_out_butterfly(
+                A11_refl, A11_refl_nodes, A11_refl_nodes, eps, p, q)
+            A11_schur = bf.MatDiff(A22, A11_refl_BF)
+        else:
+            if A11_refl.shape[0] > HierarchicalLu.DENSE_LU_THRESH:
+                print(f'warning: failed to BF reflector for node with {n} points')
+                import ipdb; ipdb.set_trace()
+                get_refl_nodes(nodes2, nodes1, k, eps, p)
+            A11_schur = bf.MatDiff(A22, A11_refl)
 
         # Continue factorization recursively:
         if hlu_recursive_base_case(A11_schur, nodes2, p):
             if len(nodes2) == 1:
                 print(f'''warning: found leaf node with more points (== {nodes2[0].get_num_points()}) than HierarchicalLu.DENSE_LU_THRESH (== {HierarchicalLu.DENSE_LU_THRESH}) while recursively factorizing Schur complement''')
+            print('  ' * (depth + 1), end='')
+            print(f'DenseLu(n={A11_schur.shape[0]}) [Schur complement]')
             self.A11_schur_lu = DenseLu(A11_schur)
         else:
+            print('  ' * (depth + 1), end='')
+            print(f'HierarchicalLu(n={A11_schur.shape[0]}) [Schur complement]')
             self.A11_schur_lu = \
                 HierarchicalLu(A11_schur, nodes2, k, eps, depth=depth+1, parent=self)
 
     @staticmethod
     def from_quadtree(A, quadtree, k, eps, init_level=2):
+        print(f'HierarchicalLu.from_quadtree(n={A.shape[0]})')
         return HierarchicalLu(A, quadtree.get_level_nodes(init_level), k, eps)
 
     @property
