@@ -746,7 +746,7 @@ BfMatBlockCoo const *bfMatConstToMatBlockCooConst(BfMat const *mat) {
   }
 }
 
-/** Downcasting: MatBlockCoo -> MatBlock */
+/** Upcasting: MatBlockCoo -> MatBlock */
 
 BfMatBlockCoo const *bfMatBlockConstToMatBlockCooConst(BfMatBlock const *matBlock) {
   return bfMatConstToMatBlockCooConst(&matBlock->super);
