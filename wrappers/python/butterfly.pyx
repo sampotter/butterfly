@@ -61,12 +61,18 @@ def seed(BfSize seed):
 
 cdef reify_mat(BfMat *mat):
     cdef BfType type_ = bfMatGetType(mat)
-    if type_ == BF_TYPE_MAT_BLOCK_DENSE:
+    if type_ == BF_TYPE_MAT:
+        raise RuntimeError()
+    elif type_ == BF_TYPE_MAT_DIFF:
+        return MatDiff.from_ptr(bfMatToMatDiff(mat))
+    elif type_ == BF_TYPE_MAT_PRODUCT:
+        return MatProduct.from_ptr(bfMatToMatProduct(mat))
+    elif type_ == BF_TYPE_MAT_PYTHON:
+        return MatPython.from_ptr(bfMatToMatPython(mat))
+    elif type_ == BF_TYPE_MAT_BLOCK_DENSE:
         return MatBlockDense.from_ptr(bfMatToMatBlockDense(mat))
     elif type_ == BF_TYPE_MAT_DENSE_COMPLEX:
         return MatDenseComplex.from_ptr(bfMatToMatDenseComplex(mat))
-    elif type_ == BF_TYPE_MAT_PRODUCT:
-        return MatProduct.from_ptr(bfMatToMatProduct(mat))
     else:
         raise TypeError(f'failed to reify BfMat: got {type_}')
 
@@ -384,6 +390,20 @@ cdef class Mat:
         else:
             raise NotImplementedError()
 
+    def _sub_ndarray(self, cnp.ndarray arr):
+        return self._sub_mat(Mat.from_ndarray(arr))
+
+    def _sub_mat(self, Mat mat):
+        return reify_mat(bfMatSub(self.mat, mat.mat))
+
+    def __sub__(self, other):
+        if isinstance(other, np.ndarray):
+            return self._sub_ndarray(other)
+        elif isinstance(other, Mat):
+            return self._sub_mat(other)
+        else:
+            raise NotImplementedError()
+
     def to_mat_dense_complex(self):
         return MatDenseComplex.from_ptr(
             bfMatToMatDenseComplex(
@@ -455,6 +475,44 @@ cdef class MatBlockDense(Mat):
             bfMatBlockDenseNewFromBlocks(mBlk, nBlk, &blocks, policy.value)
         blocks_.mat = bfMatBlockDenseToMat(blocks_.mat_block_dense)
         return blocks_
+
+    def get_row_blocks(self, I, policy=Policy.View):
+        cdef BfSize numColBlocks = bfMatBlockDenseGetNumColBlocks(self.mat_block_dense)
+
+        cdef BfPtrArray blocks
+        bfInitPtrArray(&blocks, len(I)*numColBlocks)
+
+        cdef BfMat *block = NULL
+        cdef BfSize j
+        for i in I:
+            for j in range(numColBlocks):
+                block = bfMatBlockDenseGetBlock(self.mat_block_dense, i, j)
+                bfPtrArrayAppend(&blocks, block)
+
+        cdef MatBlockDense _ = MatBlockDense.__new__(MatBlockDense)
+        _.mat_block_dense = bfMatBlockDenseNewFromBlocks(len(I), numColBlocks, &blocks, policy.value)
+        _.mat = bfMatBlockDenseToMat(_.mat_block_dense)
+
+        return _
+
+    def get_col_blocks(self, J, policy=Policy.View):
+        cdef BfSize numRowBlocks = bfMatBlockDenseGetNumRowBlocks(self.mat_block_dense)
+
+        cdef BfPtrArray blocks
+        bfInitPtrArray(&blocks, numRowBlocks*len(J))
+
+        cdef BfMat *block = NULL
+        cdef BfSize i
+        for i in range(numRowBlocks):
+            for j in J:
+                block = bfMatBlockDenseGetBlock(self.mat_block_dense, i, j)
+                bfPtrArrayAppend(&blocks, block)
+
+        cdef MatBlockDense _ = MatBlockDense.__new__(MatBlockDense)
+        _.mat_block_dense = bfMatBlockDenseNewFromBlocks(numRowBlocks, len(J), &blocks, policy.value)
+        _.mat = bfMatBlockDenseToMat(_.mat_block_dense)
+
+        return _
 
 cdef class MatBlockDiag(Mat):
     cdef BfMatBlockDiag *matBlockDiag
@@ -572,9 +630,16 @@ cdef class MatDiagReal(Mat):
 cdef class MatDiff(Mat):
     cdef BfMatDiff *matDiff
 
-    def __cinit__(self, Mat first, Mat second, policy=Policy.View):
+    def __init__(self, Mat first, Mat second, policy=Policy.View):
         self.matDiff = bfMatDiffNew(first.mat, second.mat, policy.value)
         self.mat = bfMatDiffToMat(self.matDiff)
+
+    @staticmethod
+    cdef from_ptr(BfMatDiff *matDiff):
+        cdef MatDiff _ = MatDiff.__new__(MatDiff)
+        _.matDiff = matDiff
+        _.mat = bfMatDiffToMat(_.matDiff)
+        return _
 
     @property
     def first(self):
@@ -606,6 +671,7 @@ cdef class MatIdentity(Mat):
 
 cdef class MatProduct(Mat):
     cdef BfMatProduct *matProduct
+    cdef list _factors
 
     def __cinit__(self):
         self.matProduct = bfMatProductNew()
@@ -625,6 +691,24 @@ cdef class MatProduct(Mat):
         for factor in factors:
             matProduct.post_multiply(factor)
         return matProduct
+
+    @property
+    def factors(self):
+        if not self._factors:
+            self._factors = [
+                reify_mat(bfMatProductGetFactor(self.matProduct, i))
+                for i in range(bfMatProductNumFactors(self.matProduct))]
+        return self._factors
+
+    def get_blocks(self, I, J, policy=Policy.View):
+        if len(self.factors) == 0:
+            raise RuntimeError()
+        elif len(self.factors) == 1:
+            newFactors = [self.factors[0].get_blocks(I, J, policy)]
+        else:
+            newFactors = [self.factors[0].get_row_blocks(I, policy)] \
+                + self.factors[1:-1] + [self.factors[-1].get_col_blocks(J, policy)]
+        return MatProduct.from_factors(*newFactors)
 
     cdef post_multiply(self, Mat mat):
         assert mat.mat != NULL
@@ -1053,3 +1137,10 @@ cdef class MatPython(Mat):
     def __init__(self, m, n):
         self.matPython = bfMatPythonNewFromPyObject(self, m, n)
         self.mat = bfMatPythonToMat(self.matPython)
+
+    @staticmethod
+    cdef from_ptr(BfMatPython *matPython):
+        cdef MatPython _ = MatPython.__new__(MatPython)
+        _.matPython = matPython
+        _.mat = bfMatPythonToMat(_.matPython)
+        return _
