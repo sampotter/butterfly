@@ -190,6 +190,17 @@ BfMat const *bfMatPythonConstToMatConst(BfMatPython const *matPython) {
   return &matPython->super;
 }
 
+/** Downcasting: Mat -> MatPython */
+
+BfMatPython *bfMatToMatPython(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_PYTHON)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatPython *)mat;
+  }
+}
+
 /** Implementation: MatPython */
 
 BfMatPython *bfMatPythonAlloc(void) {

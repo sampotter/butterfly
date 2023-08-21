@@ -19,6 +19,10 @@ BfMat *bfMatPythonRmul(BfMatPython const *matPython, BfMat const *otherMat);
 BfMat *bfMatPythonToMat(BfMatPython *matPython);
 BfMat const *bfMatPythonConstToMatConst(BfMatPython const *matPython);
 
+/** Downcasting: Mat -> MatPython */
+
+BfMatPython *bfMatToMatPython(BfMat *mat);
+
 /** Implementation: MatPython */
 
 struct BfMatPython {
