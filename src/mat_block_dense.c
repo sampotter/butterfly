@@ -863,14 +863,22 @@ BfMat *toType_denseComplex(BfMatBlockDense const *matBlockDense) {
   BfMatDenseComplex *matDenseComplex = bfMatDenseComplexZeros(numRows, numCols);
   HANDLE_ERROR();
 
+  BfMat const *block = NULL;
+  BfMat *blockConverted = NULL;
+
   for (BfSize k = 0; k < NUM_BLOCKS(matBlockDense); ++k) {
-    BfMat const *block = LINEAR_BLOCK(matBlockDense, k);
+    block = LINEAR_BLOCK(matBlockDense, k);
+
+    blockConverted = bfMatToType(block, BF_TYPE_MAT_DENSE_COMPLEX);
+    HANDLE_ERROR();
 
     BfSize i = BLOCK_ROW_OFFSET(matBlockDense, k);
     BfSize j = BLOCK_COL_OFFSET(matBlockDense, k);
 
-    bfMatDenseComplexSetBlock(matDenseComplex, i, j, block);
+    bfMatDenseComplexSetBlock(matDenseComplex, i, j, blockConverted);
     HANDLE_ERROR();
+
+    bfMatDelete(&blockConverted);
   }
 
   BF_ERROR_END() {
