@@ -8,6 +8,7 @@ cdef extern from "bf/mat.h":
     BfSize bfMatGetNumRows(const BfMat *mat)
     BfSize bfMatGetNumCols(const BfMat *mat)
     void bfMatAddInplace(BfMat *mat, const BfMat *otherMat)
+    BfMat *bfMatSub(const BfMat *, const BfMat *)
     BfMat *bfMatMul(const BfMat *, const BfMat *)
     BfMat *bfMatRmul(const BfMat *, const BfMat *)
     BfMat *bfMatToType(const BfMat *mat, BfType type)

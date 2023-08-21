@@ -69,10 +69,12 @@ cdef extern from "bf/types.h":
         BF_TYPE_MAT_COO_REAL
         BF_TYPE_MAT_CSR_REAL
         BF_TYPE_MAT_DIAG_REAL
+        BF_TYPE_MAT_DIFF
         BF_TYPE_MAT_FUNC
         BF_TYPE_MAT_GIVENS_COMPLEX
         BF_TYPE_MAT_IDENTITY
         BF_TYPE_MAT_PERM
+        BF_TYPE_MAT_PYTHON
         BF_TYPE_MAT_PRODUCT
         BF_TYPE_MAT_SUM
         BF_TYPE_MAT_ZERO
