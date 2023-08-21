@@ -8,12 +8,30 @@
 /** Interface: MatDiff */
 
 static BfMatVtable MAT_VTABLE = {
+  .GetView = (__typeof__(&bfMatGetView))bfMatDiffGetView,
   .GetType = (__typeof__(&bfMatGetType))bfMatDiffGetType,
   .GetNumRows = (__typeof__(&bfMatGetNumRows))bfMatDiffGetNumRows,
   .GetNumCols = (__typeof__(&bfMatGetNumCols))bfMatDiffGetNumCols,
   .Mul = (__typeof__(&bfMatMul))bfMatDiffMul,
   .ToType = (__typeof__(&bfMatToType))bfMatDiffToType,
 };
+
+BfMat *bfMatDiffGetView(BfMatDiff *matDiff) {
+  BF_ERROR_BEGIN();
+
+  BfMatDiff *matDiffView = bfMatDiffAlloc();
+  HANDLE_ERROR();
+
+  *matDiffView = *matDiff;
+
+  matDiffView->super.props &= BF_MAT_PROPS_VIEW;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return bfMatDiffToMat(matDiffView);
+}
 
 BfType bfMatDiffGetType(BfMatDiff const *matDiff) {
   (void)matDiff;
@@ -88,6 +106,15 @@ BfMat const *bfMatDiffConstToMatConst(BfMatDiff const  *matDiff) {
 }
 
 /** Downcasting: Mat -> MatDiff */
+
+BfMatDiff *bfMatToMatDiff(BfMat *mat) {
+  if (!bfMatInstanceOf(mat, BF_TYPE_MAT_DIFF)) {
+    bfSetError(BF_ERROR_TYPE_ERROR);
+    return NULL;
+  } else {
+    return (BfMatDiff *)mat;
+  }
+}
 
 BfMatDiff const *bfMatConstToMatDiffConst(BfMat const *mat) {
   BF_ERROR_BEGIN();

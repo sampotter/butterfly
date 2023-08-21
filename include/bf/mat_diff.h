@@ -4,6 +4,7 @@
 
 /** Interface: MatDiff */
 
+BfMat *bfMatDiffGetView(BfMatDiff *matDiff);
 BfType bfMatDiffGetType(BfMatDiff const *matDiff);
 BfSize bfMatDiffGetNumRows(BfMatDiff const *matDiff);
 BfSize bfMatDiffGetNumCols(BfMatDiff const *matDiff);
@@ -17,6 +18,7 @@ BfMat const *bfMatDiffConstToMatConst(BfMatDiff const  *matDiff);
 
 /** Downcasting: Mat -> MatDiff */
 
+BfMatDiff *bfMatToMatDiff(BfMat *mat);
 BfMatDiff const *bfMatConstToMatDiffConst(BfMat const *mat);
 
 /** Implementation: MatDiff */
