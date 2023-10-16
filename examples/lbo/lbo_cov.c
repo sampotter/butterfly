@@ -108,6 +108,8 @@ int main(int argc, char const *argv[]) {
 
   BfIntervalTree *freqTree = bfIntervalTreeNew();
   bfIntervalTreeInitEmpty(freqTree, 0, sqrt(lamMax), 2, freqTreeDepth);
+  BfSize freqTreeMaxDepth = bfTreeGetMaxDepth(bfIntervalTreeToTree(freqTree));
+  printf("freq tree with depth %lu\n", freqTreeMaxDepth);
 
   BfPoints1 *freqs = bfPoints1New();
   bfPoints1InitEmpty(freqs, BF_ARRAY_DEFAULT_CAPACITY);

@@ -18,6 +18,7 @@ scripts = [
   'bf_lbo_plot_blocks.py',
   'collect_lbo_data.py',
   'run_bf_lbo_test.sh',
+  'run_lbo_cov.sh',
 ]
 
 foreach script : scripts
