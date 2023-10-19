@@ -50,6 +50,7 @@ butterfly_lib_src = [
   'src/fiedler_tree_node.c',
   'src/helm2.c',
   'src/indexed_mat.c',
+  'src/interval.c',
   'src/interval_tree.c',
   'src/interval_tree_node.c',
   'src/lbo.c',
@@ -146,4 +147,5 @@ butterfly_dep = declare_dependency(
 pkg.generate(butterfly_lib)
 
 subdir('examples')
+subdir('tests')
 subdir('wrappers')
