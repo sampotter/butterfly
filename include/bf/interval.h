@@ -10,6 +10,7 @@ struct BfInterval {
   bool closed[2];
 };
 
+void bfIntervalDeinit(BfInterval *interval);
 bool bfIntervalLeftOf(BfInterval const *I1, BfInterval const *I2);
 bool bfIntervalRightOf(BfInterval const *I1, BfInterval const *I2);
 bool bfIntervalOverlaps(BfInterval const *I1, BfInterval const *I2);

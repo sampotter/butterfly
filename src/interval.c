@@ -1,6 +1,12 @@
 #include <bf/interval.h>
 
 #include <bf/assert.h>
+#include <bf/const.h>
+
+void bfIntervalDeinit(BfInterval *interval) {
+  interval->endpoint[0] = interval->endpoint[1] = BF_NAN;
+  interval->closed[0] = interval->closed[1] = false;
+}
 
 bool bfIntervalLeftOf(BfInterval const *I1, BfInterval const *I2) {
   return I1->closed[1] && I2->closed[0] ?
