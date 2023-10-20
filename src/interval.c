@@ -35,37 +35,56 @@ BfSize bfIntervalDifference(BfInterval const *I1, BfInterval const *I2, BfInterv
     return 0;
 
   if (bfIntervalContains(I1, I2)) {
-    Idiff[0].endpoint[0] = I1->endpoint[0];
-    Idiff[0].endpoint[1] = I2->endpoint[0];
+    BfSize i = 0;
 
-    Idiff[0].closed[0] = I1->closed[0];
-    Idiff[0].closed[1] = !I2->closed[0];
+    Idiff[i].endpoint[0] = I1->endpoint[0];
+    Idiff[i].endpoint[1] = I2->endpoint[0];
 
-    Idiff[1].endpoint[0] = I2->endpoint[1];
-    Idiff[1].endpoint[1] = I1->endpoint[1];
+    Idiff[i].closed[0] = I1->closed[0];
+    Idiff[i].closed[1] = !I2->closed[0];
 
-    Idiff[1].closed[0] = !I2->closed[1];
-    Idiff[1].closed[1] = I2->closed[1];
+    BF_ASSERT(Idiff[i].endpoint[0] <= Idiff[i].endpoint[1]);
+    if (Idiff[i].endpoint[0] < Idiff[i].endpoint[1] ||
+        (Idiff[i].closed[0] && Idiff[i].closed[1]))
+      ++i;
 
-    return 2;
+    Idiff[i].endpoint[0] = I2->endpoint[1];
+    Idiff[i].endpoint[1] = I1->endpoint[1];
+
+    Idiff[i].closed[0] = !I2->closed[1];
+    Idiff[i].closed[1] = I1->closed[1];
+
+    BF_ASSERT(Idiff[i].endpoint[0] <= Idiff[i].endpoint[1]);
+    if (Idiff[i].endpoint[0] < Idiff[i].endpoint[1] ||
+        (Idiff[i].closed[0] && Idiff[i].closed[1]))
+      ++i;
+
+    for (BfSize j = i; j < 2; ++j)
+      bfIntervalDeinit(&Idiff[j]);
+
+    return i;
   }
 
-  if (I2->endpoint[0] <= I1->endpoint[1]) {
-    Idiff[0].endpoint[0] = I1->endpoint[0];
-    Idiff[1].endpoint[0] = I2->endpoint[0];
-
-    Idiff[0].closed[0] = I1->closed[0];
-    Idiff[0].closed[1] = !I2->closed[0];
-
-    return 1;
-  }
-
-  if (I1->endpoint[0] <= I2->endpoint[0]) {
+  if (I2->endpoint[0] <= I1->endpoint[0] &&
+      I1->endpoint[0] <= I2->endpoint[1] &&
+      I2->endpoint[1] <= I1->endpoint[1]) {
     Idiff[0].endpoint[0] = I2->endpoint[1];
     Idiff[0].endpoint[1] = I1->endpoint[1];
 
     Idiff[0].closed[0] = !I2->closed[1];
     Idiff[0].closed[1] = I2->closed[1];
+
+    return 1;
+  }
+
+  if (I1->endpoint[0] <= I2->endpoint[0] &&
+      I2->endpoint[0] <= I1->endpoint[1] &&
+      I1->endpoint[1] <= I2->endpoint[1]) {
+    Idiff[0].endpoint[0] = I1->endpoint[0];
+    Idiff[0].endpoint[1] = I2->endpoint[0];
+
+    Idiff[0].closed[0] = I1->closed[0];
+    Idiff[0].closed[1] = !I2->closed[0];
 
     return 1;
   }
