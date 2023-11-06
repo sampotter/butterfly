@@ -1,5 +1,6 @@
 project('butterfly', 'c', 'cython', default_options : ['c_std=c11'])
 
+fs = import('fs')
 pkg = import('pkgconfig')
 
 if get_option('buildtype') == 'debug'
