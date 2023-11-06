@@ -14,9 +14,11 @@
 #endif
 
 #include <complex.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #ifdef BF_DOUBLE
 #  ifdef BF_SINGLE

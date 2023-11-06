@@ -1,11 +1,11 @@
 #pragma once
 
-#include <stdio.h>
-
 #include "def.h"
 #include "dtype.h"
 #include "perm.h"
 #include "types.h"
+
+#include <stdio.h>
 
 typedef enum BfVecProps {
   BF_VEC_PROPS_NONE = 0,

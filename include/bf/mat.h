@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-
 #include "backends.h"
 #include "def.h"
 #include "dtype.h"
