@@ -26,7 +26,7 @@ static BfVecVtable VEC_VTABLE = {
   .SetRange = (__typeof__(&bfVecSetRange))bfVecRealSetRange,
   .Print = (__typeof__(&bfVecRealPrint))bfVecRealPrint,
   .DistMax = (__typeof__(&bfVecDistMax))bfVecRealDistMax,
-  .NormMax = (__typeof__(&bfVecRealNormMax))bfVecRealNormMax,
+  .NormMax = (__typeof__(&bfVecNormMax))bfVecRealNormMax,
   .RecipInplace = (__typeof__(&bfVecRealRecipInplace))bfVecRealRecipInplace,
   .AddInplace = (__typeof__(&bfVecAddInplace))bfVecRealAddInplace,
   .Permute = (__typeof__(&bfVecRealPermute))bfVecRealPermute,
@@ -259,25 +259,17 @@ BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec) {
   return dist;
 }
 
-BfReal bfVecRealNormMax(BfVec const *vec) {
-  BF_ERROR_BEGIN();
+BfReal bfVecRealNormMax(BfVecReal const *vecReal) {
+  BfVec const *vec = bfVecRealConstToVecConst(vecReal);
+  if (vec->size == 0)
+    return 0;
 
-  BfVecReal const *vecReal = NULL;
-  BfReal norm;
-
-  vecReal = bfVecConstToVecRealConst(vec);
-  HANDLE_ERROR();
-
-  norm = -INFINITY;
+  BfReal norm = -INFINITY;
   for (BfSize i = 0; i < vec->size; ++i) {
     BfReal y = *(vecReal->data + i*vecReal->stride);
     BfReal yabs = fabs(y);
     if (yabs > norm) norm = yabs;
   }
-
-  BF_ERROR_END()
-    norm = NAN;
-
   return norm;
 }
 

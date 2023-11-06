@@ -15,7 +15,7 @@ void bfVecRealSetRange(BfVecReal *vecReal, BfSize i0, BfSize i1, BfVec const *ot
 void bfVecRealSetMask(BfVecReal *vecReal, bool const *mask, BfVec const *otherVec);
 void bfVecRealPrint(BfVec const *vec, FILE *fp);
 BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec);
-BfReal bfVecRealNormMax(BfVec const *vec);
+BfReal bfVecRealNormMax(BfVecReal const *vecReal);
 void bfVecRealAddInplace(BfVecReal *vecReal, BfVec const *otherVec);
 void bfVecRealRecipInplace(BfVec *vec);
 void bfVecRealPermute(BfVec *vec, BfPerm const *perm);
