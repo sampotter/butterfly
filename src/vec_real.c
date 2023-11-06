@@ -1,6 +1,6 @@
 #include <bf/vec_real.h>
 
-#include <math.h>
+#include <string.h>
 
 #include <bf/assert.h>
 #include <bf/blas.h>
@@ -520,13 +520,29 @@ BfVecReal *bfVecRealFromFile(char const *path, BfSize size) {
   return vecReal;
 }
 
-BfVecReal *bfVecRealNewFromRealArray(BfRealArray const *realArray) {
+BfVecReal *bfVecRealNewFromRealArray(BfRealArray *realArray, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
   BfVecReal *vecReal = bfVecRealNew();
   HANDLE_ERROR();
 
-  bfVecRealInitFromRealArray(vecReal, realArray);
+  bfVecRealInitFromRealArray(vecReal, realArray, policy);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vecReal;
+}
+
+BfVecReal *bfVecRealNewFromCsv(char const *path) {
+  BF_ERROR_BEGIN();
+
+  BfVecReal *vecReal = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInitFromCsv(vecReal, path);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -550,28 +566,6 @@ void bfVecRealInit(BfVecReal *vec, BfSize size) {
     bfVecDeinit(&vec->super);
 }
 
-void bfVecRealInitFrom(BfVecReal *vec, BfSize size, BfSize stride, BfReal const *data) {
-  BF_ERROR_BEGIN();
-
-  bfVecInit(&vec->super, &VEC_VTABLE, size);
-
-  vec->stride = 1;
-
-  vec->data = bfMemAlloc(size, sizeof(BfReal));
-  HANDLE_ERROR();
-
-  BfReal *writePtr = vec->data;
-  BfReal const *readPtr = data;
-  for (BfSize i = 0; i < size; ++i) {
-    *writePtr = *readPtr;
-    writePtr += vec->stride;
-    readPtr += stride;
-  }
-
-  BF_ERROR_END()
-    bfVecDeinit(&vec->super);
-}
-
 void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *data) {
   BF_ERROR_BEGIN();
 
@@ -589,8 +583,85 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *d
     bfVecDeinit(&vecReal->super);
 }
 
-void bfVecRealInitFromRealArray(BfVecReal *vecReal, BfRealArray const *realArray) {
-  bfVecRealInitFrom(vecReal, realArray->size, 1, realArray->data);
+void bfVecRealInitFromPtr(BfVecReal *vec, BfSize size, BfSize stride, BfReal *data, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  bfVecInit(&vec->super, &VEC_VTABLE, size);
+
+  if (policy == BF_POLICY_COPY) {
+    vec->data = bfMemAlloc(size, sizeof(BfReal));
+    HANDLE_ERROR();
+
+    vec->stride = 1;
+
+    BfReal *writePtr = vec->data;
+    BfReal const *readPtr = data;
+    for (BfSize i = 0; i < size; ++i) {
+      *writePtr = *readPtr;
+      writePtr += vec->stride;
+      readPtr += stride;
+    }
+  }
+
+  else if (policy == BF_POLICY_VIEW || policy == BF_POLICY_STEAL) {
+    vec->stride = stride;
+    vec->data = data;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfVecRealInitFromRealArray(BfVecReal *vecReal, BfRealArray *realArray, BfPolicy policy) {
+  bfVecRealInitFromPtr(vecReal, realArray->size, 1, realArray->data, policy);
+}
+
+void bfVecRealInitFromCsv(BfVecReal *vecReal, char const *path) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *values = bfRealArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+
+  while (true) {
+    char *lineptr = NULL;
+    size_t n;
+    ssize_t nread = getline(&lineptr, &n, fp);
+    if (nread < 0)
+      break;
+
+    char *saveptr = NULL;
+
+    char *tok = strtok_r(lineptr, " ", &saveptr);
+    if (tok == NULL)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+    double value = strtod(tok, NULL);
+    if (errno != 0)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+    bfRealArrayAppend(values, value);
+    HANDLE_ERROR();
+
+    /* We expect each line to have exactly one token on it: */
+    tok = strtok_r(bfRealArrayIsEmpty(values) ? lineptr : NULL, " ", &saveptr);
+    if (tok != NULL)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+  }
+
+  bfRealArrayShrinkCapacityToSize(values);
+  HANDLE_ERROR();
+
+  bfVecRealInitFromRealArray(vecReal, values, BF_POLICY_STEAL);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfVecRealDeinit(BfVecReal *vecReal) {
