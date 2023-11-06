@@ -219,6 +219,21 @@ void bfRealArrayExpandCapacity(BfRealArray *realArray, BfSize newCapacity) {
   bfMemFree(oldData);
 }
 
+void bfRealArrayShrinkCapacityToSize(BfRealArray *realArray) {
+  BF_ERROR_BEGIN();
+
+  BF_ASSERT(realArray->capacity >= realArray->size);
+
+  bfMemRealloc(realArray->data, realArray->capacity, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  realArray->capacity = realArray->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfRealArrayAppend(BfRealArray *realArray, BfReal elt) {
   BF_ERROR_BEGIN();
 
@@ -358,6 +373,10 @@ void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value) {
 
 BfSize bfRealArrayGetSize(BfRealArray const *realArray) {
   return realArray->size;
+}
+
+bool bfRealArrayIsEmpty(BfRealArray const *realArray) {
+  return realArray->size == 0;
 }
 
 void bfRealArraySave(BfRealArray const *realArray, char const *path) {
