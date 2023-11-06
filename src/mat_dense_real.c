@@ -51,6 +51,8 @@ static BfMatVtable MAT_VTABLE = {
   .MulVec = (__typeof__(&bfMatMulVec))bfMatDenseRealMulVec,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatDenseRealRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
+  .NormMax = (__typeof__(&bfMatNormMax))bfMatDenseRealNormMax,
+  .DistMax = (__typeof__(&bfMatDistMax))bfMatDenseRealDistMax,
 };
 
 BfMat *bfMatDenseRealGetView(BfMat *mat) {
@@ -1150,4 +1152,63 @@ void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp,
   BfSize j1 = j0 + bfMatGetNumCols(mat);
 
   fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_DENSE_REAL, i0, i1, j0, j1, depth);
+}
+
+BfReal bfMatDenseRealNormMax(BfMatDenseReal const *matDenseReal) {
+  BfSize numRows = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize numCols = bfMatDenseRealGetNumCols(matDenseReal);
+
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  BfReal norm = -BF_INFINITY;
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *rowPtr = matDenseReal->data + i*rowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      norm = fmax(fabs(*rowPtr), norm);
+      rowPtr += colStride;
+    }
+  }
+
+  return norm;
+}
+
+BfReal bfMatDenseRealDistMax(BfMatDenseReal const *matDenseReal, BfMatDenseReal const *otherMatDenseReal) {
+  BF_ERROR_BEGIN();
+
+  BfSize numRows = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize otherNumRows = bfMatDenseRealGetNumRows(otherMatDenseReal);
+  if (numRows != otherNumRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseRealGetNumCols(matDenseReal);
+  BfSize otherNumCols = bfMatDenseRealGetNumCols(otherMatDenseReal);
+  if (numCols != otherNumCols)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  BfMatDense const *otherMatDense = bfMatDenseRealConstToMatDenseConst(otherMatDenseReal);
+  BfSize otherRowStride = bfMatDenseGetRowStride(otherMatDense);
+  BfSize otherColStride = bfMatDenseGetColStride(otherMatDense);
+
+  BfReal dist = -BF_INFINITY;
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *rowPtr = matDenseReal->data + i*rowStride;
+    BfReal const *otherRowPtr = otherMatDenseReal->data + i*otherRowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      dist = fmax(fabs(*rowPtr - *otherRowPtr), dist);
+      rowPtr += colStride;
+      otherRowPtr += otherColStride;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return dist;
 }

@@ -27,6 +27,8 @@ BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherM
 BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);
 BfVec *bfMatDenseRealRmulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);
 void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp, BfSize i0, BfSize j0, BfSize depth);
+BfReal bfMatDenseRealNormMax(BfMatDenseReal const *matDenseReal);
+BfReal bfMatDenseRealDistMax(BfMatDenseReal const *matDenseReal, BfMatDenseReal const *otherMatDenseReal);
 
 struct BfMatDenseReal {
   BfMatDense super;
