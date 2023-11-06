@@ -237,11 +237,13 @@ void bfMatDenseRealPrint(BfMat const *mat, FILE *fp) {
   BF_ERROR_END() {}
 }
 
-BfSize bfMatDenseRealGetNumRows(BfMat const *mat) {
+BfSize bfMatDenseRealGetNumRows(BfMatDenseReal const *matDenseReal) {
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   return bfMatIsTransposed(mat) ? mat->numCols : mat->numRows;
 }
 
-BfSize bfMatDenseRealGetNumCols(BfMat const *mat) {
+BfSize bfMatDenseRealGetNumCols(BfMatDenseReal const *matDenseReal) {
+  BfMat const *mat = bfMatDenseRealConstToMatConst(matDenseReal);
   return bfMatIsTransposed(mat) ? mat->numRows : mat->numCols;
 }
 
