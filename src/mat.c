@@ -260,6 +260,14 @@ BfMat *bfMatGetSubmatByMask(BfMat const *mat, bool const *rowMask, bool const *c
   return mat->vtbl->GetSubmatByMask(mat, rowMask, colMask);
 }
 
+BfReal bfMatNormMax(BfMat const *mat) {
+  return mat->vtbl->NormMax(mat);
+}
+
+BfReal bfMatDistMax(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->DistMax(mat, otherMat);
+}
+
 /** Implementation: Mat */
 
 BfMat *bfMatGet(BfMat *mat, BfPolicy policy) {
