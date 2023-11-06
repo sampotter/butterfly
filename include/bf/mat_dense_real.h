@@ -48,8 +48,12 @@ BfMatDenseReal *bfMatDenseRealNew();
 BfMatDenseReal *bfMatDenseRealNewWithValue(BfSize numRows, BfSize numCols, BfReal value);
 BfMatDenseReal *bfMatDenseRealNewFromMatrix(BfMat const *mat);
 BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize numCols);
+BfMatDenseReal *bfMatDenseRealNewFromRealArray(BfRealArray *realArray, BfSize numRows, BfSize numCols, BfPolicy policy);
+BfMatDenseReal *bfMatDenseRealNewFromCsv(char const *path);
 void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols);
 void bfMatDenseRealInitCopy(BfMatDenseReal *mat, BfMatDenseReal const *otherMat);
+void bfMatDenseRealInitFromPtr(BfMatDenseReal *matDenseReal, BfSize numRows, BfSize numCols, BfReal *data, BfPolicy policy);
+void bfMatDenseRealInitFromRealArray(BfMatDenseReal *matDenseReal, BfRealArray *realArray, BfSize numRows, BfSize numCols, BfPolicy policy);
 void bfMatDenseRealInitWithValue(BfMatDenseReal *mat, BfSize numRows,
                                  BfSize numCols, BfReal fillValue);
 void bfMatDenseRealDeinit(BfMatDenseReal *mat);
