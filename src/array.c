@@ -183,6 +183,23 @@ BfPtr bfArrayGetPtr(BfArray *array, BfSize i) {
   return ptr;
 }
 
+BfConstPtr bfArrayGetFirstPtrConst(BfArray const *array) {
+  BF_ERROR_BEGIN();
+
+  BfConstPtr ptr = NULL;
+
+  if (bfArrayIsEmpty(array))
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  ptr = ELT_PTR(array, 0);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return ptr;
+}
+
 BfSize bfArrayFindSorted(BfArray const *array, BfConstPtr eltPtr, BfCompar compar) {
   BF_ERROR_BEGIN();
 

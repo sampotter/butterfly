@@ -5,18 +5,17 @@
 static void testDisjointIntervalListAddAndDelete(void **state) {
   (void)state;
 
-  BfDisjointIntervalList *list = bfDisjointIntervalListNew();
-  bfDisjointIntervalListInitEmpty(list);
+  BfDisjointIntervalList *list = bfDisjointIntervalListNewEmpty();
 
-  bfDisjointIntervalListAdd(list, (BfInterval) {.endpoint = {-0.5, 10.5}, .closed = {true, true}});
+  bfDisjointIntervalListAdd(list, &(BfInterval) {.endpoint = {-0.5, 10.5}, .closed = {true, true}});
 
   for (BfSize i = 1; i <= 9; i += 2)
-    bfDisjointIntervalListAdd(list, (BfInterval) {.endpoint = {i, i + 1}, .closed = {true, true}});
+    bfDisjointIntervalListAdd(list, &(BfInterval) {.endpoint = {i, i + 1}, .closed = {true, true}});
 
   assert_int_equal(bfDisjointIntervalListGetNumIntervals(list), 1);
 
-  bfDisjointIntervalListRemove(list, (BfInterval) {.endpoint = {-1, 0}, .closed = {false, false}});
-  bfDisjointIntervalListRemove(list, (BfInterval) {.endpoint = {10, 11}, .closed = {false, false}});
+  bfDisjointIntervalListRemove(list, &(BfInterval) {.endpoint = {-1, 0}, .closed = {false, false}});
+  bfDisjointIntervalListRemove(list, &(BfInterval) {.endpoint = {10, 11}, .closed = {false, false}});
 
   assert_int_equal(bfDisjointIntervalListGetNumIntervals(list), 1);
   {
@@ -28,7 +27,7 @@ static void testDisjointIntervalListAddAndDelete(void **state) {
   }
 
   for (BfSize i = 1; i <= 9; i += 2)
-    bfDisjointIntervalListRemove(list, (BfInterval) {.endpoint = {i, i + 1}, .closed = {true, true}});
+    bfDisjointIntervalListRemove(list, &(BfInterval) {.endpoint = {i, i + 1}, .closed = {true, true}});
 
   assert_int_equal(bfDisjointIntervalListGetNumIntervals(list), 5);
   {

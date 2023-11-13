@@ -8,6 +8,8 @@
 #include <bf/rand.h>
 #include <bf/vec_real.h>
 
+#include "macros.h"
+
 static void invalidate(BfRealArray *realArray) {
   realArray->data = NULL;
   realArray->size = BF_SIZE_BAD_VALUE;
@@ -325,6 +327,22 @@ BfReal bfRealArrayGetValue(BfRealArray const *realArray, BfSize i) {
   return value;
 }
 
+void bfRealArraySetValue(BfRealArray *realArray, BfSize i, BfReal value) {
+  BF_ERROR_BEGIN();
+
+  if (i == BF_SIZE_BAD_VALUE)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (i >= realArray->size)
+    RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
+
+  realArray->data[i] = value;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void bfRealArrayGetValues(BfRealArray const *realArray, BfSize n, BfSize const *inds, BfReal *values) {
   BF_ERROR_BEGIN();
 
@@ -398,4 +416,55 @@ void bfRealArraySave(BfRealArray const *realArray, char const *path) {
 void bfRealArrayNegate(BfRealArray *realArray) {
   for (BfSize i = 0; i < realArray->size; ++i)
     realArray->data[i] *= -1;
+}
+
+BfPerm *bfRealArrayArgsort(BfRealArray const *realArray) {
+  BF_ERROR_BEGIN();
+
+  BfSize const n = bfRealArrayGetSize(realArray);
+
+  BfPerm *perm = bfPermNewIdentity(n);
+  HANDLE_ERROR();
+
+  /* TODO: just using selection sort here for now... should upgrade to
+   * something better later */
+  for (BfSize i = 0; i < n - 1; ++i) {
+    BfSize k = i;
+    BfReal value_k = bfRealArrayGetValue(realArray, perm->index[k]);
+    for (BfSize j = i + 1; j < n; ++j) {
+      BfReal const value_j = bfRealArrayGetValue(realArray, perm->index[j]);
+      if (value_j < value_k) {
+        k = j;
+        value_k = value_j;
+      }
+    }
+    BF_SWAP(perm->index[i], perm->index[k]);
+  }
+
+  bfPermReverse(perm);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return perm;
+}
+
+void bfRealArrayPermute(BfRealArray *realArray, BfPerm const *perm) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArrayCopy = bfRealArrayCopy(realArray);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < realArray->size; ++i) {
+    BfReal const value = bfRealArrayGetValue(realArrayCopy, i);
+    bfRealArraySetValue(realArray, perm->index[i], value);
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfRealArrayDeinitAndDealloc(&realArrayCopy);
 }

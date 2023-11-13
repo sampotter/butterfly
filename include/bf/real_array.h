@@ -28,9 +28,12 @@ void bfRealArrayExtend(BfRealArray *realArray, BfRealArray const *otherRealArray
 BfVec *bfRealArrayGetVecView(BfRealArray *realArray);
 BfVec *bfRealArrayGetSubvecView(BfRealArray *realArray, BfSize i0, BfSize i1);
 BfReal bfRealArrayGetValue(BfRealArray const *realArray, BfSize i);
+void bfRealArraySetValue(BfRealArray *realArray, BfSize i, BfReal value);
 void bfRealArrayGetValues(BfRealArray const *realArray, BfSize n, BfSize const *inds, BfReal *values);
 void bfRealArrayInsert(BfRealArray *realArray, BfSize i, BfReal value);
 BfSize bfRealArrayGetSize(BfRealArray const *realArray);
 bool bfRealArrayIsEmpty(BfRealArray const *realArray);
 void bfRealArraySave(BfRealArray const *realArray, char const *path);
 void bfRealArrayNegate(BfRealArray *realArray);
+BfPerm *bfRealArrayArgsort(BfRealArray const *realArray);
+void bfRealArrayPermute(BfRealArray *realArray, BfPerm const *perm);

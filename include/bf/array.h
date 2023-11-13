@@ -15,6 +15,7 @@ void bfArrayDeinitAndDealloc(BfArray **array);
 BfSize bfArrayGetSize(BfArray const *array);
 void bfArrayGet(BfArray const *array, BfSize i, BfPtr eltPtr);
 BfPtr bfArrayGetPtr(BfArray *array, BfSize i);
+BfConstPtr bfArrayGetFirstPtrConst(BfArray const *array);
 BfSize bfArrayFindSorted(BfArray const *array, BfConstPtr eltPtr, BfCompar compar);
 void bfArrayInsert(BfArray *array, BfSize i, BfConstPtr eltPtr);
 void bfArraySave(BfArray const *array, char const *path);

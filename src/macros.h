@@ -16,6 +16,8 @@
     y = tmp;                                    \
   } while (0)
 
+#define BF_SWAP SWAP
+
 #define SORT2(x, y) do {                        \
     __typeof__(x) tmp = x < y ? x : y;          \
     y = x < y ? y : x;                          \

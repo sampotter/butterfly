@@ -4,11 +4,11 @@
 
 /** Interface: Vec */
 
-BfVec *bfVecRealCopy(BfVecReal const *vec);
+BfVecReal *bfVecRealCopy(BfVecReal const *vec);
 void bfVecRealDelete(BfVecReal **mat);
 BfType bfVecRealGetType(BfVec const *vec);
 BfReal *bfVecRealGetEltPtr(BfVecReal *vecReal, BfSize i);
-BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1);
+BfVecReal *bfVecRealGetSubvecCopy(BfVecReal const *vec, BfSize i0, BfSize i1);
 BfVecReal *bfVecRealGetSubvecView(BfVecReal *vecReal, BfSize i0, BfSize i1);
 BfVecReal const *bfVecRealGetSubvecViewConst(BfVecReal const *vecReal, BfSize i0, BfSize i1);
 void bfVecRealSetRange(BfVecReal *vecReal, BfSize i0, BfSize i1, BfVec const *other);
@@ -18,7 +18,7 @@ BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec);
 BfReal bfVecRealNormMax(BfVecReal const *vecReal);
 void bfVecRealAddInplace(BfVecReal *vecReal, BfVec const *otherVec);
 void bfVecRealRecipInplace(BfVec *vec);
-void bfVecRealPermute(BfVec *vec, BfPerm const *perm);
+void bfVecRealPermute(BfVecReal *vecReal, BfPerm const *perm);
 BfVec *bfVecRealConcat(BfVec const *vec, BfVec const *otherVec);
 void bfVecRealSave(BfVecReal const *vecReal, char const *path);
 void bfVecRealDaxpy(BfVecReal *vecReal, BfReal scale, BfVecReal const *otherVecReal);
@@ -54,4 +54,7 @@ void bfVecRealDealloc(BfVecReal **vecReal);
 void bfVecRealDeinitAndDealloc(BfVecReal **vecReal);
 BfReal bfVecRealGetElt(BfVecReal const *vecReal, BfSize i);
 void bfVecRealGetValues(BfVecReal const *vecReal, BfSize n, BfSize const *inds, BfReal *values);
+BfRealArray *bfVecRealGetArrayView(BfVecReal *vecReal);
 void bfVecRealDump(BfVecReal const *vecReal, char const *path);
+BfPerm *bfVecRealArgsort(BfVecReal const *vecReal);
+BfSize bfVecRealGetSize(BfVecReal const *vecReal);

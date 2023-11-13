@@ -37,6 +37,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetView = (__typeof__(&bfMatGetView))bfMatDenseRealGetView,
   .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatDenseRealSteal,
+  .GetRowView = (__typeof__(&bfMatGetRowView))bfMatDenseRealGetRowView,
   .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
   .GetType = (__typeof__(&bfMatGetType))bfMatDenseRealGetType,
@@ -116,6 +117,27 @@ BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
   }
 
   return bfMatDenseRealToMat(matDenseRealNew);
+}
+
+BfVecReal *bfMatDenseRealGetRowView(BfMatDenseReal *matDenseReal, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfMatDense *matDense = bfMatDenseRealToMatDense(matDenseReal);
+
+  BfVecReal *rowView = bfVecRealNew();
+  HANDLE_ERROR();
+
+  BfSize n = bfMatDenseRealGetNumCols(matDenseReal);
+  BfSize stride = bfMatDenseGetColStride(matDense);
+  BfReal *data = matDenseReal->data + i*bfMatDenseGetRowStride(matDense);
+
+  bfVecRealInitView(rowView, n, stride, data);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return rowView;
 }
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
@@ -461,15 +483,16 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
   return bfMatDenseRealToMat(matDenseRealCopy);
 }
 
-void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
+void bfMatDenseRealPermuteRows(BfMatDenseReal *matDenseReal, BfPerm const *perm) {
   BF_ERROR_BEGIN();
+
+  BfMat *mat = bfMatDenseRealToMat(matDenseReal);
 
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
   BfMatDense *matDense = NULL;
   BfMatDense *matDensePerm = NULL;
-  BfMatDenseReal *matDenseReal = NULL;
   BfMatDenseReal *matDenseRealPerm = NULL;
 
   BfMat *matPerm = bfMatCopy(mat);

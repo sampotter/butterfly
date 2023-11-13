@@ -13,7 +13,7 @@ struct BfDisjointIntervalList {
   BfArray *intervals;
 };
 
-BfDisjointIntervalList *bfDisjointIntervalListNew() {
+BfDisjointIntervalList *bfDisjointIntervalListNewEmpty() {
   BF_ERROR_BEGIN();
 
   BfDisjointIntervalList *list = bfMemAlloc(1, sizeof(BfDisjointIntervalList));
@@ -80,24 +80,26 @@ static BfInterval merge(BfInterval const *I1, BfInterval const *I2) {
   return I_merged;
 }
 
-void bfDisjointIntervalListAdd(BfDisjointIntervalList *list, BfInterval interval) {
+void bfDisjointIntervalListAdd(BfDisjointIntervalList *list, BfInterval const *interval) {
   BF_ERROR_BEGIN();
+
+  BfInterval mergeInterval = *interval;
 
   BfSize i = bfArrayGetSize(list->intervals);
   BfInterval *otherInterval = NULL;
   while (i > 0) {
     otherInterval = bfArrayGetPtr(list->intervals, --i);
 
-    if (bfIntervalLeftOf(&interval, otherInterval))
+    if (bfIntervalLeftOf(&mergeInterval, otherInterval))
       break;
 
-    if (bfIntervalOverlaps(&interval, otherInterval)) {
+    if (bfIntervalOverlaps(&mergeInterval, otherInterval)) {
       bfArrayRemove(list->intervals, i);
-      interval = merge(&interval, otherInterval);
+      mergeInterval = merge(&mergeInterval, otherInterval);
     }
   };
 
-  bfArrayInsert(list->intervals, i, &interval);
+  bfArrayInsert(list->intervals, i, &mergeInterval);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -105,15 +107,20 @@ void bfDisjointIntervalListAdd(BfDisjointIntervalList *list, BfInterval interval
   }
 }
 
-void bfDisjointIntervalListRemove(BfDisjointIntervalList *list, BfInterval interval) {
+void bfDisjointIntervalListRemove(BfDisjointIntervalList *list, BfInterval const *interval) {
   BF_ERROR_BEGIN();
 
   BfSize i = 0;
   while (i < bfArrayGetSize(list->intervals)) {
     BfInterval const *otherInterval = bfArrayGetPtr(list->intervals, i);
 
+    if (bfIntervalEquals(interval, otherInterval)) {
+      bfArrayRemove(list->intervals, i++);
+      continue;
+    }
+
     BfInterval newIntervals[2];
-    BfSize numNewIntervals = bfIntervalDifference(otherInterval, &interval, newIntervals);
+    BfSize numNewIntervals = bfIntervalDifference(otherInterval, interval, newIntervals);
     if (numNewIntervals > 0) {
       bfArrayRemove(list->intervals, i);
       for (BfSize j = 0; j < numNewIntervals; ++j) {
@@ -128,4 +135,12 @@ void bfDisjointIntervalListRemove(BfDisjointIntervalList *list, BfInterval inter
   BF_ERROR_END() {
     BF_DIE();
   }
+}
+
+bool bfDisjointIntervalListIsEmpty(BfDisjointIntervalList const *list) {
+  return bfArrayIsEmpty(list->intervals);
+}
+
+BfInterval const *bfDisjointIntervalListGetFirstPtrConst(BfDisjointIntervalList const *list) {
+  return bfArrayGetFirstPtrConst(list->intervals);
 }

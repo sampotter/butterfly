@@ -1,6 +1,7 @@
 #include "lbo.h"
 
 #include <bf/assert.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/interval_tree.h>
@@ -36,6 +37,33 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   return freqs;
 }
 
+static void getBracketAndSigmaFromNode(BfIntervalTree const *intervalTree, BfTreeNode const *treeNode, BfInterval *bracket, BfReal *sigma) {
+  BF_ERROR_BEGIN();
+
+  BfIntervalTreeNode const *intervalTreeNode = bfTreeNodeConstToIntervalTreeNodeConst(treeNode);
+  HANDLE_ERROR();
+
+  bool const left = intervalTreeNode->isLeftmost;
+  bool const right = intervalTreeNode->isRightmost;
+
+  /* Set up the bracket for computing the next eigenband: */
+  bracket->endpoint[0] = left ? -BF_INFINITY : intervalTreeNode->a;
+  bracket->endpoint[1] = right ? BF_INFINITY : intervalTreeNode->b;
+  bracket->closed[0] = left ? false : true; // (-inf, lam1) ...
+  bracket->closed[1] = false;               // ... or [lam0, lam1) ...
+                                            // ... or [lam0, +inf)
+
+  /* Get the shift for the current band: */
+  BfInterval treeInterval = bfIntervalTreeGetInterval(intervalTree);
+  *sigma = (
+    (left ? treeInterval.endpoint[0] : bracket->endpoint[0]) +
+    (right ? treeInterval.endpoint[1] : bracket->endpoint[1]))/2;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
                                   BfMat const *L, BfMat const *M) {
   BF_ERROR_BEGIN();
@@ -59,28 +87,13 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   if (!bfTreeNodeIsEmpty(treeNode))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfIntervalTreeNode *intervalTreeNode = bfTreeNodeToIntervalTreeNode(treeNode);
+  BfInterval bracket;
+  BfReal sigma;
+  getBracketAndSigmaFromNode(intervalTree, treeNode, &bracket, &sigma);
   HANDLE_ERROR();
 
-  /* The column tree node shouldn't simultaneously be the leftmost and
-   * rightmost node (this only happens if it's the root...) */
-  if (intervalTreeNode->isLeftmost && intervalTreeNode->isRightmost)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
-
-  /* Set up bracket and shift for computing next eigenband */
-  BfReal lam0 = pow(intervalTreeNode->a, 2);
-  BfReal lam1 = pow(intervalTreeNode->b, 2);
-  BfReal sigma = (lam0 + lam1)/2;
-  if (intervalTreeNode->isLeftmost) {
-    sigma = lam0;
-    lam0 = NAN;
-  } else if (intervalTreeNode->isRightmost) {
-    sigma = lam1;
-    lam1 = NAN;
-  }
-
   /* Compute the next eigenband using Lanczos */
-  bfGetEigenband(L, M, lam0, lam1, sigma, &Phi, &Lam);
+  bfGetEigenband(L, M, &bracket, sigma, &Phi, &Lam);
   HANDLE_ERROR();
 
   /* Permute the rows of Phi, putting them into row tree order */

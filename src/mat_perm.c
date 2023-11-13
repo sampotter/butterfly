@@ -248,7 +248,7 @@ void bfMatPermDeinit(BfMatPerm *matPerm) {
   if (!bfMatIsView(&matPerm->super)) {
     switch (matPerm->impl->permType) {
     case PERM_TYPE_BF:
-      bfPermDelete(&matPerm->impl->perm);
+      bfPermDeinitAndDealloc(&matPerm->impl->perm);
       break;
     case PERM_TYPE_LAPACK:
       free(matPerm->impl->permLapack.ipiv);

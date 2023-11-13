@@ -11,15 +11,46 @@ typedef enum {
   PERM_TYPE_LAPACK,
 } PermType;
 
-BfPerm *bfPermNew() {
+BfPerm *bfPermNew(void) {
   BF_ERROR_BEGIN();
 
   BfPerm *perm = bfMemAlloc(1, sizeof(BfPerm));
-  if (perm == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   BF_ERROR_END() {
-    perm = NULL;
+    BF_DIE();
+  }
+
+  return perm;
+}
+
+BfPerm *bfPermNewEmpty(BfSize size) {
+  BF_ERROR_BEGIN();
+
+  BfPerm *perm = bfPermNew();
+  HANDLE_ERROR();
+
+  bfPermInitEmpty(perm, size);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return perm;
+}
+
+BfPerm *bfPermNewIdentity(BfSize size) {
+  BF_ERROR_BEGIN();
+
+  BfPerm *perm = bfPermNew();
+  HANDLE_ERROR();
+
+  bfPermInitIdentity(perm, size);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
   return perm;
@@ -29,8 +60,7 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
   BF_ERROR_BEGIN();
 
   perm->index = bfMemAlloc(size, sizeof(BfSize));
-  if (perm->index == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
   for (BfSize i = 0; i < size; ++i)
     perm->index[i] = BF_SIZE_BAD_VALUE;
@@ -38,7 +68,23 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
   perm->size = size;
 
   BF_ERROR_END() {
-    bfPermDeinit(perm);
+    BF_DIE();
+  }
+}
+
+void bfPermInitIdentity(BfPerm *perm, BfSize size) {
+  BF_ERROR_BEGIN();
+
+  perm->index = bfMemAlloc(size, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < size; ++i)
+    perm->index[i] = i;
+
+  perm->size = size;
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 }
 
@@ -53,7 +99,7 @@ void bfPermDealloc(BfPerm **perm) {
   *perm = NULL;
 }
 
-void bfPermDelete(BfPerm **perm) {
+void bfPermDeinitAndDealloc(BfPerm **perm) {
   bfPermDeinit(*perm);
   bfPermDealloc(perm);
 }
@@ -124,4 +170,20 @@ BfPerm bfPermGetReversePerm(BfPerm const *perm) {
 
 BfSize bfPermGetSize(BfPerm const *perm) {
   return perm->size;
+}
+
+void bfPermReverse(BfPerm *perm) {
+  BF_ERROR_BEGIN();
+
+  BfSize *tmp = bfMemAllocCopy(perm->index, perm->size, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < perm->size; ++i)
+    perm->index[tmp[i]] = i;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(tmp);
 }

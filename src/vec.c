@@ -154,3 +154,7 @@ BfVec *bfVecFromFile(char const *path, BfSize size, BfDtype dtype) {
 bool bfVecInstanceOf(BfVec const *vec, BfType type) {
   return bfTypeDerivedFrom(bfVecGetType(vec), type);
 }
+
+BfSize bfVecGetSize(BfVec const *vec) {
+  return vec->size;
+}

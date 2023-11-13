@@ -7,6 +7,7 @@
 BfMat *bfMatDenseRealCopy(BfMatDenseReal const *matDenseReal);
 BfMat *bfMatDenseRealGetView(BfMat *mat);
 BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal);
+BfVecReal *bfMatDenseRealGetRowView(BfMatDenseReal *matDenseReal, BfSize i);
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j);
 void bfMatDenseRealDelete(BfMatDenseReal **matDenseReal);
 BfType bfMatDenseRealGetType(BfMat const *mat);
@@ -21,7 +22,7 @@ void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col);
 BfMat *bfMatDenseRealGetRowRange(BfMat *mat, BfSize i0, BfSize i1);
 BfMat *bfMatDenseRealGetRowRangeCopy(BfMatDenseReal const *matDenseReal, BfSize i0, BfSize i1);
 BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize j0, BfSize j1);
-void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm);
+void bfMatDenseRealPermuteRows(BfMatDenseReal *matDenseReal, BfPerm const *perm);
 void bfMatDenseRealScaleRows(BfMatDenseReal *matDenseReal, BfVec const *vec);
 BfMat *bfMatDenseRealMul(BfMatDenseReal const *matDenseReal, BfMat const *otherMat);
 BfVec *bfMatDenseRealMulVec(BfMatDenseReal const *matDenseReal, BfVec const *vec);

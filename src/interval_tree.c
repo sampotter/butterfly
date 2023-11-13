@@ -53,6 +53,10 @@ BfTree *bfIntervalTreeToTree(BfIntervalTree *intervalTree) {
   return &intervalTree->super;
 }
 
+BfTree const *bfIntervalTreeConstToTreeConst(BfIntervalTree const *intervalTree) {
+  return &intervalTree->super;
+}
+
 /** Implementation: IntervalTree */
 
 BfIntervalTree *bfIntervalTreeNew() {
@@ -172,4 +176,30 @@ void bfIntervalTreeSetPoints(BfIntervalTree *intervalTree, BfPoints1 const *poin
   HANDLE_ERROR();
 
   BF_ERROR_END() {}
+}
+
+BfInterval bfIntervalTreeGetInterval(BfIntervalTree const *intervalTree) {
+  BF_ERROR_BEGIN();
+
+  BfInterval interval = {.endpoint = {BF_NAN, BF_NAN}};
+
+  BfTree const *tree = bfIntervalTreeConstToTreeConst(intervalTree);
+
+  BfTreeNode const *treeNode = bfTreeGetRootNodeConst(tree);
+  HANDLE_ERROR();
+
+  BfIntervalTreeNode const *intervalTreeNode = bfTreeNodeConstToIntervalTreeNodeConst(treeNode);
+  HANDLE_ERROR();
+
+  interval.endpoint[0] = intervalTreeNode->a;
+  interval.endpoint[1] = intervalTreeNode->b;
+
+  interval.closed[0] = true;
+  interval.closed[1] = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return interval;
 }

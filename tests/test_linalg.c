@@ -4,11 +4,17 @@
 
 #include <bf/assert.h>
 #include <bf/const.h>
+#include <bf/interval.h>
 #include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/mat_dense_real.h>
 #include <bf/trimesh.h>
 #include <bf/vec_real.h>
+
+static BfEigenbandMethod const eigenbandMethods[2] = {
+  BF_EIGENBAND_METHOD_DOUBLING,
+  BF_EIGENBAND_METHOD_COVERING
+};
 
 void test_bfGetEigenband(void **state) {
   (void)state;
@@ -24,40 +30,45 @@ void test_bfGetEigenband(void **state) {
 
   BfReal lamMin = 50;
   BfReal lamMax = 100;
+  BfInterval interval = {.endpoint = {lamMin, lamMax}, .closed = {true, true}};
 
-  BfMat *Phi = NULL;
+  BfMat *PhiTranspose = NULL;
   BfVecReal *Lam = NULL;
-  bfGetEigenband(L, M, lamMin, lamMax, (lamMin + lamMax)/2, &Phi, &Lam);
 
-  BfSize numEigs = bfVecRealToVec(Lam)->size;
-  BF_ASSERT(bfMatGetNumCols(Phi) == numEigs);
+  for (BfSize i = 0; i < 2; ++i) {
+    bfGetEigenband(L, M, &interval, eigenbandMethods[i], &PhiTranspose, &Lam);
 
-  BF_ASSERT(bfVecRealDistMax(LamTrue, bfVecRealToVec(Lam))/bfVecRealNormMax(LamTrue) <= 1e-15);
+    BfSize numEigs = bfVecRealToVec(Lam)->size;
+    BF_ASSERT(bfMatGetNumRows(PhiTranspose) == numEigs);
 
-  for (BfSize j = 0; j < numEigs; ++j) {
-    BfVec *phi = bfMatGetColView(Phi, j);
-    BfVec *phiTrue = bfMatGetColView(PhiTrue, j);
+    BF_ASSERT(bfVecRealDistMax(LamTrue, bfVecRealToVec(Lam))/bfVecRealNormMax(LamTrue) <= 1e-15);
 
-    /* When we solve the GEP using the two different methods, we can
-     * have at most a sign difference between corresponding
-     * eigenvectors since the GEP is symmetric. To compute the "max
-     * norm" between the two eigenvectors matrices, we compute the max
-     * norm distance twice: once with a sign flip, and once
-     * without. We use the minimum of the two distances for the
-     * comparison. */
-    BfReal dists[2];
-    dists[0] = bfVecDistMax(phi, phiTrue);
-    bfVecDscal(phi, -1);
-    dists[1] = bfVecDistMax(phi, phiTrue);
-    BfReal dist = fmin(dists[0], dists[1]);
-    BF_ASSERT(dist <= 1.12e-11);
+    for (BfSize j = 0; j < numEigs; ++j) {
+      BfVec *phi = bfMatGetRowView(PhiTranspose, j);
+      BfVec *phiTrue = bfMatGetColView(PhiTrue, j);
 
-    bfVecDelete(&phi);
-    bfVecDelete(&phiTrue);
+      /* When we solve the GEP using the two different methods, we can
+       * have at most a sign difference between corresponding
+       * eigenvectors since the GEP is symmetric. To compute the "max
+       * norm" between the two eigenvectors matrices, we compute the max
+       * norm distance twice: once with a sign flip, and once
+       * without. We use the minimum of the two distances for the
+       * comparison. */
+      BfReal dists[2];
+      dists[0] = bfVecDistMax(phi, phiTrue);
+      bfVecDscal(phi, -1);
+      dists[1] = bfVecDistMax(phi, phiTrue);
+      BfReal dist = fmin(dists[0], dists[1]);
+      BF_ASSERT(dist <= 1.12e-11);
+
+      bfVecDelete(&phi);
+      bfVecDelete(&phiTrue);
+    }
+
+    bfMatDelete(&PhiTranspose);
+    bfVecRealDeinitAndDealloc(&Lam);
   }
 
-  bfMatDelete(&Phi);
-  bfVecRealDeinitAndDealloc(&Lam);
   bfMatDelete(&M);
   bfMatDelete(&L);
   bfTrimeshDeinitAndDealloc(&trimesh);

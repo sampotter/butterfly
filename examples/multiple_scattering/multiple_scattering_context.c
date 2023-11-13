@@ -1116,7 +1116,7 @@ void deinit(MultipleScatteringContext *context) {
   }
 
   if (context->revPerm)
-    bfPermDelete(&context->revPerm);
+    bfPermDeinitAndDealloc(&context->revPerm);
 
   if (context->K != NULL)
     bfMatDelete(&context->K);
