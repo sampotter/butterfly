@@ -19,10 +19,10 @@ static BfEigenbandMethod const eigenbandMethods[2] = {
 void test_bfGetEigenband(void **state) {
   (void)state;
 
-  BfMat *PhiTrue = bfMatDenseRealToMat(bfMatDenseRealNewFromCsv("./sphere_Phi.txt"));
-  BfVecReal *LamTrue = bfVecRealNewFromCsv("./sphere_Lam.txt");
+  BfMat *PhiTrue = bfMatDenseRealToMat(bfMatDenseRealNewFromCsv("./tests/sphere_Phi.txt"));
+  BfVecReal *LamTrue = bfVecRealNewFromCsv("./tests/sphere_Lam.txt");
 
-  BfTrimesh *trimesh = bfTrimeshNewFromObjFile("./sphere.obj");
+  BfTrimesh *trimesh = bfTrimeshNewFromObjFile("./tests/sphere.obj");
 
   BfMat *L = NULL;
   BfMat *M = NULL;
