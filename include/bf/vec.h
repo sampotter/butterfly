@@ -1,11 +1,11 @@
 #pragma once
 
-#include <stdio.h>
-
 #include "def.h"
 #include "dtype.h"
 #include "perm.h"
 #include "types.h"
+
+#include <stdio.h>
 
 typedef enum BfVecProps {
   BF_VEC_PROPS_NONE = 0,
@@ -39,6 +39,7 @@ BfVec *bfVecConcat(BfVec const *, BfVec const *);
 void bfVecSave(BfVec const *, char const *);
 void bfVecDaxpy(BfVec *, BfReal, BfVec const *);
 void bfVecDscal(BfVec *, BfReal);
+BfSize bfVecGetSize(BfVec const *);
 
 typedef struct BfVecVtable {
   __typeof__(&bfVecCopy) Copy;
@@ -80,3 +81,4 @@ void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size);
 void bfVecDeinit(BfVec *vec);
 BfVec *bfVecFromFile(char const *path, BfSize size, BfDtype dtype);
 bool bfVecInstanceOf(BfVec const *vec, BfType type);
+BfSize bfVecGetSize(BfVec const *vec);

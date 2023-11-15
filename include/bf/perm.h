@@ -12,6 +12,7 @@ typedef struct BfPerm {
 BfPerm *bfPermGetView(BfPerm *perm);
 BfPerm *bfPermGetRangeView(BfPerm *perm, BfSize i0, BfSize i1);
 BfPerm *bfPermNew(void);
+BfPerm *bfPermNewEmpty(BfSize size);
 BfPerm *bfPermNewIdentity(BfSize size);
 void bfPermInitEmpty(BfPerm *perm, BfSize size);
 void bfPermInitIdentity(BfPerm *perm, BfSize size);
@@ -24,3 +25,4 @@ BfPerm *bfPermGetReversePerm(BfPerm const *perm);
 BfSize bfPermGetSize(BfPerm const *perm);
 BfSize bfPermGetNumBytes(BfPerm const *perm);
 BfSize bfPermGetIndex(BfPerm const *perm, BfSize i);
+void bfPermReverse(BfPerm *perm);

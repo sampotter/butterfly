@@ -1,9 +1,11 @@
 #include <bf/mat_dense_real.h>
 
-#include <openblas/lapacke.h>
+#include <string.h>
 
+#include <bf/real_array.h>
 #include <bf/assert.h>
 #include <bf/blas.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mat_block.h>
@@ -12,6 +14,10 @@
 #include <bf/vec_real.h>
 
 #include <string.h>
+
+#include <openblas/lapacke.h>
+
+#include "macros.h"
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseReal const *mat) {
   BfMat const *super = bfMatDenseRealConstToMatConst(mat);
@@ -33,6 +39,7 @@ static BfMatVtable MAT_VTABLE = {
   .GetView = (__typeof__(&bfMatGetView))bfMatDenseRealGetView,
   .Copy = (__typeof__(&bfMatCopy))bfMatDenseRealCopy,
   .Steal = (__typeof__(&bfMatSteal))bfMatDenseRealSteal,
+  .GetRowView = (__typeof__(&bfMatGetRowView))bfMatDenseRealGetRowView,
   .GetColView = (__typeof__(&bfMatGetColView))bfMatDenseRealGetColView,
   .Delete = (__typeof__(&bfMatDelete))bfMatDenseRealDelete,
   .ZerosLike = (__typeof__(&bfMatZerosLike))bfMatDenseRealZerosLike,
@@ -55,6 +62,8 @@ static BfMatVtable MAT_VTABLE = {
   .MulInplace = (__typeof__(&bfMatMulInplace))bfMatDenseRealMulInplace,
   .RmulVec = (__typeof__(&bfMatRmulVec))bfMatDenseRealRmulVec,
   .PrintBlocksDeep = (__typeof__(&bfMatPrintBlocksDeep))bfMatDenseRealPrintBlocksDeep,
+  .NormMax = (__typeof__(&bfMatNormMax))bfMatDenseRealNormMax,
+  .DistMax = (__typeof__(&bfMatDistMax))bfMatDenseRealDistMax,
 };
 
 BfMat *bfMatDenseRealGetView(BfMat *mat) {
@@ -112,6 +121,27 @@ BfMat *bfMatDenseRealSteal(BfMatDenseReal *matDenseReal) {
   }
 
   return bfMatDenseRealToMat(matDenseRealNew);
+}
+
+BfVecReal *bfMatDenseRealGetRowView(BfMatDenseReal *matDenseReal, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  BfMatDense *matDense = bfMatDenseRealToMatDense(matDenseReal);
+
+  BfVecReal *rowView = bfVecRealNew();
+  HANDLE_ERROR();
+
+  BfSize n = bfMatDenseRealGetNumCols(matDenseReal);
+  BfSize stride = bfMatDenseGetColStride(matDense);
+  BfReal *data = matDenseReal->data + i*bfMatDenseGetRowStride(matDense);
+
+  bfVecRealInitView(rowView, n, stride, data);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return rowView;
 }
 
 BfVec *bfMatDenseRealGetColView(BfMat *mat, BfSize j) {
@@ -477,15 +507,16 @@ BfMat *bfMatDenseRealGetColRangeCopy(BfMatDenseReal const *matDenseReal, BfSize 
   return bfMatDenseRealToMat(matDenseRealCopy);
 }
 
-void bfMatDenseRealPermuteRows(BfMat *mat, BfPerm const *perm) {
+void bfMatDenseRealPermuteRows(BfMatDenseReal *matDenseReal, BfPerm const *perm) {
   BF_ERROR_BEGIN();
+
+  BfMat *mat = bfMatDenseRealToMat(matDenseReal);
 
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
   BfMatDense *matDense = NULL;
   BfMatDense *matDensePerm = NULL;
-  BfMatDenseReal *matDenseReal = NULL;
   BfMatDenseReal *matDenseRealPerm = NULL;
 
   BfMat *matPerm = bfMatCopy(mat);
@@ -773,24 +804,120 @@ BfMatDenseReal *bfMatDenseRealFromFile(char const *path, BfSize numRows, BfSize 
   if (fread(matDenseReal->data, sizeof(BfReal), size, fp) != size)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  BF_ERROR_END()
-    bfMatDenseRealDeinitAndDealloc(&matDenseReal);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
 
   return matDenseReal;
 }
 
-void bfMatDenseRealInit(BfMatDenseReal *mat, BfSize numRows, BfSize numCols) {
+BfMatDenseReal *bfMatDenseRealNewFromRealArray(BfRealArray *realArray, BfSize numRows, BfSize numCols, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
-  bfMatDenseInit(&mat->super, &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
+  BfMatDenseReal *matDenseReal = bfMatDenseRealNew();
   HANDLE_ERROR();
 
-  mat->data = bfMemAlloc(numRows*numCols, sizeof(BfReal));
-  if (mat->data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  bfMatDenseRealInitFromRealArray(matDenseReal, realArray, numRows, numCols, policy);
+  HANDLE_ERROR();
 
-  BF_ERROR_END()
-    bfMatDenseDeinit(&mat->super);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matDenseReal;
+}
+
+BfMatDenseReal *bfMatDenseRealNewFromCsv(char const *path) {
+   BF_ERROR_BEGIN();
+
+  BfMatDenseReal *matDenseReal = NULL;
+
+  FILE *fp = NULL;
+
+  char *lineptr = NULL;
+  ssize_t nread;
+  size_t n = 1024;
+  char *saveptr;
+  char *tok;
+
+  BfRealArray *values = NULL;
+
+  BfSize numRows = 0;
+  BfSize numCols = BF_SIZE_BAD_VALUE;
+
+  values = bfRealArrayNewWithDefaultCapacity(sizeof(double));
+  HANDLE_ERROR();
+
+  fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  /* Iterate over the lines in the CSV file, accumulating them into
+  `values. If we discover that the lines have different numbers of
+  values, we bail. */
+  while (true) {
+    lineptr = NULL;
+    saveptr = NULL;
+
+    nread = getline(&lineptr, &n, fp);
+    if (nread < 0)
+      break;
+
+    BfSize lineNumCols = 0;
+    while (true) {
+      tok = strtok_r(lineNumCols ? NULL : lineptr, " ", &saveptr);
+      if (tok == NULL)
+        break;
+
+      errno = 0;
+      double value = strtod(tok, NULL);
+      if (errno != 0)
+        RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+      bfRealArrayAppend(values, value);
+      HANDLE_ERROR();
+
+      ++lineNumCols;
+    }
+
+    if (!BF_SIZE_OK(numCols)) numCols = lineNumCols;
+    if (lineNumCols != numCols)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+    ++numRows;
+  }
+
+  bfRealArrayShrinkCapacityToSize(values);
+  HANDLE_ERROR();
+
+  matDenseReal = bfMatDenseRealNewFromRealArray(values, numRows, numCols, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+
+  bfRealArrayDeinitAndDealloc(&values);
+
+  return matDenseReal;
+}
+
+void bfMatDenseRealInit(BfMatDenseReal *matDenseReal, BfSize numRows, BfSize numCols) {
+  BF_ERROR_BEGIN();
+
+  bfMatDenseInit(bfMatDenseRealToMatDense(matDenseReal),
+                 &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
+
+  matDenseReal->data = bfMemAlloc(numRows*numCols, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfMatDenseRealInitViewFromPtr(BfMatDenseReal *matDenseReal, BfSize numRows, BfSize numCols, BfReal *data, BfSize rowStride, BfSize colStride) {
@@ -857,6 +984,50 @@ void bfMatDenseRealInitCopy(BfMatDenseReal *matDenseReal,
   }
 
   BF_ERROR_END() {}
+}
+
+void bfMatDenseRealInitFromPtr(BfMatDenseReal *matDenseReal, BfSize numRows, BfSize numCols, BfReal *data, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  bfMatDenseInit(bfMatDenseRealToMatDense(matDenseReal),
+                 &MAT_VTABLE, &MAT_DENSE_VTABLE, numRows, numCols, numCols, 1);
+
+  if (policy == BF_POLICY_COPY) {
+    matDenseReal->data = bfMemAlloc(numRows*numCols, sizeof(BfReal));
+    HANDLE_ERROR();
+
+    bfMemCopy(data, numRows*numCols, sizeof(BfReal), matDenseReal->data);
+  }
+
+  else if (policy == BF_POLICY_VIEW || policy == BF_POLICY_STEAL) {
+    matDenseReal->data = data;
+  }
+
+  else BF_DIE();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfMatDenseRealInitFromRealArray(BfMatDenseReal *matDenseReal, BfRealArray *realArray, BfSize numRows, BfSize numCols, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  if (bfRealArrayGetSize(realArray) != numRows*numCols)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (policy == BF_POLICY_STEAL) {
+    if (realArray->isView)
+      RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+    realArray->isView = true;
+  }
+
+  bfMatDenseRealInitFromPtr(matDenseReal, numRows, numCols, realArray->data, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfMatDenseRealInitWithValue(BfMatDenseReal *matDenseReal, BfSize numRows,
@@ -1331,4 +1502,63 @@ void bfMatDenseRealPrintBlocksDeep(BfMatDenseReal const *matDenseReal, FILE *fp,
   BfSize j1 = j0 + bfMatGetNumCols(mat);
 
   fprintf(fp, "%u %lu %lu %lu %lu %lu\n", BF_TYPE_MAT_DENSE_REAL, i0, i1, j0, j1, depth);
+}
+
+BfReal bfMatDenseRealNormMax(BfMatDenseReal const *matDenseReal) {
+  BfSize numRows = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize numCols = bfMatDenseRealGetNumCols(matDenseReal);
+
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  BfReal norm = -BF_INFINITY;
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *rowPtr = matDenseReal->data + i*rowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      norm = fmax(fabs(*rowPtr), norm);
+      rowPtr += colStride;
+    }
+  }
+
+  return norm;
+}
+
+BfReal bfMatDenseRealDistMax(BfMatDenseReal const *matDenseReal, BfMatDenseReal const *otherMatDenseReal) {
+  BF_ERROR_BEGIN();
+
+  BfSize numRows = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize otherNumRows = bfMatDenseRealGetNumRows(otherMatDenseReal);
+  if (numRows != otherNumRows)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfSize numCols = bfMatDenseRealGetNumCols(matDenseReal);
+  BfSize otherNumCols = bfMatDenseRealGetNumCols(otherMatDenseReal);
+  if (numCols != otherNumCols)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDense const *matDense = bfMatDenseRealConstToMatDenseConst(matDenseReal);
+  BfSize rowStride = bfMatDenseGetRowStride(matDense);
+  BfSize colStride = bfMatDenseGetColStride(matDense);
+
+  BfMatDense const *otherMatDense = bfMatDenseRealConstToMatDenseConst(otherMatDenseReal);
+  BfSize otherRowStride = bfMatDenseGetRowStride(otherMatDense);
+  BfSize otherColStride = bfMatDenseGetColStride(otherMatDense);
+
+  BfReal dist = -BF_INFINITY;
+  for (BfSize i = 0; i < numRows; ++i) {
+    BfReal const *rowPtr = matDenseReal->data + i*rowStride;
+    BfReal const *otherRowPtr = otherMatDenseReal->data + i*otherRowStride;
+    for (BfSize j = 0; j < numCols; ++j) {
+      dist = fmax(fabs(*rowPtr - *otherRowPtr), dist);
+      rowPtr += colStride;
+      otherRowPtr += otherColStride;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return dist;
 }

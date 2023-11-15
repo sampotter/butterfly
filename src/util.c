@@ -21,18 +21,29 @@ BfReal bfToc() {
   return ((double)t1 - (double)t0)/CLOCKS_PER_SEC;
 }
 
-void bfRealArgsort(BfReal const *values, BfSize n, BfSize *perm) {
+void bfRealArgsort(BfReal const *values, BfSize n, BfSize *index) {
+  BF_ERROR_BEGIN();
+
   for (BfSize i = 0; i < n; ++i)
-    perm[i] = i;
+    index[i] = i;
 
   /* TODO: just using selection sort here for now... should upgrade to
    * something better later */
   for (BfSize i = 0; i < n - 1; ++i) {
     BfSize k = i;
     for (BfSize j = i + 1; j < n; ++j)
-      if (values[perm[j]] < values[perm[k]])
+      if (values[index[j]] < values[index[k]])
         k = j;
-    SWAP(perm[i], perm[k]);
+    SWAP(index[i], index[k]);
+  }
+
+  BfPerm perm = {.index = index, .size = n};
+
+  bfPermReverse(&perm);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 }
 

@@ -1,5 +1,6 @@
 project('butterfly', 'c', 'cython', default_options : ['c_std=c11'])
 
+fs = import('fs')
 pkg = import('pkgconfig')
 py = import('python')
 
@@ -95,6 +96,7 @@ butterfly_lib_src = [
   'src/cheb.c',
   'src/circle.c',
 #  'src/cholmod.c',
+  'src/disjoint_interval_list.c',
   'src/dtype.c',
   'src/ellipse.c',
   'src/error.c',
@@ -107,6 +109,7 @@ butterfly_lib_src = [
   'src/fiedler_tree_node.c',
   'src/helm2.c',
   'src/indexed_mat.c',
+  'src/interval.c',
   'src/interval_tree.c',
   'src/interval_tree_node.c',
   'src/lbo.c',
@@ -197,4 +200,5 @@ butterfly_dep = declare_dependency(
 pkg.generate(butterfly_lib)
 
 subdir('examples')
+subdir('tests')
 subdir('wrappers')

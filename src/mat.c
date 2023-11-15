@@ -272,6 +272,14 @@ void bfMatTranspose(BfMat *mat) {
   mat->vtbl->Transpose(mat);
 }
 
+BfReal bfMatNormMax(BfMat const *mat) {
+  return mat->vtbl->NormMax(mat);
+}
+
+BfReal bfMatDistMax(BfMat const *mat, BfMat const *otherMat) {
+  return mat->vtbl->DistMax(mat, otherMat);
+}
+
 /** Implementation: Mat */
 
 BfMat *bfMatGet(BfMat *mat, BfPolicy policy) {

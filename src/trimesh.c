@@ -1141,12 +1141,12 @@ BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh) {
   /* Solve the shifted eigenvalue problem and get the first nonzero
    * eigenfunction (the "Fiedler vector"). */
 
-  BfMat *PhiInt = NULL;
+  BfMat *PhiTransposeInt = NULL;
   BfVecReal *Lam = NULL;
-  bfGetShiftedEigs(LInt, MInt, -0.001, 2, &PhiInt, &Lam);
+  bfGetShiftedEigs(LInt, MInt, -0.001, 2, &PhiTransposeInt, &Lam);
   HANDLE_ERROR();
 
-  BfVecReal *phiFiedlerInt = bfVecToVecReal(bfMatGetColView(PhiInt, 1));
+  BfVecReal *phiFiedlerInt = bfVecToVecReal(bfMatGetRowView(PhiTransposeInt, 1));
   HANDLE_ERROR();
 
   BfVecReal *phiFiedler = bfVecRealNewWithValue(bfTrimeshGetNumVerts(trimesh), 0);
@@ -1169,7 +1169,7 @@ BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh) {
   bfMatDelete(&LInt);
   bfMatDelete(&MInt);
 
-  bfMatDelete(&PhiInt);
+  bfMatDelete(&PhiTransposeInt);
   bfVecRealDeinitAndDealloc(&Lam);
 
   bfVecRealDeinitAndDealloc(&phiFiedlerInt);

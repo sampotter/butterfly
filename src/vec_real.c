@@ -1,6 +1,6 @@
 #include <bf/vec_real.h>
 
-#include <math.h>
+#include <string.h>
 
 #include <bf/assert.h>
 #include <bf/blas.h>
@@ -13,6 +13,8 @@
 #include <bf/rand.h>
 #include <bf/real_array.h>
 
+#include "macros.h"
+
 /** Interface: Vec */
 
 static BfVecVtable VEC_VTABLE = {
@@ -20,23 +22,23 @@ static BfVecVtable VEC_VTABLE = {
   .Delete = (__typeof__(&bfVecDelete))bfVecRealDelete,
   .GetType = (__typeof__(&bfVecRealGetType))bfVecRealGetType,
   .GetEltPtr = (__typeof__(&bfVecGetEltPtr))bfVecRealGetEltPtr,
-  .GetSubvecCopy = (__typeof__(&bfVecRealGetSubvecCopy))bfVecRealGetSubvecCopy,
+  .GetSubvecCopy = (__typeof__(&bfVecGetSubvecCopy))bfVecRealGetSubvecCopy,
   .GetSubvecView = (__typeof__(&bfVecGetSubvecView))bfVecRealGetSubvecView,
   .GetSubvecViewConst = (__typeof__(&bfVecGetSubvecViewConst))bfVecRealGetSubvecViewConst,
   .SetRange = (__typeof__(&bfVecSetRange))bfVecRealSetRange,
   .Print = (__typeof__(&bfVecRealPrint))bfVecRealPrint,
   .DistMax = (__typeof__(&bfVecDistMax))bfVecRealDistMax,
-  .NormMax = (__typeof__(&bfVecRealNormMax))bfVecRealNormMax,
+  .NormMax = (__typeof__(&bfVecNormMax))bfVecRealNormMax,
   .RecipInplace = (__typeof__(&bfVecRealRecipInplace))bfVecRealRecipInplace,
   .AddInplace = (__typeof__(&bfVecAddInplace))bfVecRealAddInplace,
-  .Permute = (__typeof__(&bfVecRealPermute))bfVecRealPermute,
+  .Permute = (__typeof__(&bfVecPermute))bfVecRealPermute,
   .Concat = (__typeof__(&bfVecRealConcat))bfVecRealConcat,
   .Save = (__typeof__(&bfVecSave))bfVecRealSave,
   .Daxpy = (__typeof__(&bfVecDaxpy))bfVecRealDaxpy,
   .Dscal = (__typeof__(&bfVecDscal))bfVecRealDscal,
 };
 
-BfVec *bfVecRealCopy(BfVecReal const *vecReal) {
+BfVecReal *bfVecRealCopy(BfVecReal const *vecReal) {
   BF_ERROR_BEGIN();
 
   BfVec const *vec = bfVecRealConstToVecConst(vecReal);
@@ -59,7 +61,7 @@ BfVec *bfVecRealCopy(BfVecReal const *vecReal) {
   BF_ERROR_END()
     bfVecRealDeinitAndDealloc(&copy);
 
-  return bfVecRealToVec(copy);
+  return copy;
 }
 
 void bfVecRealDelete(BfVecReal **mat) {
@@ -86,14 +88,10 @@ BfReal *bfVecRealGetEltPtr(BfVecReal *vecReal, BfSize i) {
   return ptr;
 }
 
-BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
+BfVecReal *bfVecRealGetSubvecCopy(BfVecReal const *vecReal, BfSize i0, BfSize i1) {
   BF_ERROR_BEGIN();
 
-  BfVecReal const *vecReal = NULL;
   BfVecReal *subvec = NULL;
-
-  vecReal = bfVecConstToVecRealConst(vec);
-  HANDLE_ERROR();
 
   subvec = bfVecRealNew();
   HANDLE_ERROR();
@@ -108,7 +106,7 @@ BfVec *bfVecRealGetSubvecCopy(BfVec const *vec, BfSize i0, BfSize i1) {
     subvec = NULL;
   }
 
-  return bfVecRealToVec(subvec);
+  return subvec;
 }
 
 BfVecReal *bfVecRealGetSubvecView(BfVecReal *vecReal, BfSize i0, BfSize i1) {
@@ -259,25 +257,17 @@ BfReal bfVecRealDistMax(BfVecReal const *vecReal, BfVec const *otherVec) {
   return dist;
 }
 
-BfReal bfVecRealNormMax(BfVec const *vec) {
-  BF_ERROR_BEGIN();
+BfReal bfVecRealNormMax(BfVecReal const *vecReal) {
+  BfVec const *vec = bfVecRealConstToVecConst(vecReal);
+  if (vec->size == 0)
+    return 0;
 
-  BfVecReal const *vecReal = NULL;
-  BfReal norm;
-
-  vecReal = bfVecConstToVecRealConst(vec);
-  HANDLE_ERROR();
-
-  norm = -INFINITY;
+  BfReal norm = -INFINITY;
   for (BfSize i = 0; i < vec->size; ++i) {
     BfReal y = *(vecReal->data + i*vecReal->stride);
     BfReal yabs = fabs(y);
     if (yabs > norm) norm = yabs;
   }
-
-  BF_ERROR_END()
-    norm = NAN;
-
   return norm;
 }
 
@@ -319,19 +309,13 @@ void bfVecRealRecipInplace(BfVec *vec) {
   BF_ERROR_END() {}
 }
 
-void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
+void bfVecRealPermute(BfVecReal *vecReal, BfPerm const *perm) {
   BF_ERROR_BEGIN();
 
-  BfVec *vecCopy = bfVecCopy(vec);
+  BfVecReal *vecRealCopy = bfVecRealCopy(vecReal);
   HANDLE_ERROR();
 
-  BfVecReal *vecReal = bfVecToVecReal(vec);
-  HANDLE_ERROR();
-
-  BfVecReal *vecRealCopy = bfVecToVecReal(vecCopy);
-  HANDLE_ERROR();
-
-  for (BfSize i = 0; i < vec->size; ++i) {
+  for (BfSize i = 0; i < bfVecRealGetSize(vecReal); ++i) {
     BfReal const *inPtr = vecRealCopy->data + i*vecRealCopy->stride;
     BfReal *outPtr = vecReal->data + perm->index[i]*vecReal->stride;
     *outPtr = *inPtr;
@@ -341,7 +325,7 @@ void bfVecRealPermute(BfVec *vec, BfPerm const *perm) {
     BF_DIE();
   }
 
-  bfVecDelete(&vecCopy);
+  bfVecRealDeinitAndDealloc(&vecRealCopy);
 }
 
 BfVec *bfVecRealConcat(BfVec const *vec, BfVec const *otherVec) {
@@ -530,13 +514,29 @@ BfVecReal *bfVecRealFromFile(char const *path, BfSize size) {
   return vecReal;
 }
 
-BfVecReal *bfVecRealNewFromRealArray(BfRealArray const *realArray) {
+BfVecReal *bfVecRealNewFromRealArray(BfRealArray *realArray, BfPolicy policy) {
   BF_ERROR_BEGIN();
 
   BfVecReal *vecReal = bfVecRealNew();
   HANDLE_ERROR();
 
-  bfVecRealInitFromRealArray(vecReal, realArray);
+  bfVecRealInitFromRealArray(vecReal, realArray, policy);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vecReal;
+}
+
+BfVecReal *bfVecRealNewFromCsv(char const *path) {
+  BF_ERROR_BEGIN();
+
+  BfVecReal *vecReal = bfVecRealNew();
+  HANDLE_ERROR();
+
+  bfVecRealInitFromCsv(vecReal, path);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -560,28 +560,6 @@ void bfVecRealInit(BfVecReal *vec, BfSize size) {
     bfVecDeinit(&vec->super);
 }
 
-void bfVecRealInitFrom(BfVecReal *vec, BfSize size, BfSize stride, BfReal const *data) {
-  BF_ERROR_BEGIN();
-
-  bfVecInit(&vec->super, &VEC_VTABLE, size);
-
-  vec->stride = 1;
-
-  vec->data = bfMemAlloc(size, sizeof(BfReal));
-  HANDLE_ERROR();
-
-  BfReal *writePtr = vec->data;
-  BfReal const *readPtr = data;
-  for (BfSize i = 0; i < size; ++i) {
-    *writePtr = *readPtr;
-    writePtr += vec->stride;
-    readPtr += stride;
-  }
-
-  BF_ERROR_END()
-    bfVecDeinit(&vec->super);
-}
-
 void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *data) {
   BF_ERROR_BEGIN();
 
@@ -599,8 +577,85 @@ void bfVecRealInitView(BfVecReal *vecReal, BfSize size, BfSize stride, BfReal *d
     bfVecDeinit(&vecReal->super);
 }
 
-void bfVecRealInitFromRealArray(BfVecReal *vecReal, BfRealArray const *realArray) {
-  bfVecRealInitFrom(vecReal, realArray->size, 1, realArray->data);
+void bfVecRealInitFromPtr(BfVecReal *vec, BfSize size, BfSize stride, BfReal *data, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  bfVecInit(&vec->super, &VEC_VTABLE, size);
+
+  if (policy == BF_POLICY_COPY) {
+    vec->data = bfMemAlloc(size, sizeof(BfReal));
+    HANDLE_ERROR();
+
+    vec->stride = 1;
+
+    BfReal *writePtr = vec->data;
+    BfReal const *readPtr = data;
+    for (BfSize i = 0; i < size; ++i) {
+      *writePtr = *readPtr;
+      writePtr += vec->stride;
+      readPtr += stride;
+    }
+  }
+
+  else if (policy == BF_POLICY_VIEW || policy == BF_POLICY_STEAL) {
+    vec->stride = stride;
+    vec->data = data;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfVecRealInitFromRealArray(BfVecReal *vecReal, BfRealArray *realArray, BfPolicy policy) {
+  bfVecRealInitFromPtr(vecReal, realArray->size, 1, realArray->data, policy);
+}
+
+void bfVecRealInitFromCsv(BfVecReal *vecReal, char const *path) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *values = bfRealArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+
+  while (true) {
+    char *lineptr = NULL;
+    size_t n;
+    ssize_t nread = getline(&lineptr, &n, fp);
+    if (nread < 0)
+      break;
+
+    char *saveptr = NULL;
+
+    char *tok = strtok_r(lineptr, " ", &saveptr);
+    if (tok == NULL)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+    double value = strtod(tok, NULL);
+    if (errno != 0)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+    bfRealArrayAppend(values, value);
+    HANDLE_ERROR();
+
+    /* We expect each line to have exactly one token on it: */
+    tok = strtok_r(bfRealArrayIsEmpty(values) ? lineptr : NULL, " ", &saveptr);
+    if (tok != NULL)
+      RAISE_ERROR(BF_ERROR_FILE_ERROR);
+  }
+
+  bfRealArrayShrinkCapacityToSize(values);
+  HANDLE_ERROR();
+
+  bfVecRealInitFromRealArray(vecReal, values, BF_POLICY_STEAL);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfVecRealDeinit(BfVecReal *vecReal) {
@@ -652,6 +707,10 @@ void bfVecRealGetValues(BfVecReal const *vecReal, BfSize n, BfSize const *inds, 
   }
 }
 
+BfRealArray *bfVecRealGetArrayView(BfVecReal *vecReal) {
+  return bfRealArrayNewFromVecReal(vecReal, BF_POLICY_VIEW);
+}
+
 void bfVecRealDump(BfVecReal const *vecReal, char const *path) {
   BF_ERROR_BEGIN();
 
@@ -666,4 +725,41 @@ void bfVecRealDump(BfVecReal const *vecReal, char const *path) {
   }
 
   fclose(fp);
+}
+
+BfPerm *bfVecRealArgsort(BfVecReal const *vecReal) {
+  BF_ERROR_BEGIN();
+
+  BfSize const n = bfVecRealGetSize(vecReal);
+
+  BfPerm *perm = bfPermNewIdentity(n);
+  HANDLE_ERROR();
+
+  /* TODO: just using selection sort here for now... should upgrade to
+   * something better later */
+  for (BfSize i = 0; i < n - 1; ++i) {
+    BfSize k = i;
+    BfReal value_k = bfVecRealGetElt(vecReal, perm->index[k]);
+    for (BfSize j = i + 1; j < n; ++j) {
+      BfReal const value_j = bfVecRealGetElt(vecReal, perm->index[j]);
+      if (value_j < value_k) {
+        k = j;
+        value_k = value_j;
+      }
+    }
+    SWAP(perm->index[i], perm->index[k]);
+  }
+
+  bfPermReverse(perm);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return perm;
+}
+
+BfSize bfVecRealGetSize(BfVecReal const *vecReal) {
+  return bfVecGetSize(bfVecRealConstToVecConst(vecReal));
 }

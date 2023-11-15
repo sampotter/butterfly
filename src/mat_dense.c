@@ -52,19 +52,11 @@ void bfMatDenseInit(BfMatDense *matDense, BfMatVtable *matVtable,
                     BfMatDenseVtable *matDenseVtable,
                     BfSize numRows, BfSize numCols,
                     BfSize rowStride, BfSize colStride) {
-  BF_ERROR_BEGIN();
-
-  BfMat *mat = &matDense->super;
-
-  bfMatInit(mat, matVtable, numRows, numCols);
-  HANDLE_ERROR();
+  bfMatInit(bfMatDenseToMat(matDense), matVtable, numRows, numCols);
 
   matDense->vtable = matDenseVtable;
   matDense->rowStride = rowStride;
   matDense->colStride = colStride;
-
-  BF_ERROR_END()
-    bfMatDeinit(mat);
 }
 
 void bfMatDenseDeinit(BfMatDense *matDense) {

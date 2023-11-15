@@ -3,12 +3,16 @@
 #include <math.h>
 
 #include <bf/assert.h>
+#include <bf/const.h>
+#include <bf/disjoint_interval_list.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/logging.h>
 #include <bf/lu_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/mem.h>
+#include <bf/ptr_array.h>
+#include <bf/real_array.h>
 #include <bf/timer.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
@@ -466,7 +470,7 @@ dnaupd:
 }
 
 void bfGetShiftedEigs(BfMat const *A, BfMat const *M, BfReal sigma, BfSize k,
-                      BfMat **PhiPtr, BfVecReal **LambdaPtr) {
+                      BfMat **PhiTransposePtr, BfVecReal **LambdaPtr) {
   /* TODO: this is a work in progress! This does NOT work for any type
    * of BfMat yet. Just real ones... */
 
@@ -686,41 +690,37 @@ dnaupd:
   HANDLE_ERROR();
 
   for (BfSize j = 0; j < k; ++j)
-    *(Lambda->data + j*Lambda->stride) = dr[J[j]];
+    *(Lambda->data + J[j]*Lambda->stride) = dr[j];
 
-  if (PhiPtr == NULL)
+  if (PhiTransposePtr == NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  if (*PhiPtr != NULL)
+  if (*PhiTransposePtr != NULL)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  BfMatDenseReal *Phi = bfMatDenseRealNew();
+  BfMatDenseReal *PhiTranspose = bfMatDenseRealNew();
   HANDLE_ERROR();
 
-  bfMatDenseRealInit(Phi, N, k);
+  bfMatDenseRealInit(PhiTranspose, k, N);
   HANDLE_ERROR();
 
   for (BfSize j = 0; j < k; ++j) {
-    BfVecReal *col = bfVecRealNew();
+    BfVecReal *phi = bfVecRealNew();
     HANDLE_ERROR();
 
-    bfVecRealInitView(col, N, BF_DEFAULT_STRIDE, z + N*J[j]);
+    bfVecRealInitView(phi, N, BF_DEFAULT_STRIDE, z + N*j);
     HANDLE_ERROR();
 
-    bfMatDenseRealSetCol(bfMatDenseRealToMat(Phi), j, bfVecRealToVec(col));
+    bfMatDenseRealSetRow(bfMatDenseRealToMat(PhiTranspose), J[j], bfVecRealToVec(phi));
 
-    bfVecRealDeinitAndDealloc(&col);
+    bfVecRealDeinitAndDealloc(&phi);
   }
 
   *LambdaPtr = Lambda;
-  *PhiPtr = bfMatDenseRealToMat(Phi);
+  *PhiTransposePtr = bfMatDenseRealToMat(PhiTranspose);
 
   BF_ERROR_END() {
-    bfVecRealDeinitAndDealloc(&Lambda);
-    bfMatDenseRealDeinitAndDealloc(&Phi);
-
-    *LambdaPtr = NULL;
-    *PhiPtr = NULL;
+    BF_DIE();
   }
 
   bfMemFree(J);
@@ -742,69 +742,50 @@ dnaupd:
             bfTimerGetElapsedTimeInSeconds(&timerFunc));
 }
 
-void bfGetEigenband(BfMat const *A, BfMat const *M, BfReal lam0, BfReal lam1,
-                    BfReal sigma, BfMat **PhiPtr, BfVecReal **LambdaPtr) {
+static void getEigenband_doubling(BfMat const *A, BfMat const *M, BfInterval const *interval,
+                                  BfMat **PhiTransposePtr, BfVecReal **LambdaPtr) {
   BF_ERROR_BEGIN();
 
-  BfMat *Phi = NULL;
+  BfMat *PhiTranspose = NULL;
   BfVecReal *Lambda = NULL;
-
-  if (PhiPtr == NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  if (*PhiPtr != NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  if (LambdaPtr == NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
-
-  if (*LambdaPtr != NULL)
-    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   BfSize k = 8;
 
-  bool useLeft = isfinite(lam0);
-  bool useRight = isfinite(lam1);
+  BfReal const sigma = bfIntervalGetMidpoint(interval);
 
 get_shifted_eigs:
   bfLogInfo("bfGetEigenband: k = %lu\n", k);
 
-  bfGetShiftedEigs(A, M, sigma, k, &Phi, &Lambda);
+  bfGetShiftedEigs(A, M, sigma, k, &PhiTranspose, &Lambda);
   HANDLE_ERROR();
 
   BfReal const *lam = Lambda->data;
-  BfReal lamMin = lam[0];
-  BfReal lamMax = lam[k - 1];
-  if ((useLeft && lam0 < lamMin) || (useRight && lamMax < lam1)) {
+
+  /* Keep doubling the number of eigenvalues until we cover `interval`
+   * with `currentInterval`: */
+  BfInterval currentInterval = {
+    .endpoint = {lam[0], lam[k - 1]},
+    .closed = {true, true}
+  };
+  if (!bfIntervalContainsInterval(&currentInterval, interval)) {
     k *= 2;
-    bfMatDelete(&Phi);
+    bfMatDelete(&PhiTranspose);
     bfVecRealDeinitAndDealloc(&Lambda);
     goto get_shifted_eigs;
   }
 
   /* Find the first eigenpair in the band */
   BfSize j0 = 0;
-  if (useLeft) {
-    while (j0 < k && lam[j0] < lam0)
-      ++j0;
-    BF_ASSERT(lam0 <= lam[j0]);
-  }
-  BF_ASSERT(j0 < k);
+  while (j0 < k && !bfIntervalContainsPoint(interval, lam[j0])) ++j0;
 
   /* Find the last eigenpair in the band */
   BfSize j1 = k;
-  if (useRight) {
-    while (j1 > j0 && lam1 <= lam[j1 - 1])
-      --j1;
-    BF_ASSERT(lam[j1 - 1] < lam1);
-    BF_ASSERT(j1 == k || lam1 <= lam[j1]);
-  }
-  BF_ASSERT(j0 <= j1 && j1 <= k);
+  while (j1 > j0 && !bfIntervalContainsPoint(interval, lam[j1 - 1])) --j1;
 
   if (0 < j0 || j1 < k) {
     /* Prune unnecessary eigenvectors */
-    BfMat *oldPhi = Phi;
-    Phi = bfMatGetColRangeCopy(oldPhi, j0, j1);
+    BfMat *oldPhiTranspose = PhiTranspose;
+    PhiTranspose = bfMatGetRowRangeCopy(oldPhiTranspose, j0, j1);
     HANDLE_ERROR();
 
     /* Prune unnecessary eigenvalues */
@@ -813,19 +794,217 @@ get_shifted_eigs:
     HANDLE_ERROR();
 
     /* Free old eigenvectors and values */
-    bfMatDelete(&oldPhi);
+    bfMatDelete(&oldPhiTranspose);
     bfVecRealDeinitAndDealloc(&oldLambda);
   }
 
-  *PhiPtr = Phi;
+  *PhiTransposePtr = PhiTranspose;
   *LambdaPtr = Lambda;
 
   BF_ERROR_END() {
-    bfMatDelete(&Phi);
+    bfMatDelete(&PhiTranspose);
     bfVecRealDeinitAndDealloc(&Lambda);
 
-    *PhiPtr = NULL;
+    *PhiTransposePtr = NULL;
     *LambdaPtr = NULL;
+  }
+}
+
+static BfInterval getPairsCoveringInterval(BfMat const *A, BfMat const *M, BfInterval const *interval, BfRealArray *LamData, BfRealArray *PhiTransposeData) {
+  BF_ERROR_BEGIN();
+
+  BfMat *coverPhiTranspose = NULL;
+  BfVecReal *coverLam = NULL;
+  BfReal const sigma = bfIntervalGetMidpoint(interval);
+  BfSize const k = 8;
+  bfGetShiftedEigs(A, M, sigma, k + 2, &coverPhiTranspose, &coverLam);
+  HANDLE_ERROR();
+
+  BfReal const *lam = coverLam->data;
+
+  BfSize i0 = 0;
+  while (i0 < k + 2 && !bfIntervalContainsPoint(interval, lam[i0])) ++i0;
+
+  BfSize i1 = k + 2;
+  while (i1 > 0 && !bfIntervalContainsPoint(interval, lam[i1 - 1])) --i1;
+
+  BfInterval cover;
+
+  if (i0 == 0 && i1 == k + 2) {
+    cover.endpoint[0] = (lam[0] + lam[1])/2;
+    cover.endpoint[1] = (lam[k] + lam[k + 1])/2;
+    i0 = 1;
+    i1 = k + 1;
+  } else if (i0 == 0 && i1 == 1) {
+    cover.endpoint[0] = (interval->endpoint[0] + lam[0])/2;
+    cover.endpoint[1] = (lam[0] + interval->endpoint[1])/2;
+  } else if (i1 < i0) {
+    cover.endpoint[0] = BF_INFINITY;
+    cover.endpoint[1] = -BF_INFINITY;
+  } else if (0 < i0 && i1 < k + 2) {
+    cover.endpoint[0] = interval->endpoint[0];
+    cover.endpoint[1] = interval->endpoint[1];
+  } else {
+    BF_DIE();
+  }
+
+  for (BfSize i = i0; i < i1; ++i) {
+    bfRealArrayAppend(LamData, bfVecRealGetElt(coverLam, i));
+    HANDLE_ERROR();
+
+    BfVecReal *phi = bfVecToVecReal(bfMatGetRowView(coverPhiTranspose, i));
+    HANDLE_ERROR();
+
+    BfRealArray *phiArray = bfVecRealGetArrayView(phi);
+    HANDLE_ERROR();
+
+    bfRealArrayExtend(PhiTransposeData, phiArray);
+    HANDLE_ERROR();
+
+    bfVecRealDeinitAndDealloc(&phi);
+    bfRealArrayDeinitAndDealloc(&phiArray);
+  }
+
+  // BfRealArray *distToSigma = bfRealArrayNewWithDefaultCapacity();
+  // HANDLE_ERROR();
+
+  // for (BfSize i = 0; i < k + 1; ++i) {
+  //   bfRealArrayAppend(distToSigma, fabs(bfVecRealGetElt(coverLam, i) - sigma));
+  //   HANDLE_ERROR();
+  // }
+
+  // BfPerm *perm = bfRealArrayArgsort(distToSigma);
+  // HANDLE_ERROR();
+
+  // bfVecRealPermute(coverLam, perm);
+  // bfMatPermuteRows(coverPhiTranspose, perm);
+
+  // BF_ASSERT(bfVecRealGetElt(coverLam, k - 1) != bfVecRealGetElt(coverLam, k));
+
+  // BfReal lamMin = BF_INFINITY;
+  // BfReal lamMax = -BF_INFINITY;
+
+  // for (BfSize i = 0; i < k; ++i) {
+  //   double lam = bfVecRealGetElt(coverLam, i);
+  //   if (!bfIntervalContainsPoint(interval, lam))
+  //     continue;
+
+  //   lamMin = fmin(lam, lamMin);
+  //   lamMax = fmax(lam, lamMax);
+
+  //   bfRealArrayAppend(LamData, lam);
+  //   HANDLE_ERROR();
+
+  //   BfVecReal *phi = bfVecToVecReal(bfMatGetRowView(coverPhiTranspose, i));
+  //   HANDLE_ERROR();
+
+  //   BfRealArray *phiArray = bfVecRealGetArrayView(phi);
+  //   HANDLE_ERROR();
+
+  //   bfRealArrayExtend(PhiTransposeData, phiArray);
+  //   HANDLE_ERROR();
+
+  //   bfVecRealDeinitAndDealloc(&phi);
+  //   bfRealArrayDeinitAndDealloc(&phiArray);
+  // }
+
+  // BfInterval cover = {.endpoint = {lamMin, lamMax}, .closed = {true, true}};
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  // bfPermDeinitAndDealloc(&perm);
+  // bfRealArrayDeinitAndDealloc(&distToSigma);
+  bfMatDelete(&coverPhiTranspose);
+  bfVecRealDeinitAndDealloc(&coverLam);
+
+  return cover;
+}
+
+static void getEigenband_covering(BfMat const *A, BfMat const *M, BfInterval const *interval,
+                                  BfMat **PhiTransposePtr, BfVecReal **LambdaPtr) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *eigs = bfRealArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  BfRealArray *rows = bfRealArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  BfDisjointIntervalList *intervals = bfDisjointIntervalListNewEmpty();
+  HANDLE_ERROR();
+
+  bfDisjointIntervalListAdd(intervals, interval);
+  HANDLE_ERROR();
+
+  while (!bfDisjointIntervalListIsEmpty(intervals)) {
+    BfInterval const *nextInterval = bfDisjointIntervalListGetFirstPtrConst(intervals);
+
+    BfInterval cover = getPairsCoveringInterval(A, M, nextInterval, eigs, rows);
+    HANDLE_ERROR();
+
+    bfDisjointIntervalListRemove(intervals, bfIntervalIsEmpty(&cover) ? nextInterval : &cover);
+  }
+
+  BfSize numCols = bfMatGetNumRows(A);
+
+  BfSize numRows = bfRealArrayGetSize(rows);
+  BF_ASSERT(numRows % numCols == 0);
+  numRows /= numCols;
+
+  BfMatDenseReal *PhiTranspose = bfMatDenseRealNewFromRealArray(rows, numRows, numCols, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  BfPerm *perm = bfRealArrayArgsort(eigs);
+  HANDLE_ERROR();
+
+  BfVecReal *Lambda = bfVecRealNewFromRealArray(eigs, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  bfRealArrayPermute(eigs, perm);
+  bfMatDenseRealPermuteRows(PhiTranspose, perm);
+
+  *PhiTransposePtr = bfMatDenseRealToMat(PhiTranspose);
+  *LambdaPtr = Lambda;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfDisjointIntervalListDeinitAndDealloc(&intervals);
+}
+
+void bfGetEigenband(BfMat const *A, BfMat const *M, BfInterval const *interval,
+                    BfEigenbandMethod method, BfMat **PhiTransposePtr, BfVecReal **LambdaPtr) {
+  BF_ERROR_BEGIN();
+
+  if (PhiTransposePtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*PhiTransposePtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (LambdaPtr == NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (*LambdaPtr != NULL)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  if (method == BF_EIGENBAND_METHOD_DOUBLING) {
+    getEigenband_doubling(A, M, interval, PhiTransposePtr, LambdaPtr);
+    HANDLE_ERROR();
+  }
+
+  else if (method == BF_EIGENBAND_METHOD_COVERING) {
+    getEigenband_covering(A, M, interval, PhiTransposePtr, LambdaPtr);
+    HANDLE_ERROR();
+  }
+
+  else RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 }
 

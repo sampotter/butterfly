@@ -63,6 +63,22 @@ BfPerm *bfPermNew(void) {
   return perm;
 }
 
+BfPerm *bfPermNewEmpty(BfSize size) {
+  BF_ERROR_BEGIN();
+
+  BfPerm *perm = bfPermNew();
+  HANDLE_ERROR();
+
+  bfPermInitEmpty(perm, size);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return perm;
+}
+
 BfPerm *bfPermNewIdentity(BfSize size) {
   BF_ERROR_BEGIN();
 
@@ -70,6 +86,7 @@ BfPerm *bfPermNewIdentity(BfSize size) {
   HANDLE_ERROR();
 
   bfPermInitIdentity(perm, size);
+  HANDLE_ERROR();
 
   BF_ERROR_END() {
     BF_DIE();
@@ -92,7 +109,7 @@ void bfPermInitEmpty(BfPerm *perm, BfSize size) {
   perm->isView = false;
 
   BF_ERROR_END() {
-    bfPermDeinit(perm);
+    BF_DIE();
   }
 }
 
@@ -213,4 +230,20 @@ BfSize bfPermGetIndex(BfPerm const *perm, BfSize i) {
   } else {
     return perm->index[i];
   }
+}
+
+void bfPermReverse(BfPerm *perm) {
+  BF_ERROR_BEGIN();
+
+  BfSize *tmp = bfMemAllocCopy(perm->index, perm->size, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < perm->size; ++i)
+    perm->index[tmp[i]] = i;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMemFree(tmp);
 }
