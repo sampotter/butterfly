@@ -7,6 +7,10 @@
 #include <bf/mat_dense_complex.h>
 #include <bf/mem.h>
 
+#ifndef BF_PYTHON
+#  error "Building mat_python.c without python Meson feature enabled"
+#endif
+
 #define NO_IMPORT_ARRAY
 #include "numpy.h"
 

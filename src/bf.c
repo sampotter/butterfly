@@ -1,11 +1,11 @@
 #include <bf/bf.h>
 
-#include <stdio.h>
-
-#include "numpy.h"
+#ifdef BF_PYTHON
+#  include "numpy.h"
+#endif
 
 void bfInit(void) {
-  printf("bfInit()\n");
-
+#ifdef BF_PYTHON
   _import_array();
+#endif
 }

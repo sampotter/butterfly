@@ -83,14 +83,18 @@ struct BfMatDenseComplex {
 BfMatDenseComplex *bfMatDenseComplexNew(void);
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPtr(BfSize numRows, BfSize numCols, BfComplex *data);
 BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols);
+#if BF_PYTHON
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *arr);
+#endif
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexFromFile(char const *path, BfSize numRows, BfSize numCols);
 BfMatDenseComplex *bfMatDenseComplexNewIdentity(BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInit(BfMatDenseComplex *mat, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexInitViewFromPtr(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols, BfComplex *data);
 void bfMatDenseComplexInitRandn(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols);
+#if BF_PYTHON
 void bfMatDenseComplexInitViewFromPyArray(BfMatDenseComplex *matDenseComplex, BfPtr *pyArray);
+#endif
 void bfMatDenseComplexInitIdentity(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols);
 void bfMatDenseComplexDeinit(BfMatDenseComplex *mat);
 void bfMatDenseComplexDealloc(BfMatDenseComplex **mat);

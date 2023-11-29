@@ -19,8 +19,10 @@
 #include <bf/vec_complex.h>
 #include <bf/vec_real.h>
 
-#define NO_IMPORT_ARRAY
-#include "numpy.h"
+#ifdef BF_PYTHON
+#  define NO_IMPORT_ARRAY
+#  include "numpy.h"
+#endif
 
 /** Static functions: */
 
@@ -1988,6 +1990,7 @@ BfMatDenseComplex *bfMatDenseComplexNewRandn(BfSize numRows, BfSize numCols) {
   return matDenseComplex;
 }
 
+#ifdef BF_PYTHON
 BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *pyArray) {
   BF_ERROR_BEGIN();
 
@@ -2003,6 +2006,7 @@ BfMatDenseComplex *bfMatDenseComplexNewViewFromPyArray(BfPtr *pyArray) {
 
   return matDenseComplex;
 }
+#endif
 
 BfMatDenseComplex *bfMatDenseComplexZeros(BfSize numRows, BfSize numCols) {
   BF_ERROR_BEGIN();
@@ -2116,6 +2120,7 @@ void bfMatDenseComplexInitRandn(BfMatDenseComplex *matDenseComplex, BfSize numRo
   }
 }
 
+#ifdef BF_PYTHON
 void bfMatDenseComplexInitViewFromPyArray(BfMatDenseComplex *matDenseComplex, BfPtr *pyArray) {
   BF_ERROR_BEGIN();
 
@@ -2139,6 +2144,7 @@ void bfMatDenseComplexInitViewFromPyArray(BfMatDenseComplex *matDenseComplex, Bf
     BF_DIE();
   }
 }
+#endif
 
 void bfMatDenseComplexInitIdentity(BfMatDenseComplex *matDenseComplex, BfSize numRows, BfSize numCols) {
   BF_ERROR_BEGIN();

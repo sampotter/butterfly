@@ -1,9 +1,12 @@
-python = import('python').find_installation()
+assert(get_option('python').enabled(),
+       'The meson.build file for the Python wrapper should only be run if ' +
+       'the "python" feature is enabled')
 
-python_dep = python.dependency()
+python3 = import('python').find_installation('python3')
+python3_dep = python3.dependency(embed : true)
 
-python.extension_module(
+python3.extension_module(
   'butterfly',
   'butterfly.pyx',
-  dependencies : [python_dep, butterfly_dep]
+  dependencies : [python3_dep, butterfly_dep]
 )
