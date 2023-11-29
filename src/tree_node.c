@@ -8,8 +8,7 @@
 
 /** Interface: TreeNode */
 
-static BfTreeNodeVtable TreeNodeVtable = {
-};
+static BfTreeNodeVtable TreeNodeVtable;
 
 BfTreeNode *bfTreeNodeCopy(BfTreeNode const *node) {
   return node->vtbl->Copy(node);

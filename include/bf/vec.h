@@ -80,5 +80,3 @@ struct BfVec {
 void bfVecInit(BfVec *vec, BfVecVtable *vtbl, BfSize size);
 void bfVecDeinit(BfVec *vec);
 BfVec *bfVecFromFile(char const *path, BfSize size, BfDtype dtype);
-bool bfVecInstanceOf(BfVec const *vec, BfType type);
-BfSize bfVecGetSize(BfVec const *vec);

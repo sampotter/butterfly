@@ -16,7 +16,7 @@
 
 /** Interface: Tree */
 
-BfTreeVtable TreeVtable = {};
+BfTreeVtable TreeVtable;
 
 void bfTreeCopyInto(BfTree *tree, BfTree *dstTree) {
   tree->vtable->CopyInto(tree, dstTree);
