@@ -1,0 +1,11 @@
+option(
+  'python',
+  type : 'feature',
+  value : 'enabled',
+  description : 'Whether or not butterfly\'s Python wrapper should be built')
+
+option(
+  'embree',
+  type : 'feature',
+  value : 'enabled',
+  description : 'Whether or not butterfly build features using Embree')

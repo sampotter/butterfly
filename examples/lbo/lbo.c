@@ -37,7 +37,7 @@ BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
   return freqs;
 }
 
-static void getBracketAndSigmaFromNode(BfIntervalTree const *intervalTree, BfTreeNode const *treeNode, BfInterval *bracket, BfReal *sigma) {
+static BfInterval getBracketFromNode(BfTreeNode const *treeNode) {
   BF_ERROR_BEGIN();
 
   BfIntervalTreeNode const *intervalTreeNode = bfTreeNodeConstToIntervalTreeNodeConst(treeNode);
@@ -47,21 +47,23 @@ static void getBracketAndSigmaFromNode(BfIntervalTree const *intervalTree, BfTre
   bool const right = intervalTreeNode->isRightmost;
 
   /* Set up the bracket for computing the next eigenband: */
-  bracket->endpoint[0] = left ? -BF_INFINITY : intervalTreeNode->a;
-  bracket->endpoint[1] = right ? BF_INFINITY : intervalTreeNode->b;
-  bracket->closed[0] = left ? false : true; // (-inf, lam1) ...
-  bracket->closed[1] = false;               // ... or [lam0, lam1) ...
-                                            // ... or [lam0, +inf)
-
-  /* Get the shift for the current band: */
-  BfInterval treeInterval = bfIntervalTreeGetInterval(intervalTree);
-  *sigma = (
-    (left ? treeInterval.endpoint[0] : bracket->endpoint[0]) +
-    (right ? treeInterval.endpoint[1] : bracket->endpoint[1]))/2;
+  BfInterval bracket = {
+    .endpoint = {
+      left ? -BF_INFINITY : pow(intervalTreeNode->a, 2.0),
+      right ? BF_INFINITY : pow(intervalTreeNode->b, 2.0)
+    },
+    .closed = {
+      !left, // (-inf, lam1) ...
+      false  // ... or [lam0, lam1) ...
+             // ... or [lam0, +inf)
+    }
+  };
 
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  return bracket;
 }
 
 void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
@@ -87,14 +89,15 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   if (!bfTreeNodeIsEmpty(treeNode))
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-  BfInterval bracket;
-  BfReal sigma;
-  getBracketAndSigmaFromNode(intervalTree, treeNode, &bracket, &sigma);
+  BfInterval bracket = getBracketFromNode(treeNode);
   HANDLE_ERROR();
 
   /* Compute the next eigenband using Lanczos */
-  bfGetEigenband(L, M, &bracket, sigma, &Phi, &Lam);
+  bfGetEigenband(L, M, &bracket, BF_EIGENBAND_METHOD_COVERING, &Phi, &Lam);
   HANDLE_ERROR();
+
+  printf("feed: bracket = %c%1.2f, %1.2f%c, num. eigs = %lu\n", bracket.closed[0] ? '[' : '(', bracket.endpoint[0], bracket.endpoint[1], bracket.closed[1] ? ']' : ')', Lam->super.size);
+
 
   /* Permute the rows of Phi, putting them into row tree order */
   bfMatPermuteRows(Phi, bfFacStreamerGetRowTreeReversePerm(facStreamer));
@@ -127,7 +130,9 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   bfFacStreamerFeed(facStreamer, Phi);
   HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   bfPoints1Delete(&newFreqs);
   bfMatDelete(&Phi);

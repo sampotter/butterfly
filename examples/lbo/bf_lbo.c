@@ -6,7 +6,6 @@
 #include <bf/fiedler_tree.h>
 #include <bf/interval_tree.h>
 #include <bf/interval_tree_node.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
 #include <bf/octree.h>
@@ -205,11 +204,10 @@ int main(int argc, char *argv[]) {
 
   BF_ERROR_BEGIN() {}
 
-  BfTrimesh trimesh;
-  bfTrimeshInitFromObjFile(&trimesh, opts.objPath);
+  BfTrimesh *trimesh = bfTrimeshNewFromObjFile(opts.objPath);
   HANDLE_ERROR();
 
-  BfSize numVerts = bfTrimeshGetNumVerts(&trimesh);
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   printf("loaded triangle mesh from %s (%lu verts)\n", opts.objPath, numVerts);
 
   BfTree *rowTree = NULL;
@@ -223,7 +221,7 @@ int main(int argc, char *argv[]) {
     BfOctree *octree = bfOctreeNew();
     HANDLE_ERROR();
 
-    bfOctreeInit(octree, trimesh.verts, NULL, /* maxLeafSize: */ 1);
+    bfOctreeInit(octree, bfTrimeshGetVertsConst(trimesh), NULL, /* maxLeafSize: */ 1);
     HANDLE_ERROR();
 
     char const *octreeBoxesPath = "octree_boxes.txt";
@@ -236,7 +234,7 @@ int main(int argc, char *argv[]) {
 
   if (opts.useFiedlerTree) {
     BfFiedlerTree *fiedlerTree = bfFiedlerTreeNewFromTrimesh(
-      &trimesh, /* tol: */ 1e-15, /* keepNodeTrimeshes: */ false);
+      trimesh, /* tol: */ 1e-15, /* keepNodeTrimeshes: */ false);
     printf("built Fiedler tree\n");
 
     rowTree = bfFiedlerTreeToTree(fiedlerTree);
@@ -249,12 +247,9 @@ int main(int argc, char *argv[]) {
    * operator on `trimesh` using linear finite elements. The stiffness
    * matrix is returned in L and the mass matrix is returned in M. The
    * mass matrix isn't diagonal but this isn't too important. */
-  BfMat *L, *M;
-  bfLboGetFemDiscretization(&trimesh, &L, &M);
+  BfMat *L = NULL, *M = NULL;
+  bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   HANDLE_ERROR();
-
-  bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-  bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
   /* Find the largest eigenvalue. We need this to determine the
    * interval on which we'll build the frequency tree. */
@@ -365,5 +360,5 @@ int main(int argc, char *argv[]) {
   bfMatDelete(&M);
   bfMatDelete(&L);
   bfTreeDelete(&rowTree);
-  bfTrimeshDeinit(&trimesh);
+  bfTrimeshDeinitAndDealloc(&trimesh);
 }

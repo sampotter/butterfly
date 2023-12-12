@@ -4,7 +4,6 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/fiedler_tree_node.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/mem.h>
 #include <bf/real_array.h>

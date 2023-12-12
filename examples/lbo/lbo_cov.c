@@ -3,12 +3,13 @@
 #include <bf/fac_span.h>
 #include <bf/fac_streamer.h>
 #include <bf/interval_tree.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
+#include <bf/mat_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/octree.h>
 #include <bf/rand.h>
+#include <bf/trimesh.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
@@ -74,17 +75,16 @@ int main(int argc, char const *argv[]) {
   BfSize rowTreeOffset = argc > 7 ? strtoull(argv[7], NULL, 10) : 0;
   BfSize freqTreeDepth = argc > 8 ? strtoull(argv[8], NULL, 10) : BF_SIZE_BAD_VALUE;
 
-  BfTrimesh trimesh;
-  bfTrimeshInitFromObjFile(&trimesh, objPath);
+  BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
 
-  BfSize numVerts = bfTrimeshGetNumVerts(&trimesh);
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   BfSize numEigs = (BfSize)(p*numVerts);
 
   printf("triangle mesh with %lu verts\n", numVerts);
   printf("streaming %lu eigenpairs\n", numEigs);
 
   BfOctree octree;
-  bfOctreeInit(&octree, trimesh.verts, NULL, /* maxLeafSize: */ 1);
+  bfOctreeInit(&octree, bfTrimeshGetVertsConst(trimesh), NULL, /* maxLeafSize: */ 1);
 
   BfTree *rowTree = bfOctreeToTree(&octree);
   BfSize rowTreeMaxDepth = bfTreeGetMaxDepth(rowTree);
@@ -97,7 +97,7 @@ int main(int argc, char const *argv[]) {
     freqTreeDepth = rowTreeMaxDepth - 3;
 
   BfMat *L, *M;
-  bfLboGetFemDiscretization(&trimesh, &L, &M);
+  bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   printf("set up FEM discretization [%0.1fs]\n", bfToc());
 
   bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
@@ -186,5 +186,5 @@ int main(int argc, char const *argv[]) {
   bfOctreeDeinit(&octree);
   bfMatDelete(&M);
   bfMatDelete(&L);
-  bfTrimeshDeinit(&trimesh);
+  bfTrimeshDeinitAndDealloc(&trimesh);
 }

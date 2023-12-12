@@ -8,6 +8,9 @@ message(get_option('python').enabled())
 if get_option('buildtype') == 'debug'
   add_project_arguments('-DBF_DEBUG', language : 'c')
 endif
+if get_option('embree').enabled()
+  add_project_arguments('-DBF_EMBREE', language : 'c')
+endif
 if get_option('python').enabled()
   add_project_arguments('-DBF_PYTHON', language : 'c')
 endif
@@ -33,6 +36,10 @@ m_dep = meson.get_compiler('c').find_library('m', required : false)
 umfpack_dep = cc.find_library('umfpack', required : true)
 arpack_dep = dependency('arpack', required : true)
 gsl_dep = dependency('gsl', required : true)
+
+if get_option('embree').enabled()
+  embree_dep = dependency('embree', required : true)
+endif
 
 if get_option('python').enabled()
   python3 = import('python').find_installation('python3')
@@ -78,7 +85,6 @@ endif
 butterfly_dependencies = [
   blas_dep,
   lapacke_dep,
-
   fortran_dep,
 #  cholmod_dep,
   m_dep,
@@ -86,12 +92,11 @@ butterfly_dependencies = [
   gsl_dep,
   umfpack_dep,
 ]
-
+if get_option('embree').enabled()
+  butterfly_dependencies += [embree_dep]
+endif
 if get_option('python').enabled()
-  butterfly_dependencies += [
-    python3_dep,
-    numpy_dep
-  ]
+  butterfly_dependencies += [python3_dep, numpy_dep]
 endif
 
 fmm2d_dep = dependency('fmm2d', required : true)
@@ -121,7 +126,6 @@ butterfly_lib_src = [
   'src/interval.c',
   'src/interval_tree.c',
   'src/interval_tree_node.c',
-  'src/lbo.c',
   'src/linalg.c',
   'src/logging.c',
   'src/lu.c',
@@ -183,11 +187,11 @@ butterfly_lib_src = [
   'src/vectors.c',
   'src/xoshiro256plus.c',
 ]
-
+if get_option('embree').enabled()
+  butterfly_lib_src += ['src/radiosity.c']
+endif
 if get_option('python').enabled()
-  butterfly_lib_src += [
-    'src/mat_python.c'
-  ]
+  butterfly_lib_src += ['src/mat_python.c']
 endif
 
 butterfly_inc = include_directories('include')

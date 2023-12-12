@@ -11,6 +11,7 @@ static void invalidate(BfSizeArray *sizeArray) {
   sizeArray->data = NULL;
   sizeArray->size = BF_SIZE_BAD_VALUE;
   sizeArray->capacity = BF_SIZE_BAD_VALUE;
+  sizeArray->isView = false;
 }
 
 BfSizeArray *bfSizeArrayNew() {
@@ -72,16 +73,17 @@ void bfSizeArrayInitWithCapacity(BfSizeArray *sizeArray, BfSize capacity) {
   sizeArray->capacity = capacity;
 
   sizeArray->data = bfMemAlloc(sizeArray->capacity, sizeof(BfSize));
-  if (sizeArray->data == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
 #if BF_DEBUG
   for (BfSize i = 0; i < sizeArray->capacity; ++i)
     sizeArray->data[i] = BF_SIZE_BAD_VALUE;
 #endif
 
+  sizeArray->isView = false;
+
   BF_ERROR_END() {
-    invalidate(sizeArray);
+    BF_DIE();
   }
 }
 
@@ -136,6 +138,22 @@ void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity) {
   bfMemFree(oldData);
 }
 
+void bfSizeArrayShrinkCapacityToSize(BfSizeArray *sizeArray) {
+  BF_ERROR_BEGIN();
+
+  BF_ASSERT(sizeArray->capacity >= sizeArray->size);
+
+  bfMemRealloc(sizeArray->data, sizeArray->capacity, sizeof(BfSize));
+  HANDLE_ERROR();
+
+  sizeArray->capacity = sizeArray->size;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+}
+
 void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
   BF_ERROR_BEGIN();
 
@@ -148,6 +166,20 @@ void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {
   }
 
   sizeArray->data[sizeArray->size++] = elt;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfSizeArrayExtend(BfSizeArray *sizeArray, BfSizeArray const *otherSizeArray) {
+  BF_ERROR_BEGIN();
+
+  // TODO: inefficient implementation
+  for (BfSize i = 0; i < bfSizeArrayGetSize(otherSizeArray); ++i) {
+    bfSizeArrayAppend(sizeArray, bfSizeArrayGet(otherSizeArray, i));
+    HANDLE_ERROR();
+  }
 
   BF_ERROR_END() {
     BF_DIE();
@@ -357,5 +389,20 @@ void bfSizeArraySave(BfSizeArray const *sizeArray, char const *path) {
 }
 
 BfSize *bfSizeArrayGetDataPtr(BfSizeArray const *sizeArray) {
+  return sizeArray->data;
+}
+
+BfSize *bfSizeArrayStealPtr(BfSizeArray *sizeArray) {
+  BF_ERROR_BEGIN();
+
+  if (sizeArray->isView)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  sizeArray->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
   return sizeArray->data;
 }

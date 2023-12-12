@@ -38,4 +38,6 @@ void bfRealArraySave(BfRealArray const *realArray, char const *path);
 void bfRealArrayNegate(BfRealArray *realArray);
 void bfRealArrayPermute(BfRealArray *realArray, BfPerm const *perm);
 BfReal *bfRealArrayGetDataPtr(BfRealArray *realArray);
+BfReal *bfRealArrayStealPtr(BfRealArray *realArray);
 BfPerm *bfRealArrayArgsort(BfRealArray const *realArray);
+BfRealArray *bfRealArrayGetRangeView(BfRealArray const *realArray, BfSize i0, BfSize i1);

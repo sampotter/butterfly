@@ -1,8 +1,8 @@
 #include <bf/assert.h>
 #include <bf/cheb.h>
 #include <bf/const.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
+#include <bf/mat_csr_real.h>
 #include <bf/mat_product.h>
 #include <bf/rand.h>
 #include <bf/trimesh.h>
@@ -124,28 +124,21 @@ int main(int argc, char const *argv[]) {
   nu = atof(argv[4]);
   BfSize numSamples = atoi(argv[5]);
 
-  BfTrimesh trimesh;
-  BfMat *L = NULL, *M = NULL;
-  BfReal lamMax;
-  BfCheb gammaCheb;
+  bfSeed(0); // must seed before using PRNG
 
-  bfSeed(0);
-
-  bfTrimeshInitFromObjFile(&trimesh, argv[1]);
-  printf("triangle mesh with %lu verts\n", bfTrimeshGetNumVerts(&trimesh));
+  BfTrimesh *trimesh = bfTrimeshNewFromObjFile(argv[1]);
+  printf("triangle mesh with %lu verts\n", bfTrimeshGetNumVerts(trimesh));
 
   bfToc();
 
-  bfLboGetFemDiscretization(&trimesh, &L, &M);
+  BfMat *L = NULL, *M = NULL;
+  bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   printf("set up FEM discretization [%0.1fs]\n", bfToc());
 
-  lamMax = bfGetMaxEigenvalue(L, M);
+  BfReal lamMax = bfGetMaxEigenvalue(L, M);
   printf("maximum eigenvalue: lambda = %g [%0.1fs]\n", lamMax, bfToc());
 
-  // NOTE: could be useful for debugging
-//   bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-//   bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
-
+  BfCheb gammaCheb;
   bfChebInitWithDegree(&gammaCheb, p, 0, lamMax);
   bfChebInterp(&gammaCheb, gamma_, NULL);
 
@@ -206,7 +199,7 @@ int main(int argc, char const *argv[]) {
 
   /** Clean up: */
 
-  bfTrimeshDeinit(&trimesh);
+  bfTrimeshDeinitAndDealloc(&trimesh);
   bfMatDelete(&L);
   bfMatDelete(&M);
   bfChebDeinit(&gammaCheb);

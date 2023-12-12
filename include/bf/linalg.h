@@ -41,6 +41,6 @@ typedef enum BfEigenbandMethod {
  *     A phi = lam M phi
  *
  * such that `lam` lies in `interval`. */
-void bfGetEigenband(BfMat const *A, BfMat const *M, BfInterval const *interval, BfEigenbandMethod method, BfMat **PhiTransposePtr, BfVecReal **LambdaPtr);
+void bfGetEigenband(BfMat const *A, BfMat const *M, BfInterval const *interval, BfEigenbandMethod method, BfMat **PhiPtr, BfVecReal **LambdaPtr);
 
 bool bfGetTruncatedSvd(BfMat const *mat, BfMat **U, BfMatDiagReal **S, BfMat **V, BfTruncSpec const *truncSpec, BfBackend backend);

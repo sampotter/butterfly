@@ -7,6 +7,7 @@ struct BfSizeArray {
   BfSize *data;
   BfSize size;
   BfSize capacity;
+  bool isView;
 };
 
 typedef int (*BfSizeArrayComparator)(BfSize, BfSize, void *);
@@ -22,7 +23,9 @@ void bfSizeArrayDeinit(BfSizeArray *sizeArray);
 void bfSizeArrayDealloc(BfSizeArray **sizeArray);
 void bfSizeArrayDeinitAndDealloc(BfSizeArray **sizeArray);
 void bfSizeArrayExpandCapacity(BfSizeArray *sizeArray, BfSize newCapacity);
+void bfSizeArrayShrinkCapacityToSize(BfSizeArray *realArray);
 void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt);
+void bfSizeArrayExtend(BfSizeArray *sizeArray, BfSizeArray const *otherSizeArray);
 bool bfSizeArrayContains(BfSizeArray const *sizeArray, BfSize elt);
 bool bfSizeArrayIsEmpty(BfSizeArray const *sizeArray);
 bool bfSizeArrayIsSorted(BfSizeArray const *sizeArray);
@@ -39,3 +42,4 @@ void bfSizeArrayDelete(BfSizeArray *sizeArray, BfSize i);
 void bfSizeArrayDeleteFirst(BfSizeArray *sizeArray, BfSize elt);
 void bfSizeArraySave(BfSizeArray const *sizeArray, char const *path);
 BfSize *bfSizeArrayGetDataPtr(BfSizeArray const *sizeArray);
+BfSize *bfSizeArrayStealPtr(BfSizeArray *sizeArray);

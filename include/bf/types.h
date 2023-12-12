@@ -68,6 +68,10 @@ typedef struct BfFacSpan BfFacSpan;
 typedef struct BfInterval BfInterval;
 typedef struct BfDisjointIntervalList BfDisjointIntervalList;
 
+typedef struct BfTrimesh BfTrimesh;
+
+typedef struct BfPoints3 BfPoints3;
+
 typedef enum BfTypes {
   /* Mat hierarchy */
   BF_TYPE_MAT,

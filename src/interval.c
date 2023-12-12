@@ -2,6 +2,8 @@
 
 #include <bf/assert.h>
 #include <bf/const.h>
+#include <bf/error.h>
+#include <bf/error_macros.h>
 
 void bfIntervalDeinit(BfInterval *interval) {
   interval->endpoint[0] = interval->endpoint[1] = BF_NAN;
@@ -126,4 +128,15 @@ bool bfIntervalEquals(BfInterval const *I1, BfInterval const *I2) {
     && I1->endpoint[1] == I2->endpoint[1]
     && I1->closed[0] == I2->closed[0]
     && I1->closed[1] == I2->closed[1];
+}
+
+bool bfIntervalIsFinite(BfInterval const *interval) {
+  return isfinite(interval->endpoint[0]) && isfinite(interval->endpoint[1]);
+}
+
+BfReal bfIntervalGetFiniteEndpoint(BfInterval const *interval) {
+  if (isfinite(interval->endpoint[0])) return interval->endpoint[0];
+  if (isfinite(interval->endpoint[1])) return interval->endpoint[1];
+  bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return BF_NAN;
 }

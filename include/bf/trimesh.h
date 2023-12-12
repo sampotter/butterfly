@@ -1,36 +1,7 @@
 #pragma once
 
-#include <bf/geom.h>
-#include <bf/points.h>
-
-typedef struct BfTrimesh {
-  BfPoints3 *verts;
-
-  BfSize numFaces;
-  BfSize3 *faces;
-
-  /*! Array containing `BfSize2`s representing the edge indices. This
-   *  array works analogously to `faces`, with the same sorting
-   *  scheme. */
-  BfArray *edges;
-
-  BfSize *vfOffset, *vf;
-  BfSize *vvOffset, *vv;
-
-  /*! An array containing `BfSize2`s representing a mapping from edges
-   *  to incident faces. The two components of the `i`th entry are the
-   *  indices of faces incident on the `i`th edge. We assume the mesh
-   *  is manifold, so there can be at most two incident faces. If the
-   *  edge is a boundary edge, then one of the components of the `i`th
-   *  entry equals `BF_SIZE_BAD_VALUE`. */
-  BfArray *ef;
-
-  bool *isBoundaryEdge;
-  bool *isBoundaryVert;
-
-  BfSize2 *boundaryEdges;
-  BfSize numBoundaryEdges;
-} BfTrimesh;
+#include "geom.h"
+#include "types.h"
 
 BfTrimesh *bfTrimeshCopy(BfTrimesh const *trimesh);
 BfTrimesh *bfTrimeshNewFromObjFile(char const *objPath);
@@ -43,6 +14,7 @@ void bfTrimeshDealloc(BfTrimesh **trimesh);
 void bfTrimeshDeinitAndDealloc(BfTrimesh **trimesh);
 BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh);
 BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh);
+BfPoints3 const *bfTrimeshGetVertsConst(BfTrimesh const *trimesh);
 void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x);
 BfReal const *bfTrimeshGetVertPtrConst(BfTrimesh const *trimesh, BfSize i);
 void bfTrimeshGetOpFaceVerts(BfTrimesh const *trimesh, BfSize faceIndex, BfSize i, BfSize *i0, BfSize *i1);
@@ -60,3 +32,14 @@ BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh);
 BfSize bfTrimeshGetNumEdges(BfTrimesh const *trimesh);
 BfSizeArray *bfTrimeshGetVertNbs(BfTrimesh const *trimesh, BfSize i);
 bool bfTrimeshHasDuplicateFaces(BfTrimesh const *trimesh);
+BfSize bfTrimeshGetNumVertexNeighbors(BfTrimesh const *trimesh, BfSize i);
+BfSize bfTrimeshGetVertexNeighbor(BfTrimesh const *trimesh, BfSize i, BfSize j);
+bool bfTrimeshIsBoundaryVertex(BfTrimesh const *trimesh, BfSize i);
+BfSize bfTrimeshGetNumBoundaryEdges(BfTrimesh const *trimesh);
+void bfTrimeshGetBoundaryEdge(BfTrimesh const *trimesh, BfSize i, BfSize2 boundaryEdge);
+BfSize const *bfTrimeshGetBoundaryEdgeConstPtr(BfTrimesh const *trimesh, BfSize i);
+BfSize const *bfTrimeshGetFaceConstPtr(BfTrimesh const *trimesh, BfSize i);
+void bfTrimeshGetLboFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M);
+#ifdef BF_EMBREE
+BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfSizeArray const *tgtInds);
+#endif

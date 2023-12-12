@@ -5,7 +5,6 @@
 #include <bf/assert.h>
 #include <bf/const.h>
 #include <bf/interval.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/mat_dense_real.h>
 #include <bf/trimesh.h>
@@ -26,7 +25,7 @@ void test_bfGetEigenband(void **state) {
 
   BfMat *L = NULL;
   BfMat *M = NULL;
-  bfLboGetFemDiscretization(trimesh, &L, &M);
+  bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
 
   BfReal lamMin = 50;
   BfReal lamMax = 100;

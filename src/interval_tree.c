@@ -118,16 +118,14 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
     BfReal b = child->isRightmost ? BF_INFINITY : child->b;
 
     /* Skip over leading points which are already in position */
-    while (i < i1 && a <= x[P[i]] && x[P[i]] < b)
-      ++i;
+    while (i < i1 && a <= x[P[i]] && x[P[i]] < b) ++i;
 
     BfSize j = i + 1;
     while (i < i1 && j < i1) {
       BF_ASSERT(x[P[i]] < a || b <= x[P[i]]);
 
       /* Find the next point that's in the current child interval */
-      while (j < i1 && (x[P[j]] < a || b <= x[P[j]]))
-        ++j;
+      while (j < i1 && (x[P[j]] < a || b <= x[P[j]])) ++j;
 
       if (j == i1)
         break;
@@ -136,8 +134,7 @@ static void recursivelySiftNodes(BfIntervalTreeNode *intervalTreeNode,
       ++i;
       ++j;
 
-      while (i < i1 && a <= x[P[i]] && x[P[i]] < b)
-        ++i;
+      while (i < i1 && a <= x[P[i]] && x[P[i]] < b) ++i;
     }
 
     treeNode->offset[k + 1] = i;

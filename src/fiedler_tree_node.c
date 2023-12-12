@@ -6,11 +6,14 @@
 #include <bf/error_macros.h>
 #include <bf/logging.h>
 #include <bf/mem.h>
+#include <bf/points.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
 #include <bf/trimesh.h>
 #include <bf/util.h>
 #include <bf/vectors.h>
+
+#include "macros.h"
 
 static BfSize const MAX_NUM_CHILDREN = 2;
 static BfSize const LEAF_SIZE_THRESHOLD = 16;
@@ -70,7 +73,7 @@ static BfReal getAveragedKnownPhiValue(BfTrimesh const *trimesh, BfRealArray con
                                        enum NodalDomainType const *nodalDomainType, BfSize i) {
   BF_ERROR_BEGIN();
 
-  BfSize numNb = trimesh->vvOffset[i + 1] - trimesh->vvOffset[i];
+  BfSize numNb = bfTrimeshGetNumVertexNeighbors(trimesh, i);
 
   BfReal *w = bfMemAlloc(numNb, sizeof(BfReal));
   HANDLE_ERROR();
@@ -79,7 +82,7 @@ static BfReal getAveragedKnownPhiValue(BfTrimesh const *trimesh, BfRealArray con
 
   BfReal const *x = bfTrimeshGetVertPtrConst(trimesh, i);
   for (BfSize j = 0; j < numNb; ++j) {
-    BfSize iNb = trimesh->vv[trimesh->vvOffset[i] + j];
+    BfSize iNb = bfTrimeshGetVertexNeighbor(trimesh, i, j);
     if (nodalDomainType[iNb] != UNKNOWN) {
       BfReal const *xNb = bfTrimeshGetVertPtrConst(trimesh, iNb);
       BfReal d = bfPoint3Dist(x, xNb);
@@ -90,7 +93,7 @@ static BfReal getAveragedKnownPhiValue(BfTrimesh const *trimesh, BfRealArray con
 
   BfReal averagedPhi = 0;
   for (BfSize j = 0; j < numNb; ++j) {
-    BfSize iNb = trimesh->vv[trimesh->vvOffset[i] + j];
+    BfSize iNb = bfTrimeshGetVertexNeighbor(trimesh, i, j);;
     if (nodalDomainType[iNb] != UNKNOWN) {
       BF_ASSERT(isfinite(w[j]));
       BfReal phiNb = bfRealArrayGetValue(phi, iNb);
@@ -165,7 +168,7 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < numVerts; ++i)
-    nodalDomainType[i] = trimesh->isBoundaryVert[i] ? BOUNDARY : UNKNOWN;
+    nodalDomainType[i] = bfTrimeshIsBoundaryVertex(trimesh, i) ? BOUNDARY : UNKNOWN;
 
   /* Find the index of the vertex with the largest Fiedler vector value: */
   BfSize positiveSeedIndex = BF_SIZE_BAD_VALUE;
@@ -202,8 +205,8 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
 
     nodalDomainType[i] = POSITIVE;
 
-    for (BfSize j = trimesh->vvOffset[i]; j < trimesh->vvOffset[i + 1]; ++j) {
-      BfSize iNb = trimesh->vv[j];
+    for (BfSize j = 0; j < bfTrimeshGetNumVertexNeighbors(trimesh, i); ++i ) {
+      BfSize iNb = bfTrimeshGetVertexNeighbor(trimesh, i, j);
       if (nodalDomainType[iNb] == UNKNOWN
           && bfRealArrayGetValue(phiFiedler, iNb) > 0
           && !bfSizeArrayContains(queue, iNb)) {
@@ -223,8 +226,8 @@ static void repairTopologyOfNodalDomains(BfTrimesh const *trimesh, BfRealArray *
 
     nodalDomainType[i] = NEGATIVE;
 
-    for (BfSize j = trimesh->vvOffset[i]; j < trimesh->vvOffset[i + 1]; ++j) {
-      BfSize iNb = trimesh->vv[j];
+    for (BfSize j = 0; j < bfTrimeshGetNumVertexNeighbors(trimesh, i); ++i ) {
+      BfSize iNb = bfTrimeshGetVertexNeighbor(trimesh, i, j);
       if (nodalDomainType[iNb] == UNKNOWN
           && bfRealArrayGetValue(phiFiedler, iNb) < 0
           && !bfSizeArrayContains(queue, iNb)) {
@@ -312,13 +315,14 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
   BfSizeArray *interiorZeroInds = bfSizeArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
 
-  for (BfSize i = 0; i < trimesh->numBoundaryEdges; ++i) {
+  for (BfSize i = 0; i < bfTrimeshGetNumBoundaryEdges(trimesh); ++i) {
+    BfSize2 boundaryEdge;
+    bfTrimeshGetBoundaryEdge(trimesh, i, boundaryEdge);
+
     /* Get the normal derivative at the edge endpoints */
     BfReal dudn[2];
-    for (BfSize j = 0; j < 2; ++j) {
-      BfSize k = trimesh->boundaryEdges[i][j];
-      dudn[j] = bfRealArrayGetValue(normalDeriv, k);
-    }
+    for (BfSize j = 0; j < 2; ++j)
+      dudn[j] = bfRealArrayGetValue(normalDeriv, boundaryEdge[j]);
 
     /* Record this index if there's a zero in the interior of the
      * `i`th boundary edge: */
@@ -333,7 +337,8 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
   if (!bfSizeArrayIsEmpty(interiorZeroInds)) {
     for (BfSize k = 0; k < bfSizeArrayGetSize(interiorZeroInds); ++k) {
       BfSize boundaryEdgeInd = bfSizeArrayGet(interiorZeroInds, k);
-      BfSize const *boundaryEdge = trimesh->boundaryEdges[boundaryEdgeInd];
+
+      BfSize const *boundaryEdge = bfTrimeshGetBoundaryEdgeConstPtr(trimesh, boundaryEdgeInd);
 
       BfReal dudn[2];
       for (BfSize j = 0; j < 2; ++j)
@@ -373,7 +378,7 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < bfRealArrayGetSize(normalDerivFixed); ++i) {
-    if (trimeshFixed->isBoundaryVert[i]) {
+    if (bfTrimeshIsBoundaryVertex(trimeshFixed, i)) {
       BF_ASSERT(phiFiedlerFixed->data[i] == 0);
     } else {
       BF_ASSERT(phiFiedlerFixed->data[i] != 0);
@@ -396,9 +401,10 @@ static void doBoundaryFix(BfTrimesh const *trimesh, BfRealArray const *phiFiedle
   bfRealArrayDeinitAndDealloc(&normalDerivFixed);
 
 #if BF_DEBUG
-  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i)
-    for (BfSize j = 0; j < 3; ++j)
-      BF_ASSERT(trimesh->faces[i][j] != BF_SIZE_BAD_VALUE);
+  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i) {
+    BfSize const *face = bfTrimeshGetFaceConstPtr(trimesh, i);
+    for (BfSize j = 0; j < 3; ++j) BF_ASSERT(BF_SIZE_OK(face[j]));
+  }
 #endif
 
   *trimeshFixedPtr = trimeshFixed;
@@ -452,16 +458,18 @@ static void initRecursive(BfFiedlerTreeNode *node,
   doBoundaryFix(trimesh, phiFiedler, &trimeshFixed, &phiFiedlerFixed);
   HANDLE_ERROR();
 
+  BfPoints3 const *fixedVerts = bfTrimeshGetVertsConst(trimeshFixed);
+
+#if BF_DEBUG
   /* An assumption we make is that the vertices corresponding to [i0,
    * i1] are the first vertices in `trimeshFixed`. This is a little
    * hacky, but it does make the implementation simpler. We verify
    * this now. */
-#if BF_DEBUG
   for (BfSize i = i0; i < i1; ++i)
-    BF_ASSERT(bfPoints3Contains(tree->trimesh->verts, trimesh->verts->data[i - i0]));
+    BF_ASSERT(bfPoints3Contains(fixedVerts, bfTrimeshGetVertPtrConst(trimesh, i - i0)));
 #endif
 
-  bool *permMask = bfMemAllocAndZero(trimeshFixed->verts->size, sizeof(bool));
+  bool *permMask = bfMemAllocAndZero(fixedVerts->size, sizeof(bool));
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < i1 - i0; ++i)
@@ -610,7 +618,7 @@ BfSizeArray *bfTrimeshGetInteriorInds(BfTrimesh const *trimesh) {
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < bfTrimeshGetNumVerts(trimesh); ++i) {
-    if (!trimesh->isBoundaryVert[i]) {
+    if (!bfTrimeshIsBoundaryVertex(trimesh, i)) {
       bfSizeArrayAppend(interiorInds, i);
       HANDLE_ERROR();
     }

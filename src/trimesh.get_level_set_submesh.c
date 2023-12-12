@@ -5,6 +5,7 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
+#include <bf/points.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
 #include <bf/util.h>
@@ -51,9 +52,10 @@ typedef struct NodalDomainBuilder NodalDomainBuilder;
 /* Check whether there are any faces for which `values` is equal to
  * zero at all of the face's vertices. */
 static bool trimeshHasNodalFaces(BfTrimesh const *trimesh, BfRealArray const *values) {
-  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i) {
+    BfSize const *face = bfTrimeshGetFaceConstPtr(trimesh, i);
     BfReal valuesFace[3];
-    bfRealArrayGetValues(values, 3, trimesh->faces[i], valuesFace);
+    bfRealArrayGetValues(values, 3, face, valuesFace);
     if (valuesFace[0] == 0 && valuesFace[1] == 0 && valuesFace[2] == 0)
       return true;
   }
@@ -108,20 +110,23 @@ static void init(NodalDomainBuilder *builder,
 static void addVertsAndFillPerm(NodalDomainBuilder *builder) {
   BF_ERROR_BEGIN();
 
-  for (BfSize i = 0; i < bfTrimeshGetNumVerts(builder->trimesh); ++i) {
+  BfTrimesh const *trimesh = builder->trimesh;
+
+  for (BfSize i = 0; i < bfTrimeshGetNumVerts(trimesh); ++i) {
     if (bfRealArrayGetValue(builder->phi, i) > 0) continue;
 
     /* Check if this vertex is isolated: */
     bool isIsolated = true;
-    for (BfSize j = builder->trimesh->vvOffset[i]; j < builder->trimesh->vvOffset[i + 1]; ++j) {
-      if (bfRealArrayGetValue(builder->phi, builder->trimesh->vv[j]) <= 0) {
+    for (BfSize j = 0; j < bfTrimeshGetNumVertexNeighbors(trimesh, i); ++j) {
+      BfSize iNb = bfTrimeshGetVertexNeighbor(trimesh, i, j);
+      if (bfRealArrayGetValue(builder->phi, iNb) <= 0) {
         isIsolated = false;
         break;
       }
     }
     if (isIsolated) continue; /* (don't add it if it is) */
 
-    BfReal const *v = bfTrimeshGetVertPtrConst(builder->trimesh, i);
+    BfReal const *v = bfTrimeshGetVertPtrConst(trimesh, i);
 
     bfPoints3Append(builder->verts, v);
     HANDLE_ERROR();
@@ -193,20 +198,23 @@ static void appendFace(NodalDomainBuilder *builder, BfSize3 const face) {
 static void addContainedFaces(NodalDomainBuilder *builder) {
   BF_ERROR_BEGIN();
 
+  BfTrimesh const *trimesh = builder->trimesh;
+
   /* Accumulate the interior faces themselves. We do this now that
    * we've found all of the vertices from trimesh which will be
    * included in submesh, so we can reindex the faces accordingly. */
-  for (BfSize i = 0; i < builder->trimesh->numFaces; ++i) {
+  for (BfSize i = 0; i < bfTrimeshGetNumFaces(trimesh); ++i) {
+    BfSize const *face = bfTrimeshGetFaceConstPtr(trimesh, i);
     BfReal phiFace[3];
     for (BfSize j = 0; j < 3; ++j)
-      phiFace[j] = bfRealArrayGetValue(builder->phi, builder->trimesh->faces[i][j]);
+      phiFace[j] = bfRealArrayGetValue(builder->phi, face[j]);
 
     if (!(phiFace[0] <= 0 && phiFace[1] <= 0 && phiFace[2] <= 0))
       continue;
 
     BfSize3 newFace;
     for (BfSize j = 0; j < 3; ++j) {
-      BfReal const *v = bfPoints3GetPtrConst(builder->trimesh->verts, builder->trimesh->faces[i][j]);
+      BfReal const *v = bfTrimeshGetVertPtrConst(trimesh, face[j]);
       newFace[j] = bfPoints3FindApprox(builder->verts, v, builder->tol);
       BF_ASSERT(newFace[j] != BF_SIZE_BAD_VALUE);
     }
@@ -233,9 +241,12 @@ static void invalidateCutFacesAndVertsVars(NodalDomainBuilder *builder) {
 static bool prepareForAddCutFacesAndVertsIteration(NodalDomainBuilder *builder, BfSize faceIndex) {
   invalidateCutFacesAndVertsVars(builder);
 
+  BfTrimesh const *trimesh = builder->trimesh;
+  BfSize const *face = bfTrimeshGetFaceConstPtr(trimesh, faceIndex);
+
   BfReal phiFace[3];
   for (BfSize j = 0; j < 3; ++j)
-    phiFace[j] = bfRealArrayGetValue(builder->phi, builder->trimesh->faces[faceIndex][j]);
+    phiFace[j] = bfRealArrayGetValue(builder->phi, face[j]);
 
   /* We've already established that there should be no nodal faces: */
   if (phiFace[0] == 0 && phiFace[1] == 0 && phiFace[2] == 0) BF_DIE();
@@ -251,12 +262,12 @@ static bool prepareForAddCutFacesAndVertsIteration(NodalDomainBuilder *builder, 
     BF_ASSERT(builder->numPos <= 2 && builder->numNeg <= 2 && builder->numZero <= 1);
     if (phiFace[j] > 0) {
       builder->phiPos[builder->numPos] = phiFace[j];
-      builder->iPos[builder->numPos++] = builder->trimesh->faces[faceIndex][j];
+      builder->iPos[builder->numPos++] = face[j];
     } else if (phiFace[j] < 0) {
       builder->phiNeg[builder->numNeg] = phiFace[j];
-      builder->iNeg[builder->numNeg++] = builder->trimesh->faces[faceIndex][j];
+      builder->iNeg[builder->numNeg++] = face[j];
     } else if (phiFace[j] == 0) {
-      builder->iZero[builder->numZero++] = builder->trimesh->faces[faceIndex][j];
+      builder->iZero[builder->numZero++] = face[j];
     } else {
       BF_DIE();
     }
@@ -539,6 +550,8 @@ static BfReal dfds(BfReal s, dfdsContext const *c) {
 }
 
 static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
+  BfTrimesh const *trimesh = builder->trimesh;
+
   BfSize iBd = BF_SIZE_BAD_VALUE; /* Index of vertex on boundary */
   BfSize iInt = BF_SIZE_BAD_VALUE; /* Index of vertex in interior */
   BfReal phiInt = BF_NAN; /* Value of phi at interior vertex */
@@ -551,11 +564,11 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
    *
    * TODO: even better, we should be able to just leave these as
    * zeros without perturbing... */
-  if (builder->phiPos[0] == BF_EPS && builder->trimesh->isBoundaryVert[builder->iPos[0]]) {
+  if (builder->phiPos[0] == BF_EPS && bfTrimeshIsBoundaryVertex(trimesh, builder->iPos[0])) {
     iBd = builder->iPos[0];
     iInt = builder->iNeg[0];
     phiInt = builder->phiNeg[0];
-  } else if (builder->phiNeg[0] == -BF_EPS && builder->trimesh->isBoundaryVert[builder->iNeg[0]]) {
+  } else if (builder->phiNeg[0] == -BF_EPS && bfTrimeshIsBoundaryVertex(trimesh, builder->iNeg[0])) {
     iBd = builder->iNeg[0];
     iInt = builder->iPos[0];
     phiInt = builder->phiPos[0];
@@ -575,7 +588,7 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
 
   BfSize iOp = BF_SIZE_BAD_VALUE;
   for (BfSize j = 0; j < 2; ++j) {
-    BfSize const *f = builder->trimesh->faces[incFaceInds[j]];
+    BfSize const *f = bfTrimeshGetFaceConstPtr(trimesh, incFaceInds[j]);
     for (BfSize k = 0; k < 3; ++k) {
       if (f[k] != builder->iZero[0] && f[k] != iBd && f[k] != iInt) {
         BF_ASSERT(iOp == BF_SIZE_BAD_VALUE);
@@ -689,7 +702,9 @@ static void addCutFacesAndVerts_case111(NodalDomainBuilder *builder) {
 static void addCutFacesAndVerts(NodalDomainBuilder *builder) {
   BF_ERROR_BEGIN();
 
-  for (BfSize faceIndex = 0; faceIndex < builder->trimesh->numFaces; ++faceIndex) {
+  BfTrimesh const *trimesh = builder->trimesh;
+
+  for (BfSize faceIndex = 0; faceIndex < bfTrimeshGetNumFaces(trimesh); ++faceIndex) {
     if (!prepareForAddCutFacesAndVertsIteration(builder, faceIndex))
       continue;
     if (builder->numPos == 2 && builder->numNeg == 1)

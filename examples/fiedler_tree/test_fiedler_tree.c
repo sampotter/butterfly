@@ -3,6 +3,7 @@
 #include <bf/fiedler_tree.h>
 #include <bf/fiedler_tree_node.h>
 #include <bf/logging.h>
+#include <bf/points.h>
 #include <bf/util.h>
 
 #include <stdlib.h>
@@ -56,9 +57,8 @@ void checkPerm(BfTree const *tree, BfTreeNode const *treeNode, void *arg) {
 #endif
 
   for (BfSize i = i0; i < i1; ++i) {
-    BfReal const *v = bfPoints3GetPtrConst(
-      fiedlerTree->trimesh->verts, tree->perm->index[i]);
+    BfReal const *v = bfTrimeshGetVertPtrConst(fiedlerTree->trimesh, tree->perm->index[i]);
 
-    BF_ASSERT(bfPoints3ContainsApprox(fiedlerTreeNode->trimesh->verts, v, tol));
+    BF_ASSERT(bfPoints3ContainsApprox(bfTrimeshGetVertsConst(fiedlerTreeNode->trimesh), v, tol));
   }
 }

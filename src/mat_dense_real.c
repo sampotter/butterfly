@@ -347,15 +347,14 @@ void bfMatDenseRealSetRow(BfMat *mat, BfSize i, BfVec const *row) {
   BF_ERROR_END() {}
 }
 
-void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
+void bfMatDenseRealSetCol(BfMatDenseReal *matDenseReal, BfSize j, BfVec const *col) {
   BF_ERROR_BEGIN();
 
   BfVecReal const *colReal = NULL;
   BfMatDense *matDense = NULL;
-  BfMatDenseReal *matDenseReal = NULL;
 
-  BfSize m = bfMatGetNumRows(mat);
-  BfSize n = bfMatGetNumCols(mat);
+  BfSize m = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize n = bfMatDenseRealGetNumCols(matDenseReal);
 
   if (j >= n)
     RAISE_ERROR(BF_ERROR_OUT_OF_RANGE);
@@ -366,10 +365,7 @@ void bfMatDenseRealSetCol(BfMat *mat, BfSize j, BfVec const *col) {
   if (col->size > m)
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
-  matDense = bfMatToMatDense(mat);
-  HANDLE_ERROR();
-
-  matDenseReal = bfMatToMatDenseReal(mat);
+  matDense = bfMatDenseRealToMatDense(matDenseReal);
   HANDLE_ERROR();
 
   BfSize rowStride = bfMatDenseGetRowStride(matDense);
@@ -515,6 +511,9 @@ void bfMatDenseRealPermuteRows(BfMatDenseReal *matDenseReal, BfPerm const *perm)
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
+  if (bfPermGetSize(perm) != m)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
   BfMatDense *matDense = NULL;
   BfMatDense *matDensePerm = NULL;
   BfMatDenseReal *matDenseRealPerm = NULL;
@@ -544,7 +543,56 @@ void bfMatDenseRealPermuteRows(BfMatDenseReal *matDenseReal, BfPerm const *perm)
     }
   }
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfMatDelete(&matPerm);
+}
+
+void bfMatDenseRealPermuteCols(BfMatDenseReal *matDenseReal, BfPerm const *perm) {
+  BF_ERROR_BEGIN();
+
+  BfMat *mat = bfMatDenseRealToMat(matDenseReal);
+
+  BfSize m = bfMatGetNumRows(mat);
+  BfSize n = bfMatGetNumCols(mat);
+
+  if (bfPermGetSize(perm) != n)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BfMatDense *matDense = NULL;
+  BfMatDense *matDensePerm = NULL;
+  BfMatDenseReal *matDenseRealPerm = NULL;
+
+  BfMat *matPerm = bfMatCopy(mat);
+  HANDLE_ERROR();
+
+  matDense = bfMatToMatDense(mat);
+  HANDLE_ERROR();
+
+  matDensePerm = bfMatToMatDense(matPerm);
+  HANDLE_ERROR();
+
+  matDenseReal = bfMatToMatDenseReal(mat);
+  HANDLE_ERROR();
+
+  matDenseRealPerm = bfMatToMatDenseReal(matPerm);
+  HANDLE_ERROR();
+
+  for (BfSize j = 0; j < n; ++j) {
+    BfReal const *inColPtr = matDenseRealPerm->data + j*matDensePerm->colStride;
+    BfReal *outColPtr = matDenseReal->data + perm->index[j]*matDense->colStride;
+    for (BfSize i = 0; i < m; ++i) {
+      *outColPtr = *inColPtr;
+      inColPtr += matDensePerm->rowStride;
+      outColPtr += matDense->rowStride;
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   bfMatDelete(&matPerm);
 }

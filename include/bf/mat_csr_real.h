@@ -43,8 +43,11 @@ BfMat const *bfMatCsrRealConstToMatConst(BfMatCsrReal const *matCsrReal);
 BfMatCsrReal *bfMatToMatCsrReal(BfMat *mat);
 BfMatCsrReal const *bfMatConstToMatCsrRealConst(BfMat const *mat);
 
-BfMatCsrReal *bfMatCsrRealNew();
-void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols, BfSize const *rowptr, BfSize const *colind, BfReal const *data);
+BfMatCsrReal *bfMatCsrRealNew(void);
+BfMatCsrReal* bfMatCsrRealNewFromPtrs(BfSize numRows, BfSize numCols, BfSize const *rowptr, BfSize const *colind, BfReal const *data);
+BfMatCsrReal *bfMatCsrRealNewFromArrays(BfSize numRows, BfSize numCols, BfSizeArray *rowptrArray, BfSizeArray *colindArray, BfRealArray *dataArray, BfPolicy policy);
+void bfMatCsrRealInitFromPtrs(BfMatCsrReal *mat, BfSize numRows, BfSize numCols, BfSize const *rowptr, BfSize const *colind, BfReal const *data);
+void bfMatCsrRealInitFromArrays(BfMatCsrReal *matCsrReal, BfSize numRows, BfSize numCols, BfSizeArray *rowptrArray, BfSizeArray *colindArray, BfRealArray *dataArray, BfPolicy policy);
 void bfMatCsrRealDeinit(BfMatCsrReal *mat);
 void bfMatCsrRealDealloc(BfMatCsrReal **mat);
 void bfMatCsrRealDeinitAndDealloc(BfMatCsrReal **mat);

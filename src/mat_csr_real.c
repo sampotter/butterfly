@@ -4,6 +4,8 @@
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
+#include <bf/real_array.h>
+#include <bf/size_array.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
 
@@ -47,17 +49,14 @@ BfMat *bfMatCsrRealCopy(BfMat const *mat) {
   BfMatCsrReal const *matCsrReal = bfMatConstToMatCsrRealConst(mat);
   HANDLE_ERROR();
 
-  BfMatCsrReal *copy = bfMatCsrRealNew();
-  HANDLE_ERROR();
-
   BfSize m = bfMatGetNumRows(mat);
   BfSize n = bfMatGetNumCols(mat);
 
-  bfMatCsrRealInit(copy, m, n, matCsrReal->rowptr, matCsrReal->colind, matCsrReal->data);
+  BfMatCsrReal *copy = bfMatCsrRealNewFromPtrs(m, n, matCsrReal->rowptr, matCsrReal->colind, matCsrReal->data);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
-    bfMatCsrRealDeinitAndDealloc(&copy);
+    BF_DIE();
   }
 
   return bfMatCsrRealToMat(copy);
@@ -258,10 +257,7 @@ BfMat *bfMatCsrRealGetSubmatByMask(BfMatCsrReal const *matCsrReal, bool const *r
 
   bfSizeRunningSum(numRows + 1, rowptr);
 
-  BfMatCsrReal *submat = bfMatCsrRealNew();
-  HANDLE_ERROR();
-
-  bfMatCsrRealInit(submat, numRows, numCols, rowptr, colind, data);
+  BfMatCsrReal *submat = bfMatCsrRealNewFromPtrs(numRows, numCols, rowptr, colind, data);
   HANDLE_ERROR();
 
   BF_ERROR_END() {
@@ -313,17 +309,52 @@ BfMatCsrReal *bfMatCsrRealNew() {
   BF_ERROR_BEGIN();
 
   BfMatCsrReal *mat = bfMemAlloc(1, sizeof(BfMatCsrReal));
-  if (mat == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 
   return mat;
 }
 
-void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
-                      BfSize const *rowptr, BfSize const *colind,
-                      BfReal const *data) {
+BfMatCsrReal *bfMatCsrRealNewFromPtrs(BfSize numRows, BfSize numCols,
+                                      BfSize const *rowptr, BfSize const *colind,
+                                      BfReal const *data) {
+  BF_ERROR_BEGIN();
+
+  BfMatCsrReal *matCsrReal = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
+  bfMatCsrRealInitFromPtrs(matCsrReal, numRows, numCols, rowptr, colind, data);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matCsrReal;
+}
+
+BfMatCsrReal *bfMatCsrRealNewFromArrays(BfSize numRows, BfSize numCols, BfSizeArray *rowptrArray, BfSizeArray *colindArray, BfRealArray *dataArray, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  BfMatCsrReal *matCsrReal = bfMatCsrRealNew();
+  HANDLE_ERROR();
+
+  bfMatCsrRealInitFromArrays(matCsrReal, numRows, numCols, rowptrArray, colindArray, dataArray, policy);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matCsrReal;
+}
+
+void bfMatCsrRealInitFromPtrs(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
+                              BfSize const *rowptr, BfSize const *colind,
+                              BfReal const *data) {
   BF_ERROR_BEGIN();
 
   BfSize nnz = rowptr[numRows];
@@ -344,8 +375,37 @@ void bfMatCsrRealInit(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
   bfMemCopy(colind, nnz, sizeof(BfSize), mat->colind);
   bfMemCopy(data, nnz, sizeof(BfSize), mat->data);
 
-  BF_ERROR_END()
-    bfMatCsrRealDeinit(mat);
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfMatCsrRealInitFromArrays(BfMatCsrReal *matCsrReal, BfSize numRows, BfSize numCols, BfSizeArray *rowptrArray, BfSizeArray *colindArray, BfRealArray *dataArray, BfPolicy policy) {
+  BF_ERROR_BEGIN();
+
+  bfMatInit(&matCsrReal->super, &MAT_VTABLE, numRows, numCols);
+  HANDLE_ERROR();
+
+  if (policy == BF_POLICY_STEAL) {
+    bfSizeArrayShrinkCapacityToSize(rowptrArray);
+    bfSizeArrayShrinkCapacityToSize(colindArray);
+    bfRealArrayShrinkCapacityToSize(dataArray);
+
+    matCsrReal->rowptr = bfSizeArrayStealPtr(rowptrArray);
+    HANDLE_ERROR();
+
+    matCsrReal->colind = bfSizeArrayStealPtr(colindArray);
+    HANDLE_ERROR();
+
+    matCsrReal->data = bfRealArrayStealPtr(dataArray);
+    HANDLE_ERROR();
+  }
+
+  else RAISE_ERROR(BF_ERROR_NOT_IMPLEMENTED);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfMatCsrRealDeinit(BfMatCsrReal *mat) {

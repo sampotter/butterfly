@@ -20,3 +20,5 @@ BfSize bfIntervalDifference(BfInterval const *I1, BfInterval const *I2, BfInterv
 BfReal bfIntervalGetMidpoint(BfInterval const* interval);
 bool bfIntervalIsEmpty(BfInterval const *interval);
 bool bfIntervalEquals(BfInterval const *I1, BfInterval const *I2);
+bool bfIntervalIsFinite(BfInterval const *interval);
+BfReal bfIntervalGetFiniteEndpoint(BfInterval const *interval);

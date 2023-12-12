@@ -10,7 +10,11 @@ enum BfError {
   BF_ERROR_FILE_ERROR,
   BF_ERROR_TYPE_ERROR,
   BF_ERROR_INCOMPATIBLE_SHAPES,
+#ifdef BF_EMBREE
+  BF_ERROR_EMBREE
+#endif
 };
+
 
 enum BfError bfGetError(void);
 void bfSetError(enum BfError error);

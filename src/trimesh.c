@@ -8,9 +8,10 @@
 #include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
-#include <bf/lbo.h>
 #include <bf/linalg.h>
+#include <bf/mat_csr_real.h>
 #include <bf/mem.h>
+#include <bf/points.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
 #include <bf/util.h>
@@ -18,6 +19,47 @@
 #include <bf/vectors.h>
 
 #include "macros.h"
+
+#ifdef BF_EMBREE
+#  include <embree4/rtcore.h>
+#endif
+
+struct BfTrimesh {
+  BfPoints3 *verts;
+
+  BfSize numFaces;
+  BfSize3 *faces;
+
+  /*! Array containing `BfSize2`s representing the edge indices. This
+   *  array works analogously to `faces`, with the same sorting
+   *  scheme. */
+  BfArray *edges;
+
+  BfSize *vfOffset, *vf;
+  BfSize *vvOffset, *vv;
+
+  /*! An array containing `BfSize2`s representing a mapping from edges
+   *  to incident faces. The two components of the `i`th entry are the
+   *  indices of faces incident on the `i`th edge. We assume the mesh
+   *  is manifold, so there can be at most two incident faces. If the
+   *  edge is a boundary edge, then one of the components of the `i`th
+   *  entry equals `BF_SIZE_BAD_VALUE`. */
+  BfArray *ef;
+
+  bool *isBoundaryEdge;
+  bool *isBoundaryVert;
+
+  BfSize2 *boundaryEdges;
+  BfSize numBoundaryEdges;
+
+#ifdef BF_EMBREE
+  RTCDevice device;
+  RTCGeometry geometry;
+  RTCScene scene;
+  float (*vertexBuffer)[3];
+  uint32_t (*indexBuffer)[3];
+#endif
+};
 
 int comparFace(BfSize const *face1, BfSize const *face2, void *arg) {
   (void)arg;
@@ -410,6 +452,65 @@ static void initBoundaryEdges(BfTrimesh *trimesh) {
   }
 }
 
+#ifdef BF_EMBREE
+static void initEmbree(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  trimesh->device = rtcNewDevice(NULL);
+  if (trimesh->device == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  trimesh->geometry = rtcNewGeometry(trimesh->device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  if (trimesh->geometry == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  trimesh->scene = rtcNewScene(trimesh->device);
+  if (trimesh->scene == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  trimesh->vertexBuffer = rtcSetNewGeometryBuffer(
+    /* geometry: */ trimesh->geometry,
+    /* type: */ RTC_BUFFER_TYPE_VERTEX,
+    /* slot: */ 0,
+    /* format: */ RTC_FORMAT_FLOAT3,
+    /* byteStride: */ 3*sizeof(float),
+    /* numItems: */ bfPoints3GetSize(trimesh->verts));
+  if (trimesh->vertexBuffer == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  for (BfSize i = 0; i < bfPoints3GetSize(trimesh->verts); ++i) {
+    BfReal const *v = bfPoints3GetPtrConst(trimesh->verts, i);
+    for (BfSize j = 0; j < 3; ++j)
+      trimesh->vertexBuffer[i][j] = v[j];
+  }
+
+  trimesh->indexBuffer = rtcSetNewGeometryBuffer(
+    /* geometry: */ trimesh->geometry,
+    /* type: */ RTC_BUFFER_TYPE_INDEX,
+    /* slot: */ 0,
+    /* format: */ RTC_FORMAT_UINT3,
+    /* byteStride: */ 3*sizeof(uint32_t),
+    /* numItems: */ trimesh->numFaces);
+  if (trimesh->indexBuffer == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    BfSize const *f = trimesh->faces[i];
+    for (BfSize j = 0; j < 3; ++j)
+      trimesh->indexBuffer[i][j] = f[j];
+  }
+
+  rtcCommitGeometry(trimesh->geometry);
+  rtcAttachGeometry(trimesh->scene, trimesh->geometry);
+  rtcReleaseGeometry(trimesh->geometry);
+  rtcCommitScene(trimesh->scene);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+#endif
+
 static void initCommon(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
@@ -434,10 +535,22 @@ static void initCommon(BfTrimesh *trimesh) {
   initBoundaryEdges(trimesh);
   HANDLE_ERROR();
 
+#ifdef BF_EMBREE
+  initEmbree(trimesh);
+  HANDLE_ERROR();
+#endif
+
   BF_ERROR_END() {
     BF_DIE();
   }
 }
+
+#ifdef BF_EMBREE
+static void deinitEmbree(BfTrimesh *trimesh) {
+  rtcReleaseScene(trimesh->scene);
+  rtcReleaseDevice(trimesh->device);
+}
+#endif
 
 static void rebuildMesh(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
@@ -451,6 +564,10 @@ static void rebuildMesh(BfTrimesh *trimesh) {
   bfMemFree(trimesh->isBoundaryEdge);
   bfMemFree(trimesh->isBoundaryVert);
   bfMemFree(trimesh->boundaryEdges);
+
+#ifdef BF_EMBREE
+  deinitEmbree(trimesh);
+#endif
 
   initCommon(trimesh);
   HANDLE_ERROR();
@@ -694,6 +811,10 @@ void bfTrimeshDeinit(BfTrimesh *trimesh) {
   trimesh->boundaryEdges = NULL;
 
   trimesh->numBoundaryEdges = BF_SIZE_BAD_VALUE;
+
+#ifdef BF_EMBREE
+  deinitEmbree(trimesh);
+#endif
 }
 
 void bfTrimeshDealloc(BfTrimesh **trimesh) {
@@ -712,6 +833,10 @@ BfSize bfTrimeshGetNumVerts(BfTrimesh const *trimesh) {
 
 BfSize bfTrimeshGetNumFaces(BfTrimesh const *trimesh) {
   return trimesh->numFaces;
+}
+
+BfPoints3 const *bfTrimeshGetVertsConst(BfTrimesh const *trimesh) {
+  return trimesh->verts;
 }
 
 void bfTrimeshGetVertex(BfTrimesh const *trimesh, BfSize i, BfPoint3 x) {
@@ -1129,7 +1254,7 @@ BfRealArray *bfTrimeshGetFiedler(BfTrimesh const *trimesh) {
    * Dirichlet eigenvalue problem. */
 
   BfMat *L = NULL, *M = NULL;
-  bfLboGetFemDiscretization(trimesh, &L, &M);
+  bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   HANDLE_ERROR();
 
   BfMat *LInt = bfMatGetSubmatByMask(L, mask, mask);
@@ -1236,3 +1361,231 @@ bool bfTrimeshHasDuplicateFaces(BfTrimesh const *trimesh) {
 
   return hasDuplicateFaces;
 }
+
+BfSize bfTrimeshGetNumVertexNeighbors(BfTrimesh const *trimesh, BfSize i) {
+  if (i > bfTrimeshGetNumVerts(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->vvOffset[i + 1] - trimesh->vvOffset[i];
+}
+
+BfSize bfTrimeshGetVertexNeighbor(BfTrimesh const *trimesh, BfSize i, BfSize j) {
+  if (i > bfTrimeshGetNumVerts(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  if (j > bfTrimeshGetNumVertexNeighbors(trimesh, i))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->vv[trimesh->vvOffset[i] + j];
+}
+
+bool bfTrimeshIsBoundaryVertex(BfTrimesh const *trimesh, BfSize i) {
+  if (i > bfTrimeshGetNumVerts(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->isBoundaryVert[i];
+}
+
+BfSize bfTrimeshGetNumBoundaryEdges(BfTrimesh const *trimesh) {
+  return trimesh->numBoundaryEdges;
+}
+
+void bfTrimeshGetBoundaryEdge(BfTrimesh const *trimesh, BfSize i, BfSize2 boundaryEdge) {
+  if (i > bfTrimeshGetNumBoundaryEdges(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  bfMemCopy(trimesh->boundaryEdges[i], 1, sizeof(BfSize2), boundaryEdge);
+}
+
+BfSize const *bfTrimeshGetBoundaryEdgeConstPtr(BfTrimesh const *trimesh, BfSize i) {
+  if (i > bfTrimeshGetNumBoundaryEdges(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->boundaryEdges[i];
+}
+
+BfSize const *bfTrimeshGetFaceConstPtr(BfTrimesh const *trimesh, BfSize i) {
+  if (i >= bfTrimeshGetNumFaces(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->faces[i];
+}
+
+void bfTrimeshGetLboFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat **M) {
+  BF_ERROR_BEGIN();
+
+  BfSize *rowptr = NULL;
+  BfSize *colind = NULL;
+  BfReal *L_data = NULL;
+  BfReal *M_data = NULL;
+
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
+
+  BfSize nnz = numVerts + trimesh->vvOffset[numVerts];
+
+  rowptr = bfMemAlloc(numVerts + 1, sizeof(BfSize));
+  if (rowptr == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  colind = bfMemAlloc(nnz, sizeof(BfSize));
+  if (colind == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  L_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
+  if (L_data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  M_data = bfMemAllocAndZero(nnz, sizeof(BfReal));
+  if (M_data == NULL)
+    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+  /* Fill rowptr: same as vvOffset except we need to add more space
+   * for the vertices on the diagonal */
+  for (BfSize i = 0; i <= numVerts; ++i)
+    rowptr[i] = trimesh->vvOffset[i] + i;
+
+  /* Fill colind */
+  for (BfSize i = 0, j = 0; i < numVerts; ++i) {
+    BF_ASSERT(j == rowptr[i]);
+
+    /* Find the position of i in vv */
+    BfSize kmid = trimesh->vvOffset[i];
+    while (kmid < trimesh->vvOffset[i + 1] && trimesh->vv[kmid] < i)
+      ++kmid;
+
+    /* Copy over vv, inserting i into the correct sorted order */
+    BfSize k = trimesh->vvOffset[i];
+    for (; k < kmid; ++k)
+      colind[j++] = trimesh->vv[k];
+    colind[j++] = i;
+    for (; k < trimesh->vvOffset[i + 1]; ++k)
+      colind[j++] = trimesh->vv[k];
+  }
+
+  BfSize f, j, i, i0, i1, *jptr, k, k0, k1;
+  BfPoint3 x, x0, x1, y, y0, y1;
+  BfVector3 d, d0, d1, g, g0, g1, n;
+  BfReal A;
+
+  /* For each vertex: */
+  for (i = 0; i < numVerts; ++i) {
+    jptr = &colind[rowptr[i]];
+
+    /* Get current vertex */
+    bfTrimeshGetVertex(trimesh, i, x);
+
+    /* Find position of `i` in current block of column indices */
+    k = 0;
+    while (jptr[k] != i) ++k;
+
+    /* For each incident face: */
+    for (j = trimesh->vfOffset[i]; j < trimesh->vfOffset[i + 1]; ++j) {
+      f = trimesh->vf[j];
+
+      /* Get the other two vertices in the current face */
+      bfTrimeshGetOpFaceVerts(trimesh, f, i, &i0, &i1);
+      bfTrimeshGetVertex(trimesh, i0, x0);
+      bfTrimeshGetVertex(trimesh, i1, x1);
+
+      /* Find their positions in the current block of column indices */
+      k0 = k1 = 0;
+      while (jptr[k0] != i0) ++k0;
+      while (jptr[k1] != i1) ++k1;
+
+      /* Opposite edge vectors */
+      bfPoint3Sub(x1, x0, d);
+      bfPoint3Sub(x, x1, d0);
+      bfPoint3Sub(x0, x, d1);
+
+      /* Compute orthogonal projection of each vertex onto the
+       * opposite face edge */
+      bfPoint3GetPointOnRay(x0, d, -bfVector3Dot(d, d1)/bfVector3Dot(d, d), y);
+      bfPoint3GetPointOnRay(x1, d0, -bfVector3Dot(d0, d)/bfVector3Dot(d0, d0), y0);
+      bfPoint3GetPointOnRay(x, d1, -bfVector3Dot(d1, d0)/bfVector3Dot(d1, d1), y1);
+
+      /* Compute gradients for hat functions centered at each vertex */
+      bfPoint3Sub(x, y, g);
+      bfPoint3Sub(x0, y0, g0);
+      bfPoint3Sub(x1, y1, g1);
+      bfVector3Scale(g, 1/bfVector3Dot(g, g));
+      bfVector3Scale(g0, 1/bfVector3Dot(g0, g0));
+      bfVector3Scale(g1, 1/bfVector3Dot(g1, g1));
+
+      /* Get triangle area */
+      bfVector3Cross(d0, d1, n);
+      A = bfVector3Norm(n)/2;
+
+      /* Update L values */
+      L_data[rowptr[i] + k] += A*bfVector3Dot(g, g);
+      L_data[rowptr[i] + k0] += A*bfVector3Dot(g, g0);
+      L_data[rowptr[i] + k1] += A*bfVector3Dot(g, g1);
+
+      /* Update M values */
+      M_data[rowptr[i] + k] += A/6;
+      M_data[rowptr[i] + k0] += A/12;
+      M_data[rowptr[i] + k1] += A/12;
+    }
+  }
+
+  BfMatCsrReal *L_csr = bfMatCsrRealNewFromPtrs(numVerts, numVerts, rowptr, colind, L_data);
+  HANDLE_ERROR();
+
+  BfMatCsrReal *M_csr = bfMatCsrRealNewFromPtrs(numVerts, numVerts, rowptr, colind, M_data);
+  HANDLE_ERROR();
+
+  *L = bfMatCsrRealToMat(L_csr);
+  *M = bfMatCsrRealToMat(M_csr);
+
+  BF_ERROR_END() {
+    bfMatCsrRealDeinitAndDealloc(&L_csr);
+    bfMatCsrRealDeinitAndDealloc(&M_csr);
+  }
+
+  bfMemFree(rowptr);
+  bfMemFree(colind);
+  bfMemFree(L_data);
+  bfMemFree(M_data);
+}
+
+#ifdef BF_EMBREE
+BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfSizeArray const *tgtInds) {
+  BF_ERROR_BEGIN();
+
+  BfSizeArray *visTgtInds = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  struct RTCRayHit rayHit;
+
+  struct RTCRay *ray = &rayHit.ray;
+  struct RTCHit *hit = &rayHit.hit;
+
+  BfReal const *srcVert = bfTrimeshGetVertPtrConst(trimesh, srcInd);
+  ray->org_x = srcVert[0];
+  ray->org_y = srcVert[1];
+  ray->org_z = srcVert[2];
+
+  for (BfSize i = 0; i < bfSizeArrayGetSize(tgtInds); ++i) {
+    BfSize tgtInd = bfSizeArrayGet(tgtInds, i);
+    BfReal const *tgtVert = bfTrimeshGetVertPtrConst(trimesh, tgtInd);
+
+    ray->tnear = 0;
+    ray->dir_x = tgtVert[0] - srcVert[0];
+    ray->dir_y = tgtVert[1] - srcVert[1];
+    ray->dir_z = tgtVert[2] - srcVert[2];
+    ray->time = 0; /* <-- Unused */
+    ray->tfar = BF_INFINITY;
+    ray->flags = 0;
+
+    hit->geomID = RTC_INVALID_GEOMETRY_ID;
+
+    rtcIntersect1(trimesh->scene, &rayHit, NULL);
+
+    // If there's a hit, `tfar` should be finite after tracing. Since
+    // we're computing pairwise visibilities, there is *always* a hit.
+    BF_ASSERT(isfinite(ray->tfar));
+
+    BfSize visTgtInd = hit->primID;
+
+    bfSizeArrayAppend(visTgtInds, visTgtInd);
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return visTgtInds;
+}
+#endif

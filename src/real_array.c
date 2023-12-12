@@ -438,17 +438,19 @@ BfPerm *bfRealArrayArgsort(BfRealArray const *realArray) {
 
   /* TODO: just using selection sort here for now... should upgrade to
    * something better later */
-  for (BfSize i = 0; i < n - 1; ++i) {
-    BfSize k = i;
-    BfReal value_k = bfRealArrayGetValue(realArray, perm->index[k]);
-    for (BfSize j = i + 1; j < n; ++j) {
-      BfReal const value_j = bfRealArrayGetValue(realArray, perm->index[j]);
-      if (value_j < value_k) {
-        k = j;
-        value_k = value_j;
+  if (n > 0) {
+    for (BfSize i = 0; i < n - 1; ++i) {
+      BfSize k = i;
+      BfReal value_k = bfRealArrayGetValue(realArray, perm->index[k]);
+      for (BfSize j = i + 1; j < n; ++j) {
+        BfReal const value_j = bfRealArrayGetValue(realArray, perm->index[j]);
+        if (value_j < value_k) {
+          k = j;
+          value_k = value_j;
+        }
       }
+      BF_SWAP(perm->index[i], perm->index[k]);
     }
-    BF_SWAP(perm->index[i], perm->index[k]);
   }
 
   bfPermReverse(perm);
@@ -480,5 +482,20 @@ void bfRealArrayPermute(BfRealArray *realArray, BfPerm const *perm) {
 }
 
 BfReal *bfRealArrayGetDataPtr(BfRealArray *realArray) {
+  return realArray->data;
+}
+
+BfReal *bfRealArrayStealPtr(BfRealArray *realArray) {
+  BF_ERROR_BEGIN();
+
+  if (realArray->isView)
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  realArray->isView = true;
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
   return realArray->data;
 }
