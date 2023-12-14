@@ -27,12 +27,7 @@ endif
 
 cc = meson.get_compiler('c')
 
-blas_dep = dependency('blas', required : true)
-lapacke_dep = dependency('lapack', required : true)
-
-# blas_dep = dependency('flexiblas', required : true)
-# lapacke_dep = dependency('lapacke', required : true)
-
+blas_dep = cc.find_library('openblas', required : true)
 fortran_dep = cc.find_library('gfortran', required : true)
 # cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
@@ -87,7 +82,6 @@ endif
 
 butterfly_dependencies = [
   blas_dep,
-  lapacke_dep,
   fortran_dep,
 #  cholmod_dep,
   m_dep,
@@ -204,7 +198,7 @@ butterfly_include_directories = [
   butterfly_inc,
   '/opt/homebrew/Cellar/suite-sparse/7.1.0/include/',
   '/opt/homebrew/Cellar/openblas/0.3.24/include/',
-  '/opt/homebrew/Cellar/lapack/3.11/include/'
+  '/opt/homebrew/lib/python3.12/site-packages/numpy/core/include'
 ]
 
 butterfly_lib = library(

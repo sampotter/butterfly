@@ -13,6 +13,7 @@
 #include <bf/trimesh.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
+#include <time.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -39,10 +40,10 @@ static BfVec *sample_z(BfMat const *Phi, BfMat const *GammaLam, BfPerm const *ro
   return z;
 }
 
-static BfVec *get_c(BfMat const *Phi, BfMat const *GammaLam, BfMat const *M, BfPerm const *rowPerm, BfPerm const *revRowPerm) {
-  BfSize n = bfMatGetNumCols(M);
+static BfVec *get_c(BfMat const *Phi, BfMat const *GammaLam, BfPerm const *rowPerm, BfPerm const *revRowPerm) {
+  BfSize n = bfMatGetNumRows(Phi);
   BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, 0));
-  BfVec *tmp1 = bfMatMulVec(M, e);
+  BfVec *tmp1 = e;
   bfVecPermute(tmp1, revRowPerm);
   BfVec *tmp2 = bfMatRmulVec(Phi, tmp1);
   tmp1 = bfMatMulVec(GammaLam, tmp2);
@@ -123,6 +124,9 @@ int main(int argc, char const *argv[]) {
     .minNumCols = 20,
   };
 
+  clock_t start, end;
+
+  start = clock();
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
@@ -130,10 +134,13 @@ int main(int argc, char const *argv[]) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
   }
+  end = clock();
 
-  printf("finished streaming BF (actually factorized %lu eigenpairs)\n", freqs->size);
+  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, ((double) (end - start)) / CLOCKS_PER_SEC);
 
-  bfPoints1Save(freqs, "freqs.bin");
+  char filename[50];
+  sprintf(filename, "freqs_tol%.0e.bin", tol);
+  bfPoints1Save(freqs, filename);
 
   BfPoints1 *gammaLam = bfPoints1Copy(freqs);
   bfPoints1Map(gammaLam, gammaFromFreq);
@@ -146,7 +153,8 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(Phi, GammaLam, rowPerm);
-  bfVecSave(z, "z_lbo.bin");
+  sprintf(filename, "z_lbo_tol%.0e.bin", tol);
+  bfVecSave(z, filename);
   bfVecDelete(&z);
 
   /** Time how long it takes to sample z numSamples times. */
@@ -161,8 +169,9 @@ int main(int argc, char const *argv[]) {
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
-  BfVec *c = get_c(Phi, GammaLam, M, rowPerm, revRowPerm);
-  bfVecSave(c, "c_lbo.bin");
+  BfVec *c = get_c(Phi, GammaLam, rowPerm, revRowPerm);
+  sprintf(filename, "c_lbo_tol%.0e.bin", tol);
+  bfVecSave(c, filename);
 
   /* Extract dense Phi: */
 
@@ -181,8 +190,8 @@ int main(int argc, char const *argv[]) {
   bfMatSave(PhiDense, "PhiDense.bin");
 
   /* Clean up */
-  bfTreeDelete(&rowTree);
-  bfOctreeDeinit(&octree);
+  // bfTreeDelete(&rowTree); // This segfaults...
+  // bfOctreeDeinit(&octree);
   bfMatDelete(&M);
   bfMatDelete(&L);
   bfTrimeshDeinitAndDealloc(&trimesh);

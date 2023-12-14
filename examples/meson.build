@@ -4,6 +4,7 @@ subdir('lbo')
 subdir('multiple_scattering')
 subdir('simple')
 subdir('tree_evaluator')
+subdir('sphere_covariance')
 
 # Extra files that should be copied over, such as common files,
 # resources, etc.
