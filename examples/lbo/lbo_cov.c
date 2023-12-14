@@ -3,6 +3,7 @@
 #include <bf/fac_span.h>
 #include <bf/fac_streamer.h>
 #include <bf/interval_tree.h>
+#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
 #include <bf/mat_csr_real.h>
@@ -15,8 +16,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-
-#include "lbo.h"
 
 static BfReal kappa = BF_NAN;
 static BfReal nu = BF_NAN;
@@ -128,7 +127,7 @@ int main(int argc, char const *argv[]) {
   bfFacStreamerInit(facStreamer, &spec);
 
   while (!bfFacStreamerIsDone(facStreamer)) {
-    feedFacStreamerNextEigenband(facStreamer, freqs, L, M);
+    bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
   }
 

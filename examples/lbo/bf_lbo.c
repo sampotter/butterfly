@@ -6,6 +6,7 @@
 #include <bf/fiedler_tree.h>
 #include <bf/interval_tree.h>
 #include <bf/interval_tree_node.h>
+#include <bf/lbo.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
 #include <bf/octree.h>
@@ -17,8 +18,6 @@
 #include <string.h>
 
 #include "argtable3.h"
-
-#include "lbo.h"
 
 int const MAX_NUM_ARG_ERRORS = 20;
 
@@ -327,7 +326,7 @@ int main(int argc, char *argv[]) {
 
   BfSize numStreamed = 0;
   while (!bfFacStreamerIsDone(facStreamer)) {
-    feedFacStreamerNextEigenband(facStreamer, freqs, L, M);
+    bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     HANDLE_ERROR();
 
     if (++numStreamed >= opts.numLeafNodes) break;

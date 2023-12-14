@@ -1,4 +1,4 @@
-#include "lbo.h"
+#include <bf/lbo.h>
 
 #include <bf/assert.h>
 #include <bf/const.h>
@@ -11,7 +11,7 @@
 
 #include <math.h>
 
-BfPoints1 *convertEigsToFreqs(BfVecReal const *Lam) {
+BfPoints1 *bfLboEigsToFreqs(BfVecReal const *Lam) {
   BF_ERROR_BEGIN();
 
   BfPoints1 *freqs = bfPoints1New();
@@ -66,8 +66,7 @@ static BfInterval getBracketFromNode(BfTreeNode const *treeNode) {
   return bracket;
 }
 
-void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
-                                  BfMat const *L, BfMat const *M) {
+void bfLboFeedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs, BfMat const *L, BfMat const *M) {
   BF_ERROR_BEGIN();
 
   BfMat *Phi = NULL;
@@ -103,7 +102,7 @@ void feedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs,
   bfMatPermuteRows(Phi, bfFacStreamerGetRowTreeReversePerm(facStreamer));
 
   /* Convert the new eigenvalues to frequencies: */
-  newFreqs = convertEigsToFreqs(Lam);
+  newFreqs = bfLboEigsToFreqs(Lam);
   HANDLE_ERROR();
 
   /* Sort the new frequencies into the existing set of frequencies

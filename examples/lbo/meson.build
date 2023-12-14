@@ -7,11 +7,7 @@ examples = [
 example_deps = [argtable3_dep, butterfly_dep, m_dep]
 
 foreach example : examples
-  executable(
-    example,
-    [example + '.c', 'lbo.c'],
-    dependencies : example_deps
-  )
+  executable(example, example + '.c', dependencies : example_deps)
 endforeach
 
 scripts = [

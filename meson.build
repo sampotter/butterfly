@@ -126,6 +126,7 @@ butterfly_lib_src = [
   'src/interval.c',
   'src/interval_tree.c',
   'src/interval_tree_node.c',
+  'src/lbo.c',
   'src/linalg.c',
   'src/logging.c',
   'src/lu.c',
