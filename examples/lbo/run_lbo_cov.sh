@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+OBJ_PATH=../../../../butterfly-LBO-models/dragon0.obj
+KAPPA=1
+NU=2
+NUM_SAMPLES=100
+TOL=1e-2
+P=0.125
+ROW_TREE_OFFSET=0
+FREQ_TREE_OFFSET=8
+
+./lbo_cov $OBJ_PATH $KAPPA $NU $NUM_SAMPLES $TOL $P $ROW_TREE_OFFSET $FREQ_TREE_OFFSET
