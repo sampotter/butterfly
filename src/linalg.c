@@ -847,6 +847,7 @@ static BfInterval getPairsCoveringInterval(BfMat const *A, BfMat const *M, BfInt
     cover = *interval;
   } else if (i0 == 0 && i1 < k + 2) {
     cover.endpoint[0] = (lam[0] + lam[1])/2;
+    i0 = 1;
     cover.endpoint[1] = interval->endpoint[1];
     cover.closed[1] = true;
   } else if (0 < i0 && i1 == k + 2) {
@@ -869,6 +870,7 @@ static BfInterval getPairsCoveringInterval(BfMat const *A, BfMat const *M, BfInt
   for (BfSize i = i0; i < i1; ++i) {
     BfReal lam = bfVecRealGetElt(coverLam, i);
     BF_ASSERT(bfIntervalContainsPoint(interval, lam));
+    BF_ASSERT(bfIntervalContainsPoint(&cover, lam));
 
     bfRealArrayAppend(LamData, lam);
     HANDLE_ERROR();
