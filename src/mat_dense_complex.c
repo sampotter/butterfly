@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include <openblas/lapacke.h>
+#include <lapacke.h>
 
 #include <bf/assert.h>
 #include <bf/blas.h>

@@ -9,7 +9,7 @@
 #include <bf/mem.h>
 #include <bf/vec_real.h>
 
-#include <suitesparse/umfpack.h>
+#include <umfpack.h>
 
 /** Interface: Lu */
 

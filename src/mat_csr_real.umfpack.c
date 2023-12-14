@@ -1,6 +1,6 @@
 #include <bf/mat_csr_real.h>
 
-#include <suitesparse/umfpack.h>
+#include <umfpack.h>
 
 #include <bf/assert.h>
 #include <bf/error.h>

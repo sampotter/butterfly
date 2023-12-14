@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-#include <openblas/lapacke.h>
+#include <lapacke.h>
 
 #include "macros.h"
 

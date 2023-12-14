@@ -27,8 +27,11 @@ endif
 
 cc = meson.get_compiler('c')
 
-blas_dep = dependency('flexiblas', required : true)
-lapacke_dep = dependency('lapacke', required : true)
+blas_dep = dependency('blas', required : true)
+lapacke_dep = dependency('lapack', required : true)
+
+# blas_dep = dependency('flexiblas', required : true)
+# lapacke_dep = dependency('lapacke', required : true)
 
 fortran_dep = cc.find_library('gfortran', required : true)
 # cholmod_dep = cc.find_library('cholmod', required : true)
@@ -198,7 +201,10 @@ endif
 butterfly_inc = include_directories('include')
 
 butterfly_include_directories = [
-  butterfly_inc
+  butterfly_inc,
+  '/opt/homebrew/Cellar/suite-sparse/7.1.0/include/',
+  '/opt/homebrew/Cellar/openblas/0.3.24/include/',
+  '/opt/homebrew/Cellar/lapack/3.11/include/'
 ]
 
 butterfly_lib = library(
@@ -213,7 +219,7 @@ install_subdir('include/bf', install_dir : 'include', install_tag : 'devel')
 
 butterfly_dep = declare_dependency(
   link_with : butterfly_lib,
-  include_directories : butterfly_inc
+  include_directories : butterfly_include_directories
 )
 
 pkg.generate(butterfly_lib)
