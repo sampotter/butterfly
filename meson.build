@@ -188,9 +188,6 @@ butterfly_lib_src = [
   'src/vectors.c',
   'src/xoshiro256plus.c',
 ]
-if get_option('embree').enabled()
-  butterfly_lib_src += ['src/radiosity.c']
-endif
 if get_option('python').enabled()
   butterfly_lib_src += ['src/mat_python.c']
 endif
