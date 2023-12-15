@@ -2,6 +2,7 @@ subdir('fast_direct_solver')
 subdir('fiedler_tree')
 subdir('lbo')
 subdir('multiple_scattering')
+subdir('radiosity')
 subdir('simple')
 subdir('tree_evaluator')
 
@@ -11,12 +12,6 @@ extra_files = [
   'util.py',
 ]
 
-foreach path : extra_files
-  custom_target(
-    path,
-    input : path, output : path,
-    command : ['cp', '@INPUT@', '@OUTPUT@'],
-    install : false,
-    build_by_default : true
-  )
+foreach extra_file : extra_files
+  fs.copyfile(extra_file, extra_file)
 endforeach
