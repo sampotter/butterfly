@@ -1,13 +1,19 @@
 #include <bf/mat_csr_real.h>
 
 #include <bf/assert.h>
+#include <bf/const.h>
 #include <bf/error.h>
 #include <bf/error_macros.h>
 #include <bf/mem.h>
+#include <bf/points.h>
 #include <bf/real_array.h>
 #include <bf/size_array.h>
+#include <bf/trimesh.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
+#include <bf/vectors.h>
+
+#include <math.h>
 
 /** Interface: Mat */
 
@@ -348,6 +354,79 @@ BfMatCsrReal *bfMatCsrRealNewFromArrays(BfSize numRows, BfSize numCols, BfSizeAr
   BF_ERROR_END() {
     BF_DIE();
   }
+
+  return matCsrReal;
+}
+
+static BfReal integrateViewFactorMidpointRule(BfTrimesh const *trimesh, BfSize srcInd, BfSize tgtInd) {
+  BfReal const *pSrc = bfTrimeshGetFaceCentroidConstPtr(trimesh, srcInd);
+  BfReal const *pTgt = bfTrimeshGetFaceCentroidConstPtr(trimesh, tgtInd);
+
+  BfReal const *nSrc = bfTrimeshGetFaceUnitNormalConstPtr(trimesh, srcInd);
+  BfReal const *nTgt = bfTrimeshGetFaceUnitNormalConstPtr(trimesh, tgtInd);
+
+  BfReal areaTgt = bfTrimeshGetFaceArea(trimesh, tgtInd);
+
+  BfVector3 dp;
+  bfPoint3Sub(pSrc, pTgt, dp);
+
+  BfReal dotSrc = bfVector3Dot(nSrc, dp);
+  BfReal dotTgt = -bfVector3Dot(nTgt, dp);
+  BfReal rSquared = bfVector3Dot(dp, dp);
+
+  return areaTgt*fmax(0, dotSrc)*fmax(0, dotTgt)/(BF_PI*rSquared*rSquared);
+}
+
+BfMatCsrReal *bfMatCsrRealNewViewFactorMatrixFromTrimesh(BfTrimesh const *trimesh, BfSizeArray const *rowInds, BfSizeArray const *colInds) {
+  BF_ERROR_BEGIN();
+
+  BfSize numRows = bfSizeArrayGetSize(rowInds);
+  BfSize numCols = bfSizeArrayGetSize(colInds);
+
+  BfSizeArray *rowptr = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  bfSizeArrayAppend(rowptr, 0);
+
+  BfSizeArray *colind = bfSizeArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  BfRealArray *data = bfRealArrayNewWithDefaultCapacity();
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < bfSizeArrayGetSize(rowInds); ++i) {
+    BfSize rowInd = bfSizeArrayGet(rowInds, i);
+
+    BfSizeArray *visibleColInds = bfTrimeshGetVisibility(trimesh, i, colInds);
+    HANDLE_ERROR();
+
+    bfSizeArrayExtend(colind, visibleColInds);
+    HANDLE_ERROR();
+
+    BfSize numVisibleColInds = bfSizeArrayGetSize(visibleColInds);
+
+    bfSizeArrayAppend(rowptr, numVisibleColInds + bfSizeArrayGetLast(rowptr));
+    HANDLE_ERROR();
+
+    for (BfSize j = 0; j < numVisibleColInds; ++j) {
+      BfSize colInd = bfSizeArrayGet(visibleColInds, j);
+      BfReal value = integrateViewFactorMidpointRule(trimesh, rowInd, colInd);
+      bfRealArrayAppend(data, value);
+    }
+
+    bfSizeArrayDeinitAndDealloc(&visibleColInds);
+  }
+
+  BfMatCsrReal *matCsrReal = bfMatCsrRealNewFromArrays(numRows, numCols, rowptr, colind, data, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  bfSizeArrayDeinitAndDealloc(&rowptr);
+  bfSizeArrayDeinitAndDealloc(&colind);
+  bfRealArrayDeinitAndDealloc(&data);
 
   return matCsrReal;
 }

@@ -14,6 +14,9 @@ cdef extern from "bf/types.h":
     struct BfMatBlockDiag:
         pass
 
+    struct BfMatCsrReal:
+        pass
+
     struct BfMatDenseComplex:
         pass
 
@@ -60,6 +63,9 @@ cdef extern from "bf/types.h":
         pass
 
     struct BfFac:
+        pass
+
+    struct BfTrimesh:
         pass
 
     cdef enum BfTypes:

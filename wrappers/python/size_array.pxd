@@ -5,6 +5,7 @@ cdef extern from "bf/size_array.h":
         pass
 
     BfSizeArray *bfSizeArrayNewWithCapacity(BfSize capacity)
+    BfSizeArray *bfSizeArrayNewView(BfSize n, BfSize *inds)
     void bfSizeArrayDeinitAndDealloc(BfSizeArray **sizeArray)
     void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt)
     BfSize bfSizeArrayGetSize(const BfSizeArray *sizeArray)

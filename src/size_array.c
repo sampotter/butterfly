@@ -87,8 +87,31 @@ void bfSizeArrayInitWithCapacity(BfSizeArray *sizeArray, BfSize capacity) {
   }
 }
 
+BfSizeArray *bfSizeArrayNewView(BfSize n, BfSize *inds) {
+  BF_ERROR_BEGIN();
+
+  BfSizeArray *sizeArray = bfSizeArrayNew();
+  HANDLE_ERROR();
+
+  bfSizeArrayInitView(sizeArray, n, inds);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return sizeArray;
+}
+
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
   bfSizeArrayInitWithCapacity(sizeArray, BF_ARRAY_DEFAULT_CAPACITY);
+}
+
+void bfSizeArrayInitView(BfSizeArray *sizeArray, BfSize n, BfSize *inds) {
+  sizeArray->data = inds;
+  sizeArray->size = n;
+  sizeArray->capacity = BF_SIZE_BAD_VALUE;
+  sizeArray->isView = true;
 }
 
 void bfSizeArrayDeinit(BfSizeArray *sizeArray) {

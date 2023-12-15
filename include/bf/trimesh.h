@@ -43,3 +43,6 @@ void bfTrimeshGetLboFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat
 #ifdef BF_EMBREE
 BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfSizeArray const *tgtInds);
 #endif
+BfReal const *bfTrimeshGetFaceCentroidConstPtr(BfTrimesh const *trimesh, BfSize i);
+BfReal const *bfTrimeshGetFaceUnitNormalConstPtr(BfTrimesh const *trimesh, BfSize i);
+BfReal bfTrimeshGetFaceArea(BfTrimesh const *trimesh, BfSize i);
