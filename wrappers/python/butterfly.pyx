@@ -6,6 +6,8 @@ import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 
+from pathlib import Path
+
 cimport numpy as cnp
 
 cnp.import_array()
@@ -31,6 +33,7 @@ from mat cimport *
 from mat_block_coo cimport *
 from mat_block_dense cimport *
 from mat_block_diag cimport *
+from mat_csr_real cimport *
 from mat_dense_complex cimport *
 from mat_dense_real cimport *
 from mat_diag_real cimport *
@@ -52,6 +55,7 @@ from tree cimport *
 from tree_level_iter cimport *
 from tree_node cimport *
 from tree_traversals cimport *
+from trimesh cimport *
 from types cimport *
 from vec cimport *
 from vectors cimport *
@@ -532,6 +536,27 @@ cdef class MatBlockDiag(Mat):
         _.mat = bfMatBlockDiagToMat(_.matBlockDiag)
 
         bfPtrArrayDeinit(&blocksPtrArray)
+
+        return _
+
+cdef class MatCsrReal(Mat):
+    cdef BfMatCsrReal *mat_csr_real
+
+    @staticmethod
+    def new_view_factor_matrix_from_trimesh(Trimesh trimesh, BfSize[::1] I=None, BfSize[::1] J=None):
+        if I is None:
+            I = np.arange(trimesh.num_faces, dtype=np.uintp)
+        cdef BfSizeArray *rowInds = bfSizeArrayNewView(len(I), &I[0])
+
+        if J is None:
+            J = np.arange(trimesh.num_faces, dtype=np.uintp)
+        cdef BfSizeArray *colInds = bfSizeArrayNewView(len(J), &J[0])
+
+        cdef MatCsrReal _ = MatCsrReal.__new__(MatCsrReal)
+        _.mat_csr_real = bfMatCsrRealNewViewFactorMatrixFromTrimesh(trimesh.trimesh, rowInds, colInds)
+
+        bfSizeArrayDeinitAndDealloc(&rowInds)
+        bfSizeArrayDeinitAndDealloc(&colInds)
 
         return _
 
@@ -1107,6 +1132,21 @@ cdef class TreeNode:
     @property
     def i1(self):
         return self.get_last_index()
+
+cdef class Trimesh:
+    cdef BfTrimesh *trimesh
+
+    @staticmethod
+    def from_obj(path):
+        path_byte_string = str(path).encode('UTF-8')
+        cdef char *path_c_string = path_byte_string
+        cdef Trimesh _ = Trimesh.__new__(Trimesh)
+        _.trimesh = bfTrimeshNewFromObjFile(path_c_string)
+        return _
+
+    @property
+    def num_faces(self):
+        return bfTrimeshGetNumFaces(self.trimesh)
 
 cdef class Vec:
     cdef BfVec *vec

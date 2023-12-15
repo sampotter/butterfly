@@ -59,6 +59,10 @@ struct BfTrimesh {
   float (*vertexBuffer)[3];
   uint32_t (*indexBuffer)[3];
 #endif
+
+  BfPoint3 *faceCentroids;
+  BfVector3 *faceUnitNormals;
+  BfReal *faceAreas;
 };
 
 int comparFace(BfSize const *face1, BfSize const *face2, void *arg) {
@@ -511,6 +515,49 @@ static void initEmbree(BfTrimesh *trimesh) {
 }
 #endif
 
+static void initFaceCentroids(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  trimesh->faceCentroids = bfMemAllocAndZero(trimesh->numFaces, sizeof(BfPoint3));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BfReal const *x = bfPoints3GetPtrConst(trimesh->verts, trimesh->faces[i][j]);
+      for (BfSize k = 0; k < 3; ++k)
+        trimesh->faceCentroids[i][k] += x[k];
+    }
+    for (BfSize k = 0; k < 3; ++k)
+      trimesh->faceCentroids[i][k] /= 3;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+static void initFaceAreas(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  trimesh->faceAreas = bfMemAlloc(trimesh->numFaces, sizeof(BfReal));
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < trimesh->numFaces; ++i) {
+    BfReal const *x[3];
+    for (BfSize j = 0; j < 3; ++j)
+      x[j] = bfPoints3GetPtrConst(trimesh->verts, trimesh->faces[i][j]);
+    BfVector3 dx1, dx2, n;
+    bfPoint3Sub(x[1], x[0], dx1);
+    bfPoint3Sub(x[2], x[0], dx2);
+    bfVector3Cross(dx1, dx2, n);
+    trimesh->faceAreas[i] = bfVector3Norm(n)/2;
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
 static void initCommon(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
@@ -539,6 +586,9 @@ static void initCommon(BfTrimesh *trimesh) {
   initEmbree(trimesh);
   HANDLE_ERROR();
 #endif
+
+  initFaceCentroids(trimesh);
+  initFaceAreas(trimesh);
 
   BF_ERROR_END() {
     BF_DIE();
@@ -1589,3 +1639,21 @@ BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfS
   return visTgtInds;
 }
 #endif
+
+BfReal const *bfTrimeshGetFaceCentroidConstPtr(BfTrimesh const *trimesh, BfSize i) {
+  if (i >= bfTrimeshGetNumFaces(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->faceCentroids[i];
+}
+
+BfReal const *bfTrimeshGetFaceUnitNormalConstPtr(BfTrimesh const *trimesh, BfSize i) {
+  if (i >= bfTrimeshGetNumFaces(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->faceUnitNormals[i];
+}
+
+BfReal bfTrimeshGetFaceArea(BfTrimesh const *trimesh, BfSize i) {
+  if (i >= bfTrimeshGetNumFaces(trimesh))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  return trimesh->faceAreas[i];
+}
