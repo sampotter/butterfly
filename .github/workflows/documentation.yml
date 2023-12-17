@@ -13,13 +13,15 @@ jobs:
     - name: Install dependencies
       run: |
         pip install sphinx sphinx_rtd_theme myst_parser breathe insipid-sphinx-theme
-    - name: Build HTML
+    - name: Sphinx build
+      run: |
+        sphinx-build doc docs/build/html
       uses: ammaraskar/sphinx-action@master
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: html-docs
-        path: docs/build/html/
+        path: docs/build/html
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
