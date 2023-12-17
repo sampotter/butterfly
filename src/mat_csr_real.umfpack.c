@@ -1,6 +1,12 @@
 #include <bf/mat_csr_real.h>
 
-#include <umfpack.h>
+#if defined BF_LINUX
+#  include <suitesparse/umfpack.h>
+#elif defined BF_DARWIN
+#  include <umfpack.h>
+#else
+#  error "Unknown platform"
+#endif
 
 #include <bf/assert.h>
 #include <bf/error.h>
