@@ -13,7 +13,6 @@
 #include <bf/trimesh.h>
 #include <bf/util.h>
 #include <bf/vec_real.h>
-#include <time.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -71,7 +70,7 @@ int main(int argc, char const *argv[]) {
   BfSize numSamples = atoi(argv[4]);
 
   BfReal tol = argc > 5 ? strtod(argv[5], NULL) : 1e-3;
-  BfReal p = argc > 6 ? strtod(argv[6], NULL) : 0.0625;
+  BfReal p = argc > 6 ? strtod(argv[6], NULL) : 1.0;
   BfSize rowTreeOffset = argc > 7 ? strtoull(argv[7], NULL, 10) : 0;
   BfSize freqTreeDepth = argc > 8 ? strtoull(argv[8], NULL, 10) : BF_SIZE_BAD_VALUE;
 
@@ -126,32 +125,40 @@ int main(int argc, char const *argv[]) {
 
   clock_t start, end;
 
-  start = clock();
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
-  int nf = 50; // number of eigenvalues to fit for extrapolation
-  int r = 0;   // rank of covariance matrix (typically r = nf)
-  BfVecReal count_vec[numEigs]; // [1, 2, 3, ..., numEigs] for fitting
-  BfVecReal lam_est[numEigs]; // extrapolated eigenvalues  
-  double m = 0.0; // slope of line fitting eigenvalues
-  double err_est = 1.0; // truncation error estimate
+  int nfit = 50; // number of eigenvalues to fit for extrapolation
+  BfReal err_est = 1.0;
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
-    // rank is equal to number of computed frequencies
-    r = freqs->size;
-    // compute slope of eigenvalue (= freq^2) increase 
-    m = dot(count_vec[r-nf:r-1], freqs[r-nf:r-1].^2) / norm(count_vec[r-nf:r-1])^2;
-    // update vector of extrapolated eigenvalues using computed slope
-    lam_est = m*count_vec;
-    // compute relative truncation error 
-    // by applying _gamma to extrapolated eigenvalues
-    err_est = norm(gamma_(lam_est[1+r:end]).^2) / norm(gamma_(ls).^2);
-  }
-  end = clock();
+    
+    // Don't try to extrapolate if we don't have enough frequencies:
+    if (freqs->size <= nfit) continue;
 
-  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, ((double) (end - start)) / CLOCKS_PER_SEC);
+    BfReal numer = 0;
+    BfReal denom = 0;
+    for (BfSize i = freqs->size - nfit; i < freqs->size; ++i) {
+      BfReal lam = pow(freqs->data[i], 2);
+      numer += i*lam;
+      denom += i*i;
+    }
+    BfReal m = numer/denom;
+
+    numer = 0;
+    for (BfSize i = freqs->size; i < numVerts; ++i) {
+      numer += pow(gamma_(m*i), 2);
+    }
+    denom = numer;
+    for (BfSize i = 0; i < freqs->size; ++i) {
+      denom += pow(gamma_(m*i), 2);
+    }
+    err_est = sqrt(numer)/sqrt(denom);
+    printf("truncation error estimate after %i eigenpairs is %.2e\n", freqs->size, err_est);
+  }
+
+  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, bfToc());
 
   char filename[50];
   sprintf(filename, "freqs_tol%.0e.bin", tol);
