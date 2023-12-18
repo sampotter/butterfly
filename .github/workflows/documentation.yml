@@ -1,9 +1,12 @@
 name: documentation
 
-on: push
+on:
+  push:
+    branches:
+      - trunk
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,7 +24,7 @@ jobs:
       with:
         name: html-docs
         path: docs/build/html
-    - name: Deploy
+    - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
