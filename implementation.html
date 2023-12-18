@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Implementation &#8212; butterfly  documentation</title>
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="_static/insipid.css?v=b2d00be7" />
+
+    <script src="_static/documentation_options.js?v=8a448e45"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script defer src="_static/insipid.js"></script>
+    <script defer src="_static/insipid-sidebar.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Todo" href="todo.html" />
+    <link rel="prev" title="Examples" href="examples.html" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+  </head><body>
+    <script type="text/javascript">
+        document.body.classList.add('js');
+    </script>
+    <input type="checkbox" id="sidebar-checkbox" style="display: none;">
+    <label id="overlay" for="sidebar-checkbox"></label>
+    <div class="sidebar-resize-handle"></div>
+    <script type="text/javascript">
+        try {
+            let sidebar = localStorage.getItem('sphinx-sidebar');
+            const sidebar_width = localStorage.getItem('sphinx-sidebar-width');
+            if (sidebar_width) {
+                document.documentElement.style.setProperty('--sidebar-width', sidebar_width);
+            }
+            // show sidebar on wide screen
+            if (!sidebar && window.matchMedia('(min-width: 100rem)').matches) {
+                sidebar = 'visible';
+                // NB: We don't store the value in localStorage!
+            }
+            if (sidebar === 'visible') {
+                document.getElementById('sidebar-checkbox').checked = true;
+            }
+        } catch(e) {
+            console.info(e);
+        }
+    </script>
+    <header id="topbar-placeholder">
+      <div id="topbar">
+        <div id="titlebar">
+          <div class="buttons">
+            <label for="sidebar-checkbox" id="sidebar-button" role="button" tabindex="0" aria-controls="sphinxsidebar" accesskey="M">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>
+            </label>
+            <button id="search-button" type="button" title="Search" aria-label="Search" aria-expanded="false" aria-controls="search-form" accesskey="S">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"/></svg>
+            </button>
+          </div>
+          <div class="title">
+            <a class="parent" href="index.html" accesskey="U">butterfly  documentation</a>
+            <a class="top" href="#">Implementation</a>
+          </div>
+          <div class="buttons">
+            <button id="fullscreen-button" type="button" aria-hidden="true">
+              <span class="enable">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M212.686 315.314L120 408l32.922 31.029c15.12 15.12 4.412 40.971-16.97 40.971h-112C10.697 480 0 469.255 0 456V344c0-21.382 25.803-32.09 40.922-16.971L72 360l92.686-92.686c6.248-6.248 16.379-6.248 22.627 0l25.373 25.373c6.249 6.248 6.249 16.378 0 22.627zm22.628-118.628L328 104l-32.922-31.029C279.958 57.851 290.666 32 312.048 32h112C437.303 32 448 42.745 448 56v112c0 21.382-25.803 32.09-40.922 16.971L376 152l-92.686 92.686c-6.248 6.248-16.379 6.248-22.627 0l-25.373-25.373c-6.249-6.248-6.249-16.378 0-22.627z"/></svg>
+              </span>
+              <span class="disable">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M4.686 427.314L104 328l-32.922-31.029C55.958 281.851 66.666 256 88.048 256h112C213.303 256 224 266.745 224 280v112c0 21.382-25.803 32.09-40.922 16.971L152 376l-99.314 99.314c-6.248 6.248-16.379 6.248-22.627 0L4.686 449.941c-6.248-6.248-6.248-16.379 0-22.627zM443.314 84.686L344 184l32.922 31.029c15.12 15.12 4.412 40.971-16.97 40.971h-112C234.697 256 224 245.255 224 232V120c0-21.382 25.803-32.09 40.922-16.971L296 136l99.314-99.314c6.248-6.248 16.379-6.248 22.627 0l25.373 25.373c6.248 6.248 6.248 16.379 0 22.627z"/></svg>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div id="searchbox" role="search">
+          <form id="search-form" class="search" style="display: none" action="search.html" method="get">
+            <input type="search" name="q" placeholder="Search ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+            <button>Go</button>
+          </form>
+        </div>
+      </div>
+    </header>
+    <nav>
+      <a href="examples.html" class="nav-icon previous" title="previous:&#13;Examples" aria-label="Previous topic" accesskey="P" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M31.7 239l136-136c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9L127.9 256l96.4 96.4c9.4 9.4 9.4 24.6 0 33.9L201.7 409c-9.4 9.4-24.6 9.4-33.9 0l-136-136c-9.5-9.4-9.5-24.6-.1-34z"/></svg>
+      </a>
+      <a href="todo.html" class="nav-icon next" title="next:&#13;Todo" aria-label="Next topic" accesskey="N" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"/></svg>
+      </a>
+    </nav>
+
+    <nav class="relbar">
+      <a class="previous" href="examples.html" aria-label="Previous topic" >
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg>
+        </div>
+        <div class="title">
+          <span class="text">
+            <span class="direction">previous</span>
+            Examples
+          </span>
+        </div>
+      </a>
+      <a class="next" href="todo.html" aria-label="Next topic" >
+        <div class="title">
+          <span class="text">
+            <span class="direction">next</span>
+            Todo
+          </span>
+        </div>
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"/></svg>
+        </div>
+      </a>
+    </nav>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+<section id="implementation">
+<h1>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">§</a></h1>
+<p><em>This is a living design document—not all of the code reflects these guidelines yet.</em></p>
+<section id="style-guidelines">
+<h2>Style guidelines<a class="headerlink" href="#style-guidelines" title="Link to this heading">§</a></h2>
+<p>A few simple naming conventions should be adopted throughout <code class="docutils literal notranslate"><span class="pre">butterfly</span></code>’s source:</p>
+<ul class="simple">
+<li><p>Apart from macro, enum, and global constant names, symbols should be in camelCase.</p></li>
+<li><p>Macros, enums, and global constants should be written in ALL_CAPS with words separated using underscores.</p></li>
+<li><p>All <em>publicly exported</em> symbols should be prefixed with <code class="docutils literal notranslate"><span class="pre">bf</span></code>, <code class="docutils literal notranslate"><span class="pre">Bf</span></code> or <code class="docutils literal notranslate"><span class="pre">BF_</span></code> (<em>namespaced</em>), depending on whether:</p>
+<ol class="arabic simple">
+<li><p>The symbol is a struct, enum, union, or typedef (<code class="docutils literal notranslate"><span class="pre">Bf</span></code>).</p></li>
+<li><p>It’s a variable or a function name (<code class="docutils literal notranslate"><span class="pre">bf</span></code>).</p></li>
+<li><p>It’s a macro, enum, or global constant name (<code class="docutils literal notranslate"><span class="pre">BF_</span></code>).</p></li>
+</ol>
+</li>
+<li><p>Static symbols should not be namespaced, but instead should be in camelCase, PascalCase, or ALL_CAPS, depending on whether the symbol belongs to case 1, 2, or 3 above.</p></li>
+</ul>
+<p>Since <a class="reference external" href="https://butterfly.github.io">butterfly</a> uses its own ad-hoc object system, it’s important to follow consistent naming conventions and to order function arguments predictably. If we want to define a <code class="docutils literal notranslate"><span class="pre">Frobnicate</span></code> “method” on the type <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code>, we would declare:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">bfWidgetFrobnicate</span><span class="p">(</span><span class="n">BfWidget</span> <span class="o">*</span><span class="n">widget</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>It’s also helpful to adhere to the following naming convention for functions used to set up and tear down objects:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Init*</span></code> is used for functions which initialize an object.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">New*</span></code> is used for functions which allocate memory for an object and possibly initialize it.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BfWidget</span> <span class="o">*</span><span class="n">bfWidgetNewWithDefaultParams</span><span class="p">();</span>
+<span class="n">void</span> <span class="n">bfWidgetInitWithDefaultParams</span><span class="p">(</span><span class="n">BfWidget</span> <span class="o">*</span><span class="n">widget</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>For some types, both types of functions may be provided, but it isn’t necessary. For example, if <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code> is opaque, then an <code class="docutils literal notranslate"><span class="pre">Init</span></code> function doesn’t make sense, since we can’t use <code class="docutils literal notranslate"><span class="pre">sizeof(BfWidget)</span></code> to determine how much memory to allocate. On the other hand, <code class="docutils literal notranslate"><span class="pre">bfWidgetNew*</span></code> is fine, since <code class="docutils literal notranslate"><span class="pre">sizeof(BfWidget)</span></code> will be available statically to the module defining <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code>. This lets us hide the implementation of <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code>, which is one tool that can be used to manage complexity.</p>
+<p>On the other hand, <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code> may not be that complex, in which case making it opaque would be its own source of complexity. In this case, for performance reasons, it might be preferable to allocate <code class="docutils literal notranslate"><span class="pre">BfWidget</span></code> on the stack and initialize it using an <code class="docutils literal notranslate"><span class="pre">Init</span></code> function.</p>
+<p>If both functions are included, then the convention is that the <code class="docutils literal notranslate"><span class="pre">New</span></code> function first allocates and then initializes the type.</p>
+<p>In summary:</p>
+<ul class="simple">
+<li><p>If a type is opaque, then <code class="docutils literal notranslate"><span class="pre">New</span></code> functions provide the only way of instantiating them. Otherwise, <code class="docutils literal notranslate"><span class="pre">New</span></code> functions are convenience functions which both allocate and initialize a type.</p></li>
+<li><p>If a type if opaque, it won’t have any <code class="docutils literal notranslate"><span class="pre">Init</span></code> functions. If it isn’t opaque, then <code class="docutils literal notranslate"><span class="pre">Init</span></code> functions can be useful for initializing stack-allocated types.</p></li>
+</ul>
+<p>Having both <code class="docutils literal notranslate"><span class="pre">New</span></code> and <code class="docutils literal notranslate"><span class="pre">Init</span></code> functions leaves the door open to other useful allocation strategies—for instance, for pool allocation, only <code class="docutils literal notranslate"><span class="pre">Init</span></code> will be useful.</p>
+<p>There are three styles of teardown functions: <code class="docutils literal notranslate"><span class="pre">Deinit</span></code>, <code class="docutils literal notranslate"><span class="pre">Dealloc</span></code>, <code class="docutils literal notranslate"><span class="pre">DeinitAndDealloc</span></code>, and <code class="docutils literal notranslate"><span class="pre">Delete</span></code>. The <code class="docutils literal notranslate"><span class="pre">Deinit</span></code> and <code class="docutils literal notranslate"><span class="pre">Dealloc</span></code> should just be the inverse of <code class="docutils literal notranslate"><span class="pre">Init</span></code> and <code class="docutils literal notranslate"><span class="pre">New</span></code>. However, while there can be many different <code class="docutils literal notranslate"><span class="pre">Init</span></code> and <code class="docutils literal notranslate"><span class="pre">New</span></code> functions per type, there will only ever be one <code class="docutils literal notranslate"><span class="pre">Deinit</span></code> and <code class="docutils literal notranslate"><span class="pre">Dealloc</span></code> function. The <code class="docutils literal notranslate"><span class="pre">DeinitAndDealloc</span></code> functions combine <code class="docutils literal notranslate"><span class="pre">Deinit</span></code> and <code class="docutils literal notranslate"><span class="pre">Dealloc</span></code>. In addition, to cope with object inheritance, we have <code class="docutils literal notranslate"><span class="pre">Delete</span></code> functions, which recursively deinitialize the parent types (i.e., a “virtual destructor”) but which otherwise take the place of <code class="docutils literal notranslate"><span class="pre">DeinitAndDealloc</span></code>.</p>
+<p>Since memory allocation/deallocation is separated from object initialize/deinitialization, objects can be allocate and deallocated once, and then initialized and deinitialized in a loop repeatedly.</p>
+<section id="position-of-the-const-keyword">
+<h3>Position of the <code class="docutils literal notranslate"><span class="pre">const</span></code> keyword<a class="headerlink" href="#position-of-the-const-keyword" title="Link to this heading">§</a></h3>
+<p>Where <code class="docutils literal notranslate"><span class="pre">const</span></code> should be placed in C is contentious. The most consistent thing to do is to place it <em>after</em> the type, pointers, or qualifier it modifies. For all qualifiers and pointers, it <em>must</em> be placed to the right, but it can be placed either before or after the leading type. Many C programmers prefer to place the <code class="docutils literal notranslate"><span class="pre">const</span></code> keyword before the leading type since it follows the rules for adjective placement in English: “a constant integer” (<code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">int</span></code>) rather than “an integer constant” (<code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">const</span></code>). Obviously not all programmers are native English speakers, so the choice of whether to place <code class="docutils literal notranslate"><span class="pre">const</span></code> before or after the leading type is a subjective one.</p>
+<p>We choose to place the <code class="docutils literal notranslate"><span class="pre">const</span></code> <em>before</em> the leading type (<em>or at least we will once we update the code…</em>) for one practical reason: Cython does not allow <code class="docutils literal notranslate"><span class="pre">const</span></code> to be placed after the leading type, making it annoying to copy and paste C headers into Cython <cite>.pxd</cite> files. Every <code class="docutils literal notranslate"><span class="pre">BfType</span> <span class="pre">const</span></code> must be converted to <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">BfType</span></code> by hand.</p>
+<p>We also never use <code class="docutils literal notranslate"><span class="pre">const</span></code> to modify pointers or qualfiers, so consistency is unimportant.</p>
+</section>
+</section>
+<section id="coding-style">
+<h2>Coding style<a class="headerlink" href="#coding-style" title="Link to this heading">§</a></h2>
+</section>
+<section id="ownership">
+<h2>Ownership<a class="headerlink" href="#ownership" title="Link to this heading">§</a></h2>
+<p><em>copy vs view vs steal</em></p>
+</section>
+<section id="error-handling">
+<h2>Error handling<a class="headerlink" href="#error-handling" title="Link to this heading">§</a></h2>
+</section>
+<section id="object-system">
+<h2>Object system<a class="headerlink" href="#object-system" title="Link to this heading">§</a></h2>
+<p>Although butterfly is written in the C programming language, it makes use of object-oriented programming (OOP). The primary motivation for this is the inclusion of a hierarchy of matrix types. Since butterfly factorizations can be built up recursively in terms of operations on block matrices, having matrix types which can be nested hierarchically, concatenated, or blocked together in arbitrary ways at runtime is essential.</p>
+<p>The object system supports single inheritance which can be multiple levels deep. Objects methods are implemented using virtual tables. Since C doesn’t directly support OOP, we adopt a system of ad hoc conventions to implement the desired features.</p>
+<p>A class consists of a struct defining the type, a virtual table (or “vtable”), a set of methods defined on it, and its subclasses. For a simple example, consider a base class <code class="docutils literal notranslate"><span class="pre">Animal</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">Animal</span> <span class="p">{</span>
+  <span class="n">struct</span> <span class="n">AnimalVtable</span> <span class="n">vtable</span><span class="p">;</span>
+  <span class="o">...</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>A subclass is a struct whose first member is named <code class="docutils literal notranslate"><span class="pre">super</span></code> and which has the same type as the base class. Continuing the example, consider two subclasses <code class="docutils literal notranslate"><span class="pre">Dog</span></code> and <code class="docutils literal notranslate"><span class="pre">Cat</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">Dog</span> <span class="p">{</span>
+  <span class="n">struct</span> <span class="n">Animal</span> <span class="nb">super</span><span class="p">;</span>
+  <span class="o">...</span>
+<span class="p">};</span>
+
+<span class="n">struct</span> <span class="n">Cat</span> <span class="p">{</span>
+  <span class="n">struct</span> <span class="n">Animal</span> <span class="nb">super</span><span class="p">;</span>
+  <span class="o">...</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Let’s assume <code class="docutils literal notranslate"><span class="pre">Animal</span></code> has one method, <code class="docutils literal notranslate"><span class="pre">MakeNoise</span></code>. To implement this method, we first define the vtable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">AnimalVtable</span> <span class="p">{</span>
+  <span class="n">void</span> <span class="p">(</span><span class="o">*</span><span class="n">MakeNoise</span><span class="p">)(</span><span class="n">struct</span> <span class="n">Animal</span> <span class="o">*</span><span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>We can implement this method as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">animalMakeNoise</span><span class="p">(</span><span class="n">struct</span> <span class="n">Animal</span> <span class="o">*</span><span class="n">animal</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">animal</span><span class="o">-&gt;</span><span class="n">vtable</span><span class="o">-&gt;</span><span class="n">MakeNoise</span><span class="p">(</span><span class="n">animal</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">void</span> <span class="n">dogMakeNoise</span><span class="p">(</span><span class="n">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">dog</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;woof!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">void</span> <span class="n">catMakeNoise</span><span class="p">(</span><span class="n">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="n">cat</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;meow!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>When we create an “instance” of <code class="docutils literal notranslate"><span class="pre">Dog</span></code> or <code class="docutils literal notranslate"><span class="pre">Cat</span></code>, we first define a variable of type <code class="docutils literal notranslate"><span class="pre">AnimalVtable</span></code> for each subclass, and then create the instance. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">AnimalVtable</span> <span class="n">DogVtable</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="o">.</span><span class="n">MakeNoise</span> <span class="o">=</span> <span class="n">__typeof__</span><span class="p">(</span><span class="o">&amp;</span><span class="n">animalMakeNoise</span><span class="p">)</span><span class="n">dogMakeNoise</span>
+<span class="p">};</span>
+
+<span class="n">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">newDog</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">dog</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">sizeof</span><span class="p">(</span><span class="n">struct</span> <span class="n">Dog</span><span class="p">));</span>
+  <span class="n">dog</span><span class="o">-&gt;</span><span class="n">vtable</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">DogVtable</span><span class="p">;</span>
+  <span class="o">...</span>
+  <span class="k">return</span> <span class="n">dog</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To illustrate runtime polymorphic behavior, we simple create a new instance of <code class="docutils literal notranslate"><span class="pre">Dog</span></code>, “cast” it to <code class="docutils literal notranslate"><span class="pre">Animal</span></code>, and call <code class="docutils literal notranslate"><span class="pre">animalMakeNoise</span></code>. The call will be dispatched to <code class="docutils literal notranslate"><span class="pre">dogMakeNoise</span></code> so that <code class="docutils literal notranslate"><span class="pre">woof!</span></code> is print to standard out:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct Dog *dog = newDog();
+struct Animal *animal = &amp;dog-&gt;super;
+animalMakeNoise(animal); // woof!
+</pre></div>
+</div>
+<p>Bear in mind that all of this is completely ad hoc and relies on the programmer to establish and follow their own set of conventions. None of this is enforced syntactically by the compiler. We will describe the conventions adopted in butterfly in the following sections so they are less opaque.</p>
+</section>
+</section>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+          <div class="sidebar-resize-handle"></div>
+
+<h3><a href="index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hierarchical-matrices.html">Hierarchical Matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wrappers.html">Wrappers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#style-guidelines">Style guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-style">Coding style</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ownership">Ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#object-system">Object system</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="todo.html">Todo</a></li>
+</ul>
+
+<div><hr class="docutils"></div>
+<ul>
+  <li class="toctree-l1"><a class="reference internal" href="genindex.html" accesskey="I">General Index</a></li>
+</ul>
+<div id="ethical-ad-placement"></div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <nav class="relbar">
+      <a class="previous" href="examples.html" aria-label="Previous topic" >
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg>
+        </div>
+        <div class="title">
+          <span class="text">
+            <span class="direction">previous</span>
+            Examples
+          </span>
+        </div>
+      </a>
+      <a class="next" href="todo.html" aria-label="Next topic" >
+        <div class="title">
+          <span class="text">
+            <span class="direction">next</span>
+            Todo
+          </span>
+        </div>
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"/></svg>
+        </div>
+      </a>
+    </nav>
+
+    <footer role="contentinfo">
+      &#169; Copyright 2023, Samuel F. Potter.
+      Created using <a class="reference external" href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+      <a class="reference external" href="https://insipid-sphinx-theme.readthedocs.io/">Insipid Theme</a>.
+<a class="reference internal" href="_sources/implementation.rst.txt" rel="nofollow">Show Source</a>.
+    </footer>
+  </body>
+</html>
