@@ -21,6 +21,11 @@ meson compile
 ```
 This will build all of the examples, as well. Afterwards, the compiled executables for the examples will be in `./builddir/examples`.
 
+For Mac machines using homebrew, it may be necessary to specify paths to dependencies by passing the `-Dc_args` flag to meson, e.g. 
+```
+meson setup builddir -Dc_args='-I/opt/homebrew/Cellar/suite-sparse/7.1.0/include/ -I/opt/homebrew/Cellar/openblas/0.3.24/include/'
+```
+
 ### Error handling
 
 This library features "OpenGL-style" error handling (e.g., [see this page](https://www.khronos.org/opengl/wiki/OpenGL_Error)). The guiding principles are three-fold:
