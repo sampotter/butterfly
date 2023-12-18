@@ -9,7 +9,13 @@
 #include <bf/mem.h>
 #include <bf/vec_real.h>
 
-#include <suitesparse/umfpack.h>
+#if defined BF_LINUX
+#  include <suitesparse/umfpack.h>
+#elif defined BF_DARWIN
+#  include <umfpack.h>
+#else
+#  error "Unknown platform"
+#endif
 
 /** Interface: Lu */
 

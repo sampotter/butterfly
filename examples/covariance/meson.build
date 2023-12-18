@@ -1,16 +1,27 @@
 examples = [
-  'bf_lbo'
+  'cheb_cov',
+  'lbo_cov',
+  'save_FEM_matrices'
 ]
 
 example_deps = [argtable3_dep, butterfly_dep, m_dep]
 
 foreach example : examples
-  executable(example, example + '.c', dependencies : example_deps)
+  executable(
+    example,
+    [example + '.c'],
+    dependencies : example_deps
+  )
 endforeach
 
 scripts = [
-  'bf_lbo_plot_blocks.py',
-  'collect_lbo_data.py'
+  'lbo_cov_test.sh',
+  'run_bf_lbo_test.sh',
+  'run_lbo_cov.sh',
+  'plot_test_output.jl',
+  'covariance_sphere.jl',
+  'sphere_cov.jl',
+  'Project.toml'
 ]
 
 foreach script : scripts

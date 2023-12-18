@@ -27,9 +27,6 @@ endif
 
 cc = meson.get_compiler('c')
 
-blas_dep = dependency('flexiblas', required : true)
-lapacke_dep = dependency('lapacke', required : true)
-
 fortran_dep = cc.find_library('gfortran', required : true)
 # cholmod_dep = cc.find_library('cholmod', required : true)
 m_dep = meson.get_compiler('c').find_library('m', required : false)
@@ -83,8 +80,6 @@ if get_option('python').enabled()
 endif
 
 butterfly_dependencies = [
-  blas_dep,
-  lapacke_dep,
   fortran_dep,
 #  cholmod_dep,
   m_dep,
@@ -92,6 +87,16 @@ butterfly_dependencies = [
   gsl_dep,
   umfpack_dep,
 ]
+if host_machine.system() == 'linux'
+  blas_dep = dependency('flexiblas', required : true)
+  lapacke_dep = dependency('lapacke', required : true)
+  butterfly_dependencies += [blas_dep, lapacke_dep]
+elif host_machine.system() == 'darwin'
+  blas_dep = cc.find_library('openblas', required : true)
+  butterfly_dependencies += [blas_dep]
+elif host_machine.system() == 'windows'
+  error('Windows unsupported currently')
+endif
 if get_option('embree').enabled()
   butterfly_dependencies += [embree_dep]
 endif
@@ -195,7 +200,7 @@ endif
 butterfly_inc = include_directories('include')
 
 butterfly_include_directories = [
-  butterfly_inc
+  butterfly_inc,
 ]
 
 butterfly_lib = library(
@@ -210,7 +215,7 @@ install_subdir('include/bf', install_dir : 'include', install_tag : 'devel')
 
 butterfly_dep = declare_dependency(
   link_with : butterfly_lib,
-  include_directories : butterfly_inc
+  include_directories : butterfly_include_directories
 )
 
 pkg.generate(butterfly_lib)

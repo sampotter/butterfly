@@ -2,8 +2,6 @@
 
 #include <math.h>
 
-#include <openblas/lapacke.h>
-
 #include <bf/assert.h>
 #include <bf/blas.h>
 #include <bf/error.h>

@@ -377,6 +377,7 @@ static BfReal integrateViewFactorMidpointRule(BfTrimesh const *trimesh, BfSize s
   return areaTgt*fmax(0, dotSrc)*fmax(0, dotTgt)/(BF_PI*rSquared*rSquared);
 }
 
+#ifdef BF_EMBREE // bfTrimeshGetVisibility (used here) is not defined in trimesh.c without Embree
 BfMatCsrReal *bfMatCsrRealNewViewFactorMatrixFromTrimesh(BfTrimesh const *trimesh, BfSizeArray const *rowInds, BfSizeArray const *colInds) {
   BF_ERROR_BEGIN();
 
@@ -430,6 +431,7 @@ BfMatCsrReal *bfMatCsrRealNewViewFactorMatrixFromTrimesh(BfTrimesh const *trimes
 
   return matCsrReal;
 }
+#endif
 
 void bfMatCsrRealInitFromPtrs(BfMatCsrReal *mat, BfSize numRows, BfSize numCols,
                               BfSize const *rowptr, BfSize const *colind,

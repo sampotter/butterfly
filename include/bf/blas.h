@@ -4,6 +4,6 @@
 #  include <openblas/cblas.h>
 #  include <openblas/lapacke.h>
 #elif defined BF_DARWIN
-#  include <cblas_openblas.h>
+#  include <cblas.h>
 #  include <lapacke.h>
 #endif

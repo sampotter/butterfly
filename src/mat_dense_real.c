@@ -15,8 +15,6 @@
 
 #include <string.h>
 
-#include <openblas/lapacke.h>
-
 #include "macros.h"
 
 static enum CBLAS_TRANSPOSE getCblasTranspose(BfMatDenseReal const *mat) {

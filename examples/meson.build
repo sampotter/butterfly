@@ -5,6 +5,7 @@ subdir('multiple_scattering')
 subdir('radiosity')
 subdir('simple')
 subdir('tree_evaluator')
+subdir('covariance')
 
 # Extra files that should be copied over, such as common files,
 # resources, etc.

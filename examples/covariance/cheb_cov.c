@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static BfReal kappa = BF_NAN;
 static BfReal nu = BF_NAN;
@@ -42,7 +43,7 @@ static BfVec *chebmul(BfCheb const *cheb, BfMat const *S, BfVec *w) {
     BfVec *y = bfMatMulVec(S, y1);
     bfVecDscal(y, 4/lamMax);
     bfVecDaxpy(y, -2, y1);
-    bfVecDaxpy(y, 1, y2);
+    bfVecDaxpy(y, -1, y2);
 
     bfVecDaxpy(x, c[k], y);
 
@@ -149,21 +150,25 @@ int main(int argc, char const *argv[]) {
   BfSize N = 1000;
   FILE *fp = NULL;
 
-  fp = fopen("lambda.bin", "w");
+  char filename[50];
+  sprintf(filename, "lambda_p%i.bin", (int)p);
+  fp = fopen(filename, "w");
   for (BfSize i = 0; i <= N; ++i) {
     BfReal lam = (i*lamMax)/N;
     fwrite(&lam, sizeof(BfReal), 1, fp);
   }
   fclose(fp);
 
-  fp = fopen("gamma.bin", "w");
+  sprintf(filename, "gamma_p%i.bin", (int)p);
+  fp = fopen(filename, "w");
   for (BfSize i = 0; i <= N; ++i) {
     BfReal y = gamma_((i*lamMax)/N);
     fwrite(&y, sizeof(BfReal), 1, fp);
   }
   fclose(fp);
 
-  fp = fopen("gamma_cheb.bin", "w");
+  sprintf(filename, "gamma_cheb_p%i.bin", (int)p);
+  fp = fopen(filename, "w");
   for (BfSize i = 0; i <= N; ++i) {
     BfReal y = bfChebEval(&gammaCheb, (i*lamMax)/N);
     fwrite(&y, sizeof(BfReal), 1, fp);
@@ -179,7 +184,8 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(&gammaCheb, S, MLumpSqrtInv);
-  bfVecSave(z, "z_cheb.bin");
+  sprintf(filename, "z_cheb_p%i.bin", (int)p);
+  bfVecSave(z, filename);
   bfVecDelete(&z);
 
   /** Time how long it takes to sample z numSamples times. */
@@ -195,7 +201,8 @@ int main(int argc, char const *argv[]) {
    ** on the mesh. */
 
   BfVec *c = get_c(&gammaCheb, S, MLumpSqrtInv);
-  bfVecSave(c, "c_cheb.bin");
+  sprintf(filename, "c_cheb_p%i.bin", (int)p);
+  bfVecSave(c, filename);
 
   /** Clean up: */
 
