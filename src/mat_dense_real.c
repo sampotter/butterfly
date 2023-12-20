@@ -206,16 +206,16 @@ BfSize bfMatDenseRealNumBytes(BfMatDenseReal const *matDenseReal) {
   return sizeof(BfReal)*numRows*numCols;
 }
 
-void bfMatDenseRealSave(BfMat const *mat, char const *path) {
+void bfMatDenseRealSave(BfMatDenseReal const *matDenseReal, char const *path) {
   BF_ERROR_BEGIN();
-
-  BfMatDenseReal const *matDenseReal = bfMatConstToMatDenseRealConst(mat);
 
   FILE *fp = fopen(path, "w");
   if (fp == NULL)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  BfSize numElts = mat->numRows*mat->numCols;
+  BfSize m = bfMatDenseRealGetNumRows(matDenseReal);
+  BfSize n = bfMatDenseRealGetNumCols(matDenseReal);
+  BfSize numElts = m*n;
 
   fwrite(matDenseReal->data, sizeof(BfReal), numElts, fp);
   /* TODO: error-handling */

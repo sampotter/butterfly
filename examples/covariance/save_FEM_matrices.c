@@ -5,6 +5,7 @@
 #include <bf/interval_tree.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
+#include <bf/mat_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/octree.h>
 #include <bf/rand.h>
@@ -47,13 +48,12 @@ int main(int argc, char const *argv[]) {
   printf("Computed dense eigendecomposition [%0.1fs]\n", bfToc());
 
   bfMatDenseRealSave(bfMatToMatDenseReal(Phi), "Phi.bin");
-  bfVecRealSave(bfVecToVecReal(Lam), "Lam.bin");
+  bfVecRealSave(Lam, "Lam.bin");
   printf("Saved dense eigendecomposition\n");
-  
-  BfMat *Phit = bfMatTrans(Phi);
+
+  BfMat *PhiT = bfMatTrans(Phi);
   BfMat *tmp  = bfMatMul(M, Phi);
-  BfMat *tmp2 = bfMatMul(Phit, tmp);
-  bfMatDelete(&Phit);
+  bfMatDelete(&PhiT);
   bfMatDelete(&tmp);
   bfMatDenseRealSave(bfMatToMatDenseReal(Phi), ".bin");
 
@@ -61,6 +61,6 @@ int main(int argc, char const *argv[]) {
   bfMatDelete(&M);
   bfMatDelete(&L);
   bfMatDelete(&Phi);
-  bfVecDelete(&Lam);
-  bfTrimeshDeinit(&trimesh);
+  bfVecRealDelete(&Lam);
+  bfTrimeshDeinit(trimesh);
 }

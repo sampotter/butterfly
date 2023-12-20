@@ -13,7 +13,7 @@ void bfMatDenseRealDelete(BfMatDenseReal **matDenseReal);
 BfMat *bfMatDenseRealZerosLike(BfMatDenseReal const *matDenseReal, BfSize numRows, BfSize numCols);
 BfType bfMatDenseRealGetType(BfMat const *mat);
 BfSize bfMatDenseRealNumBytes(BfMatDenseReal const *);
-void bfMatDenseRealSave(BfMat const *mat, char const *path);
+void bfMatDenseRealSave(BfMatDenseReal const *matDenseReal, char const *path);
 void bfMatDenseRealDump(BfMatDenseReal const *matDenseReal, FILE *fp);
 void bfMatDenseRealPrint(BfMat const *mat, FILE *fp);
 BfSize bfMatDenseRealGetNumRows(BfMatDenseReal const *matDenseReal);

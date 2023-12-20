@@ -123,23 +123,21 @@ int main(int argc, char const *argv[]) {
     .minNumCols = 20,
   };
 
-  clock_t start, end;
-
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
-  int nfit = 50; // number of eigenvalues to fit for extrapolation
+  BfSize numFit = 50; // number of eigenvalues to fit for extrapolation
   BfReal err_est = 1.0;
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
-    
+
     // Don't try to extrapolate if we don't have enough frequencies:
-    if (freqs->size <= nfit) continue;
+    if (freqs->size <= numFit) continue;
 
     BfReal numer = 0;
     BfReal denom = 0;
-    for (BfSize i = freqs->size - nfit; i < freqs->size; ++i) {
+    for (BfSize i = freqs->size - numFit; i < freqs->size; ++i) {
       BfReal lam = pow(freqs->data[i], 2);
       numer += i*lam;
       denom += i*i;
@@ -155,7 +153,7 @@ int main(int argc, char const *argv[]) {
       denom += pow(gamma_(m*i), 2);
     }
     err_est = sqrt(numer)/sqrt(denom);
-    printf("truncation error estimate after %i eigenpairs is %.2e\n", freqs->size, err_est);
+    printf("truncation error estimate after %lu eigenpairs is %.2e\n", freqs->size, err_est);
   }
 
   printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, bfToc());
