@@ -115,7 +115,8 @@ void bfSizeArrayInitView(BfSizeArray *sizeArray, BfSize n, BfSize *inds) {
 }
 
 void bfSizeArrayDeinit(BfSizeArray *sizeArray) {
-  bfMemFree(sizeArray->data);
+  if (!sizeArray->isView)
+    bfMemFree(sizeArray->data);
   invalidate(sizeArray);
 }
 
@@ -174,7 +175,6 @@ void bfSizeArrayShrinkCapacityToSize(BfSizeArray *sizeArray) {
   BF_ERROR_END() {
     BF_DIE();
   }
-
 }
 
 void bfSizeArrayAppend(BfSizeArray *sizeArray, BfSize elt) {

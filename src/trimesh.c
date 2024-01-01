@@ -61,7 +61,8 @@ struct BfTrimesh {
 #endif
 
   BfPoint3 *faceCentroids;
-  BfVector3 *faceUnitNormals;
+  BfVectors3 *vertexNormals;
+  BfVectors3 *faceNormals;
   BfReal *faceAreas;
 };
 
@@ -457,6 +458,11 @@ static void initBoundaryEdges(BfTrimesh *trimesh) {
 }
 
 #ifdef BF_EMBREE
+void embreeErrorFunction(void* userPtr, enum RTCError error, char const* str) {
+  (void)userPtr;
+  printf("error %d: %s\n", error, str);
+}
+
 static void initEmbree(BfTrimesh *trimesh) {
   BF_ERROR_BEGIN();
 
@@ -464,13 +470,20 @@ static void initEmbree(BfTrimesh *trimesh) {
   if (trimesh->device == NULL)
     RAISE_ERROR(BF_ERROR_EMBREE);
 
-  trimesh->geometry = rtcNewGeometry(trimesh->device, RTC_GEOMETRY_TYPE_TRIANGLE);
-  if (trimesh->geometry == NULL)
-    RAISE_ERROR(BF_ERROR_EMBREE);
+  rtcSetDeviceErrorFunction(trimesh->device, embreeErrorFunction, NULL);
 
   trimesh->scene = rtcNewScene(trimesh->device);
   if (trimesh->scene == NULL)
     RAISE_ERROR(BF_ERROR_EMBREE);
+
+  rtcSetSceneFlags(trimesh->scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
+  rtcSetSceneBuildQuality(trimesh->scene, RTC_BUILD_QUALITY_MEDIUM);
+
+  trimesh->geometry = rtcNewGeometry(trimesh->device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  if (trimesh->geometry == NULL)
+    RAISE_ERROR(BF_ERROR_EMBREE);
+
+  rtcSetGeometryEnableFilterFunctionFromArguments(trimesh->geometry, true);
 
   trimesh->vertexBuffer = rtcSetNewGeometryBuffer(
     /* geometry: */ trimesh->geometry,
@@ -484,8 +497,7 @@ static void initEmbree(BfTrimesh *trimesh) {
 
   for (BfSize i = 0; i < bfPoints3GetSize(trimesh->verts); ++i) {
     BfReal const *v = bfPoints3GetPtrConst(trimesh->verts, i);
-    for (BfSize j = 0; j < 3; ++j)
-      trimesh->vertexBuffer[i][j] = v[j];
+    for (BfSize j = 0; j < 3; ++j) trimesh->vertexBuffer[i][j] = v[j];
   }
 
   trimesh->indexBuffer = rtcSetNewGeometryBuffer(
@@ -493,15 +505,14 @@ static void initEmbree(BfTrimesh *trimesh) {
     /* type: */ RTC_BUFFER_TYPE_INDEX,
     /* slot: */ 0,
     /* format: */ RTC_FORMAT_UINT3,
-    /* byteStride: */ 3*sizeof(uint32_t),
+    /* byteStride: */ 3*sizeof(unsigned),
     /* numItems: */ trimesh->numFaces);
   if (trimesh->indexBuffer == NULL)
     RAISE_ERROR(BF_ERROR_EMBREE);
 
   for (BfSize i = 0; i < trimesh->numFaces; ++i) {
     BfSize const *f = trimesh->faces[i];
-    for (BfSize j = 0; j < 3; ++j)
-      trimesh->indexBuffer[i][j] = f[j];
+    for (BfSize j = 0; j < 3; ++j) trimesh->indexBuffer[i][j] = f[j];
   }
 
   rtcCommitGeometry(trimesh->geometry);
@@ -524,11 +535,9 @@ static void initFaceCentroids(BfTrimesh *trimesh) {
   for (BfSize i = 0; i < trimesh->numFaces; ++i) {
     for (BfSize j = 0; j < 3; ++j) {
       BfReal const *x = bfPoints3GetPtrConst(trimesh->verts, trimesh->faces[i][j]);
-      for (BfSize k = 0; k < 3; ++k)
-        trimesh->faceCentroids[i][k] += x[k];
+      for (BfSize k = 0; k < 3; ++k) trimesh->faceCentroids[i][k] += x[k];
     }
-    for (BfSize k = 0; k < 3; ++k)
-      trimesh->faceCentroids[i][k] /= 3;
+    for (BfSize k = 0; k < 3; ++k) trimesh->faceCentroids[i][k] /= 3;
   }
 
   BF_ERROR_END() {
@@ -589,6 +598,8 @@ static void initCommon(BfTrimesh *trimesh) {
 
   initFaceCentroids(trimesh);
   initFaceAreas(trimesh);
+
+  trimesh->faceNormals = NULL;
 
   BF_ERROR_END() {
     BF_DIE();
@@ -656,7 +667,9 @@ void bfTrimeshInitFromBinaryFiles(BfTrimesh *trimesh,
   initCommon(trimesh);
   HANDLE_ERROR();
 
-  BF_ERROR_END() {}
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
@@ -709,17 +722,18 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
   trimesh->numFaces = num_face_vertex_indices;
 
   trimesh->faces = bfMemAlloc(trimesh->numFaces, sizeof(BfSize3));
-  if (trimesh->faces == NULL)
-    RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+  HANDLE_ERROR();
+
+  trimesh->vertexNormals = bfVectors3NewWithCapacity(num_vert_normals);
+  HANDLE_ERROR();
 
   /* Make second pass over file and parse data */
 
   rewind(fp);
 
   size_t v_index = 0;
-//   size_t vn_index = 0;
+  size_t vn_index = 0;
   size_t fv_index = 0;
-//   size_t fvn_index = 0;
 
   do {
     lineptr = NULL;
@@ -740,13 +754,15 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
       ++v_index;
     }
 
-//     if (!strcmp(tok, "vn")) {
-//       for (size_t i = 0; i < 3; ++i) {
-//         tok = strtok_r(NULL, " ", &saveptr);
-//         vert_normals[vn_index][i] = strtod(tok, NULL);
-//       }
-//       ++vn_index;
-//     }
+    if (!strcmp(tok, "vn")) {
+      BfVector3 vertexNormal;
+      for (size_t i = 0; i < 3; ++i) {
+        tok = strtok_r(NULL, " ", &saveptr);
+        vertexNormal[i] = strtod(tok, NULL);
+      }
+      bfVectors3Append(trimesh->vertexNormals, vertexNormal);
+      ++vn_index;
+    }
 
     if (!strcmp(tok, "f")) {
       if (num_vert_normals > 0) {
@@ -758,11 +774,8 @@ void bfTrimeshInitFromObjFile(BfTrimesh *trimesh, char const *objPath) {
           saveptr_ = NULL;
           tok = strtok_r(toks[i], "//", &saveptr_);
           trimesh->faces[fv_index][i] = strtoull(tok, NULL, 10) - 1;
-//           tok = strtok_r(NULL, "//", &saveptr_);
-//           face_vertex_normal_indices[fvn_index][i] = strtoull(tok, NULL, 10) - 1;
         }
         ++fv_index;
-//         ++fvn_index;
       } else {
         BF_DIE();
       }
@@ -1591,6 +1604,31 @@ void bfTrimeshGetLboFemDiscretization(BfTrimesh const *trimesh, BfMat **L, BfMat
 }
 
 #ifdef BF_EMBREE
+typedef struct {
+  BfSize srcInd;
+  BfSize tgtInd;
+} IntervalInds;
+
+void trimeshGetVisibility_intersectionFilter(const struct RTCFilterFunctionNArguments* args)
+{
+  BF_ASSERT(args->N == 1);
+
+  /* Skip invalid rays: */
+  if (args->valid[0] != -1)
+    return;
+
+  IntervalInds const *inds = (IntervalInds const *)args->geometryUserPtr;
+
+  struct RTCHit const *hit = (struct RTCHit *)args->hit;
+  BfSize hitInd = hit->primID;
+
+  struct RTCRay *ray = (struct RTCRay *)args->ray;
+  if (inds->srcInd == hitInd) {
+    ray->tfar = BF_INFINITY;
+    args->valid[0] = 0;
+  }
+}
+
 BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfSizeArray const *tgtInds) {
   BF_ERROR_BEGIN();
 
@@ -1602,34 +1640,53 @@ BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfS
   struct RTCRay *ray = &rayHit.ray;
   struct RTCHit *hit = &rayHit.hit;
 
-  BfReal const *srcVert = bfTrimeshGetVertPtrConst(trimesh, srcInd);
-  ray->org_x = srcVert[0];
-  ray->org_y = srcVert[1];
-  ray->org_z = srcVert[2];
+  BfReal const *pSrc = bfTrimeshGetFaceCentroidConstPtr(trimesh, srcInd);
+
+  struct RTCRayQueryContext context;
+  rtcInitRayQueryContext(&context);
+
+  IntervalInds inds = {.srcInd = srcInd};
 
   for (BfSize i = 0; i < bfSizeArrayGetSize(tgtInds); ++i) {
-    BfSize tgtInd = bfSizeArrayGet(tgtInds, i);
-    BfReal const *tgtVert = bfTrimeshGetVertPtrConst(trimesh, tgtInd);
+    inds.tgtInd = bfSizeArrayGet(tgtInds, i);
+    if (srcInd == inds.tgtInd)
+      continue;
 
+    rtcSetGeometryUserData(trimesh->geometry, &inds);
+
+    BfReal const *pTgt = bfTrimeshGetFaceCentroidConstPtr(trimesh, inds.tgtInd);
+
+    ray->org_x = pSrc[0];
+    ray->org_y = pSrc[1];
+    ray->org_z = pSrc[2];
+    ray->dir_x = pTgt[0] - pSrc[0];
+    ray->dir_y = pTgt[1] - pSrc[1];
+    ray->dir_z = pTgt[2] - pSrc[2];
     ray->tnear = 0;
-    ray->dir_x = tgtVert[0] - srcVert[0];
-    ray->dir_y = tgtVert[1] - srcVert[1];
-    ray->dir_z = tgtVert[2] - srcVert[2];
-    ray->time = 0; /* <-- Unused */
     ray->tfar = BF_INFINITY;
+    ray->mask = -1;
     ray->flags = 0;
 
     hit->geomID = RTC_INVALID_GEOMETRY_ID;
+    hit->instID[0] = RTC_INVALID_GEOMETRY_ID;
 
-    rtcIntersect1(trimesh->scene, &rayHit, NULL);
+    struct RTCIntersectArguments intersectArguments;
+    rtcInitIntersectArguments(&intersectArguments);
+
+    intersectArguments.context = &context;
+    intersectArguments.filter = trimeshGetVisibility_intersectionFilter;
+
+    rtcIntersect1(trimesh->scene, &rayHit, &intersectArguments);
 
     // If there's a hit, `tfar` should be finite after tracing. Since
     // we're computing pairwise visibilities, there is *always* a hit.
     BF_ASSERT(isfinite(ray->tfar));
 
-    BfSize visTgtInd = hit->primID;
-
-    bfSizeArrayAppend(visTgtInds, visTgtInd);
+    if (isfinite(ray->tfar)) {
+      BfSize visTgtInd = hit->primID;
+      if (visTgtInd == inds.tgtInd)
+        bfSizeArrayAppend(visTgtInds, visTgtInd);
+    }
   }
 
   BF_ERROR_END() {
@@ -1647,13 +1704,92 @@ BfReal const *bfTrimeshGetFaceCentroidConstPtr(BfTrimesh const *trimesh, BfSize 
 }
 
 BfReal const *bfTrimeshGetFaceUnitNormalConstPtr(BfTrimesh const *trimesh, BfSize i) {
+  BF_ERROR_BEGIN();
+
+  if (!bfTrimeshHasFaceNormals(trimesh))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
   if (i >= bfTrimeshGetNumFaces(trimesh))
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-  return trimesh->faceUnitNormals[i];
+    RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return bfVectors3GetConstPtr(trimesh->faceNormals, i);
 }
 
 BfReal bfTrimeshGetFaceArea(BfTrimesh const *trimesh, BfSize i) {
   if (i >= bfTrimeshGetNumFaces(trimesh))
     bfSetError(BF_ERROR_INVALID_ARGUMENTS);
   return trimesh->faceAreas[i];
+}
+
+bool bfTrimeshHasFaceNormals(BfTrimesh const *trimesh) {
+  return trimesh->faceNormals != NULL;
+}
+
+bool bfTrimeshHasVertexNormals(BfTrimesh const *trimesh) {
+  return trimesh->vertexNormals != NULL;
+}
+
+BfVectors3 *bfTrimeshGetVertexNormalsPtr(BfTrimesh *trimesh) {
+  return trimesh->vertexNormals;
+}
+
+BfVectors3 *bfTrimeshGetFaceNormalsPtr(BfTrimesh *trimesh) {
+  return trimesh->faceNormals;
+}
+
+void bfTrimeshComputeFaceNormalsMatchingVertexNormals(BfTrimesh *trimesh) {
+  BF_ERROR_BEGIN();
+
+  if (bfTrimeshHasFaceNormals(trimesh))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  if (!bfTrimeshHasVertexNormals(trimesh))
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfSize numFaces = bfTrimeshGetNumFaces(trimesh);
+
+  trimesh->faceNormals = bfVectors3NewWithCapacity(numFaces);
+  HANDLE_ERROR();
+
+  for (BfSize i = 0; i < numFaces; ++i) {
+    for (BfSize j = 0; j < 3; ++j) {
+      BfSize k = trimesh->faces[i][j];
+
+      /* Compute the unit face normal from the cross product of the
+       * vectors defining the current face: */
+      BfReal const *x[3];
+      for (BfSize j = 0; j < 3; ++j)
+        x[j] = bfPoints3GetPtrConst(trimesh->verts, k);
+      BfVector3 dx1, dx2, faceNormal;
+      bfPoint3Sub(x[1], x[0], dx1);
+      bfPoint3Sub(x[2], x[0], dx2);
+      bfVector3Cross(dx1, dx2, faceNormal);
+      bfVector3Normalize(faceNormal);
+
+      int sign[3];
+      for (BfSize j = 0; j < 3; ++j) {
+        BfReal const *vertexNormal = bfVectors3GetConstPtr(trimesh->vertexNormals, k);
+        sign[j] = bfSignum(bfVector3Dot(faceNormal, vertexNormal));
+      }
+
+      if (!(sign[0] == sign[1] && sign[1] == sign[2]))
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+      if (sign[0] == 0)
+        RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+      if (sign < 0)
+        bfVector3Negate(faceNormal);
+
+      bfVectors3Append(trimesh->faceNormals, faceNormal);
+    }
+  }
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }

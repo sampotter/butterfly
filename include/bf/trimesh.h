@@ -46,3 +46,8 @@ BfSizeArray *bfTrimeshGetVisibility(BfTrimesh const *trimesh, BfSize srcInd, BfS
 BfReal const *bfTrimeshGetFaceCentroidConstPtr(BfTrimesh const *trimesh, BfSize i);
 BfReal const *bfTrimeshGetFaceUnitNormalConstPtr(BfTrimesh const *trimesh, BfSize i);
 BfReal bfTrimeshGetFaceArea(BfTrimesh const *trimesh, BfSize i);
+bool bfTrimeshHasFaceNormals(BfTrimesh const *trimesh);
+bool bfTrimeshHasVertexNormals(BfTrimesh const *trimesh);
+BfVectors3 *bfTrimeshGetVertexNormalsPtr(BfTrimesh *trimesh);
+BfVectors3 *bfTrimeshGetFaceNormalsPtr(BfTrimesh *trimesh);
+void bfTrimeshComputeFaceNormalsMatchingVertexNormals(BfTrimesh *trimesh);

@@ -246,3 +246,9 @@ bool bfFindZeroOnInterval(BfReal (*f)(BfReal, void *), BfReal a, BfReal b, void 
   *t = (b + c)/2;
   return true;
 }
+
+int bfSignum(BfReal x) {
+  if (x > 0) return 1;
+  else if (x == 0) return 0;
+  else return -1;
+}
