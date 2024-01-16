@@ -21,7 +21,11 @@ static BfReal kappa = BF_NAN;
 static BfReal nu = BF_NAN;
 
 static BfReal gamma_(BfReal lambda) {
-  return pow(fabs(kappa*kappa + lambda), -nu/4 - 1./2);
+  if (nu == 0) {
+    return exp(-lambda/kappa);
+  } else {
+    return pow(fabs(kappa*kappa + lambda), -nu/4 - 1./2);
+  }
 }
 
 static BfReal gammaFromFreq(BfReal omega) {

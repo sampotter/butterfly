@@ -18,7 +18,7 @@ do
     cmd="./cheb_cov $MESH $P $KAPPA $NU $NUM_SAMPLES"
     printf "\n" 
     echo $cmd
-    eval $cmd
+    # eval $cmd
     echo -n "$P " >> Ps.csv
 done
 
@@ -33,7 +33,7 @@ do
 done
 
 # move generated files to output folder
-for file in *.bin *.txt *.csv
+for file in *.bin *.csv
 do
     mv $file output
 done
@@ -44,8 +44,8 @@ done
 # echo $cmd
 # eval $cmd
 
-# make comparison plots against analytic covariance 
-cmd="julia covariance_sphere.jl $MESH $KAPPA $NU output/Ps.csv output/tols.csv"
-printf "\n"
-echo $cmd
-eval $cmd
+# # make comparison plots against analytic covariance 
+# cmd="julia covariance_sphere.jl $MESH $KAPPA $NU output/Ps.csv output/tols.csv"
+# printf "\n"
+# echo $cmd
+# eval $cmd
