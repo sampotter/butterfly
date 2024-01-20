@@ -1,20 +1,21 @@
 #!/bin/zsh
+set -o nullglob
 
 MESH=$1
 MESHBASE=${MESH##*/}
 MESHNAME=${MESHBASE%.*}
 
-KAPPA=0.1
+KAPPA=1e-5
 NU=0
-NUM_SAMPLES=0
+NUM_SAMPLES=1000
 FRACTION=1.0
 
 REFTOL=1e-8
 TOLS=(1e-2 1e-4 1e-6)
-LOGPS=(4 6)
+LOGPS=(4 8)
 
 # clean this directory and make output directory
-rm *.bin *.csv *.txt
+rm -f -- *.bin *.csv *.txt
 :> tols.csv
 :> Ps.csv
 mkdir -p output

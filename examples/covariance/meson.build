@@ -15,12 +15,11 @@ foreach example : examples
 endforeach
 
 scripts = [
-  'lbo_cov_test.sh',
-  'run_bf_lbo_test.sh',
+  # 'lbo_cov_test.sh',
+  'smooth_cov_test.sh',
   'run_lbo_cov.sh',
-  'plot_test_output.jl',
-  'covariance_sphere.jl',
-  'sphere_cov.jl',
+  'exact_cov_test.sh',
+  'plot_truncation_error.jl',
   'Project.toml'
 ]
 

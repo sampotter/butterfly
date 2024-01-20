@@ -4,6 +4,7 @@
 #include <bf/linalg.h>
 #include <bf/mat_csr_real.h>
 #include <bf/mat_product.h>
+#include <bf/mat_dense_real.h>
 #include <bf/rand.h>
 #include <bf/trimesh.h>
 #include <bf/util.h>
@@ -18,9 +19,11 @@ static BfReal nu = BF_NAN;
 
 static BfReal gamma_(BfReal lambda) {
   if (nu == 0) {
-    return exp(-lambda/kappa);
+    // squared exponential spectral density function
+    return exp(-kappa*lambda*lambda);
   } else {
-    return pow(fabs(kappa*kappa + lambda), -nu/4 - 1./2);
+    // Matern spectral density function, normalized so g(0) = 1
+    return pow(fabs(1 + kappa*kappa*lambda), -nu/4 - 1./2);
   }
 }
 
@@ -72,21 +75,16 @@ static BfVec *sample_z(BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqr
   return z;
 }
 
-static BfVec *get_c(BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqrtInv) {
+static BfVec *cov_matvec(BfVec *v, BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqrtInv) {
   BfSize n = bfMatGetNumRows(S);
 
-  BfVecReal *e = bfVecRealNewWithValue(n, 0);
-  e->data[0] = 1;
-
-  BfVec *tmp = bfMatMulVec(MLumpSqrtInv, bfVecRealToVec(e));
+  BfVec *tmp = bfMatMulVec(MLumpSqrtInv, bfVecRealToVec(v));
   BfVec *tmp1 = chebmul(cheb, S, tmp);
   bfVecDelete(&tmp);
   tmp = chebmul(cheb, S, tmp1);
   bfVecDelete(&tmp1);
   tmp1 = bfMatMulVec(MLumpSqrtInv, tmp);
   bfVecDelete(&tmp);
-
-  bfVecRealDelete(&e);
 
   return tmp1;
 }
@@ -132,7 +130,8 @@ int main(int argc, char const *argv[]) {
   bfSeed(0); // must seed before using PRNG
 
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(argv[1]);
-  printf("triangle mesh with %lu verts\n", bfTrimeshGetNumVerts(trimesh));
+  BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
+  printf("triangle mesh with %lu verts\n", numVerts);
 
   bfToc();
 
@@ -204,9 +203,34 @@ int main(int argc, char const *argv[]) {
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
-  BfVec *c = get_c(&gammaCheb, S, MLumpSqrtInv);
+  BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(numVerts, 0));
+  BfVec *c = cov_matvec(e, &gammaCheb, S, MLumpSqrtInv);
   sprintf(filename, "c_cheb_p%i.bin", (int)p);
   bfVecSave(c, filename);
+
+  /* Compute and store covariance matrix vector products */
+
+  bfSeed(0);
+  BfSize s = numSamples;
+  BfMatDenseReal *matvecs = bfMatDenseRealNewZeros(numVerts, s);
+
+  printf("computing %i matvecs with covariance\n", s);
+  for (BfSize j = 0; j < s; ++j) {
+      BfVecReal *x = bfVecRealNewRandn(numVerts);
+
+      // apply covariance matrix
+      BfVec *tmp1 = cov_matvec(x, &gammaCheb, S, MLumpSqrtInv);
+
+      // Set column of results:
+      bfMatDenseRealSetCol(matvecs, j, tmp1);
+
+      // Clean up:
+      bfVecDelete(&x);
+      bfVecDelete(&tmp1);
+  }
+
+  sprintf(filename, "matvecs_cheb_p%i_kappa%1.0e_nu%1.0e.bin", p, kappa, nu);
+  bfMatDenseRealSave(matvecs, filename);
 
   /** Clean up: */
 

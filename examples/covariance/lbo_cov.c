@@ -22,9 +22,11 @@ static BfReal nu = BF_NAN;
 
 static BfReal gamma_(BfReal lambda) {
   if (nu == 0) {
-    return exp(-lambda/kappa);
+    // squared exponential spectral density function
+    return exp(-kappa*lambda*lambda);
   } else {
-    return pow(fabs(kappa*kappa + lambda), -nu/4 - 1./2);
+    // Matern spectral density function, normalized so g(0) = 1
+    return pow(fabs(1 + kappa*kappa*lambda), -nu/4 - 1./2);
   }
 }
 
@@ -43,10 +45,8 @@ static BfVec *sample_z(BfMat const *Phi, BfMat const *GammaLam, BfPerm const *ro
   return z;
 }
 
-static BfVec *get_c(BfMat const *Phi, BfMat const *GammaLam, BfPerm const *rowPerm, BfPerm const *revRowPerm) {
-  BfSize n = bfMatGetNumRows(Phi);
-  BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, 0));
-  BfVec *tmp1 = e;
+static BfVec *cov_matvec(BfVec *v, BfMat const *Phi, BfMat const *GammaLam, BfPerm const *rowPerm, BfPerm const *revRowPerm) {
+  BfVec *tmp1 = v;
   bfVecPermute(tmp1, revRowPerm);
   BfVec *tmp2 = bfMatRmulVec(Phi, tmp1);
   tmp1 = bfMatMulVec(GammaLam, tmp2);
@@ -132,7 +132,7 @@ int main(int argc, char const *argv[]) {
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
-  int nfit = 50; // number of eigenvalues to fit for extrapolation
+  int nfit = 100; // number of eigenvalues to fit for extrapolation
   BfReal err_est = 1.0;
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
@@ -143,26 +143,47 @@ int main(int argc, char const *argv[]) {
 
     BfReal numer = 0;
     BfReal denom = 0;
+    BfReal xhat  = 0;
+    BfReal yhat  = 0;
     for (BfSize i = freqs->size - nfit; i < freqs->size; ++i) {
       BfReal lam = pow(freqs->data[i], 2);
-      numer += i*lam;
-      denom += i*i;
+      xhat  += i;
+      yhat  += lam;
+    }
+    xhat /= nfit;
+    yhat /= nfit;
+    for (BfSize i = freqs->size - nfit; i < freqs->size; ++i) {
+      BfReal lam = pow(freqs->data[i], 2);
+      numer += (i - xhat)*(lam - yhat);
+      denom += pow(i - xhat, 2);
     }
     BfReal m = numer/denom;
+    BfReal b = yhat - m*xhat;
 
     numer = 0;
     for (BfSize i = freqs->size; i < numVerts; ++i) {
-      numer += pow(gamma_(m*i), 2);
+      numer += pow(gamma_(m*i + b), 4);
     }
     denom = numer;
     for (BfSize i = 0; i < freqs->size; ++i) {
-      denom += pow(gamma_(m*i), 2);
+      BfReal lam = pow(freqs->data[i], 2);
+      denom += pow(gamma_(lam), 4);
     }
     err_est = sqrt(numer)/sqrt(denom);
     printf("truncation error estimate after %i eigenpairs is %.2e\n", freqs->size, err_est);
   }
 
   printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, bfToc());
+
+  BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
+  BfMat *Phi = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
+
+  BfReal numBytesUncompressed = sizeof(BfReal)*numVerts*freqs->size;
+  BfReal numBytesCompressed = bfMatNumBytes(Phi);
+
+  printf("  compressed size:   %.1f MB\n", numBytesCompressed/pow(1024, 2));
+  printf("  uncompressed size: %.1f MB\n", numBytesUncompressed/pow(1024, 2));
+  printf("  compression rate:  %.1f\n", numBytesUncompressed/numBytesCompressed);
 
   char filename[50];
   sprintf(filename, "freqs_tol%.0e.bin", tol);
@@ -171,15 +192,13 @@ int main(int argc, char const *argv[]) {
   BfPoints1 *gammaLam = bfPoints1Copy(freqs);
   bfPoints1Map(gammaLam, gammaFromFreq);
 
-  BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
-  BfMat *Phi = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
   BfMat *GammaLam = bfMatDiagRealToMat(
     bfMatDiagRealNewFromData(gammaLam->size, gammaLam->size, gammaLam->data));
 
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(Phi, GammaLam, rowPerm);
-  sprintf(filename, "z_lbo_tol%.0e.bin", tol);
+  sprintf(filename, "z_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
   bfVecSave(z, filename);
   bfVecDelete(&z);
 
@@ -195,25 +214,50 @@ int main(int argc, char const *argv[]) {
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
-  BfVec *c = get_c(Phi, GammaLam, rowPerm, revRowPerm);
-  sprintf(filename, "c_lbo_tol%.0e.bin", tol);
+  BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(numVerts, 0));
+  BfVec *c = cov_matvec(e, Phi, GammaLam, rowPerm, revRowPerm);
+  sprintf(filename, "c_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
   bfVecSave(c, filename);
 
-  /* Extract dense Phi: */
+  // /* Extract dense Phi: */
 
-  BfSize m = bfMatGetNumRows(Phi);
-  BfSize n = bfMatGetNumCols(Phi);
-  BfMat *PhiDense = bfMatDenseRealToMat(bfMatDenseRealNewWithValue(m, n, BF_NAN));
-  for (BfSize j = 0; j < n; ++j) {
-    /* Get jth standard basis vector: */
-    BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, j));
-    BfVec *phi = bfMatMulVec(Phi, e);
-    bfVecPermute(phi, rowPerm);
-    bfMatSetCol(PhiDense, j, phi);
-    bfVecDelete(&phi);
-    bfVecDelete(&e);
+  // BfSize m = bfMatGetNumRows(Phi);
+  // BfSize n = bfMatGetNumCols(Phi);
+  // BfMat *PhiDense = bfMatDenseRealToMat(bfMatDenseRealNewWithValue(m, n, BF_NAN));
+  // for (BfSize j = 0; j < n; ++j) {
+  //   /* Get jth standard basis vector: */
+  //   BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(n, j));
+  //   BfVec *phi = bfMatMulVec(Phi, e);
+  //   bfVecPermute(phi, rowPerm);
+  //   bfMatSetCol(PhiDense, j, phi);
+  //   bfVecDelete(&phi);
+  //   bfVecDelete(&e);
+  // }
+  // bfMatSave(PhiDense, "PhiDense.bin");
+
+  /* Compute and store covariance matrix vector products */
+
+  bfSeed(0);
+  BfSize s = numSamples;
+  BfMatDenseReal *matvecs = bfMatDenseRealNewZeros(numVerts, s);
+
+  printf("computing %i matvecs with covariance\n", s);
+  for (BfSize j = 0; j < s; ++j) {
+      BfVecReal *x = bfVecRealNewRandn(numVerts);
+
+      // apply covariance matrix
+      BfVec *tmp1 = cov_matvec(x, Phi, GammaLam, rowPerm, revRowPerm);
+
+      // Set column of results:
+      bfMatDenseRealSetCol(matvecs, j, tmp1);
+
+      // Clean up:
+      bfVecDelete(&x);
+      bfVecDelete(&tmp1);
   }
-  bfMatSave(PhiDense, "PhiDense.bin");
+
+  sprintf(filename, "matvecs_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
+  bfMatDenseRealSave(matvecs, filename);
 
   /* Clean up */
   // bfTreeDelete(&rowTree); // This segfaults...
