@@ -1,38 +1,14 @@
-using Pkg
-Pkg.instantiate()
-
 using FileIO, LinearAlgebra, SparseArrays, Printf, DelimitedFiles, Meshes, GeometryBasics, MeshIO, Plots, LaTeXStrings
 import GLMakie as Mke
 
-function geometrybasics_to_meshes(mesh)
-    vertices = Meshes.Point3.(
-        getfield.(MeshIO.decompose(MeshIO.Point3{Float64}, mesh), :data)
-        )
-    connections = Meshes.connect.([
-        getfield(GeometryBasics.value.(face), :data) for face in GeometryBasics.faces(mesh)
-        ])
-    return Meshes.SimpleMesh(vertices, connections)
-end
-
-function load_sparse_matrix(data, colind, rowptr)
-    colind .+= 1
-    rowind   = vcat(
-        [fill(i, rowptr[i+1] - rowptr[i]) for i=1:length(rowptr)-1]...
-        )
-    return sparse(rowind, colind, data)
-end
+include("utils.jl")
 
 ## load mesh
 println("Loading mesh...")
 
 mesh_file = ARGS[1]
 meshname  = split(split(mesh_file, "/")[end], ".")[1]
-
-gbmesh   = load(mesh_file)
-vertices = MeshIO.decompose(MeshIO.Point3{Float64}, gbmesh)
-n = length(vertices)
-
-mesh = geometrybasics_to_meshes(gbmesh)
+_, mesh, vertices, n = load_mesh(mesh_file)
 
 ## load matrices
 println("Loading FEM matrices...")
@@ -48,64 +24,19 @@ L = load_sparse_matrix(
     reinterpret(Int64, read("L_rowptr.bin"))
     )
 
-## load or compute eigendecomposition
+## load eigendecomposition
 println("Loading eigendecomposition...")
 
 Phi = reshape(reinterpret(Float64, read("Phi.bin")), n, :)
 Lam = reinterpret(Float64, read("Lam.bin"))
 
-# F = eigen(M \ Matrix(L))
-# Phi = F.vectors
-# Lam = F.values
-
 ## define covariance
 
-k  = parse(Float64, ARGS[2])
-nu = parse(Float64, ARGS[3])
+k    = parse(Float64, ARGS[2])
+nu   = parse(Float64, ARGS[3])
+g(l) = matern_sdf(k, nu, l)
 
-if iszero(nu)
-    # squared exponential spectral density function
-    g(l) = exp(-k*l^2)
-else
-    # Matern spectral density function, normalized so g(0) = 1
-    g(l) = abs(1 + k^2*l)^(-nu/4 - 1/2)
-end
-
-## plot everything
-println("Plotting sample and covariance...")
-
-fig = Mke.Figure()
-scene = Mke.LScene(fig[1, 1], scenekw=(center=false,))
-scene.show_axis = false
-
-function plot_nodal_values!(scene, vals)
-    viz!(
-        scene, 
-        mesh, 
-        color=vals,
-        showfacets=false
-    )
-    cam = Mke.Camera3D(scene.scene)
-    if occursin("armadillo", meshname)
-        cam.lookat[] = [0, 0, 0]
-        cam.eyeposition[] = [0, 0, -100]
-        cam.upvector[]    = [0, 1, 0]
-        Mke.update_cam!(scene.scene, cam)
-    elseif occursin("bunny", meshname)
-        cam.lookat[] = [-0.5, 1, 0]
-        cam.eyeposition[] = [-1, 2, 5]
-        cam.upvector[]    = [0, 1, 0]
-        Mke.update_cam!(scene.scene, cam)
-    end
-end
-
-plot_nodal_values!(scene, Phi*Diagonal(g.(Lam))*randn(length(Lam)))
-save(@sprintf("output/%s_sample_kappa%1.0e_nu%1.0e.png", meshname, k, nu), scene.scene)
-
-plot_nodal_values!(scene, Phi*Diagonal(g.(Lam).^2)*Phi[450,:])
-save(@sprintf("output/%s_covariance_kappa%1.0e_nu%1.0e.png", meshname, k, nu), scene.scene)
-
-##
+## compute and plot truncation errors 
 
 npl     = 5
 rs      = round.(Int64, range(2, stop=length(Lam)-1, length=100))
@@ -156,9 +87,7 @@ for (i, r) in enumerate(rs)
     end
 end
 savefig(pl_lam, @sprintf("output/%s_est_eigenvalues.png", meshname))
-savefig(pl_g,   @sprintf("output/%s_est_covspectrum_kappa%1.0e_nu%1.0e.png", meshname, k, nu))
-
-##
+savefig(pl_g,   @sprintf("output/%s_est_covspectrum_kappa%.1e_nu%.1e.png", meshname, k, nu))
 
 errs[errs .< 1e-20] .= NaN
 pl = plot(
@@ -178,4 +107,4 @@ pl = plot(
     dpi=200
     )
 
-savefig(pl, @sprintf("output/%s_est_truncation_kappa%1.0e_nu%1.0e.png", meshname, k, nu))
+savefig(pl, @sprintf("output/%s_est_truncation_kappa%.1e_nu%.1e.png", meshname, k, nu))

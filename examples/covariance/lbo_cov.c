@@ -61,12 +61,12 @@ static BfVec *cov_matvec(BfVec *v, BfMat const *Phi, BfMat const *GammaLam, BfPe
 
 int main(int argc, char const *argv[]) {
   if (argc < 5) {
-    printf("usage: %s mesh.obj kappa nu num_samples [tol] [p] [rowTreeOffset] [freqTreeDepth]\n", argv[0]);
+    printf("usage: %s mesh.obj kappa nu num_samples [tol] [fraction] [rowTreeOffset] [freqTreeDepth]\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
   bfSeed(0);
-  bfSetLogLevel(BF_LOG_LEVEL_INFO);
+  bfSetLogLevel(BF_LOG_LEVEL_WARN);
 
   char const *objPath = argv[1];
   kappa = atof(argv[2]);
@@ -74,14 +74,14 @@ int main(int argc, char const *argv[]) {
   BfSize numSamples = atoi(argv[4]);
 
   BfReal tol = argc > 5 ? strtod(argv[5], NULL) : 1e-3;
-  BfReal p = argc > 6 ? strtod(argv[6], NULL) : 1.0;
+  BfReal fraction = argc > 6 ? strtod(argv[6], NULL) : 1.0;
   BfSize rowTreeOffset = argc > 7 ? strtoull(argv[7], NULL, 10) : 0;
   BfSize freqTreeDepth = argc > 8 ? strtoull(argv[8], NULL, 10) : BF_SIZE_BAD_VALUE;
 
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
 
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
-  BfSize numEigs = (BfSize)(p*numVerts);
+  BfSize numEigs = (BfSize)(fraction*numVerts);
 
   printf("triangle mesh with %lu verts\n", numVerts);
   printf("streaming %lu eigenpairs\n", numEigs);
@@ -172,21 +172,24 @@ int main(int argc, char const *argv[]) {
     err_est = sqrt(numer)/sqrt(denom);
     printf("truncation error estimate after %i eigenpairs is %.2e\n", freqs->size, err_est);
   }
+  double precomp_time = bfToc();
 
-  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, bfToc());
+  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, precomp_time);
 
   BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
   BfMat *Phi = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
 
-  BfReal numBytesUncompressed = sizeof(BfReal)*numVerts*freqs->size;
   BfReal numBytesCompressed = bfMatNumBytes(Phi);
+  BfReal numBytesUncompressed = sizeof(BfReal)*numVerts*freqs->size;
+  BfReal numBytesUntruncated  = sizeof(BfReal)*numVerts*numVerts;
 
-  printf("  compressed size:   %.1f MB\n", numBytesCompressed/pow(1024, 2));
+  printf("  compressed   size: %.1f MB\n", numBytesCompressed/pow(1024, 2));
   printf("  uncompressed size: %.1f MB\n", numBytesUncompressed/pow(1024, 2));
-  printf("  compression rate:  %.1f\n", numBytesUncompressed/numBytesCompressed);
+  printf("  untruncated  size: %.1f MB\n", numBytesUntruncated/pow(1024, 2));
+  printf("  compression  rate: %.1f\n", numBytesUncompressed/numBytesCompressed);
 
   char filename[50];
-  sprintf(filename, "freqs_tol%.0e.bin", tol);
+  sprintf(filename, "freqs_tol%.1e.bin", tol);
   bfPoints1Save(freqs, filename);
 
   BfPoints1 *gammaLam = bfPoints1Copy(freqs);
@@ -198,7 +201,7 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(Phi, GammaLam, rowPerm);
-  sprintf(filename, "z_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
+  sprintf(filename, "z_lbo_tol%.0e_kappa%.1e_nu%.1e.bin", tol, kappa, nu);
   bfVecSave(z, filename);
   bfVecDelete(&z);
 
@@ -209,14 +212,31 @@ int main(int argc, char const *argv[]) {
     z = sample_z(Phi, GammaLam, rowPerm);
     bfVecDelete(&z);
   }
-  printf("drew %lu samples [%0.1fs]\n", numSamples, bfToc());
+  double sampling_time = bfToc();
+  printf("drew %lu samples [%0.1fs]\n", numSamples, sampling_time);
+
+  // save factorization time and memory sizes to file
+  char line[100];
+  FILE *fptr;
+  sprintf(filename, "performance_kappa%.1e_nu%.1e.txt", kappa, nu);
+  sprintf(
+    line,
+    "%.1e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n", 
+    tol, precomp_time, sampling_time/numSamples,
+    numBytesCompressed/pow(1024, 2), 
+    numBytesUncompressed/pow(1024, 2),
+    numBytesUntruncated/pow(1024, 2)
+    );
+  fptr = fopen(filename, "a");
+  fprintf(fptr, line);
+  fclose(fptr);
 
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
   BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(numVerts, 0));
   BfVec *c = cov_matvec(e, Phi, GammaLam, rowPerm, revRowPerm);
-  sprintf(filename, "c_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
+  sprintf(filename, "c_lbo_tol%.0e_kappa%.1e_nu%.1e.bin", tol, kappa, nu);
   bfVecSave(c, filename);
 
   // /* Extract dense Phi: */
@@ -256,7 +276,7 @@ int main(int argc, char const *argv[]) {
       bfVecDelete(&tmp1);
   }
 
-  sprintf(filename, "matvecs_lbo_tol%.0e_kappa%1.0e_nu%1.0e.bin", tol, kappa, nu);
+  sprintf(filename, "matvecs_lbo_tol%.0e_kappa%.1e_nu%.1e.bin", tol, kappa, nu);
   bfMatDenseRealSave(matvecs, filename);
 
   /* Clean up */

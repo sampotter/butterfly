@@ -16,10 +16,13 @@ endforeach
 
 scripts = [
   # 'lbo_cov_test.sh',
-  'smooth_cov_test.sh',
   'run_lbo_cov.sh',
   'exact_cov_test.sh',
-  'plot_truncation_error.jl',
+  'fast_cov_test.sh',
+  'plot_sample.jl',
+  'plot_exact_cov_test.jl',
+  'plot_fast_cov_test.jl',
+  'utils.jl',
   'Project.toml'
 ]
 

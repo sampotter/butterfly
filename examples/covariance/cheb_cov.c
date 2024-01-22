@@ -117,15 +117,15 @@ static void getS(BfMat *L, BfMat *M, BfMat **SHandle, BfMat **MLumpSqrtInvHandle
 }
 
 int main(int argc, char const *argv[]) {
-  if (argc != 6) {
-    printf("usage: %s mesh.obj p kappa nu num_samples\n", argv[0]);
+  if (argc < 5) {
+    printf("usage: %s mesh.obj kappa nu num_samples [p] \n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
-  BfSize p = atoi(argv[2]);
-  kappa = atof(argv[3]);
-  nu = atof(argv[4]);
-  BfSize numSamples = atoi(argv[5]);
+  BfSize p = argc > 5 ? strtod(argv[5], NULL) : 128;
+  kappa = atof(argv[2]);
+  nu = atof(argv[3]);
+  BfSize numSamples = atoi(argv[4]);
 
   bfSeed(0); // must seed before using PRNG
 
@@ -146,37 +146,37 @@ int main(int argc, char const *argv[]) {
   bfChebInitWithDegree(&gammaCheb, p, 0, lamMax);
   bfChebInterp(&gammaCheb, gamma_, NULL);
 
-  /** Evaluate gamma and our Chebyshev approximation of gamma on a
-   ** grid, and write the grid, the true gamma values, and the
-   ** polynomial values to disk for plotting. */
+  // /** Evaluate gamma and our Chebyshev approximation of gamma on a
+  //  ** grid, and write the grid, the true gamma values, and the
+  //  ** polynomial values to disk for plotting. */
 
-  BfSize N = 1000;
-  FILE *fp = NULL;
+  // BfSize N = 1000;
+  // FILE *fp = NULL;
 
   char filename[50];
-  sprintf(filename, "lambda_p%i.bin", (int)p);
-  fp = fopen(filename, "w");
-  for (BfSize i = 0; i <= N; ++i) {
-    BfReal lam = (i*lamMax)/N;
-    fwrite(&lam, sizeof(BfReal), 1, fp);
-  }
-  fclose(fp);
+  // sprintf(filename, "lambda_p%i.bin", (int)p);
+  // fp = fopen(filename, "w");
+  // for (BfSize i = 0; i <= N; ++i) {
+  //   BfReal lam = (i*lamMax)/N;
+  //   fwrite(&lam, sizeof(BfReal), 1, fp);
+  // }
+  // fclose(fp);
 
-  sprintf(filename, "gamma_p%i.bin", (int)p);
-  fp = fopen(filename, "w");
-  for (BfSize i = 0; i <= N; ++i) {
-    BfReal y = gamma_((i*lamMax)/N);
-    fwrite(&y, sizeof(BfReal), 1, fp);
-  }
-  fclose(fp);
+  // sprintf(filename, "gamma_p%i.bin", (int)p);
+  // fp = fopen(filename, "w");
+  // for (BfSize i = 0; i <= N; ++i) {
+  //   BfReal y = gamma_((i*lamMax)/N);
+  //   fwrite(&y, sizeof(BfReal), 1, fp);
+  // }
+  // fclose(fp);
 
-  sprintf(filename, "gamma_cheb_p%i.bin", (int)p);
-  fp = fopen(filename, "w");
-  for (BfSize i = 0; i <= N; ++i) {
-    BfReal y = bfChebEval(&gammaCheb, (i*lamMax)/N);
-    fwrite(&y, sizeof(BfReal), 1, fp);
-  }
-  fclose(fp);
+  // sprintf(filename, "gamma_cheb_p%i.bin", (int)p);
+  // fp = fopen(filename, "w");
+  // for (BfSize i = 0; i <= N; ++i) {
+  //   BfReal y = bfChebEval(&gammaCheb, (i*lamMax)/N);
+  //   fwrite(&y, sizeof(BfReal), 1, fp);
+  // }
+  // fclose(fp);
 
   /** Get S = sqrt(M)^-T*L*sqrt(M)^-1 (although the "T" does nothing
    ** here since M is lumped hence diagonal). */
@@ -187,7 +187,7 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(&gammaCheb, S, MLumpSqrtInv);
-  sprintf(filename, "z_cheb_p%i.bin", (int)p);
+  sprintf(filename, "z_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfVecSave(z, filename);
   bfVecDelete(&z);
 
@@ -198,14 +198,24 @@ int main(int argc, char const *argv[]) {
     z = sample_z(&gammaCheb, S, MLumpSqrtInv);
     bfVecDelete(&z);
   }
-  printf("drew %lu samples [%0.1fs]\n", numSamples, bfToc());
+  double sampling_time = bfToc();
+  printf("drew %lu samples [%0.1fs]\n", numSamples, sampling_time);
+
+  // save factorization time and memory sizes to file
+  char line[100];
+  FILE *fptr;
+  sprintf(filename, "performance_kappa%.1e_nu%.1e.txt", kappa, nu);
+  sprintf(line, "%i\t%.8e\n", p, sampling_time/numSamples);
+  fptr = fopen(filename, "a");
+  fprintf(fptr, line);
+  fclose(fptr);
 
   /** Evaluate the covariance function with respect to a fixed point
    ** on the mesh. */
 
   BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(numVerts, 0));
   BfVec *c = cov_matvec(e, &gammaCheb, S, MLumpSqrtInv);
-  sprintf(filename, "c_cheb_p%i.bin", (int)p);
+  sprintf(filename, "c_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfVecSave(c, filename);
 
   /* Compute and store covariance matrix vector products */
@@ -229,7 +239,7 @@ int main(int argc, char const *argv[]) {
       bfVecDelete(&tmp1);
   }
 
-  sprintf(filename, "matvecs_cheb_p%i_kappa%1.0e_nu%1.0e.bin", p, kappa, nu);
+  sprintf(filename, "matvecs_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfMatDenseRealSave(matvecs, filename);
 
   /** Clean up: */
