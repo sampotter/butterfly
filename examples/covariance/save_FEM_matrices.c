@@ -38,16 +38,16 @@ int main(int argc, char const *argv[]) {
   bfMatCsrRealDump(L, "L_rowptr.bin", "L_colind.bin", "L_data.bin");
   bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
-  // constant and linear functions are in nullspace of LBO
-  int nev = numVerts-2;
-  BfMat *Phi = NULL;
-  BfVecReal *Lam = NULL;
-  bfGetShiftedEigs(L, M, -0.001, nev, &Phi, &Lam);
-  printf("Computed dense eigendecomposition [%0.1fs]\n", bfToc());
+  // // nullspace of LBO?
+  // int nev = numVerts-2;
+  // BfMat *Phi = NULL;
+  // BfVecReal *Lam = NULL;
+  // bfGetShiftedEigs(L, M, -0.001, nev, &Phi, &Lam);
+  // printf("Computed dense eigendecomposition [%0.1fs]\n", bfToc());
 
-  bfMatDenseRealSave(bfMatToMatDenseReal(Phi), "Phi.bin");
-  bfVecRealSave(bfVecToVecReal(Lam), "Lam.bin");
-  printf("Saved dense eigendecomposition\n");
+  // bfMatDenseRealSave(bfMatToMatDenseReal(Phi), "Phi.bin");
+  // bfVecRealSave(bfVecToVecReal(Lam), "Lam.bin");
+  // printf("Saved dense eigendecomposition\n");
 
   /* Clean up */
   // bfMatDelete(&M);

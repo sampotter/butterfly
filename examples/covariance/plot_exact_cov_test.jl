@@ -24,11 +24,28 @@ L = load_sparse_matrix(
     reinterpret(Int64, read("L_rowptr.bin"))
     )
 
-## load eigendecomposition
-println("Loading eigendecomposition...")
+## compute or load eigendecomposition
+if isfile("Phi.bin") && isfile("Lam.bin")
+    println("Loading eigendecomposition...")
 
-Phi = reshape(reinterpret(Float64, read("Phi.bin")), n, :)
-Lam = reinterpret(Float64, read("Lam.bin"))
+    Phi = reshape(reinterpret(Float64, read("Phi.bin")), n, :)
+    Lam = reinterpret(Float64, read("Lam.bin"))
+else
+    println("Computing eigendecomposition...")
+
+    R = cholesky(Matrix(M + M')/2).U
+    A = R' \ (Matrix(L) / R)
+    F = eigen(A)
+    Phi = R \ F.vectors
+    Lam = F.values
+
+    open("Phi.bin", "w") do file
+        write(file, Phi)
+    end
+    open("Lam.bin", "w") do file
+        write(file, Lam)
+    end
+end
 
 ## define covariance
 
@@ -45,8 +62,8 @@ normC   = norm(g.(Lam).^2)
 pl_lam = plot(
     1:length(Lam), Lam, label="true", line=(:black, 2),
     title=@sprintf(
-        "Eigenvalues\n%s, verts=%i\nκ=%1.1e, ν=%1.1e", 
-        split(mesh_file, "/")[end], n, k, nu
+        "Eigenvalues\n%s, verts=%i", 
+        split(mesh_file, "/")[end], n
         ),
     xlabel=L"\ell"
     )
@@ -75,7 +92,7 @@ for (i, r) in enumerate(rs)
     ls[1:r] .= Lam[1:r] # don't use linear fit for already computed eigenvalues
     errs[2,i] = norm(g.(ls[1+r:end]).^2) / norm(g.(ls).^2)
     if i % div(length(rs), npl) == 0
-        scatter!(pl_lam, r-nf+1:r, Lam[r-nf+1:r], c=i, label="", markerstrokewidth=0, markersize=2)
+        scatter!(pl_lam, r-nf+1:r, Lam[r-nf+1:r], c=palette(:default)[div(i-1,div(length(rs), npl))+1], label="", markerstrokewidth=0, markersize=2)
         plot!(pl_lam, 
             r-nf+1:length(Lam), ls[r-nf+1:end], label="rank $r",
             line=(palette(:default)[div(i-1,div(length(rs), npl))+1], 1, :dash)

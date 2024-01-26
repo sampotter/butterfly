@@ -1,12 +1,17 @@
 #!/bin/zsh
 set -o nullglob
 
+if [ "$#" -ne 1 ]; then
+    echo "usage: mesh.obj"
+    exit
+fi
+
 MESH=$1
 MESHBASE=${MESH##*/}
 MESHNAME=${MESHBASE%.*}
 
 # KAPPA, NU pairs to test
-PARAMS=(1e-6,0.0 1e-1,4.0 3e-1,0.5)
+PARAMS=(1e-4,0.0 1e-1,4.0 3e-1,0.5)
 
 # set up julia
 julia --project=. -e "using Pkg; Pkg.instantiate()"

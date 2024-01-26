@@ -49,39 +49,78 @@ cheb_timings = Float64.(perf[num_tols+4:end, 2])
 
 ## estimate errors using Hutchinson
 
-function hutchinson_frobenius(matvecs)
-    m  = size(matvecs, 2) 
+function hutchinson_frobenius(matvecs; corr_matvecs=nothing)
+    n  = size(matvecs, 2) 
     zs = norm.(eachcol(matvecs)).^2
-    mean_z = sum(zs) / m
-    var_z  = sum((zs .- mean_z).^2) / (m-1)
+    mean_z = sum(zs) / n
+    var_z  = sum((zs .- mean_z).^2) / (n-1)
 
     tr     = mean_z
-    tr_var = var_z / m
+    tr_var = var_z / n
 
-    return tr, tr_var
+    if !isnothing(corr_matvecs)
+        m  = size(corr_matvecs, 2) 
+        ws = norm.(eachcol(corr_matvecs)).^2
+        mean_w = sum(ws) / m
+        var_w  = sum((ws .- mean_w).^2) / (m-1)
+
+        rho = sum((zs .- mean_z).*(ws .- mean_w)) / sqrt(var_z*var_w)
+
+        return tr, tr_var, rho
+    else
+        return tr, tr_var
+    end
 end
 
-nmv = size(lbo_matvecs[1], 2)
+nmv = size(lbo_matvecs[1], 1)
 
-cheb_frobsq = Vector{Tuple{Float64, Float64}}(undef, num_ps)
-lbo_frobsq  = Vector{Tuple{Float64, Float64}}(undef, num_tols)
+cheb_frobsq = Vector{Tuple{Float64, Float64, Float64}}(undef, num_ps)
+lbo_frobsq  = Vector{Tuple{Float64, Float64, Float64}}(undef, num_tols)
 
 ref_frobsq = hutchinson_frobenius(ref_matvecs)
 
 for i in eachindex(cheb_matvecs)
-    cheb_frobsq[i] = hutchinson_frobenius(cheb_matvecs[i] - ref_matvecs[:, 1:nmv])
+    cheb_frobsq[i] = hutchinson_frobenius(
+        cheb_matvecs[i] - ref_matvecs[:, 1:nmv],
+        corr_matvecs=ref_matvecs
+        )
 end
 
 for i in eachindex(lbo_matvecs)
-    lbo_frobsq[i]  = hutchinson_frobenius(lbo_matvecs[i] -  ref_matvecs[:, 1:nmv])
+    lbo_frobsq[i]  = hutchinson_frobenius(
+        lbo_matvecs[i] -  ref_matvecs[:, 1:nmv],
+        corr_matvecs=ref_matvecs
+        )
 end
 
-cheb_opnorms = sqrt.(getindex.(cheb_frobsq, 1) / ref_frobsq[1])
-lbo_opnorms  = sqrt.(getindex.(lbo_frobsq, 1) / ref_frobsq[1])
+# cheb_opnorms = sqrt.(getindex.(cheb_frobsq, 1) / ref_frobsq[1])
+lbo_opnorms = sqrt.(getindex.(lbo_frobsq, 1)  / ref_frobsq[1])
+
+# lbo_logvars = 0.25*(
+#     getindex.(lbo_frobsq, 2) ./ getindex.(lbo_frobsq, 1).^2 .+
+#     ref_frobsq[2] / ref_frobsq[1]^2
+#     )
+# lbo_2std = (
+#     abs.(lbo_opnorms .* exp.(-2sqrt.(lbo_logvars)) .- lbo_opnorms),
+#          lbo_opnorms .* exp.( 2sqrt.(lbo_logvars)) .- lbo_opnorms
+# )
+
+lbo_sqvars = (
+    getindex.(lbo_frobsq, 2).^2 ./ ref_frobsq[1].^2 .+
+    getindex.(lbo_frobsq, 1).^2 .* ref_frobsq[2].^2 ./ ref_frobsq[1].^4 .-
+    2*getindex.(lbo_frobsq, 1) .* getindex.(lbo_frobsq, 3) ./ ref_frobsq[1].^3
+    ) ./ nmv
+lbo_2std = (
+    abs.(lbo_opnorms .* exp.(-2sqrt.(lbo_logvars)) .- lbo_opnorms),
+         lbo_opnorms .* exp.( 2sqrt.(lbo_logvars)) .- lbo_opnorms
+)
 
 @show ref_frobsq
-@show cheb_opnorms
+# @show cheb_opnorms
 @show lbo_opnorms
+
+# @show cheb_1std
+@show lbo_2std
 
 ##
 
@@ -90,7 +129,7 @@ pl = plot(
         "%s, verts=%i\nκ=%1.1e, ν=%1.1e", 
         split(mesh_file, "/")[end], n, k, nu
         ),
-    yscale=:log10,
+    # yscale=:log10,
     xlabel="time per sample (s)",
     ylabel=L"||C - \tilde{C}||"
     )
@@ -101,81 +140,8 @@ pl = plot(
 #     )
 plot!(pl,
     lbo_timings, lbo_opnorms, 
-    label="Butterfly", line=(:blue, 2, :dash), 
-    marker=4, markerstrokewidth=0, markercolor=:blue
+    yerror=lbo_2std,
+    label="Butterfly", line=(:blue, 1, :dash, 0.5), 
+    marker=4, msw=1, markercolor=:blue
     )
-pl
-# savefig(pl, @sprintf("output/%s_est_error_kappa%.1e_nu%.1e.png", meshname, k, nu))
-
-# npl     = 5
-# rs      = round.(Int64, range(2, stop=length(Lam)-1, length=100))
-# errs    = zeros(2, length(rs))
-# normC   = norm(g.(Lam).^2)
-# pl_lam = plot(
-#     1:length(Lam), Lam, label="true", line=(:black, 2),
-#     title=@sprintf(
-#         "Eigenvalues\n%s, verts=%i\nκ=%1.1e, ν=%1.1e", 
-#         split(mesh_file, "/")[end], n, k, nu
-#         ),
-#     xlabel=L"\ell"
-#     )
-# pl_g = plot(
-#     1:length(Lam), g.(Lam), label="true", line=(:black, 2),
-#     yscale=:log10,
-#     legend=:bottomleft,
-#     ylims=[max(minimum(g.(Lam)), 1e-20), 1.0],
-#     title=@sprintf(
-#         "Spectrum of covariance\n%s, verts=%i\nκ=%1.1e, ν=%1.1e", 
-#         split(mesh_file, "/")[end], n, k, nu
-#         ),
-#     xlabel=L"\ell"
-#     )
-# for (i, r) in enumerate(rs)
-#     @printf("computing covariance error for rank %i (%i of %i)\n", r, i, length(rs))
-#     # compute true truncation error
-#     errs[1,i] = norm(g.(Lam[1+r:end]).^2) / normC
-#     # estimate truncation error using least squares
-#     nf   = min(r, 100)
-#     xhat = sum((r-nf+1:r)) / nf
-#     yhat = sum(Lam[r-nf+1:r]) / nf
-#     m = dot((r-nf+1:r) .- xhat, Lam[r-nf+1:r] .- yhat) / norm((r-nf+1:r) .- xhat)^2
-#     b = yhat - m*xhat
-#     ls = collect(m*(1:length(Lam)) .+ b)
-#     ls[1:r] .= Lam[1:r] # don't use linear fit for already computed eigenvalues
-#     errs[2,i] = norm(g.(ls[1+r:end]).^2) / norm(g.(ls).^2)
-#     if i % div(length(rs), npl) == 0
-#         scatter!(pl_lam, r-nf+1:r, Lam[r-nf+1:r], c=i, label="", markerstrokewidth=0, markersize=2)
-#         plot!(pl_lam, 
-#             r-nf+1:length(Lam), ls[r-nf+1:end], label="rank $r",
-#             line=(palette(:default)[div(i-1,div(length(rs), npl))+1], 1, :dash)
-#             )
-#         plot!(pl_g,   
-#             r-nf+1:length(Lam), g.(ls[r-nf+1:end]), label="rank $r",
-#             line=(palette(:default)[div(i-1,div(length(rs), npl))+1], 1, :dash)
-#             )
-#     end
-# end
-# savefig(pl_lam, @sprintf("output/%s_est_eigenvalues.png", meshname))
-# savefig(pl_g,   @sprintf("output/%s_est_covspectrum_kappa%.1e_nu%.1e.png", meshname, k, nu))
-
-# ##
-
-# errs[errs .< 1e-20] .= NaN
-# pl = plot(
-#     rs, 
-#     errs', 
-#     labels=reshape([
-#         L"\parallel C - C_{\ell} \parallel", 
-#         "error estimator"],:,2), 
-#     legend=:bottomleft,
-#     linestyle=[:solid :dash], linewidth=2,
-#     yscale=:log10,
-#     title=@sprintf(
-#         "Relative truncation error\n%s, verts=%i\nκ=%1.1e, ν=%1.1e", 
-#         split(mesh_file, "/")[end], n, k, nu
-#         ),
-#     xlabel=L"number of computed eigenmodes $\ell$",
-#     dpi=200
-#     )
-
-# savefig(pl, @sprintf("output/%s_est_truncation_kappa%.1e_nu%.1e.png", meshname, k, nu))
+savefig(pl, @sprintf("output/%s_est_error_kappa%.1e_nu%.1e.png", meshname, k, nu))

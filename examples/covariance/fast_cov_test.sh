@@ -1,20 +1,27 @@
 #!/bin/zsh
 set -o nullglob
 
+if [ "$#" -ne 3 ]; then
+    echo "usage: mesh.obj kappa nu"
+    exit
+fi
+
 MESH=$1
 MESHBASE=${MESH##*/}
 MESHNAME=${MESHBASE%.*}
 
-KAPPA=1e-4
-NU=0
-NUM_SAMPLES=1000
+KAPPA=$2
+NU=$3
+NUM_SAMPLES=100
 
-REFTOL=1e-6
-TOLS=(1e-1 3e-2 1e-2 3e-3 1e-3 3e-4 1e-4 $REFTOL)
-LOGPS=(4 6)
+REFTOL=1e-4
+TOLS=(1e-1 1e-2 1e-3 $REFTOL)
+LOGPS=(2 4 6)
+
+JULIA=true
 
 # set up julia
-julia --project=. -e "using Pkg; Pkg.instantiate()"
+if $JULIA; then julia --project=. -e "using Pkg; Pkg.instantiate()"; fi
 
 # clean this directory and make output directory
 rm -f -- *.bin *.txt
@@ -33,7 +40,7 @@ do
     echo -n "$TOL " >> tols.txt
 
     # plot sample
-    julia --project=. plot_sample.jl $MESH $KAPPA $NU lbo $TOL
+    if $JULIA; then julia --project=. plot_sample.jl $MESH $KAPPA $NU lbo $TOL; fi
 done
 
 echo "\nP\tSAMP(s)" >> $(printf "performance_kappa%.1e_nu%.1e.txt" $KAPPA $NU)
@@ -49,11 +56,11 @@ do
     echo -n "$P " >> ps.txt
 
     # plot sample
-    julia --project=. plot_sample.jl $MESH $KAPPA $NU cheb $P
+    if $JULIA; then julia --project=. plot_sample.jl $MESH $KAPPA $NU cheb $P; fi
 done
 
 # plot error
-julia --project=. plot_fast_cov_test.jl $MESH $KAPPA $NU
+if $JULIA; then julia --project=. plot_fast_cov_test.jl $MESH $KAPPA $NU; fi
 
 # move generated files to output folder
 for file in *.bin *.txt
