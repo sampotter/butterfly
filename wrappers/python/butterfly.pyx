@@ -1148,6 +1148,19 @@ cdef class Trimesh:
     def num_faces(self):
         return bfTrimeshGetNumFaces(self.trimesh)
 
+    @property
+    def vertex_normals(self):
+        if bfTrimeshHasVertexNormals(self.trimesh):
+            return Vectors3.from_ptr(bfTrimeshGetVertexNormalsPtr(self.trimesh))
+
+    @property
+    def face_normals(self):
+        if bfTrimeshHasFaceNormals(self.trimesh):
+            return Vectors3.from_ptr(bfTrimeshGetFaceNormalsPtr(self.trimesh))
+
+    def compute_face_normals_matching_vertex_normals(self):
+        bfTrimeshComputeFaceNormalsMatchingVertexNormals(self.trimesh)
+
 cdef class Vec:
     cdef BfVec *vec
 
@@ -1162,6 +1175,15 @@ cdef class Vectors2:
 
     def extend(self, Vectors2 vectors):
         bfVectors2Extend(self.vectors, vectors.vectors)
+
+cdef class Vectors3:
+    cdef BfVectors3 *vectors
+
+    @staticmethod
+    cdef from_ptr(BfVectors3 *vectors):
+        cdef Vectors3 _ = Vectors3.__new__(Vectors3)
+        _.vectors = vectors
+        return _
 
 ############################################################################
 # Other stuff...

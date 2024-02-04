@@ -58,6 +58,19 @@ void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w) {
   w[2] = u[0]*v[1] - u[1]*v[0];
 }
 
+void bfVector3Normalize(BfVector3 u) {
+  BfReal uNorm = bfVector3Norm(u);
+  u[0] /= uNorm;
+  u[1] /= uNorm;
+  u[2] /= uNorm;
+}
+
+void bfVector3Negate(BfVector3 u) {
+  u[0] *= -1;
+  u[1] *= -1;
+  u[2] *= -1;
+}
+
 BfVectors2 *bfVectors2NewEmpty() {
   BF_ERROR_BEGIN();
 
@@ -124,7 +137,7 @@ BfVectors2 const *bfVectors2ConstViewFromMatDenseReal(BfMatDenseReal const *matD
     RAISE_ERROR(BF_ERROR_INVALID_ARGUMENTS);
 
   vectors = bfMemAlloc(1, sizeof(BfVectors2));
-  vectors->data = (BfPoint2 *)matDenseReal->data;
+  vectors->data = (BfVector2 *)matDenseReal->data;
   vectors->size = bfMatDenseRealGetNumRows(matDenseReal);
   vectors->capacity = BF_SIZE_BAD_VALUE;
   vectors->isView = true;
@@ -200,11 +213,11 @@ void bfVectors2InitFromFile(char const *path, BfVectors2 *vectors) {
   fseek(fp, 0, SEEK_SET);
 
   /* make sure the binary file is the right size */
-  if (size % sizeof(BfPoint2) != 0)
+  if (size % sizeof(BfVector2) != 0)
     RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
   /* get the number of vectors */
-  vectors->size = size/sizeof(BfPoint2);
+  vectors->size = size/sizeof(BfVector2);
 
   /* allocate space for the vectors */
   vectors->data = bfMemAlloc(size, sizeof(char));
@@ -212,7 +225,7 @@ void bfVectors2InitFromFile(char const *path, BfVectors2 *vectors) {
     RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
   /* read them in */
-  fread(vectors->data, sizeof(BfPoint2), vectors->size, fp);
+  fread(vectors->data, sizeof(BfVector2), vectors->size, fp);
   // TODO: error-handling
 
   BF_ERROR_END() {
@@ -265,7 +278,7 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   if (fp == NULL)
     RAISE_ERROR(BF_ERROR_FILE_ERROR);
 
-  fwrite(vectors->data, vectors->size, sizeof(BfPoint2), fp);
+  fwrite(vectors->data, vectors->size, sizeof(BfVector2), fp);
   // TODO: error-handling
 
   BF_ERROR_END() {}
@@ -273,14 +286,14 @@ void bfSaveVectors2(BfVectors2 const *vectors, char const *path) {
   fclose(fp);
 }
 
-void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
+void bfVectors2Append(BfVectors2 *vectors, BfVector2 const p) {
   BF_ERROR_BEGIN();
 
   /* Grow the array if we're at capacity */
   if (vectors->size == vectors->capacity) {
     vectors->capacity *= 2;
 
-    BfPoint2 *newData = bfMemRealloc(vectors->data, vectors->capacity, sizeof(BfPoint2));
+    BfVector2 *newData = bfMemRealloc(vectors->data, vectors->capacity, sizeof(BfVector2));
     if (newData == NULL)
       RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
 
@@ -288,7 +301,7 @@ void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
   }
 
   /* Append new point */
-  bfMemCopy(p, 1, sizeof(BfPoint2), &vectors->data[vectors->size++]);
+  bfMemCopy(p, 1, sizeof(BfVector2), &vectors->data[vectors->size++]);
 
   BF_ERROR_END() {}
 }
@@ -296,7 +309,7 @@ void bfVectors2Append(BfVectors2 *vectors, BfPoint2 const p) {
 void bfVectors2Extend(BfVectors2 *vectors, BfVectors2 const *newVectors) {
   /* TODO: bad implementation to start... fix */
   for (BfSize i = 0; i < newVectors->size; ++i) {
-    BfPoint2 v;
+    BfVector2 v;
     bfVectors2Get(newVectors, i, v);
     bfVectors2Append(vectors, v);
   }
@@ -357,28 +370,81 @@ BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1) {
   return vectorsView;
 }
 
-void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors) {
-  if (numVectors == 0) {
-    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
-    return;
+BfVectors3 *bfVectors3NewEmpty(void) {
+  BF_ERROR_BEGIN();
+
+  BfVectors3 *vectors = bfMemAlloc(1, sizeof(BfVectors3));
+  HANDLE_ERROR();
+
+  bfVectors3InitEmpty(vectors);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
   }
 
-  vectors->size = numVectors;
+  return vectors;
+}
 
-  vectors->data = bfMemAlloc(numVectors, sizeof(BfVector3));
-  if (vectors->data == NULL)
-    bfSetError(BF_ERROR_MEMORY_ERROR);
+BfVectors3 *bfVectors3NewWithCapacity(BfSize capacity) {
+  BF_ERROR_BEGIN();
+
+  BfVectors3 *vectors = bfMemAlloc(1, sizeof(BfVectors3));
+  HANDLE_ERROR();
+
+  bfVectors3InitWithCapacity(vectors, capacity);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return vectors;
+}
+
+void bfVectors3InitEmpty(BfVectors3 *vectors) {
+  BF_ERROR_BEGIN();
+
+  vectors->size = 0;
+  vectors->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  vectors->isView = false;
+
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector3));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+void bfVectors3InitWithCapacity(BfVectors3 *vectors, BfSize capacity) {
+  BF_ERROR_BEGIN();
+
+  vectors->size = 0;
+  vectors->capacity = capacity;
+  vectors->isView = false;
+
+  vectors->data = bfMemAlloc(vectors->capacity, sizeof(BfVector3));
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
 }
 
 void bfVectors3Deinit(BfVectors3 *vectors) {
-  (void)vectors;
-  BF_DIE();
+  vectors->size = BF_SIZE_BAD_VALUE;
+  vectors->capacity = BF_SIZE_BAD_VALUE;
+  vectors->isView = false;
+
+  bfMemFree(vectors->data);
+  vectors->data = NULL;
 }
 
 void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors) {
   BF_ERROR_BEGIN();
 
-  bfVectors3InitEmpty(indexedVectors, numInds);
+  bfVectors3InitWithCapacity(indexedVectors, numInds);
   HANDLE_ERROR();
 
   for (BfSize i = 0; i < numInds; ++i)
@@ -387,4 +453,30 @@ void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize cons
   BF_ERROR_END() {
     bfVectors3Deinit(indexedVectors);
   }
+}
+
+void bfVectors3Append(BfVectors3 *vectors, BfVector3 const v) {
+  BF_ERROR_BEGIN();
+
+  /* Grow the array if we're at capacity */
+  if (vectors->size == vectors->capacity) {
+    vectors->capacity *= 2;
+
+    BfVector3 *newData = bfMemRealloc(vectors->data, vectors->capacity, sizeof(BfVector3));
+    if (newData == NULL)
+      RAISE_ERROR(BF_ERROR_MEMORY_ERROR);
+
+    vectors->data = newData;
+  }
+
+  /* Append new point */
+  bfMemCopy(v, 1, sizeof(BfVector3), &vectors->data[vectors->size++]);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+}
+
+BfReal const *bfVectors3GetConstPtr(BfVectors3 const *vectors, BfSize i) {
+  return vectors->data[i];
 }

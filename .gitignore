@@ -14,3 +14,7 @@ builddir
 compile_commands.json
 subprojects/argtable3
 vgcore.*
+docs/build
+docs/latex
+docs/make.bat
+docs/xml

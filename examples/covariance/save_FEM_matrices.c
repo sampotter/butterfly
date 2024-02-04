@@ -5,6 +5,7 @@
 #include <bf/interval_tree.h>
 #include <bf/linalg.h>
 #include <bf/logging.h>
+#include <bf/mat_csr_real.h>
 #include <bf/mat_dense_real.h>
 #include <bf/octree.h>
 #include <bf/rand.h>

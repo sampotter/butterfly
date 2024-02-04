@@ -13,6 +13,8 @@ void bfVector3Scale(BfVector3 u, BfReal alpha);
 BfReal bfVector3Norm(BfVector3 const u);
 BfReal bfVector3Dot(BfVector3 const u, BfVector3 const v);
 void bfVector3Cross(BfVector3 const u, BfVector3 const v, BfVector3 w);
+void bfVector3Normalize(BfVector3 u);
+void bfVector3Negate(BfVector3 u);
 
 struct BfVectors2 {
   BfVector2 *data;
@@ -47,8 +49,17 @@ BfVectors2 *bfVectors2GetRangeView(BfVectors2 *vectors, BfSize i0, BfSize i1);
 struct BfVectors3 {
   BfVector3 *data;
   BfSize size;
+  BfSize capacity;
+  bool isView;
 };
 
-void bfVectors3InitEmpty(BfVectors3 *vectors, BfSize numVectors);
+BfVectors3 *bfVectors3NewEmpty(void);
+BfVectors3 *bfVectors3NewWithCapacity(BfSize capacity);
+void bfVectors3InitEmpty(BfVectors3 *vectors);
+void bfVectors3InitWithCapacity(BfVectors3 *vectors, BfSize capacity);
 void bfVectors3Deinit(BfVectors3 *vectors);
+void bfVectors3Dealloc(BfVectors3 **vectors);
+void bfVectors3DeinitAndDealloc(BfVectors3 **vectors);
 void bfVectors3GetByIndex(BfVectors3 const *vectors, BfSize numInds, BfSize const *inds, BfVectors3 *indexedVectors);
+void bfVectors3Append(BfVectors3 *vectors, BfVector3 const v);
+BfReal const *bfVectors3GetConstPtr(BfVectors3 const *vectors, BfSize i);

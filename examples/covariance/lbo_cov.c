@@ -127,8 +127,6 @@ int main(int argc, char const *argv[]) {
     .minNumCols = 20,
   };
 
-  clock_t start, end;
-
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
@@ -137,7 +135,7 @@ int main(int argc, char const *argv[]) {
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
-    
+
     // Don't try to extrapolate if we don't have enough frequencies:
     if (freqs->size <= nfit) continue;
 
@@ -170,7 +168,7 @@ int main(int argc, char const *argv[]) {
       denom += pow(gamma_(lam), 4);
     }
     err_est = sqrt(numer)/sqrt(denom);
-    printf("truncation error estimate after %i eigenpairs is %.2e\n", freqs->size, err_est);
+    printf("truncation error estimate after %lu eigenpairs is %.2e\n", freqs->size, err_est);
   }
   double precomp_time = bfToc();
 

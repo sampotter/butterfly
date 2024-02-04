@@ -4,9 +4,9 @@
 
 ## Documentation
 
-Until this library gets some traction, there will be no documentation.
+Woefully incomplete documentation for butterfly is available [here](https://sampotter.github.io/butterfly).
 
-*In the mean time*:
+Additionally:
 
 1. Check out the [examples](./examples) directory to see demonstrations of the library.
 2. If nothing fits, contact [me](https://sampotter.github.io) by email, or create a GitHub issue. I'm happy to work with you to make this library suit your needs.
