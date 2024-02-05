@@ -75,8 +75,6 @@ void bfFacStreamerInit(BfFacStreamer *facStreamer, BfFacSpec const *facSpec) {
   facStreamer->rowTreeReversePerm = bfPermGetReversePerm(facSpec->rowTree->perm);
   HANDLE_ERROR();
 
-  printf("HI!!!\n");
-
   BfTreeIterPostOrder *iter = bfTreeIterPostOrderNew();
   HANDLE_ERROR();
 
