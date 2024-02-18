@@ -8,5 +8,6 @@ python3_dep = python3.dependency(embed : true)
 python3.extension_module(
   'butterfly',
   'butterfly.pyx',
-  dependencies : [python3_dep, butterfly_dep]
+  dependencies : [python3_dep, butterfly_dep],
+  install : true
 )
