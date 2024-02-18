@@ -8,8 +8,8 @@ LOGPS=(4 6 8 10)
 TOLS=(1e-2 1e-4 1e-6)
 
 mkdir -p output
-:> Ps.csv
-:> tols.csv
+:> ps.txt
+:> tols.txt
 
 # compute covariances for various Chebyshev orders
 for logP in ${LOGPS[@]}
@@ -18,8 +18,8 @@ do
     cmd="./cheb_cov $MESH $P $KAPPA $NU $NUM_SAMPLES"
     printf "\n" 
     echo $cmd
-    eval $cmd
-    echo -n "$P " >> Ps.csv
+    # eval $cmd
+    echo -n "$P " >> ps.txt
 done
 
 # compute covariance for various butterfly tolerances
@@ -29,23 +29,23 @@ do
     printf "\n" 
     echo $cmd
     eval $cmd
-    echo -n "$TOL " >> tols.csv
+    echo -n "$TOL " >> tols.txt
 done
 
 # move generated files to output folder
-for file in *.bin *.txt *.csv
+for file in *.bin *.txt
 do
     mv $file output
 done
 
 # # make covariance and sample plots for each P
-# cmd="julia plot_test_output.jl $MESH Ps.csv"
+# cmd="julia plot_test_output.jl $MESH ps.txt"
 # printf "\n"
 # echo $cmd
 # eval $cmd
 
-# make comparison plots against analytic covariance 
-cmd="julia covariance_sphere.jl $MESH $KAPPA $NU output/Ps.csv output/tols.csv"
-printf "\n"
-echo $cmd
-eval $cmd
+# # make comparison plots against analytic covariance 
+# cmd="julia covariance_sphere.jl $MESH $KAPPA $NU output/ps.txt output/tols.txt"
+# printf "\n"
+# echo $cmd
+# eval $cmd

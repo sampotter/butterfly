@@ -28,10 +28,7 @@ int main(int argc, char const *argv[]) {
   bfSetLogLevel(BF_LOG_LEVEL_INFO);
 
   char const *objPath = argv[1];
-  int nev = atoi(argv[2]);
-
   BfTrimesh *trimesh = bfTrimeshNewFromObjFile(objPath);
-
   BfSize numVerts = bfTrimeshGetNumVerts(trimesh);
   printf("triangle mesh with %lu verts\n", numVerts);
 
@@ -39,28 +36,24 @@ int main(int argc, char const *argv[]) {
   bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   printf("set up FEM discretization [%0.1fs]\n", bfToc());
 
-  bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-  bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
+  bfMatCsrRealDump(L, "L_rowptr.bin", "L_colind.bin", "L_data.bin");
+  bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
-  BfMat *Phi = NULL;
-  BfVecReal *Lam = NULL;
-  bfGetShiftedEigs(L, M, -0.001, nev, &Phi, &Lam);
-  printf("Computed dense eigendecomposition [%0.1fs]\n", bfToc());
+  // // nullspace of LBO?
+  // int nev = numVerts-2;
+  // BfMat *Phi = NULL;
+  // BfVecReal *Lam = NULL;
+  // bfGetShiftedEigs(L, M, -0.001, nev, &Phi, &Lam);
+  // printf("Computed dense eigendecomposition [%0.1fs]\n", bfToc());
 
-  bfMatDenseRealSave(bfMatToMatDenseReal(Phi), "Phi.bin");
-  bfVecRealSave(Lam, "Lam.bin");
-  printf("Saved dense eigendecomposition\n");
-
-  BfMat *PhiT = bfMatTrans(Phi);
-  BfMat *tmp  = bfMatMul(M, Phi);
-  bfMatDelete(&PhiT);
-  bfMatDelete(&tmp);
-  bfMatDenseRealSave(bfMatToMatDenseReal(Phi), ".bin");
+  // bfMatDenseRealSave(bfMatToMatDenseReal(Phi), "Phi.bin");
+  // bfVecRealSave(bfVecToVecReal(Lam), "Lam.bin");
+  // printf("Saved dense eigendecomposition\n");
 
   /* Clean up */
-  bfMatDelete(&M);
-  bfMatDelete(&L);
-  bfMatDelete(&Phi);
-  bfVecRealDelete(&Lam);
-  bfTrimeshDeinit(trimesh);
+  // bfMatDelete(&M);
+  // bfMatDelete(&L);
+  // bfMatDelete(&Phi);
+  // bfVecDelete(&Lam);
+  // bfTrimeshDeinit(&trimesh);
 }
