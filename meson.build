@@ -1,4 +1,4 @@
-project('butterfly', 'c', 'cython', default_options : ['c_std=c11'])
+project('butterfly', 'c', 'cython', default_options : ['c_std=c11'], meson_version : '>= 1.2.2')
 
 fs = import('fs')
 pkg = import('pkgconfig')
