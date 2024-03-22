@@ -76,16 +76,13 @@ static BfVec *sample_z(BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqr
 }
 
 static BfVec *cov_matvec(BfVec *v, BfCheb const *cheb, BfMat const *S, BfMat const *MLumpSqrtInv) {
-  BfSize n = bfMatGetNumRows(S);
-
-  BfVec *tmp = bfMatMulVec(MLumpSqrtInv, bfVecRealToVec(v));
+  BfVec *tmp = bfMatMulVec(MLumpSqrtInv, v);
   BfVec *tmp1 = chebmul(cheb, S, tmp);
   bfVecDelete(&tmp);
   tmp = chebmul(cheb, S, tmp1);
   bfVecDelete(&tmp1);
   tmp1 = bfMatMulVec(MLumpSqrtInv, tmp);
   bfVecDelete(&tmp);
-
   return tmp1;
 }
 
@@ -187,7 +184,7 @@ int main(int argc, char const *argv[]) {
   /** Sample z once and write it out to disk for plotting. */
 
   BfVec *z = sample_z(&gammaCheb, S, MLumpSqrtInv);
-  sprintf(filename, "z_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
+  sprintf(filename, "z_cheb_p%lu_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfVecSave(z, filename);
   bfVecDelete(&z);
 
@@ -205,7 +202,7 @@ int main(int argc, char const *argv[]) {
   char line[100];
   FILE *fptr;
   sprintf(filename, "performance_kappa%.1e_nu%.1e.txt", kappa, nu);
-  sprintf(line, "%i\t%.8e\n", p, sampling_time/numSamples);
+  sprintf(line, "%lu\t%.8e\n", p, sampling_time/numSamples);
   fptr = fopen(filename, "a");
   fprintf(fptr, line);
   fclose(fptr);
@@ -215,7 +212,7 @@ int main(int argc, char const *argv[]) {
 
   BfVec *e = bfVecRealToVec(bfVecRealNewStdBasis(numVerts, 0));
   BfVec *c = cov_matvec(e, &gammaCheb, S, MLumpSqrtInv);
-  sprintf(filename, "c_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
+  sprintf(filename, "c_cheb_p%lu_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfVecSave(c, filename);
 
   /* Compute and store covariance matrix vector products */
@@ -224,9 +221,9 @@ int main(int argc, char const *argv[]) {
   BfSize s = numSamples;
   BfMatDenseReal *matvecs = bfMatDenseRealNewZeros(numVerts, s);
 
-  printf("computing %i matvecs with covariance\n", s);
+  printf("computing %lu matvecs with covariance\n", s);
   for (BfSize j = 0; j < s; ++j) {
-      BfVecReal *x = bfVecRealNewRandn(numVerts);
+      BfVec *x = bfVecRealToVec(bfVecRealNewRandn(numVerts));
 
       // apply covariance matrix
       BfVec *tmp1 = cov_matvec(x, &gammaCheb, S, MLumpSqrtInv);
@@ -239,7 +236,7 @@ int main(int argc, char const *argv[]) {
       bfVecDelete(&tmp1);
   }
 
-  sprintf(filename, "matvecs_cheb_p%i_kappa%.1e_nu%.1e.bin", p, kappa, nu);
+  sprintf(filename, "matvecs_cheb_p%lu_kappa%.1e_nu%.1e.bin", p, kappa, nu);
   bfMatDenseRealSave(matvecs, filename);
 
   /** Clean up: */
