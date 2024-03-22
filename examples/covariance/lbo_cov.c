@@ -130,7 +130,7 @@ int main(int argc, char const *argv[]) {
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
-  int nfit = 100; // number of eigenvalues to fit for extrapolation
+  BfSize nfit = 100; // number of eigenvalues to fit for extrapolation
   BfReal err_est = 1.0;
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
     bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
@@ -219,9 +219,9 @@ int main(int argc, char const *argv[]) {
   sprintf(filename, "performance_kappa%.1e_nu%.1e.txt", kappa, nu);
   sprintf(
     line,
-    "%.1e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n", 
+    "%.1e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n",
     tol, precomp_time, sampling_time/numSamples,
-    numBytesCompressed/pow(1024, 2), 
+    numBytesCompressed/pow(1024, 2),
     numBytesUncompressed/pow(1024, 2),
     numBytesUntruncated/pow(1024, 2)
     );
@@ -259,9 +259,9 @@ int main(int argc, char const *argv[]) {
   BfSize s = numSamples;
   BfMatDenseReal *matvecs = bfMatDenseRealNewZeros(numVerts, s);
 
-  printf("computing %i matvecs with covariance\n", s);
+  printf("computing %lu matvecs with covariance\n", s);
   for (BfSize j = 0; j < s; ++j) {
-      BfVecReal *x = bfVecRealNewRandn(numVerts);
+      BfVec *x = bfVecRealToVec(bfVecRealNewRandn(numVerts));
 
       // apply covariance matrix
       BfVec *tmp1 = cov_matvec(x, Phi, GammaLam, rowPerm, revRowPerm);
