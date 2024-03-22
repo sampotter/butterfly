@@ -90,7 +90,23 @@ BfRealArray *bfRealArrayNewFromVecReal(BfVecReal const *vecReal, BfPolicy policy
   return realArray;
 }
 
-BfRealArray *bfRealArrayNewWithDefaultCapacity() {
+BfRealArray *bfRealArrayNewWithCapacity(BfSize capacity) {
+  BF_ERROR_BEGIN();
+
+  BfRealArray *realArray = bfRealArrayNew();
+  HANDLE_ERROR();
+
+  bfRealArrayInitWithCapacity(realArray, capacity);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return realArray;
+}
+
+BfRealArray *bfRealArrayNewWithDefaultCapacity(void) {
   BF_ERROR_BEGIN();
 
   BfRealArray *realArray = bfRealArrayNew();
@@ -122,11 +138,42 @@ BfRealArray *bfRealArrayNewWithValue(BfSize size, BfReal value) {
   return realArray;
 }
 
-void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
+BfRealArray *bfRealArrayNewFromFile(char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fseek(fp, 0, SEEK_END);
+  BfSize numFileBytes = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  if (numFileBytes % sizeof(BfReal) != 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfSize capacity = numFileBytes/sizeof(BfReal);
+
+  BfRealArray *realArray = bfRealArrayNewWithCapacity(capacity);
+  HANDLE_ERROR();
+
+  realArray->size = capacity;
+  fread(realArray->data, sizeof(BfReal), realArray->size, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+
+  return realArray;
+}
+
+void bfRealArrayInitWithCapacity(BfRealArray *realArray, BfSize capacity) {
   BF_ERROR_BEGIN();
 
   realArray->size = 0;
-  realArray->capacity = BF_ARRAY_DEFAULT_CAPACITY;
+  realArray->capacity = capacity;
   realArray->isView = false;
 
   realArray->data = bfMemAlloc(realArray->capacity, sizeof(BfReal));
@@ -141,6 +188,10 @@ void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
   BF_ERROR_END() {
     invalidate(realArray);
   }
+}
+
+void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray) {
+  bfRealArrayInitWithCapacity(realArray, BF_ARRAY_DEFAULT_CAPACITY);
 }
 
 void bfRealArrayInitWithValue(BfRealArray *realArray, BfSize size, BfReal value) {

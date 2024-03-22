@@ -358,6 +358,32 @@ BfMatCsrReal *bfMatCsrRealNewFromArrays(BfSize numRows, BfSize numCols, BfSizeAr
   return matCsrReal;
 }
 
+BfMatCsrReal *bfMatCsrRealNewFromBinaryFiles(char const *rowptrPath, char const *colindPath, char const *dataPath) {
+  BF_ERROR_BEGIN();
+
+  BfSizeArray *rowptrArray = bfSizeArrayNewFromFile(rowptrPath);
+  HANDLE_ERROR();
+
+  BfSizeArray *colindArray = bfSizeArrayNewFromFile(colindPath);
+  HANDLE_ERROR();
+
+  BfRealArray *dataArray = bfRealArrayNewFromFile(dataPath);
+  HANDLE_ERROR();
+
+  BfSize numRows = bfSizeArrayGetMaximum(colindArray);
+  BfSize numCols = bfSizeArrayGetSize(rowptrArray);
+
+  BfMatCsrReal *matCsrReal = bfMatCsrRealNewFromArrays(
+    numRows, numCols, rowptrArray, colindArray, dataArray, BF_POLICY_STEAL);
+  HANDLE_ERROR();
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  return matCsrReal;
+}
+
 static BfReal integrateViewFactorMidpointRule(BfTrimesh const *trimesh, BfSize srcInd, BfSize tgtInd) {
   BfReal const *pSrc = bfTrimeshGetFaceCentroidConstPtr(trimesh, srcInd);
   BfReal const *pTgt = bfTrimeshGetFaceCentroidConstPtr(trimesh, tgtInd);

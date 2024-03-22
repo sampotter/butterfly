@@ -103,6 +103,37 @@ BfSizeArray *bfSizeArrayNewView(BfSize n, BfSize *inds) {
   return sizeArray;
 }
 
+BfSizeArray *bfSizeArrayNewFromFile(char const *path) {
+  BF_ERROR_BEGIN();
+
+  FILE *fp = fopen(path, "r");
+  if (fp == NULL)
+    RAISE_ERROR(BF_ERROR_FILE_ERROR);
+
+  fseek(fp, 0, SEEK_END);
+  BfSize numFileBytes = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  if (numFileBytes % sizeof(BfSize) != 0)
+    RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
+
+  BfSize capacity = numFileBytes/sizeof(BfSize);
+
+  BfSizeArray *sizeArray = bfSizeArrayNewWithCapacity(capacity);
+  HANDLE_ERROR();
+
+  sizeArray->size = capacity;
+  fread(sizeArray->data, sizeof(BfSize), sizeArray->size, fp);
+
+  BF_ERROR_END() {
+    BF_DIE();
+  }
+
+  fclose(fp);
+
+  return sizeArray;
+}
+
 void bfSizeArrayInitWithDefaultCapacity(BfSizeArray *sizeArray) {
   bfSizeArrayInitWithCapacity(sizeArray, BF_ARRAY_DEFAULT_CAPACITY);
 }
@@ -428,4 +459,15 @@ BfSize *bfSizeArrayStealPtr(BfSizeArray *sizeArray) {
   }
 
   return sizeArray->data;
+}
+
+BfSize bfSizeArrayGetMaximum(BfSizeArray const *sizeArray) {
+  if (bfSizeArrayIsEmpty(sizeArray))
+    bfSetError(BF_ERROR_INVALID_ARGUMENTS);
+  BfSize maximum = 0;
+  for (BfSize i = 0; i < bfSizeArrayGetSize(sizeArray); ++i) {
+    BfSize value = bfSizeArrayGet(sizeArray, i);
+    if (value > maximum) maximum = value;
+  }
+  return maximum;
 }

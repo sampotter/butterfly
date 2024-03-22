@@ -13,9 +13,12 @@ struct BfRealArray {
 
 BfRealArray *bfRealArrayNew(void);
 BfRealArray *bfRealArrayNewFromVecReal(BfVecReal const *vecReal, BfPolicy policy);
-BfRealArray *bfRealArrayNewWithDefaultCapacity();
+BfRealArray *bfRealArrayNewWithCapacity(BfSize capacity);
+BfRealArray *bfRealArrayNewWithDefaultCapacity(void);
 BfRealArray *bfRealArrayNewWithValue(BfSize size, BfReal value);
+BfRealArray *bfRealArrayNewFromFile(char const *path);
 BfRealArray *bfRealArrayCopy(BfRealArray const *realArray);
+void bfRealArrayInitWithCapacity(BfRealArray *realArray, BfSize capacity);
 void bfRealArrayInitWithDefaultCapacity(BfRealArray *realArray);
 void bfRealArrayInitWithValue(BfRealArray *realArray, BfSize size, BfReal value);
 void bfRealArrayInitCopy(BfRealArray *realArray, BfRealArray const *otherRealArray);
