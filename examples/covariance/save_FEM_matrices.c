@@ -36,8 +36,8 @@ int main(int argc, char const *argv[]) {
   bfTrimeshGetLboFemDiscretization(trimesh, &L, &M);
   printf("set up FEM discretization [%0.1fs]\n", bfToc());
 
-  bfMatCsrRealDump(L, "L_rowptr.bin", "L_colind.bin", "L_data.bin");
-  bfMatCsrRealDump(M, "M_rowptr.bin", "M_colind.bin", "M_data.bin");
+  bfMatCsrRealDump(bfMatToMatCsrReal(L), "L_rowptr.bin", "L_colind.bin", "L_data.bin");
+  bfMatCsrRealDump(bfMatToMatCsrReal(M), "M_rowptr.bin", "M_colind.bin", "M_data.bin");
 
   // // nullspace of LBO?
   // int nev = numVerts-2;
