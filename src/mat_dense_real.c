@@ -893,7 +893,7 @@ BfMatDenseReal *bfMatDenseRealNewFromCsv(char const *path) {
   BfSize numRows = 0;
   BfSize numCols = BF_SIZE_BAD_VALUE;
 
-  values = bfRealArrayNewWithDefaultCapacity(sizeof(double));
+  values = bfRealArrayNewWithDefaultCapacity();
   HANDLE_ERROR();
 
   fp = fopen(path, "r");
