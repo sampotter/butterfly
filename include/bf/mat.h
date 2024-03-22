@@ -38,7 +38,7 @@ typedef enum BfMatProps {
   BF_MAT_PROPS_UNIT = 1 << 6
 } BfMatProps;
 
-static BfMatProps const BF_MAT_PROPS_TRI = BF_MAT_PROPS_LOWER_TRI | BF_MAT_PROPS_UPPER_TRI;
+static BfMatProps const BF_MAT_PROPS_TRI = (BfMatProps)(BF_MAT_PROPS_LOWER_TRI | BF_MAT_PROPS_UPPER_TRI);
 
 /** Interface: Mat */
 
