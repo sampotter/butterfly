@@ -1,6 +1,7 @@
 examples = [
   'cheb_cov',
   'lbo_cov',
+  'lbo_cov_from_file',
   'save_FEM_matrices'
 ]
 
