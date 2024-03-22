@@ -1779,10 +1779,10 @@ void bfTrimeshComputeFaceNormalsMatchingVertexNormals(BfTrimesh *trimesh) {
       if (!(sign[0] == sign[1] && sign[1] == sign[2]))
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-      if (sign[0] == 0)
+      if (sign[0] == 0 || sign[1] == 0 || sign[2] == 0)
         RAISE_ERROR(BF_ERROR_RUNTIME_ERROR);
 
-      if (sign < 0)
+      if (sign[0] < 0)
         bfVector3Negate(faceNormal);
 
       bfVectors3Append(trimesh->faceNormals, faceNormal);
