@@ -1,4 +1,8 @@
-project('butterfly', 'c', 'cython', default_options : ['c_std=c11'], meson_version : '>= 1.2.2')
+project(
+  'butterfly',
+  'c', 'cpp', 'cython',
+  default_options : ['c_std=c11', 'cpp_std=c++11'],
+  meson_version : '>= 1.2.2')
 
 fs = import('fs')
 pkg = import('pkgconfig')
@@ -10,6 +14,9 @@ if get_option('buildtype') == 'debug'
 endif
 if get_option('embree').enabled()
   add_project_arguments('-DBF_EMBREE', language : 'c')
+endif
+if get_option('mfem').enabled()
+  add_project_arguments('-DBF_MFEM', language : 'c')
 endif
 if get_option('python').enabled()
   add_project_arguments('-DBF_PYTHON', language : 'c')

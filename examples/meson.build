@@ -1,6 +1,9 @@
 subdir('fast_direct_solver')
 subdir('fiedler_tree')
 subdir('lbo')
+if get_option('mfem').enabled()
+  subdir('lbo_MFEM')
+endif
 subdir('multiple_scattering')
 subdir('radiosity')
 subdir('simple')

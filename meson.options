@@ -1,11 +1,17 @@
 option(
-  'python',
-  type : 'feature',
-  value : 'enabled',
-  description : 'Whether or not butterfly\'s Python wrapper should be built')
-
-option(
   'embree',
   type : 'feature',
   value : 'enabled',
-  description : 'Whether or not butterfly build features using Embree')
+  description : 'Compile features and examples using Embree')
+
+option(
+  'python',
+  type : 'feature',
+  value : 'enabled',
+  description : 'Build butterfly\'s Python wrapper')
+
+option(
+  'mfem',
+  type : 'feature',
+  value : 'enabled',
+  description : 'Compile features and examples using MFEM')
