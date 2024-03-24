@@ -7,6 +7,7 @@
 #include <bf/interval_tree.h>
 #include <bf/interval_tree_node.h>
 #include <bf/linalg.h>
+#include <bf/util.h>
 #include <bf/vec_real.h>
 
 #include <math.h>
@@ -66,8 +67,12 @@ static BfInterval getBracketFromNode(BfTreeNode const *treeNode) {
   return bracket;
 }
 
-void bfLboFeedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs, BfMat const *L, BfMat const *M) {
+BfLboFeedResult bfLboFeedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *freqs, BfMat const *L, BfMat const *M) {
   BF_ERROR_BEGIN();
+
+  BfLboFeedResult result;
+
+  BfReal t0Total = bfToc();
 
   BfMat *Phi = NULL;
   BfVecReal *Lam = NULL;
@@ -92,7 +97,9 @@ void bfLboFeedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *fr
   HANDLE_ERROR();
 
   /* Compute the next eigenband using Lanczos */
+  BfReal t0Eigenband = bfToc();
   bfGetEigenband(L, M, &bracket, BF_EIGENBAND_METHOD_COVERING, &Phi, &Lam);
+  result.eigenbandTime = bfToc() - t0Eigenband;
   HANDLE_ERROR();
 
   printf("feed: bracket = %c%1.2f, %1.2f%c, num. eigs = %lu\n", bracket.closed[0] ? '[' : '(', bracket.endpoint[0], bracket.endpoint[1], bracket.closed[1] ? ']' : ')', Lam->super.size);
@@ -136,4 +143,8 @@ void bfLboFeedFacStreamerNextEigenband(BfFacStreamer *facStreamer, BfPoints1 *fr
   bfPoints1Delete(&newFreqs);
   bfMatDelete(&Phi);
   bfVecRealDeinitAndDealloc(&Lam);
+
+  result.totalTime = bfToc() - t0Total;
+
+  return result;
 }

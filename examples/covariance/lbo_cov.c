@@ -130,11 +130,16 @@ int main(int argc, char const *argv[]) {
   BfFacStreamer *facStreamer = bfFacStreamerNew();
   bfFacStreamerInit(facStreamer, &spec);
 
+  BfReal eigTime = 0; // Time spent streaming eigenbands
+  BfReal facTime = 0; // Time spent doing everything else (butterflying, etc)
   BfSize nfit = 100; // number of eigenvalues to fit for extrapolation
   BfReal err_est = 1.0;
   while (!bfFacStreamerIsDone(facStreamer) && err_est > tol) {
-    bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
+    BfLboFeedResult result =
+      bfLboFeedFacStreamerNextEigenband(facStreamer, freqs, L, M);
     if (freqs->size >= numEigs) break;
+
+    BfReal t0Loop = bfToc();
 
     // Don't try to extrapolate if we don't have enough frequencies:
     if (freqs->size <= nfit) continue;
@@ -168,11 +173,17 @@ int main(int argc, char const *argv[]) {
       denom += pow(gamma_(lam), 4);
     }
     err_est = sqrt(numer)/sqrt(denom);
+
+    BfReal loopTime = bfToc() - t0Loop;
+    eigTime += result.eigenbandTime;
+    facTime += loopTime + result.totalTime - result.eigenbandTime;
+
     printf("truncation error estimate after %lu eigenpairs is %.2e\n", freqs->size, err_est);
   }
-  double precomp_time = bfToc();
 
-  printf("finished streaming BF (actually factorized %lu eigenpairs) [%0.1fs]\n", freqs->size, precomp_time);
+  printf("finished streaming BF (actually factorized %lu eigenpairs):\n", freqs->size);
+  printf("  time spent streaming eigenbands: %0.1fs\n", eigTime);
+  printf("  time spent building BF: %0.1fs\n", facTime);
 
   BfFacSpan *facSpan = bfFacStreamerGetFacSpan(facStreamer);
   BfMat *Phi = bfFacSpanGetMat(facSpan, BF_POLICY_VIEW);
@@ -220,7 +231,7 @@ int main(int argc, char const *argv[]) {
   sprintf(
     line,
     "%.1e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n",
-    tol, precomp_time, sampling_time/numSamples,
+    tol, facTime, sampling_time/numSamples,
     numBytesCompressed/pow(1024, 2),
     numBytesUncompressed/pow(1024, 2),
     numBytesUntruncated/pow(1024, 2)
