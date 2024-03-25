@@ -44,6 +44,9 @@ typedef struct BfLu BfLu;
 typedef struct BfLuCsrReal BfLuCsrReal;
 typedef struct BfLuDenseComplex BfLuDenseComplex;
 
+typedef struct BfChol BfChol;
+typedef struct BfCholCsrReal BfCholCsrReal;
+
 typedef struct BfTree BfTree;
 typedef struct BfIntervalTree BfIntervalTree;
 typedef struct BfQuadtree BfQuadtree;
@@ -104,6 +107,10 @@ typedef enum BfTypes {
   BF_TYPE_LU,
   BF_TYPE_LU_CSR_REAL,
   BF_TYPE_LU_DENSE_COMPLEX,
+
+  /* Chol hierarchy: */
+  BF_TYPE_CHOL,
+  BF_TYPE_CHOL_CSR_REAL,
 
   /* Vec hierarchy */
   BF_TYPE_VEC,
